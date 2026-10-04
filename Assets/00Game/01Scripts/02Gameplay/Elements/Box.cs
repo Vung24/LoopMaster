@@ -38,6 +38,7 @@ public class Box : MonoBehaviour
 
 	public BoxInfo Info => _info;
 	public GameLoader GameLoader => _gameLoader;
+	public Transform BoxCard => _boxCard != null ? _boxCard : (_boxCard = HierarchyReferenceCache.Child(transform, "BoxCard"));
 	public bool IsLockAnimationPlaying => IsSurpriseTransformationPlaying || _onDecrementingNumLock || _onUnlockingColorLock ||
 		(_adjacentLock != null && _adjacentLock.IsUnlockAnimationPlaying) ||
 		Cubes.Any(cube => cube != null && cube.IsNumLockAnimationPlaying);

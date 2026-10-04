@@ -701,7 +701,7 @@ public class GameController : MonoBehaviour
 		}
 	}
 
-	public FeatureType IsFeatureTutorial() => FeatureUnlockDialog.FindUnseenFeature(Data,
+	public FeatureType IsFeatureTutorial() => FeatureUnlockDialog.GetUnseenFeature(Data,
 		(FeatureType)PlayerPrefs.GetInt("offline_FeatureTutorialState", 0));
 
 	private async UniTask ShowFeatureTutorial(CancellationToken token)

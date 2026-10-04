@@ -317,7 +317,7 @@ public class WinDialogContent : DialogContent
 	private static void RestoreRewardIcons(Button button)
 	{
 		if (button == null) return;
-		Transform content = button.transform.Find("Content");
+		Transform content = HierarchyReferenceCache.Child(button.transform, "Content");
 		Transform[] nodes = button.GetComponentsInChildren<Transform>(true);
 		for (int i = 1; i < nodes.Length; i++)
 			if (nodes[i].name == "Coin")
