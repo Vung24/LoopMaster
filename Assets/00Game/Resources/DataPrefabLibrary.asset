@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8afb0ef382d4523b54d40f7e00d8643, type: 3}
+  m_Name: RecoveryPrefabLibrary
+  m_EditorClassIdentifier:
+  FeatureUnlockDialogPrefab: {fileID: 1000205989405893, guid: 2a3418d6279ceba43bce89b7115e6bbd, type: 3}
+  DialogPrefab: {fileID: 1659686862352295, guid: 2617ac88a473cfe419d89c4098452c04, type: 3}
+  FingerPrefab: {fileID: 1902524124569359, guid: cc55de2108048444b903d5236ec7f3b2, type: 3}
+  FlyCoinPrefab: {fileID: 1773412787311629, guid: 30aa8943663a28341a02ce3a0035c124, type: 3}
+  HudContainerPrefab: {fileID: 1590275372090437, guid: e64b4df7203f440489fe850229316a36, type: 3}
+  SettingsDialogPrefab: {fileID: 1956697778891093, guid: 6c901362f089f3144b22d4b6ebde2b45, type: 3}
+  HudCoinSprite: {fileID: 21300000, guid: 59d71500d473c0a45a6496f986f9898d, type: 2}
+  NewPlayerTutorialPrefab: {fileID: 1212466977200073, guid: e8e9b79c8fcee8941a3680341dee1b1d, type: 3}
+  NewPlayerTutorialBluePrefab: {fileID: 1545477339324308, guid: 82da42d52f25f93459a048e3285ab0a8, type: 3}
+  FailTutorialPrefab: {fileID: 1970812587382855, guid: 42caadef90da40f499f248445cc5cc44, type: 3}
+  FailTutorialBluePrefab: {fileID: 1928845149206542, guid: 54f1ec0e18a81fa4ab0b70293a233b35, type: 3}
+  LevelHardPanelPrefab: {fileID: 1236051851137485, guid: 4a899224d38cbbb49b9f22ae3b326292, type: 3}
+  LevelExpertPanelPrefab: {fileID: 1451171121952455, guid: b5bde1464d46a804d905b2fb3c205ea9, type: 3}
+  SpeedUpTutorialPrefab: {fileID: 1700283958184838, guid: 81aeafb091fabaa4ca2e9213b40f6753, type: 3}
+  ReplayConfirmPrefab: {fileID: 1708865776532832, guid: aec2a9a638113354191abd76fef2202b, type: 3}
+  QuitConfirmPrefab: {fileID: 1168851503608094, guid: 537e54777631f204d9b73f5898674700, type: 3}
+  BuyToolDialogPrefab: {fileID: 1486843807706351, guid: fcb530ebe803c1e44992f8c2d2e9fb54, type: 3}
+  CoinSprites:
+  - {fileID: 21300000, guid: 9cd5d878190549e46b449a1b195d999a, type: 3}
+  - {fileID: 21300000, guid: 869c4ffdd9d84e44aa6eacfb829cd40d, type: 3}
+  - {fileID: 21300000, guid: beabff4231f931743a42a03f486eef7c, type: 3}
+  - {fileID: 21300000, guid: c706221e425c3c442bc5a48923f4ae25, type: 3}
+  - {fileID: 21300000, guid: c4af4ac4ac510a34e9310549228481a2, type: 3}
+  - {fileID: 21300000, guid: 409688a0ace49b046af9121bdf5efe63, type: 3}
+  - {fileID: 21300000, guid: 2d10d1d93f0cd034ba0ee512c97e8d8d, type: 3}
+  - {fileID: 21300000, guid: ed2728fd4b3cb9a449bc1dffd2e61504, type: 3}
+  - {fileID: 21300000, guid: 4e6057a91ee06dc4f9caf0cda28c6de0, type: 3}
+  - {fileID: 21300000, guid: 583009d0f94f0ea49ae40bfbbef05d86, type: 3}
+  - {fileID: 21300000, guid: ecb66a76bb20b6044bd7df39cbf440b1, type: 3}
+  - {fileID: 21300000, guid: 0aeb86a0c31d549488f8e601a562baa7, type: 3}
+  - {fileID: 21300000, guid: 9ebbb1ca103c20245a3ccc2742c2a46e, type: 3}
+  - {fileID: 21300000, guid: ceb2d78fc8b7d10409170027366a488f, type: 3}
+  - {fileID: 21300000, guid: d0cc1ac416223d045b782f9033f890d0, type: 3}
+  - {fileID: 21300000, guid: 563834b56d5b873499cc7a99df438573, type: 3}
+  - {fileID: 21300000, guid: 31429d70ebca52340bf28b21c2f322b7, type: 3}
+  - {fileID: 21300000, guid: b2e44dff5bc50f444b54a6c54c24746c, type: 3}
+  - {fileID: 21300000, guid: 4b086a204771953478819669974c645f, type: 3}
+  LevelBoxMachinePrefab: {fileID: 1595915706615025, guid: e9248ecf622a2be489dd1bf81ed6cf55, type: 3}
+  LevelBoxDialogContentPrefab: {fileID: 1678179347374545, guid: e5ae2986da8ca424db0f865f41fa30cb, type: 3}
+  RewardDialogPrefab: {fileID: 1511560839802271, guid: 85ead8d9a058efb4fa421773144b5b66, type: 3}
+  RewardCellPrefab: {fileID: 1785389483446724, guid: 6f8c74eab81978b4ca87fdce085f6020, type: 3}
+  RewardCoinSprite: {fileID: 21300000, guid: 1419ccae00ffb2f4d8acd2a8053a4412, type: 2}
+  RewardHeartSprite: {fileID: 21300000, guid: 2000ce4c23cb17d429dd4584d8e7a624, type: 2}
+  RewardInfinityHeartSprite: {fileID: 21300000, guid: 36b562154e7b7ac4c8b71131334238ae, type: 2}
+  RewardUndoSprite: {fileID: 21300000, guid: 3b51c2c6602adc24e89aaf45d41f2a0a, type: 2}
+  RewardShuffleSprite: {fileID: 21300000, guid: 9f07b1cec41d1a149a4f186d32bd59e6, type: 2}
+  RewardPathSprite: {fileID: 21300000, guid: c03c2d3deda175b42857e1ab2995084a, type: 2}
+  LevelBoxSpineShader: {fileID: 4800000, guid: fa95b0fb6983c0f40a152e6f9aa82bfb, type: 3}
+  LevelBoxSpineAdditiveShader: {fileID: 4800000, guid: a1e4ab34b07f81e4e94f0d241c416669, type: 3}
+  LevelBoxSpineMultiplyShader: {fileID: 4800000, guid: cfbf95ed0fe6c554c8c2ee6c8325937c, type: 3}
+  LevelBoxSpineScreenShader: {fileID: 4800000, guid: c61244023592f95479fddd71b5067683, type: 3}
+  SpecialStreakDialogPrefab: {fileID: 1545568488115110, guid: 83c581c10cc7bde4fa9ca23e1f7d2bfb, type: 3}
+  SpecialStreakInfoDialogPrefab: {fileID: 1318194969228730, guid: 2eb3f17260749c34eb01e3492827561c, type: 3}
+  SpecialStreakCellPrefab: {fileID: 1587666729747667, guid: e0daaf249eb05c147a15f19f19b01840, type: 3}
+  SpecialStreakProgressPrefab: {fileID: 1433725468537648, guid: 062ca5c8cedff824fb271602460cf09d, type: 3}
+  SpecialStreakCollectItemPrefab: {fileID: 1861359464835011, guid: 6d222049f923d2644b1610bc4b8af52b, type: 3}
+  SpecialStreakFailBannerPrefab: {fileID: 1942608728616685, guid: c97fca8e6698ae447baa2de8ffb67060, type: 3}
+  LoseSpecialStreakPrefab: {fileID: 1342730281133020, guid: e83790f9ff10fc24d8f443a10ad6051e, type: 3}
+  RetryDialogContentPrefab: {fileID: 1498385603179874, guid: f50abab3436dc2744bd65328387aebbe, type: 3}

@@ -1,0 +1,57 @@
+{
+  "DefaultStageRobotsLevel": [3, 6, 9],
+  "ChaseTriggerCount": 2,
+  "WaitDurations": [360, 360, 240],
+  "FailProtectionDurations": [360, 360, 240],
+  "SpeedRanges": [
+    { "Level": 1, "Min": 800, "Max": 900 },
+    { "Level": 2, "Min": 700, "Max": 800 },
+    { "Level": 3, "Min": 620, "Max": 700 },
+    { "Level": 4, "Min": 500, "Max": 620 },
+    { "Level": 5, "Min": 450, "Max": 500 },
+    { "Level": 6, "Min": 400, "Max": 450 },
+    { "Level": 7, "Min": 360, "Max": 400 },
+    { "Level": 8, "Min": 300, "Max": 360 },
+    { "Level": 9, "Min": 240, "Max": 300 },
+    { "Level": 10, "Min": 160, "Max": 240 }
+  ],
+  "Combinations": [
+    { "Key": 1, "Robots": [{ "Level": 1, "Count": 4 }] },
+    { "Key": 2, "Robots": [{ "Level": 1, "Count": 2 }, { "Level": 2, "Count": 2 }] },
+    { "Key": 3, "Robots": [{ "Level": 1, "Count": 1 }, { "Level": 2, "Count": 2 }, { "Level": 3, "Count": 1 }] },
+    { "Key": 4, "Robots": [{ "Level": 2, "Count": 1 }, { "Level": 3, "Count": 2 }, { "Level": 4, "Count": 1 }] },
+    { "Key": 5, "Robots": [{ "Level": 2, "Count": 1 }, { "Level": 4, "Count": 1 }, { "Level": 5, "Count": 1 }] },
+    { "Key": 6, "Robots": [{ "Level": 1, "Count": 1 }, { "Level": 4, "Count": 1 }, { "Level": 6, "Count": 1 }] },
+    { "Key": 7, "Robots": [{ "Level": 1, "Count": 1 }, { "Level": 5, "Count": 1 }, { "Level": 7, "Count": 1 }] },
+    { "Key": 8, "Robots": [{ "Level": 2, "Count": 1 }, { "Level": 8, "Count": 1 }] },
+    { "Key": 9, "Robots": [{ "Level": 3, "Count": 1 }, { "Level": 9, "Count": 1 }] },
+    { "Key": 10, "Robots": [{ "Level": 4, "Count": 1 }, { "Level": 10, "Count": 1 }] }
+  ],
+  "StageAdjustments": [
+    {
+      "KeyMin": 1,
+      "KeyMax": 4,
+      "Rules": [
+        { "RankThreshold": 1, "Delta": 1 },
+        { "RankThreshold": 3, "Delta": -1 },
+        { "RankThreshold": 5, "Delta": -2 }
+      ]
+    },
+    {
+      "KeyMin": 5,
+      "KeyMax": 7,
+      "Rules": [
+        { "RankThreshold": 1, "Delta": 1 },
+        { "RankThreshold": 4, "Delta": -1 }
+      ]
+    },
+    {
+      "KeyMin": 8,
+      "KeyMax": 10,
+      "Rules": [
+        { "RankThreshold": 1, "Delta": 1 },
+        { "RankThreshold": 3, "Delta": -1 }
+      ]
+    }
+  ]
+}
