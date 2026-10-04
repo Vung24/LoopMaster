@@ -179,7 +179,7 @@ public static class LevelDataConverter
 		for (int index = 0; index < boxes.Count; index++)
 		{
 			if (boxes[index] != null && boxes[index].IsAdjacentLocked > 0)
-				result[index] = AdjacentLockRules.FindSourceIndexes(boxes, index);
+				result[index] = AdjacentLockRules.GetSourceIndexes(boxes, index);
 		}
 		return result;
 	}

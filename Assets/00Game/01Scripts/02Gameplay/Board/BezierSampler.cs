@@ -28,7 +28,7 @@ public static class BezierSampler
 		for (int i = 0; i < n; i++)
 		{
 			float distance = total * i / (n - 1);
-			float t = FindTByDistance(distance, lengths, segments);
+			float t = GetTByDistance(distance, lengths, segments);
 			result.Add(CalculateCubicBezierPoint(p0, p1, p2, p3, t));
 		}
 		result[0] = p0;
@@ -36,7 +36,7 @@ public static class BezierSampler
 		return result;
 	}
 
-	private static float FindTByDistance(float targetDistance,
+	private static float GetTByDistance(float targetDistance,
 		List<float> cumulativeLengths, int segments)
 	{
 		int upper = cumulativeLengths.BinarySearch(targetDistance);

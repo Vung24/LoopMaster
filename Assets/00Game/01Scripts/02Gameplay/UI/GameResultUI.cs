@@ -271,7 +271,7 @@ public sealed class GameResultUI : MonoBehaviour
 		_retryContent.Dismissed += OnRetryDismissed;
 		_retryContent.Show();
 		// Native FailDialog CheckSpecialStreakBanner parents to the full-screen safe area.
-		Transform area = _failDialog == null ? null : _failDialog.transform.Find("SafeArea");
+		Transform area = _failDialog == null ? null : _failDialog.SafeArea;
 		_streakBanner = SpecialStreakFailBanner.Show(area == null ? _canvasObject.transform : area).GetAwaiter().GetResult();
 		if (_streakBanner != null) Snui.RewardDialog.PrepareOverlay(_streakBanner.gameObject, 1321);
 	}

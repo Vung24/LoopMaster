@@ -17,9 +17,9 @@ public class BuyToolDialogContent : DialogContent
 	protected override void Awake()
 	{
 		base.Awake();
-		_adBtn = RecoveryDialogUI.FindButton(transform, "AdBtn");
-		_coinBtn = RecoveryDialogUI.FindButton(transform, "CoinBtn");
-		_closeBtn = RecoveryDialogUI.FindButton(transform, "CloseButton");
+		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdBtn");
+		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinBtn");
+		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.ResolveButton(transform, "CloseButton");
 		_titleText = HierarchyReferenceCache.Descendant(transform, "Title");
 		_desc = HierarchyReferenceCache.Descendant(transform, "Desc");
 		_icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh");
@@ -69,7 +69,7 @@ public class BuyToolDialogContent : DialogContent
 // Bind hierarchy nodes where the prefab export omitted native private references.
 public static class RecoveryDialogUI
 {
-	public static Button FindButton(Transform root, string name)
+	public static Button ResolveButton(Transform root, string name)
 	{
 		Transform node = HierarchyReferenceCache.Descendant(root, name);
 		return node == null ? null : node.GetComponent<Button>();

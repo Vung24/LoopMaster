@@ -34,7 +34,7 @@ public class HomeController : MonoBehaviour
 		}
 		return null;
 	}
-	private T FindInScene<T>() where T : Component
+	private T GetComponentInScene<T>() where T : Component
 	{
 		foreach (var root in gameObject.scene.GetRootGameObjects())
 		{
@@ -49,7 +49,7 @@ public class HomeController : MonoBehaviour
 	{
 		LevelBoxManager.EnsureInitialized();
 		if (_ready) return;
-		if (HomePage == null) HomePage = FindInScene<HomePage>();
+		if (HomePage == null) HomePage = GetComponentInScene<HomePage>();
 		if (HomePage == null) return;
 		_canvas = HomePage.GetComponentInParent<Canvas>()?.rootCanvas;
 		if (_canvas == null) return;

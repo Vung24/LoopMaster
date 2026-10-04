@@ -36,14 +36,18 @@ public class NewPlayerTutorial : MonoBehaviour
 
 	private void Awake()
 	{
-		_textNode = _textNode != null ? _textNode : Find("TextNode");
-		_arrowTextNode = _arrowTextNode != null ? _arrowTextNode : Find("ArrowTextNode");
-		_bigArrow = _bigArrow != null ? _bigArrow : Find("BigArrow");
-		_bgMask = _bgMask != null ? _bgMask : Find("BgMask");
-		_topMask = _topMask != null ? _topMask : Find("TopMask");
+		if (_textNode == null) _textNode = HierarchyReferenceCache.Descendant(transform, "TextNode");
+		if (_arrowTextNode == null) _arrowTextNode = HierarchyReferenceCache.Descendant(transform, "ArrowTextNode");
+		if (_bigArrow == null) _bigArrow = HierarchyReferenceCache.Descendant(transform, "BigArrow");
+		if (_bgMask == null) _bgMask = HierarchyReferenceCache.Descendant(transform, "BgMask");
+		if (_topMask == null) _topMask = HierarchyReferenceCache.Descendant(transform, "TopMask");
 		if (_finger == null) _finger = GetComponentInChildren<Finger>(true);
 		if (_bgBtn == null && _bgMask != null) _bgBtn = _bgMask.GetComponent<Button>();
-		if (_tapBtn == null) { Transform tap = Find("BtnTapTo"); if (tap != null) _tapBtn = tap.GetComponent<Button>(); }
+		if (_tapBtn == null)
+		{
+			Transform tap = HierarchyReferenceCache.Descendant(transform, "BtnTapTo");
+			if (tap != null) _tapBtn = tap.GetComponent<Button>();
+		}
 		_lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
 		// Decorative graphics must not swallow the tap intended for a box behind the UI.
 		foreach (Graphic graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
@@ -53,7 +57,6 @@ public class NewPlayerTutorial : MonoBehaviour
 		HideAllNodes();
 	}
 
-	private Transform Find(string name) => HierarchyReferenceCache.Descendant(transform, name);
 	private static void SetActive(Component node, bool active) { if (node != null) node.gameObject.SetActive(active); }
 	private void Track(Tween tween) { if (tween != null) _tweens.Add(tween.SetLink(gameObject)); }
 
