@@ -86,7 +86,7 @@ namespace Snui
             try
             {
                 dialog.FadeInOutDuration = fadeAnimDuration;
-                GameObject instance = await reference.InstantiateAsync(dialog._safeArea);
+                GameObject instance = await reference.InstantiateAsync(dialog._safeArea).Task;
                 if (dialog == null) { Addressables.ReleaseInstance(instance); throw new OperationCanceledException(); }
                 dialog.addressableContent = instance;
                 T content = instance.GetComponent<T>();

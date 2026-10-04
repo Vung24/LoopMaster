@@ -48,6 +48,12 @@ public class GameAudioPlayer : MonoBehaviour
 		}
 	}
 
+	public void PlayClickAudio()
+	{
+		AudioClip clip = GameAssetsConfig.Instance?.ButtonClickAudio;
+		if (clip != null) PlayOneShot(clip);
+	}
+
 	public void PlaySlicePopIn(AudioSource source, AudioClip clip, float pitch)
 	{
 		if (TryRequest(RequestKey.SlicePopIn)) PlayBoxAudio(source, clip, pitch);
