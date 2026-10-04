@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1b3b4b945939a54ea0b23d3396115fb, type: 3}
+  m_Name: firework_left_SkeletonData
+  m_EditorClassIdentifier: 
+  atlasAssets:
+  - {fileID: 11400000, guid: cee32dc2d8af73541874c544c45ebe57, type: 2}
+  scale: 0.01
+  skeletonJSON: {fileID: 4900000, guid: 336ab3a99ca10cd45a5c3f8dcfa43cad, type: 3}
+  isUpgradingBlendModeMaterials: 0
+  blendModeMaterials:
+    requiresBlendModeMaterials: 1
+    applyAdditiveMaterial: 1
+    additiveMaterials:
+    - pageName: firework_left.png
+      material: {fileID: 2100000, guid: c8dac5fa53b61b2479d085983ef32fd8, type: 2}
+    multiplyMaterials: []
+    screenMaterials: []
+  skeletonDataModifiers: []
+  fromAnimation: []
+  toAnimation: []
+  duration: []
+  defaultMix: 0.2
+  controller: {fileID: 0}
