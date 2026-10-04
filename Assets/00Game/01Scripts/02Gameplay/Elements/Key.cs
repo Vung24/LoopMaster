@@ -14,7 +14,7 @@ public class Key : MonoBehaviour
         Key prefab = BoardController.DefaultContext?.KeyPrefab;
         if (prefab != null) return await Create(parent, prefab);
         var handle = AddressableUtils.AsyncLoadAsGameObject(PrefabPath, parent);
-        GameObject instance = await handle.ToUniTask();
+        GameObject instance = await handle.Task;
         Key key = instance == null ? null : instance.GetComponent<Key>();
         if (key != null) return key;
         if (instance != null) Destroy(instance);

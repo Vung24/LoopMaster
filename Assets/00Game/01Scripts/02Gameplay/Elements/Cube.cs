@@ -194,9 +194,8 @@ public class Cube : MonoBehaviour
 	{
 		if (SecretParticle == null || !SecretParticle.RuntimeKeyIsValid()) return;
 
-		// A late Addressables completion must not attach to a reused/destroyed cube.
 		var handle = AddressableUtils.AsyncLoadAsGameObject(SecretParticle, null);
-		GameObject particle = await AddressablesAsyncExtensions.ToUniTask<GameObject>(handle);
+		GameObject particle = await handle.Task;
 		if (particle == null) return;
 		if (!IsCurrentVisual(info, data, version)) { Destroy(particle); return; }
 		particle.transform.SetParent(transform, false);

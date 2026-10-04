@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ShopUI
 {
-	public class ShopBundleItem : MonoBehaviour
+	public class ShopBundleItem : ShopItemBase
 	{
 	}
 }
