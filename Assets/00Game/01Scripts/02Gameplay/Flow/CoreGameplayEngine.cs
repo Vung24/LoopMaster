@@ -146,7 +146,7 @@ public sealed class CoreGameplayEngine
 			.Where(slice => slice.PathIndex >= 0)
 			.OrderByDescending(slice => slice.PathIndex)
 			.ToList();
-		int begin = FindFirstMovableIndex(ordered, allowOverlap);
+		int begin = GetFirstMovableIndex(ordered, allowOverlap);
 		if (begin < 0) return EvaluateEndState();
 
 		for (int offset = 0; offset < ordered.Count; offset++)
@@ -285,7 +285,7 @@ public sealed class CoreGameplayEngine
 		return CoreMoveResult.None;
 	}
 
-	private int FindFirstMovableIndex(List<SliceInfo> slices, bool allowOverlap)
+	private int GetFirstMovableIndex(List<SliceInfo> slices, bool allowOverlap)
 	{
 		for (int i = 0; i < slices.Count; i++)
 			if (CanMove(slices[i], allowOverlap)) return i;

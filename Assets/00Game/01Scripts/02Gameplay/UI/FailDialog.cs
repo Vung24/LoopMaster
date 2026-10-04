@@ -4,10 +4,13 @@ public class FailDialog : MonoBehaviour
 {
 	private GameController _controller;
 	private CanvasGroup _canvasGroup;
+	[SerializeField] private Transform _safeArea;
+	public Transform SafeArea => _safeArea != null ? _safeArea : (_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea"));
 
 	private void Awake()
 	{
 		_canvasGroup = GetComponent<CanvasGroup>();
+		if (_safeArea == null) _safeArea = HierarchyReferenceCache.Child(transform, "SafeArea");
 	}
 
 	public void Bind(GameController controller)

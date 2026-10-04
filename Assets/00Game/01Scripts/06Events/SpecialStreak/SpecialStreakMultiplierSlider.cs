@@ -11,19 +11,44 @@ public sealed class SpecialStreakMultiplierSlider : MonoBehaviour
     public float StartSlideX = -270;
     private Tween _tween;
     public int MultiplierIndex { get; private set; }
+    private struct MultiplierItem
+    {
+        public Transform Node;
+        public TMP_Text Label;
+        public Transform Tip;
+    }
+    private MultiplierItem[] _multiplierItems;
+
+    private void CacheMultiplierItems()
+    {
+        if (_multiplierItems != null || _multipliersNode == null) return;
+        int count = _multipliersNode.childCount;
+        _multiplierItems = new MultiplierItem[count];
+        for (int i = 0; i < count; i++)
+        {
+            Transform node = _multipliersNode.GetChild(i);
+            _multiplierItems[i] = new MultiplierItem
+            {
+                Node = node,
+                Label = HierarchyReferenceCache.Descendant(node, "Text_" + (i + 1))?.GetComponent<TMP_Text>()
+                    ?? node.GetComponentInChildren<TMP_Text>(true),
+                Tip = HierarchyReferenceCache.Child(node, "RedTip")
+            };
+        }
+    }
+
     public void Init(int multiplierIndex)
     {
         _tween?.Kill();
         MultiplierIndex = Mathf.Clamp(multiplierIndex, 0, 4);
+        CacheMultiplierItems();
         var manager = SpecialStreakManager.Ensure();
         var values = manager.GetMultipliers();
-        for (int i = 0; i < values.Count; i++)
+        for (int i = 0; i < values.Count && _multiplierItems != null && i < _multiplierItems.Length; i++)
         {
-            var node = _multipliersNode == null ? null : _multipliersNode.Find("TextNode_" + (i + 1));
-            var label = node == null ? null : node.Find("Text_" + (i + 1))?.GetComponent<TMP_Text>();
-            if (label != null) label.text = "x" + values[i];
-            var tip = node == null ? null : node.Find("RedTip");
-            if (tip != null) tip.gameObject.SetActive(Type != SpecialStreakMultiplierSliderType.Normal && i < MultiplierIndex);
+            var item = _multiplierItems[i];
+            if (item.Label != null) item.Label.text = "x" + values[i];
+            if (item.Tip != null) item.Tip.gameObject.SetActive(Type != SpecialStreakMultiplierSliderType.Normal && i < MultiplierIndex);
         }
         if (_slidingBlockText != null) _slidingBlockText.text = "x" + manager.GetMultiplier(MultiplierIndex);
         if (_slidingBlock != null)
@@ -81,13 +106,14 @@ public sealed class SpecialStreakMultiplierSlider : MonoBehaviour
     }
     private void SetWarnings(bool visible)
     {
-        for (int i = 0; i < MultiplierIndex; i++)
+        if (_multiplierItems == null) CacheMultiplierItems();
+        if (_multiplierItems == null) return;
+        int limit = Mathf.Min(MultiplierIndex, _multiplierItems.Length);
+        for (int i = 0; i < limit; i++)
         {
-            var node = _multipliersNode == null ? null : _multipliersNode.Find("TextNode_" + (i + 1));
-            if (node == null) continue;
-            var tip = node.Find("RedTip"); if (tip != null) tip.gameObject.SetActive(visible);
-            var text = node.GetComponentInChildren<TMP_Text>(true);
-            if (text != null) text.color = visible ? Color.white : new Color32(84, 53, 19, 255);
+            var item = _multiplierItems[i];
+            if (item.Tip != null) item.Tip.gameObject.SetActive(visible);
+            if (item.Label != null) item.Label.color = visible ? Color.white : new Color32(84, 53, 19, 255);
         }
     }
     private void OnDisable() { _tween?.Kill(); _tween = null; }

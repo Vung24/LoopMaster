@@ -10,7 +10,7 @@ public static class AdjacentLockRules
 	private const float MinimumFlatAxisSquaredMagnitude = 0.0001f;
 	private static readonly float SameDirectionDotThreshold = Mathf.Cos(5f * Mathf.Deg2Rad);
 
-	public static List<int> FindSourceIndexes(IList<BoxData> boxes, int lockedBoxIndex)
+	public static List<int> GetSourceIndexes(IList<BoxData> boxes, int lockedBoxIndex)
 	{
 		var result = new List<int>();
 		if (boxes == null || lockedBoxIndex < 0 || lockedBoxIndex >= boxes.Count) return result;

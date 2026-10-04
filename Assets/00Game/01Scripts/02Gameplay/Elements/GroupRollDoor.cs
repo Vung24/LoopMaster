@@ -130,8 +130,8 @@ public class GroupRollDoor : MonoBehaviour
 	private void CacheKeyLockTransforms()
 	{
 		if (_keyLockRoot == null && _visualRoot != null)
-			_keyLockRoot = FindDescendant(_visualRoot.transform, KeyLockNames);
-		if (_keyHole == null) _keyHole = FindKeyHole(_keyLockRoot);
+			_keyLockRoot = ResolveDescendant(_visualRoot.transform, KeyLockNames);
+		if (_keyHole == null) _keyHole = ResolveKeyHole(_keyLockRoot);
 	}
 
 	private Transform GetKeyLockRoot()
@@ -146,7 +146,7 @@ public class GroupRollDoor : MonoBehaviour
 		return _keyHole != null ? _keyHole : _keyLockRoot;
 	}
 
-	private static Transform FindKeyHole(Transform keyLock)
+	private static Transform ResolveKeyHole(Transform keyLock)
 	{
 		SpriteRenderer sprite = keyLock == null ? null : keyLock.GetComponentInChildren<SpriteRenderer>(true);
 		return sprite == null ? null : sprite.transform;
@@ -177,8 +177,8 @@ public class GroupRollDoor : MonoBehaviour
 
 	private void StretchMeshes(Transform root, Bounds sourceBounds, float targetWidth)
 	{
-		Transform leftDoor = FindDescendant(root, LeftDoorNames);
-		Transform rightDoor = FindDescendant(root, RightDoorNames);
+		Transform leftDoor = ResolveDescendant(root, LeftDoorNames);
+		Transform rightDoor = ResolveDescendant(root, RightDoorNames);
 		float targetMinX = sourceBounds.center.x - targetWidth * 0.5f;
 		float targetMaxX = sourceBounds.center.x + targetWidth * 0.5f;
 		float inset = Mathf.Min(DoorSideInset, targetWidth * 0.25f);
@@ -234,7 +234,7 @@ public class GroupRollDoor : MonoBehaviour
 		return false;
 	}
 
-	private static Transform FindDescendant(Transform root, IReadOnlyList<string> names)
+	private static Transform ResolveDescendant(Transform root, IReadOnlyList<string> names)
 	{
 		if (root == null) return null;
 		foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
@@ -421,7 +421,7 @@ public class GroupRollDoor : MonoBehaviour
 		bool hasBounds = false;
 		for (int i = 0; i < boxes.Count; i++)
 		{
-			Transform card = boxes[i].transform.Find("BoxCard");
+			Transform card = boxes[i] != null ? boxes[i].BoxCard : null;
 			if (card == null) throw new InvalidOperationException("GroupRollDoor frame requires BoxCard. box=" + boxes[i].name);
 			foreach (Renderer renderer in card.GetComponentsInChildren<Renderer>())
 			{

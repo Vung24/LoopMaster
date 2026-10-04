@@ -10,6 +10,7 @@ public class FailDialogContent : DialogContent
 	[SerializeField] private Button _coinOnlyBtn;
 	[SerializeField] private Button _freeBtn;
 	[SerializeField] private Transform _addPathNode;
+	[SerializeField] private Transform _safeArea;
 	[SerializeField] private LoseContainer _loseContainer;
 	public string ReviveRoute;
 
@@ -23,15 +24,17 @@ public class FailDialogContent : DialogContent
 	private bool _isFreeRevive;
 	public const int RevivePrice = 900;
 	public Transform FreeButtonNode => _freeBtn == null ? null : _freeBtn.transform;
+	public Transform SafeArea => _safeArea != null ? _safeArea : (_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea"));
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.FindButton(transform, "AdButton");
-		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.FindButton(transform, "CoinButton");
-		_coinOnlyBtn = _coinOnlyBtn != null ? _coinOnlyBtn : RecoveryDialogUI.FindButton(transform, "CoinOnlyButton");
-		_freeBtn = _freeBtn != null ? _freeBtn : RecoveryDialogUI.FindButton(transform, "FreeButton");
-		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.FindButton(transform, "CloseButton");
+		if (_safeArea == null) _safeArea = HierarchyReferenceCache.Child(transform, "SafeArea");
+		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdButton");
+		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinButton");
+		_coinOnlyBtn = _coinOnlyBtn != null ? _coinOnlyBtn : RecoveryDialogUI.ResolveButton(transform, "CoinOnlyButton");
+		_freeBtn = _freeBtn != null ? _freeBtn : RecoveryDialogUI.ResolveButton(transform, "FreeButton");
+		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.ResolveButton(transform, "CloseButton");
 		Bind(_controller != null ? _controller : GameController.Current);
 	}
 
@@ -56,8 +59,8 @@ public class FailDialogContent : DialogContent
 	}
 	public void BindFallbackOffers()
 	{
-		_adBtn = RecoveryDialogUI.FindButton(transform, "AdButton");
-		_coinBtn = RecoveryDialogUI.FindButton(transform, "CoinButton");
+		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdButton");
+		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinButton");
 		RecoveryDialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
 		RecoveryDialogUI.Bind(_coinBtn, OnClickCoinButton);
 	}

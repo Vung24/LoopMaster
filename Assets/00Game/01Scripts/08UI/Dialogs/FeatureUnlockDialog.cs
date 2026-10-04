@@ -134,7 +134,7 @@ public class FeatureUnlockDialog : MonoBehaviour
         }
     }
 
-    public static FeatureType FindUnseenFeature(GameData data, FeatureType shown)
+    public static FeatureType GetUnseenFeature(GameData data, FeatureType shown)
     {
         if (data == null) return FeatureType.None;
         // Native GameController.IsFeatureTutorial checks these flags in this order.
