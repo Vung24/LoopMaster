@@ -1,0 +1,219 @@
+using System.Collections;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Events;
+using UnityEngine.UI;
+
+namespace Snui
+{
+	[RequireComponent(typeof(Button))]
+	[RequireComponent(typeof(CanvasGroup))]
+	public class Snui_Button : MonoBehaviour, IPointerDownHandler, IPointerUpHandler,
+		IBeginDragHandler, IDragHandler, IEndDragHandler
+	{
+		[HideInInspector] public UnityEvent OnPointerDownEvent = new UnityEvent();
+		[HideInInspector] public UnityEvent OnPointerUpEvent = new UnityEvent();
+		public bool EnableClickAudio = true;
+		public bool EnableVibration = true;
+		public ButtonPreventClickType PreventClickType = ButtonPreventClickType.Repeatedly;
+		public float PreventDuration = 0.2f;
+		public bool UsePressDownEffect = true;
+		public float DownOffset = 4f;
+		[Range(0f, 1f)] public float ClickScale = 1f;
+		[Range(0f, 1f)] public float ClickAlpha = 0.3f;
+		[Range(0f, 1f)] public float DisableAlpha = 1f;
+
+		private Transform _content;
+		private Button _button;
+		private CanvasGroup _canvasGroup;
+		private float _dragThreshold = 32f;
+		private CanvasGroup _contentCanvasGroup;
+		private Vector3 _contentLocalPos;
+		private Vector3 _contentLocalScale;
+		private Vector2 _beginDragPos;
+		private Coroutine _preventClickRoutine;
+		private bool _pressed;
+
+		public Button Button
+		{
+			get
+			{
+				if (_button == null) _button = GetComponent<Button>();
+				return _button;
+			}
+		}
+
+		public CanvasGroup CanvasGroup
+		{
+			get
+			{
+				if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+				return _canvasGroup;
+			}
+		}
+
+		private void Awake()
+		{
+			_button = GetComponent<Button>();
+			_canvasGroup = GetComponent<CanvasGroup>();
+			_content = transform.childCount > 0 ? transform.GetChild(0) : transform;
+
+			if (_content != transform)
+			{
+				_contentCanvasGroup = _content.GetComponent<CanvasGroup>();
+				if (_contentCanvasGroup == null)
+					_contentCanvasGroup = _content.gameObject.AddComponent<CanvasGroup>();
+			}
+
+			if (EventSystem.current != null)
+				_dragThreshold = Mathf.Max(_dragThreshold, EventSystem.current.pixelDragThreshold);
+		}
+
+		private void Start()
+		{
+			if (Button == null) return;
+			Button.onClick.RemoveListener(HandleClick);
+			Button.onClick.AddListener(HandleClick);
+		}
+
+		private void HandleClick()
+		{
+			PlayClickButtonSound();
+			PlayVibration();
+
+			switch (PreventClickType)
+			{
+				case ButtonPreventClickType.Repeatedly:
+					DisableButtonQuickTouch();
+					break;
+				case ButtonPreventClickType.OnlyOnce:
+					DisableButton();
+					break;
+			}
+		}
+
+		private void PlayClickButtonSound()
+		{
+			if (!EnableClickAudio || !GameAudioSettings.EffectsEnabled) return;
+			AudioClip clip = GameAssetsConfig.Instance?.ButtonClickAudio;
+			if (clip == null) return;
+			if (GameAudioPlayer.Current != null) GameAudioPlayer.Current.PlayOneShot(clip);
+			else
+			{
+				AudioSource source = GetComponent<AudioSource>();
+				if (source == null)
+				{
+					source = gameObject.AddComponent<AudioSource>();
+					source.playOnAwake = false;
+				}
+				source.PlayOneShot(clip);
+			}
+		}
+
+		private void PlayVibration()
+		{
+			#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+			if (EnableVibration && GameVibrationHelper.Enabled && Application.isMobilePlatform)
+				Handheld.Vibrate();
+			#endif
+		}
+
+		public void OnPointerDown(PointerEventData eventData)
+		{
+			if (Button == null || !Button.IsInteractable() || _pressed) return;
+			// Capture after layout has settled, including buttons with no child content.
+			if (_content != null)
+			{
+				_contentLocalPos = _content.localPosition;
+				_contentLocalScale = _content.localScale;
+			}
+			_pressed = true;
+			ApplyPressedVisual();
+			OnPointerDownEvent?.Invoke();
+		}
+
+		public void OnPointerUp(PointerEventData eventData)
+		{
+			ReleasePressedVisual(true);
+		}
+
+		public void OnBeginDrag(PointerEventData eventData)
+		{
+			_beginDragPos = eventData.position;
+			ReleasePressedVisual(false);
+		}
+
+		public void OnDrag(PointerEventData eventData)
+		{
+			if (Vector2.Distance(_beginDragPos, eventData.position) > _dragThreshold)
+				ReleasePressedVisual(false);
+		}
+
+		public void OnEndDrag(PointerEventData eventData)
+		{
+			ReleasePressedVisual(false);
+		}
+
+		public void DisableButton()
+		{
+			if (Button != null) Button.interactable = false;
+			if (_contentCanvasGroup != null) _contentCanvasGroup.alpha = DisableAlpha;
+			ReleasePressedVisual(false, false);
+		}
+
+		public void EnableButton()
+		{
+			if (Button != null) Button.interactable = true;
+			if (_contentCanvasGroup != null) _contentCanvasGroup.alpha = 1f;
+		}
+
+		private void DisableButtonQuickTouch()
+		{
+			// An earlier click listener may close the dialog before this listener runs.
+			if (!isActiveAndEnabled || Button == null || !Button.IsInteractable()) return;
+			if (_preventClickRoutine != null) StopCoroutine(_preventClickRoutine);
+			_preventClickRoutine = StartCoroutine(PreventRepeatedClick());
+		}
+
+		private IEnumerator PreventRepeatedClick()
+		{
+			DisableButton();
+			yield return new WaitForSecondsRealtime(Mathf.Max(0f, PreventDuration));
+			EnableButton();
+			_preventClickRoutine = null;
+		}
+
+		private void ApplyPressedVisual()
+		{
+			if (_content == null) return;
+			if (UsePressDownEffect)
+				_content.localPosition = _contentLocalPos + Vector3.down * DownOffset;
+			_content.localScale = _contentLocalScale * ClickScale;
+			if (_contentCanvasGroup != null) _contentCanvasGroup.alpha = ClickAlpha;
+		}
+
+		private void ReleasePressedVisual(bool invokeEvent, bool restoreAlpha = true)
+		{
+			bool wasPressed = _pressed;
+			_pressed = false;
+			if (wasPressed && _content != null)
+			{
+				_content.localPosition = _contentLocalPos;
+				_content.localScale = _contentLocalScale;
+			}
+			if (restoreAlpha && _contentCanvasGroup != null)
+				_contentCanvasGroup.alpha = Button != null && !Button.interactable ? DisableAlpha : 1f;
+			if (invokeEvent && wasPressed) OnPointerUpEvent?.Invoke();
+		}
+
+		private void OnDisable()
+		{
+			ReleasePressedVisual(false);
+		}
+
+		private void OnDestroy()
+		{
+			if (_button != null) _button.onClick.RemoveListener(HandleClick);
+		}
+	}
+}

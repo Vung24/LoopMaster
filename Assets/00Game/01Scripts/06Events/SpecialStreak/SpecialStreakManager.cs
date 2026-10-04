@@ -1,0 +1,181 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public sealed class SpecialStreakManager : MonoBehaviour
+{
+    public const string DATA_PATH = "offline_special_streak_data_v1";
+    private static readonly int[] Multipliers = { 1, 5, 10, 25, 100 }; // .cctor 0x128D8AC
+    public static SpecialStreakManager Current { get; private set; }
+    public event Action Changed;
+    private SpecialStreakData _data;
+    private List<SpecialStreakRewardInfo> _rewardInfoConfigs;
+    private bool _invalid, _settling;
+    public string LastError { get; private set; }
+    public bool IsLocked => _data == null || !_data.Activated;
+    public bool IsOngoing => !IsLocked && !IsCompleted() && !_invalid;
+    public bool IsClosed => IsCompleted();
+    public int CurrCount => _data?.CurrCount ?? 0;
+    public int TempCount => _data?.TempCount ?? 0;
+    public int ClaimedIndex => _data?.ClaimedIndex ?? 0;
+    public int MultiplierIndex => _data?.MultiplierIndex ?? 0;
+    public int LastMultiplierIndex => _data?.LastMultiplierIndex ?? 0;
+    public bool IsTutorialFinished => _data?.TutorialFinished ?? false;
+    [Serializable] private sealed class Config { public SpecialStreakRewardInfo[] Items; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void InitializeBeforeScene() => Ensure();
+    public static SpecialStreakManager Ensure()
+    {
+        if (Current == null) new GameObject("OfflineSpecialStreak").AddComponent<SpecialStreakManager>();
+        Current.CheckStartEvent();
+        return Current;
+    }
+    private void Awake()
+    {
+        if (Current != null && Current != this) { Destroy(this); return; }
+        Current = this;
+        DontDestroyOnLoad(gameObject);
+        Startup();
+    }
+    public void Startup()
+    {
+        try
+        {
+            var asset = Resources.Load<TextAsset>("configjson/SpecialStreakConfig");
+            if (asset == null) throw new InvalidOperationException("SpecialStreakConfig is missing.");
+            var config = JsonUtility.FromJson<Config>("{\"Items\":" + asset.text + "}");
+            if (config?.Items == null || config.Items.Length == 0) throw new InvalidOperationException("Invalid SpecialStreak config.");
+            _rewardInfoConfigs = new List<SpecialStreakRewardInfo>(config.Items);
+            foreach (var stage in _rewardInfoConfigs)
+            {
+                if (stage == null || stage.Goal <= 0 || stage.Rewards == null || stage.Rewards.Count == 0)
+                    throw new InvalidOperationException("Invalid SpecialStreak reward stage.");
+                foreach (var reward in stage.Rewards)
+                    if (reward == null || reward.count < 0 || RewardType.FromString(reward.type) == RewardType.Unknown)
+                        throw new InvalidOperationException("Invalid SpecialStreak reward.");
+            }
+            _data = PlayerPrefs.HasKey(DATA_PATH) ? JsonUtility.FromJson<SpecialStreakData>(PlayerPrefs.GetString(DATA_PATH)) : new SpecialStreakData();
+            if (_data == null || _data.Version != 1 || _data.CurrCount < 0 || _data.TempCount < 0 ||
+                _data.ClaimedIndex < 0 || _data.ClaimedIndex > _rewardInfoConfigs.Count ||
+                _data.MultiplierIndex < 0 || _data.MultiplierIndex >= Multipliers.Length ||
+                _data.LastMultiplierIndex < 0 || _data.LastMultiplierIndex >= Multipliers.Length ||
+                _data.TargetCount < 0 || _data.TargetMultiplier < 0 || _data.TargetMultiplier >= Multipliers.Length)
+                throw new InvalidOperationException("Invalid saved SpecialStreak data; original retained.");
+            _invalid = false;
+            CheckStartEvent();
+        }
+        catch (Exception error) { _invalid = true; LastError = error.Message; Debug.LogWarning(LastError); }
+    }
+    private void CheckStartEvent()
+    {
+        // CanStartEvent RVA 0x128CE2C: normal index + 1 > 20.
+        if (_invalid || _data == null || _data.Activated || GameProgressStore.HighestUnlockedLevel < GetUnlockLevel()) return;
+        _data.Activated = true;
+        _data.LastWonLevel = GameProgressStore.HighestCompletedLevel;
+        SaveData();
+    }
+    public int GetUnlockLevel() => 21;
+    public int GetPreviewLevel() => 1;
+    public bool IsExpired() => false; // permanent offline event
+    public bool IsCompleted() => IsCompleted(ClaimedIndex);
+    public bool IsCompleted(int index) => _rewardInfoConfigs != null && index >= _rewardInfoConfigs.Count;
+    public IReadOnlyList<SpecialStreakRewardInfo> GetRewardInfosConfig() => _rewardInfoConfigs?.AsReadOnly();
+    public IReadOnlyList<int> GetMultipliers() => Array.AsReadOnly(Multipliers);
+    public int GetMultiplier(int index) => Multipliers[Mathf.Clamp(index, 0, Multipliers.Length - 1)];
+    public int GetCurrentMultiplier() => GetMultiplier(MultiplierIndex);
+    public int GetNextMultiplierIndex(int index) => Math.Min(index + 1, Multipliers.Length - 1);
+    public bool IsMaxMultiplierIndex(int index) => index >= Multipliers.Length - 1;
+    public int GetMultipliedCount(int count, int index) => checked(count * GetMultiplier(index));
+    public SpecialStreakRewardInfo GetRewardInfo(int index) => _rewardInfoConfigs != null && index >= 0 && index < _rewardInfoConfigs.Count ? _rewardInfoConfigs[index] : null;
+    public SpecialStreakRewardInfo GetCurrRewardInfo() => GetRewardInfo(ClaimedIndex);
+    public bool ShouldSettleCollectionResult() => !_invalid && (_data?.Settling == true || TempCount > 0 || (GetCurrRewardInfo() != null && CurrCount >= GetCurrRewardInfo().Goal));
+    public bool ShouldShowLoseItem() => IsOngoing && MultiplierIndex > 0;
+    public bool ShouldShowFailBanner() => IsOngoing && LastMultiplierIndex > 0;
+    public bool ShouldShowTutorial() => IsOngoing && !IsTutorialFinished;
+    public void SetTutorialShown() { if (_invalid || _data == null) return; _data.TutorialFinished = true; SaveData(); }
+    public void OnGameWon(int level)
+    {
+        if (!IsOngoing || level <= _data.LastWonLevel || GameProgressStore.IsLevelCompleted(level) || _settling) return;
+        _data.TempCount = checked(_data.TempCount + 1); // native 0x128D444
+        _data.LastWonLevel = level;
+        SaveData(); Changed?.Invoke();
+    }
+    // Native OnGameFail is dispatched on decline/Retry/Quit, not on the recoverable road-full state.
+    public void OnGameFailed()
+    {
+        if (!IsOngoing || _settling) return;
+        if (!SettlePending()) return;
+        _data.LastMultiplierIndex = _data.MultiplierIndex;
+        _data.MultiplierIndex = 0; // 0x128D4B4. Revive never calls this.
+        SaveData(); Changed?.Invoke();
+    }
+    public static string ClaimId(int index) => "SpecialStreak/v1/" + index;
+    public bool SettlePending()
+    {
+        if (_invalid || _settling || _data == null) return false;
+        if (!ShouldSettleCollectionResult()) return true;
+        _settling = true;
+        try
+        {
+            if (!_data.Settling)
+            {
+                _data.TargetCount = checked(CurrCount + GetMultipliedCount(TempCount, MultiplierIndex));
+                _data.TargetMultiplier = TempCount > 0 && !IsCompleted() ? GetNextMultiplierIndex(MultiplierIndex) : MultiplierIndex;
+                _data.Settling = true;
+                SaveData(); // durable intent before granting a milestone
+            }
+            var inventory = InventoryManager.Ensure();
+            if (!inventory.RecoverRewardJournal()) return false;
+            SpecialStreakRewardInfo stage;
+            while ((stage = GetCurrRewardInfo()) != null && _data.TargetCount >= stage.Goal)
+            {
+                if (!inventory.TryClaimRewards(ClaimId(ClaimedIndex), stage.Items(), out _))
+                { LastError = "COULD NOT ADD REWARD — TRY AGAIN"; return false; }
+                _data.TargetCount -= stage.Goal; // per-stage goals, not cumulative thresholds (0x1294308)
+                _data.ClaimedIndex++;
+                SaveData();
+            }
+            _data.CurrCount = IsCompleted() ? 0 : _data.TargetCount;
+            _data.TempCount = 0;
+            _data.LastMultiplierIndex = _data.MultiplierIndex;
+            if (!IsCompleted()) _data.MultiplierIndex = _data.TargetMultiplier;
+            _data.Settling = false;
+            SaveData(); LastError = null;
+        }
+        catch (Exception error) { LastError = error.Message; Debug.LogWarning("SpecialStreak: " + LastError); return false; }
+        finally { _settling = false; }
+        Changed?.Invoke();
+        return true;
+    }
+    private void SaveData() { PlayerPrefs.SetString(DATA_PATH, JsonUtility.ToJson(_data)); PlayerPrefs.Save(); }
+    public static void ClearOfflineData()
+    {
+        PlayerPrefs.DeleteKey(DATA_PATH);
+        if (Current != null) { Current._data = new SpecialStreakData(); Current._invalid = false; }
+        PlayerPrefs.Save();
+    }
+    private void OnDestroy() { if (Current == this) Current = null; }
+}
+
+[Serializable]
+public sealed class SpecialStreakData
+{
+    public int Version = 1;
+    public bool Activated, TutorialFinished, Settling;
+    public int CurrCount, TempCount, ClaimedIndex, MultiplierIndex, LastMultiplierIndex, LastWonLevel;
+    public int TargetCount, TargetMultiplier;
+}
+[Serializable]
+public sealed class SpecialStreakRewardInfo
+{
+    public int Goal;
+    public List<SpecialStreakReward> Rewards;
+    public List<RewardItem> Items()
+    {
+        var items = new List<RewardItem>();
+        foreach (var reward in Rewards) items.Add(new RewardItem(RewardType.FromString(reward.type), reward.count));
+        return items;
+    }
+}
+[Serializable]
+public sealed class SpecialStreakReward { public string type; public int count; }
