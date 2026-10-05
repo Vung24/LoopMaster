@@ -24,7 +24,8 @@ public sealed class UICanvas : MonoBehaviour
 	[SerializeField] private SafeArea _safeArea;
 	[SerializeField] private Transform _top;
 	[SerializeField] private Transform _bottom;
-	private RectTransform _topFlag;
+	[SerializeField] private RectTransform _topFlag;
+	[SerializeField] private RectTransform _bgGame;
 
 	private GameController _controller;
 	private Canvas _canvas;
@@ -38,6 +39,12 @@ public sealed class UICanvas : MonoBehaviour
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
+	private Canvas _runtimeBackgroundCanvas;
+	private Camera _runtimeBackgroundCamera;
+	private Camera _cachedMainCamera;
+	private CameraClearFlags _cachedMainCameraClearFlags;
+	private int _cachedMainCameraCullingMask;
+	private bool _hasCachedMainCameraState;
 
 	public SafeArea SafeArea => _safeArea;
 
@@ -66,10 +73,34 @@ public sealed class UICanvas : MonoBehaviour
 		ConfigureCanvasCamera();
 		EnsureVisibleLayout();
 		Bind(GameController.Current);
+		if (_bgGame != null) _bgGame.gameObject.SetActive(true);
 	}
 
-	private void OnDisable() => ActiveCanvases.Remove(this);
-	private void OnDestroy() => ActiveCanvases.Remove(this);
+	private void OnDisable()
+	{
+		ActiveCanvases.Remove(this);
+		if (_bgGame != null) _bgGame.gameObject.SetActive(false);
+	}
+
+	private void OnDestroy()
+	{
+		ActiveCanvases.Remove(this);
+		if (_hasCachedMainCameraState && _cachedMainCamera != null)
+		{
+			_cachedMainCamera.clearFlags = _cachedMainCameraClearFlags;
+			_cachedMainCamera.cullingMask = _cachedMainCameraCullingMask;
+		}
+		if (_runtimeBackgroundCanvas != null)
+		{
+			Destroy(_runtimeBackgroundCanvas.gameObject);
+			_runtimeBackgroundCanvas = null;
+		}
+		if (_runtimeBackgroundCamera != null)
+		{
+			Destroy(_runtimeBackgroundCamera.gameObject);
+			_runtimeBackgroundCamera = null;
+		}
+	}
 
 	private void Start()
 	{
@@ -95,6 +126,7 @@ public sealed class UICanvas : MonoBehaviour
 		_undoTool = BindTool(_undoButton, InventoryKeys.TOOL_UNDO);
 		_shuffleTool = BindTool(_shuffleButton, InventoryKeys.TOOL_SHUFFLE);
 		_pathTool = BindTool(_pathButton, InventoryKeys.TOOL_PATH);
+		ConfigureBackground();
 		ConfigureInput();
 		ConfigureCanvasCamera();
 		EnsureVisibleLayout();
@@ -112,6 +144,96 @@ public sealed class UICanvas : MonoBehaviour
 		RefreshDisplay();
 	}
 
+	private void ConfigureBackground()
+	{
+		if (_bgGame == null) return;
+
+		Image bgImage = _bgGame.GetComponent<Image>();
+		if (bgImage != null)
+		{
+			bgImage.raycastTarget = false;
+		}
+
+		Camera mainCam = _controller != null ? _controller.MainCamera : Camera.main;
+		if (mainCam != null)
+		{
+			if (!_hasCachedMainCameraState)
+			{
+				_cachedMainCamera = mainCam;
+				_cachedMainCameraClearFlags = mainCam.clearFlags;
+				_cachedMainCameraCullingMask = mainCam.cullingMask;
+				_hasCachedMainCameraState = true;
+			}
+			mainCam.clearFlags = CameraClearFlags.Depth;
+			mainCam.cullingMask &= ~(1 << 5);
+		}
+
+		Canvas bgCanvas = _controller != null ? _controller.BackgroundCanvas : null;
+		if (bgCanvas == null)
+		{
+			bgCanvas = ResolveOrCreateBackgroundCanvas();
+		}
+
+		if (bgCanvas != null && _bgGame.parent != bgCanvas.transform)
+		{
+			_bgGame.SetParent(bgCanvas.transform, false);
+			_bgGame.gameObject.SetActive(true);
+			_bgGame.anchorMin = Vector2.zero;
+			_bgGame.anchorMax = Vector2.one;
+			_bgGame.anchoredPosition = Vector2.zero;
+			_bgGame.sizeDelta = Vector2.zero;
+			_bgGame.localScale = Vector3.one;
+		}
+
+		GameBg gameBg = _controller != null ? _controller.GameBg : null;
+		if (gameBg != null)
+		{
+			foreach (SpriteRenderer sr in gameBg.GetComponentsInChildren<SpriteRenderer>(true))
+			{
+				sr.enabled = false;
+			}
+		}
+	}
+
+	private Canvas ResolveOrCreateBackgroundCanvas()
+	{
+		if (_runtimeBackgroundCanvas != null) return _runtimeBackgroundCanvas;
+
+		Camera bgCamera = _controller != null ? _controller.BackgroundCamera : null;
+		if (bgCamera == null && _runtimeBackgroundCamera == null)
+		{
+			GameObject camObj = new GameObject("RuntimeBackgroundCamera");
+			camObj.layer = 5;
+			_runtimeBackgroundCamera = camObj.AddComponent<Camera>();
+			_runtimeBackgroundCamera.clearFlags = CameraClearFlags.SolidColor;
+			_runtimeBackgroundCamera.backgroundColor = new Color(0.15f, 0.12f, 0.44f, 1f);
+			_runtimeBackgroundCamera.cullingMask = 1 << 5;
+			_runtimeBackgroundCamera.depth = -2;
+			_runtimeBackgroundCamera.orthographic = true;
+			_runtimeBackgroundCamera.orthographicSize = 10f;
+			_runtimeBackgroundCamera.nearClipPlane = 0.3f;
+			_runtimeBackgroundCamera.farClipPlane = 50f;
+			camObj.transform.position = new Vector3(0f, 0f, -10f);
+			bgCamera = _runtimeBackgroundCamera;
+		}
+
+		GameObject canvasObj = new GameObject("RuntimeBackgroundCanvas");
+		canvasObj.layer = 5;
+		_runtimeBackgroundCanvas = canvasObj.AddComponent<Canvas>();
+		_runtimeBackgroundCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+		_runtimeBackgroundCanvas.worldCamera = bgCamera != null ? bgCamera : _runtimeBackgroundCamera;
+		_runtimeBackgroundCanvas.planeDistance = 10f;
+		_runtimeBackgroundCanvas.sortingOrder = 0;
+
+		CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+		scaler.referenceResolution = new Vector2(750f, 1624f);
+		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+		scaler.matchWidthOrHeight = 0f;
+
+		return _runtimeBackgroundCanvas;
+	}
+
 	private void CacheLegacyPrefabReferences()
 	{
 		if (_referencesCached) return;
@@ -119,7 +241,7 @@ public sealed class UICanvas : MonoBehaviour
 		if (_safeArea == null) _safeArea = GetComponentInChildren<SafeArea>(true);
 		if (_top == null) _top = HierarchyReferenceCache.Child(_safeArea != null ? _safeArea.transform : null, "Top");
 		if (_bottom == null) _bottom = HierarchyReferenceCache.Child(transform, "Bottom");
-		_topFlag = HierarchyReferenceCache.Descendant(transform, "TopFlag") as RectTransform;
+		if (_topFlag == null) _topFlag = HierarchyReferenceCache.Descendant(transform, "TopFlag") as RectTransform;
 		if (_pauseButton == null) _pauseButton = ResolveButton(_top, _bottom, "PauseBtn");
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");
@@ -285,7 +407,6 @@ public sealed class UICanvas : MonoBehaviour
 		if (_controller != null) _controller.OnClickToolPath();
 	}
 
-
 	private static ToolBase BindTool(Button button, string key)
 	{
 		if (button == null) return null;
@@ -301,5 +422,4 @@ public sealed class UICanvas : MonoBehaviour
 		button.onClick.RemoveListener(callback);
 		button.onClick.AddListener(callback);
 	}
-
 }
