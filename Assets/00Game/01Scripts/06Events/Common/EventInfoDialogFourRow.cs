@@ -24,7 +24,7 @@ public class EventInfoDialogFourRow : DialogContent
 		base.Awake();
 		if (_continueBtn == null)
 		{
-			var btnTrans = transform.Find("ContinueBtn");
+			var btnTrans = HierarchyReferenceCache.Child(transform, "ContinueBtn");
 			if (btnTrans != null)
 			{
 				_continueBtn = btnTrans.GetComponent<Button>();

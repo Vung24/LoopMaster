@@ -17,7 +17,7 @@ namespace ShopUI
 
 		protected virtual void Awake()
 		{
-			Transform buyTrans = transform.Find("BuyButton");
+			Transform buyTrans = HierarchyReferenceCache.Child(transform, "BuyButton");
 			if (buyTrans != null)
 			{
 				_buyBtn = buyTrans.GetComponent<Button>();

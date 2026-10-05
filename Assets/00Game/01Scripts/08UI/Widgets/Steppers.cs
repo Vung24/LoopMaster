@@ -25,17 +25,17 @@ namespace Snui
 		{
 			if (_decreaseBtn == null)
 			{
-				Transform dec = transform.Find("DecreaseButton");
+				Transform dec = HierarchyReferenceCache.Child(transform, "DecreaseButton");
 				if (dec != null) _decreaseBtn = dec.GetComponent<Snui_Button>();
 			}
 			if (_increaseBtn == null)
 			{
-				Transform inc = transform.Find("IncreaseButton");
+				Transform inc = HierarchyReferenceCache.Child(transform, "IncreaseButton");
 				if (inc != null) _increaseBtn = inc.GetComponent<Snui_Button>();
 			}
 			if (_text == null)
 			{
-				Transform t = transform.Find("Text");
+				Transform t = HierarchyReferenceCache.Child(transform, "Text");
 				if (t != null) _text = t.GetComponent<TMP_Text>();
 				if (_text == null) _text = GetComponentInChildren<TMP_Text>();
 			}

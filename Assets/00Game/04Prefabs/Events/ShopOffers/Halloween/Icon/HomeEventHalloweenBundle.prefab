@@ -146,6 +146,7 @@ GameObject:
   - component: {fileID: 222200327042638072}
   - component: {fileID: 114769368235515498}
   - component: {fileID: 114209585379959869}
+  - component: {fileID: 900000000000000001}
   m_Layer: 0
   m_Name: HomeIconTextBar
   m_TagString: Untagged
@@ -966,6 +967,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4675442b7e82747bf88e74b3290fe0a8, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _bg: {fileID: 114769368235515498}
+  _text: {fileID: 114359078630482189}
+  _countdownHelper: {fileID: 900000000000000001}
 --- !u!224 &224373404147276472
 RectTransform:
   serializedVersion: 2
@@ -1507,3 +1511,24 @@ MonoBehaviour:
       immutableTriangles: 0
   updateTiming: 1
   unscaledTime: 0
+--- !u!114 &900000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1893322403766952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17723861a27ed3cc5ab391bea201cce9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  OnTimerStart:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTimerStoped:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTimerTick:
+    m_PersistentCalls:
+      m_Calls: []

@@ -13,7 +13,7 @@ namespace Snui
 		private void Awake()
 		{
 			_tmpText = GetComponent<TMP_Text>();
-			_loading = transform.Find("Loading");
+			_loading = HierarchyReferenceCache.Child(transform, "Loading");
 			if (_loading != null)
 			{
 				_loading.gameObject.SetActive(false);
