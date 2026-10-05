@@ -9,6 +9,8 @@ namespace Snui
         public GameObject FlyCoinPrefab;
         public GameObject HudContainerPrefab;
         public GameObject SettingsDialogPrefab;
+        public GameObject HomeIconNotifierPrefab;
+        public GameObject HomeIconProgressPrefab;
         public GameObject SpecialStreakProgressPrefab;
         public GameObject SpecialStreakDialogPrefab;
         public GameObject SpecialStreakInfoDialogPrefab;
@@ -52,6 +54,8 @@ namespace Snui
         {
             if (string.IsNullOrEmpty(path)) return null;
             path = path.Replace('\\', '/');
+            if (path == "Events/Common/HomeIconNotifier" || path == "UI/Common/HomeIconNotifier") return HomeIconNotifierPrefab;
+            if (path == "Events/Common/HomeIconProgress" || path == "UI/Common/HomeIconProgress") return HomeIconProgressPrefab;
             if (path == "Snui/Base/Dialog/Dialog.prefab") return DialogPrefab;
             if (path == "Snui/Common/Prefabs/Finger.prefab") return FingerPrefab;
             if (path == "Snui/Common/Prefabs/FlyCoin.prefab") return FlyCoinPrefab;

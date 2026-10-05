@@ -17,7 +17,7 @@ namespace Snui.Lava
 			if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
 			if (_arrow == null)
 			{
-				Transform arr = transform.Find("Arrow");
+				Transform arr = HierarchyReferenceCache.Child(transform, "Arrow");
 				if (arr != null) _arrow = arr.GetComponent<Image>();
 			}
 			if (_text == null) _text = GetComponentInChildren<TMP_Text>();
