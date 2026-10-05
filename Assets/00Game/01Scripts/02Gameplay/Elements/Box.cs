@@ -272,7 +272,7 @@ public class Box : MonoBehaviour
 		CreateCube(cubeInfo, delay, "");
 	}
 
-	public bool CanPopupSlice() => !_onCreatingCube && _info != null && _info.CanPopup();
+	public bool CanPopupSlice() => !_isFinishHandled && !_onCreatingCube && _info != null && _info.CanPopup();
 
 	public void OnBoxFinished(BoxInfo box)
 	{
