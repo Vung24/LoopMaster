@@ -7,16 +7,10 @@ public static class GameplayEffects
 	public static void PlaySlicePopIn(GameObject effect, Color color)
 	{
 		if (effect == null) return;
-		// Stop autoplay before tinting: the secondary Splash keeps its authored color.
+		// Clear autoplay before tinting both sides of the exported Splash effect.
 		foreach (ParticleSystem particle in effect.GetComponentsInChildren<ParticleSystem>(true))
 			particle.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
-		ParticleSystem primary = effect.GetComponent<ParticleSystem>();
-		if (primary != null)
-		{
-			var main = primary.main;
-			main.startColor = color;
-		}
-		PlayParticles(effect);
+		PlayParticles(effect, color);
 	}
 
     public static void PlayParticles(GameObject effect, Color? tint = null)
