@@ -211,7 +211,7 @@ public class Box : MonoBehaviour
 		if (_gameLoader == null || _gameLoader.BoxNormalEffect == null || _info == null) return;
 		GameObject effect = Instantiate(_gameLoader.BoxNormalEffect, transform);
 		effect.transform.position = GetBoxTargetPos(_info.GetSliceCount(), new Vector3(0f, 0.9f, -1.65f));
-		GameplayEffects.PlayParticles(effect, color);
+		GameplayEffects.PlaySlicePopIn(effect, color);
 	}
 
 	public async UniTask PlayAddCubeAnim()
@@ -402,8 +402,16 @@ public class Box : MonoBehaviour
 
 	public Cube ReserveIncomingSlice(int type)
 	{
+		return ReserveIncomingSlice(type, out _);
+	}
+
+	public Cube ReserveIncomingSlice(int type, out bool mergedWithTopCube)
+	{
+		mergedWithTopCube = false;
 		if (_info == null) return null;
-		CubeInfo info = _info.PushSlice(type) ?? _info.AddCube(type);
+		CubeInfo info = _info.PushSlice(type);
+		mergedWithTopCube = info != null;
+		if (info == null) info = _info.AddCube(type);
 		if (info == null) return null;
 		bool newCube = info.CubeSc == null;
 		if (newCube) CreateCube(info);
