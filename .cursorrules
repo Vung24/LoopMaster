@@ -1,0 +1,5 @@
+# LoopMaster Cursor Rules
+
+- NEVER use `transform.Find(...)` or `GameObject.Find(...)`.
+- Always use `HierarchyReferenceCache` (`HierarchyReferenceCache.Child(...)`, `HierarchyReferenceCache.Descendant(...)`, `HierarchyReferenceCache.Path(...)`, `HierarchyReferenceCache.ChildComponent<T>(...)`, `HierarchyReferenceCache.DescendantComponent<T>(...)`) or serialized fields (`[SerializeField]`).
+- All runtime scripts must satisfy `VerifyNoFindPolicy()` in `Rules/Verification/Program.cs`.

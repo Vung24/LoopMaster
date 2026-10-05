@@ -15,13 +15,13 @@ namespace Snui
 
 		public Button Button => _button ??= GetComponent<Button>();
 		public CanvasGroup CanvasGroup => _canvasGroup ??= GetComponent<CanvasGroup>();
-		public Transform Content => _content ??= transform.Find("Content") ?? transform;
+		public Transform Content => _content ??= HierarchyReferenceCache.Child(transform, "Content") ?? transform;
 
 		private void Awake()
 		{
 			_button = GetComponent<Button>();
 			_canvasGroup = GetComponent<CanvasGroup>();
-			_content = transform.Find("Content") ?? transform;
+			_content = HierarchyReferenceCache.Child(transform, "Content") ?? transform;
 
 			if (_button != null)
 			{

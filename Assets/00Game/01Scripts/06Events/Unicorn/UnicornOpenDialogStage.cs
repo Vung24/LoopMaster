@@ -46,47 +46,47 @@ namespace Snui.Unicorn
 		{
 			if (_chestImage == null)
 			{
-				Transform t = transform.Find("ChestImage");
+				Transform t = HierarchyReferenceCache.Child(transform, "ChestImage");
 				if (t != null) _chestImage = t.GetComponent<Image>();
 			}
 			if (_coinComplete == null)
 			{
-				Transform t = transform.Find("CoinComplete");
+				Transform t = HierarchyReferenceCache.Child(transform, "CoinComplete");
 				if (t != null) _coinComplete = t.gameObject;
 			}
 			if (_rewardsBtn == null)
 			{
-				Transform t = transform.Find("RewardsBtn");
+				Transform t = HierarchyReferenceCache.Child(transform, "RewardsBtn");
 				if (t != null) _rewardsBtn = t.GetComponent<Button>();
 				if (_rewardsBtn == null) _rewardsBtn = GetComponentInChildren<Button>();
 			}
 			if (_stageTf == null)
 			{
-				_stageTf = transform.Find("Stage");
+				_stageTf = HierarchyReferenceCache.Child(transform, "Stage");
 			}
 			if (_stageLevel == null)
 			{
-				Transform t = _stageTf != null ? _stageTf.Find("StageLevel") : transform.Find("StageLevel");
+				Transform t = _stageTf != null ? HierarchyReferenceCache.Child(_stageTf, "StageLevel") : HierarchyReferenceCache.Child(transform, "StageLevel");
 				if (t != null) _stageLevel = t.GetComponent<TMP_Text>();
 			}
 			if (_stageText == null)
 			{
-				Transform t = _stageTf != null ? _stageTf.Find("StageText") : transform.Find("StageText");
+				Transform t = _stageTf != null ? HierarchyReferenceCache.Child(_stageTf, "StageText") : HierarchyReferenceCache.Child(transform, "StageText");
 				if (t != null) _stageText = t.GetComponent<TMP_Text>();
 			}
 			if (_mask == null)
 			{
-				Transform t = transform.Find("Mask");
+				Transform t = HierarchyReferenceCache.Child(transform, "Mask");
 				if (t != null) _mask = t.gameObject;
 			}
 			if (_complete == null)
 			{
-				Transform t = transform.Find("Complete");
+				Transform t = HierarchyReferenceCache.Child(transform, "Complete");
 				if (t != null) _complete = t.gameObject;
 			}
 			if (_lockGo == null)
 			{
-				Transform t = transform.Find("Lock");
+				Transform t = HierarchyReferenceCache.Child(transform, "Lock");
 				if (t != null) _lockGo = t.gameObject;
 			}
 			if (_canvasGroup == null)
