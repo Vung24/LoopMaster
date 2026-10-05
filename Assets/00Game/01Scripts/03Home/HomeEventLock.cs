@@ -12,7 +12,7 @@ namespace Snui
 			gameObject.SetActive(isLocked);
 			if (isLocked)
 			{
-				var text = transform.Find("Text")?.GetComponent<TMP_Text>();
+				var text = HierarchyReferenceCache.Child(transform, "Text")?.GetComponent<TMP_Text>();
 				if (text == null)
 				{
 					text = GetComponentInChildren<TMP_Text>(true);
