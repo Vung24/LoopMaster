@@ -66,7 +66,7 @@ public class GameBg : MonoBehaviour
 	{
 		if (_mainCamera == null) return;
 		Ray ray = _mainCamera.ScreenPointToRay(screenPosition);
-		if (!Physics.Raycast(ray, out RaycastHit hit, 30f) || hit.collider.GetComponent<GameBg>() == null) return;
+		if (!Physics.Raycast(ray, out RaycastHit hit, _mainCamera.farClipPlane) || hit.collider.GetComponent<GameBg>() == null) return;
 		_isPointerDown = true;
 		_isLongPressTriggered = false;
 		_pressTime = 0f;

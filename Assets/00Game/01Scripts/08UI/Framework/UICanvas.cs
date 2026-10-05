@@ -24,6 +24,7 @@ public sealed class UICanvas : MonoBehaviour
 	[SerializeField] private SafeArea _safeArea;
 	[SerializeField] private Transform _top;
 	[SerializeField] private Transform _bottom;
+	private RectTransform _topFlag;
 
 	private GameController _controller;
 	private Canvas _canvas;
@@ -39,6 +40,15 @@ public sealed class UICanvas : MonoBehaviour
 	private ToolBase _pathTool;
 
 	public SafeArea SafeArea => _safeArea;
+
+	public Rect GetGameplayViewport(Camera camera)
+	{
+		CacheLegacyPrefabReferences();
+		float scale = _canvas == null ? 1f : _canvas.scaleFactor;
+		float top = _topFlag == null ? 100f : _topFlag.rect.height;
+		return GameplayCameraLayout.Viewport(camera.pixelRect, Screen.safeArea,
+			top * scale, GameplayCameraLayout.NativeBottomReserve * scale);
+	}
 
 	private void Awake()
 	{
@@ -109,6 +119,7 @@ public sealed class UICanvas : MonoBehaviour
 		if (_safeArea == null) _safeArea = GetComponentInChildren<SafeArea>(true);
 		if (_top == null) _top = HierarchyReferenceCache.Child(_safeArea != null ? _safeArea.transform : null, "Top");
 		if (_bottom == null) _bottom = HierarchyReferenceCache.Child(transform, "Bottom");
+		_topFlag = HierarchyReferenceCache.Descendant(transform, "TopFlag") as RectTransform;
 		if (_pauseButton == null) _pauseButton = ResolveButton(_top, _bottom, "PauseBtn");
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");

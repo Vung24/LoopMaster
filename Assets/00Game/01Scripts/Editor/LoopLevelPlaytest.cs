@@ -83,7 +83,7 @@ internal static class LoopLevelPlaytest
         if (EditorApplication.isPlaying && _requestedData != null && GameController.Current != null &&
             GameController.Current.Data == _requestedData)
         {
-            LoopLevelBoardLayout.FitCamera(Camera.main, LoopLevelAuthoring.Layout(_requestedRoot));
+            GameController.Current.UpdateCamera();
             _waiting = false; _requestedData = null;
             Time.timeScale = 1;
             SetStatus("Preview level is running in Game View. Stop Play Mode to return to editing.");
