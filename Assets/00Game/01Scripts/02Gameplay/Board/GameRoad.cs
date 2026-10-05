@@ -23,7 +23,7 @@ public class GameRoad : MonoBehaviour
 	{
 		_pathMeshFilter = GetComponent<MeshFilter>();
 		_pathMeshRenderer = GetComponent<MeshRenderer>();
-		_pathRoadMesh = new Mesh { name = "RuntimeGameRoad" };
+		_pathRoadMesh = new Mesh { name = "GameRoad" };
 		_pathRoadMesh.MarkDynamic();
 		_pathMeshFilter.sharedMesh = _pathRoadMesh;
 		InitUI();

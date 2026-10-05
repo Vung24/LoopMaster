@@ -58,8 +58,12 @@ public class HomePage : MonoBehaviour
         if (!isActiveAndEnabled) return;
         Controller().TryEnterGame();
     }
+	public bool IsSkipAnimationsBlocked() => false;
+	public bool CommitProgressBeforeEnterGame() => true;
+
     private void OnDestroy()
     {
         if (_playButton != null) _playButton.onClick.RemoveListener(OnClickPlay);
     }
 }
+

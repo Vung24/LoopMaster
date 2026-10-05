@@ -1,6 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+public enum JumpHeartDialogSourceScene
+{
+	HudIn = 0,
+	HomeBoosterIn = 1,
+	TryAgainBoosterIn = 2
+}
 
 public class BaseHeartManager : BaseManager
 {
