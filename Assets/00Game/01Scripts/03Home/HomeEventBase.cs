@@ -62,13 +62,13 @@ namespace Snui
 				_button.onClick.AddListener(OnClick);
 			}
 
-			Transform bgNode = transform.Find("Bg");
+			Transform bgNode = HierarchyReferenceCache.Child(transform, "Bg");
 			_bgImage = bgNode != null ? bgNode.GetComponent<Image>() : GetComponent<Image>();
 
-			Transform lockNode = transform.Find("HomeEventLock");
+			Transform lockNode = HierarchyReferenceCache.Child(transform, "HomeEventLock");
 			_lock = lockNode != null ? lockNode.GetComponent<HomeEventLock>() : GetComponentInChildren<HomeEventLock>(true);
 
-			Transform textBarNode = transform.Find("HomeIconTextBar");
+			Transform textBarNode = HierarchyReferenceCache.Child(transform, "HomeIconTextBar");
 			_textBar = textBarNode != null ? textBarNode.GetComponent<HomeIconTextBar>() : GetComponentInChildren<HomeIconTextBar>(true);
 
 			_notifier = GetComponentInChildren<HomeIconNotifier>(true);
@@ -78,6 +78,11 @@ namespace Snui
 
 		protected virtual void OnClick()
 		{
+			var tutorial = GetComponent<HomeEventTutorial>();
+			if (tutorial != null)
+			{
+				tutorial.DismissFinger();
+			}
 		}
 
 		protected void SetUnlockLevel(int lv)
@@ -252,8 +257,8 @@ namespace Snui
 			if (_isPlayingLRShakeAnim) return null;
 			_isPlayingLRShakeAnim = true;
 
-			Transform bg = transform.Find("Bg");
-			Transform spine = transform.Find("Spine");
+			Transform bg = HierarchyReferenceCache.Child(transform, "Bg");
+			Transform spine = HierarchyReferenceCache.Child(transform, "Spine");
 			if (bg == null && spine == null)
 			{
 				_isPlayingLRShakeAnim = false;
