@@ -5,21 +5,22 @@ namespace Snui
 {
 	public class HomeEventLock : MonoBehaviour
 	{
-		[SerializeField] private TMP_Text _unlockLevelText;
-
-		private void Awake()
-		{
-			if (_unlockLevelText == null)
-			{
-				_unlockLevelText = GetComponentInChildren<TMP_Text>(true);
-			}
-		}
-
 		public void SetUnlockLevel(int lv)
 		{
-			if (_unlockLevelText != null)
+			int curLevel = GameProgressStore.NextPlayableLevel;
+			bool isLocked = curLevel < lv;
+			gameObject.SetActive(isLocked);
+			if (isLocked)
 			{
-				_unlockLevelText.text = $"Lv.{lv}";
+				var text = transform.Find("Text")?.GetComponent<TMP_Text>();
+				if (text == null)
+				{
+					text = GetComponentInChildren<TMP_Text>(true);
+				}
+				if (text != null)
+				{
+					text.text = $"Lv.{lv}";
+				}
 			}
 		}
 	}

@@ -50,6 +50,9 @@ public class CountdownHelper : MonoBehaviour
 		OnTimerStart?.Invoke();
 	}
 
+	public void StartCountdown(long timestamp) => CountdownUntil(timestamp);
+
+
 	public void CountdownFixTime(long fixTime)
 	{
 		if (fixTime <= 0)
