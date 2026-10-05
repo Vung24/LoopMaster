@@ -62964,7 +62964,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f4f2643c0edf2de740a6bc25d081141, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  _playButton: {fileID: 934}
+  _eventController: {fileID: 767}
+  _topNode: {fileID: 503}
+  _settingButton: {fileID: 913}
+  _levelBoxMachine: {fileID: 723}
+  _myAvatar: {fileID: 930}
+  _homeInAudioClip: {fileID: 8300000, guid: d917d60ed28666d448bf655525b49dbc, type: 3}
 --- !u!114 &741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -66917,6 +66924,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a3426ed30f3a694e5e3be0985cee3ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _animation: {fileID: 223}
+  _canvasGroup: {fileID: 628}
+  _btn: {fileID: 803}
+  _btnText: {fileID: 653}
+  _hardText: {fileID: 650}
+  _unlimitedTip: {fileID: 462}
+  _unlimitedTipTime: {fileID: 655}
+  _snuiButton: {fileID: 933}
+  PlayBtnNormalSpriteState:
+    m_HighlightedSprite: {fileID: 21300000, guid: c69cb698446ca4643be3187ab45647ff, type: 2}
+    m_PressedSprite: {fileID: 21300000, guid: 2a039f6b1b7287f49b2b6de7254ce5a0, type: 2}
+    m_SelectedSprite: {fileID: 21300000, guid: c69cb698446ca4643be3187ab45647ff, type: 2}
+    m_DisabledSprite: {fileID: 21300000, guid: c69cb698446ca4643be3187ab45647ff, type: 2}
+  PlayBtnHardSpriteState:
+    m_HighlightedSprite: {fileID: 21300000, guid: 2b777fa33496c134d9abbbe527b1c8be, type: 2}
+    m_PressedSprite: {fileID: 21300000, guid: 57b90a15a7d0ef6479493aa4e55c1fc4, type: 2}
+    m_SelectedSprite: {fileID: 21300000, guid: 2b777fa33496c134d9abbbe527b1c8be, type: 2}
+    m_DisabledSprite: {fileID: 21300000, guid: 2b777fa33496c134d9abbbe527b1c8be, type: 2}
+  PlayBtnVeryHardSpriteState:
+    m_HighlightedSprite: {fileID: 21300000, guid: 87a0ccfd6901bbf4bbb36f4e5c290ac5, type: 2}
+    m_PressedSprite: {fileID: 21300000, guid: 876c6be9bc1c9b8429dc80483e796c50, type: 2}
+    m_SelectedSprite: {fileID: 21300000, guid: 87a0ccfd6901bbf4bbb36f4e5c290ac5, type: 2}
+    m_DisabledSprite: {fileID: 21300000, guid: 87a0ccfd6901bbf4bbb36f4e5c290ac5, type: 2}
+  _hardTagNode: {fileID: 506}
+  _hardCoinTagSp: {fileID: 21300000, guid: aeb7f7bd4a15e554a9e4b5a7daedd162, type: 2}
+  _veryHardCoinTagSp: {fileID: 21300000, guid: aee84a49cf7c22d46b2671d15aa094db, type: 2}
+  _levelChangeSpine: {fileID: 741}
+  _levelLightSpine: {fileID: 943}
+  _levelChangeAudioClip: {fileID: 8300000, guid: a01e35d9b97e5844ea20a082281408b2, type: 3}
 --- !u!114 &935
 MonoBehaviour:
   m_ObjectHideFlags: 0
