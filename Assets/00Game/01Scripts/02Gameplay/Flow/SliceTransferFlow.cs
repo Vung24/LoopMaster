@@ -114,11 +114,17 @@ public sealed class SliceTransferFlow
 			return;
 		}
 		_data.RemoveTransferSlice(slice.Info);
-		// Native JumpSliceToBox emits before flight only when PushSlice succeeds.
-		// Creating the first slice of a new cube follows a separate, quiet branch.
-		if (mergedWithTopCube) box.PlayCubeAddEffect(GameAssetsConfig.GetCubeColor(slice.Info.Type));
+		// Snapshot each reserved slot so overlapping arrivals burst at their own target.
+		int effectSliceCount = box.Info.GetSliceCount();
+		Color effectColor = GameAssetsConfig.GetCubeColor(slice.Info.Type);
 		int version = _version;
-		slice.JumpToBox(box, jumpDuration, () => FinishJumpSliceToBox(box, destination, version), jumpHeight);
+		slice.JumpToBox(box, jumpDuration, () =>
+		{
+			if (version != _version || _data == null || box == null || box.Info == null) return;
+			// Match impact rather than a fixed delay, including speed changes mid-flight.
+			if (mergedWithTopCube) box.PlayCubeAddEffect(effectColor, effectSliceCount);
+			FinishJumpSliceToBox(box, destination, version);
+		}, jumpHeight);
 		return;
 	}
 
@@ -217,6 +223,14 @@ public sealed class SliceTransferFlow
 				}
 			}
 
+			// Native starts this delay after launching the batch, without awaiting its flights.
+			// Reveal the exposed secret while slices are still in flight; keep Undo and
+			// the source's input guard pending until every launched slice has landed.
+			yield return new WaitForSeconds(0.3f);
+			if (!IsCurrent(operation.Version) || box == null || box.Info == null) yield break;
+			box.RemoveEmptyCube();
+			box.CheckHiddenSecret();
+
 			while (created.Any(info => info != null && info.SliceSc != null && info.PathIndex < 0 && _data != null && _data.TransferSlice.Contains(info)))
 			{
 				if (!IsCurrent(operation.Version)) yield break;
@@ -237,11 +251,8 @@ public sealed class SliceTransferFlow
 				}
 			}
 
-			yield return new WaitForSeconds(0.3f);
 			if (!IsCurrent(operation.Version) || box == null || box.Info == null) yield break;
 			box.Info.State = BoxState.Free;
-			box.RemoveEmptyCube();
-			box.CheckHiddenSecret();
 			_launches.Remove(operation);
 			_onLaunchFinished();
 		}

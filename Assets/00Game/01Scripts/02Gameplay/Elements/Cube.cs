@@ -175,12 +175,14 @@ public class Cube : MonoBehaviour
 	private async UniTask RevealSecretAsync()
 	{
 		CubeInfo info = _info;
+		GameData data = GameData.Current;
+		int version = _visualVersion;
 
 		_info.IsSecret = false;
 		if (GameData.Current != null) GameData.Current.SecretClearCount++;
 		PlaySecretParticle().Forget();
 		await UniTask.WaitForSeconds(0.15f, false, PlayerLoopTiming.Update, _token);
-		if (_info != info) return;
+		if (!IsCurrentVisual(info, data, version)) return;
 		RefreshMaterial();
 		RefreshSquareSprite();
 	}
@@ -194,7 +196,7 @@ public class Cube : MonoBehaviour
 	{
 		if (SecretParticle == null || !SecretParticle.RuntimeKeyIsValid()) return;
 
-		var handle = AddressableUtils.AsyncLoadAsGameObject(SecretParticle, null);
+		var handle = AddressableUtils.AsyncLoadAsGameObject(SecretParticle, transform);
 		GameObject particle = await handle.Task;
 		if (particle == null) return;
 		if (!IsCurrentVisual(info, data, version)) { Destroy(particle); return; }
