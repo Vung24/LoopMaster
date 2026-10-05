@@ -1,120 +1,5 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-
-public class RollingCoverData
-{
-	public List<int> BoxIndexes;
-
-	public RollingCoverData()
-	{
-		BoxIndexes = new List<int>();
-	}
-
-	public RollingCoverData(List<int> boxIndexes)
-	{
-		BoxIndexes = boxIndexes ?? new List<int>();
-	}
-}
-
-public class GroupData
-{
-	public int Id;
-	public List<int> BoxIndexes;
-	public int LockedByColor;
-
-	public GroupData()
-	{
-		BoxIndexes = new List<int>();
-	}
-
-	public GroupData(int id, IEnumerable<int> boxIndexes, int lockedByColor)
-	{
-		Id = id;
-		BoxIndexes = boxIndexes == null ? new List<int>() : new List<int>(boxIndexes);
-		LockedByColor = lockedByColor;
-	}
-}
-
-public class BoxData
-{
-	public BoxType BoxType;
-	public int PathIndex;
-	public int PathIndexV2;
-	public Vector3 Position;
-	public Vector3 Rotation;
-	public List<CubeData> Cubes;
-	public List<List<int>> LinkedCubes;
-	public int LockColor;
-	public int IsEnterOnly;
-	public int NumLock;
-	public int LimitedColor;
-	public int IsAdjacentLocked;
-	public List<int> MultiColorLock;
-
-	public BoxData()
-	{
-		Cubes = new List<CubeData>();
-		LinkedCubes = new List<List<int>>();
-	}
-}
-
-public class MapComponent
-{
-	public string Name;
-	public Vector3 Position;
-	public Vector3 Rotation;
-	public Vector3 Scale;
-
-	public MapComponent()
-	{
-	}
-
-	public MapComponent(string name, Vector3 position, Vector3 rotation, Vector3 scale)
-	{
-		Name = name;
-		Position = position;
-		Rotation = rotation;
-		Scale = scale;
-	}
-}
-
-[Serializable]
-public class ControlPoint
-{
-	public Vector3 Position;
-	public Vector3 InTangent;
-	public Vector3 OutTangent;
-
-	public ControlPoint()
-	{
-	}
-
-	public ControlPoint(Vector3 pos, Vector3 inTangent, Vector3 outTangent)
-	{
-		Position = pos;
-		InTangent = inTangent;
-		OutTangent = outTangent;
-	}
-
-	public ControlPoint(Vector3 pos)
-	{
-		Position = pos;
-		InTangent = pos;
-		OutTangent = pos;
-	}
-}
-
-public class GamePath
-{
-	public int IsCircle;
-	public List<ControlPoint> ControlPoints;
-
-	public GamePath()
-	{
-		ControlPoints = new List<ControlPoint>();
-	}
-}
 
 public class Puzzle
 {
@@ -164,5 +49,75 @@ public class Puzzle
 	{
 		MainLevel = mainLevel;
 		InnerIndex = innerIndex;
+	}
+}
+
+public class GroupData
+{
+	public int Id;
+	public List<int> BoxIndexes;
+	public int LockedByColor;
+
+	public GroupData()
+	{
+		BoxIndexes = new List<int>();
+	}
+
+	public GroupData(int id, IEnumerable<int> boxIndexes, int lockedByColor)
+	{
+		Id = id;
+		BoxIndexes = boxIndexes == null ? new List<int>() : new List<int>(boxIndexes);
+		LockedByColor = lockedByColor;
+	}
+}
+
+public class RollingCoverData
+{
+	public List<int> BoxIndexes;
+
+	public RollingCoverData()
+	{
+		BoxIndexes = new List<int>();
+	}
+
+	public RollingCoverData(List<int> boxIndexes)
+	{
+		BoxIndexes = boxIndexes ?? new List<int>();
+	}
+}
+
+public class MapComponent
+{
+	public string Name;
+	public Vector3 Position;
+	public Vector3 Rotation;
+	public Vector3 Scale;
+
+	public MapComponent()
+	{
+	}
+
+	public MapComponent(string name, Vector3 position, Vector3 rotation, Vector3 scale)
+	{
+		Name = name;
+		Position = position;
+		Rotation = rotation;
+		Scale = scale;
+	}
+}
+
+public class SurpriseData
+{
+	public int SurpriseType;
+	public List<CubeData> NormalCubes;
+
+	public SurpriseData()
+	{
+	}
+
+	public SurpriseData(int surpriseType, List<CubeData> types)
+	{
+		SurpriseType = surpriseType;
+		NormalCubes = types;
 	}
 }
