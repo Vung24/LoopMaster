@@ -8980,8 +8980,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 7050881461847759852}
+  m_Children: []
   m_Father: {fileID: 224923531771568469}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -16823,6 +16822,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 7050881461847759852}
   - {fileID: 224675668060892757}
   - {fileID: 224777905221063181}
   - {fileID: 224874353372460655}
@@ -16919,8 +16919,10 @@ MonoBehaviour:
   _capacityFillRect: {fileID: 224926012157982776}
   PauseDialogPrefab: {fileID: 1626748018541719, guid: 8c9d5ee2ed065034095558432c36329a, type: 3}
   _safeArea: {fileID: 114620186440979738}
-  _top: {fileID: 0}
-  _bottom: {fileID: 0}
+  _top: {fileID: 224515223321708415}
+  _bottom: {fileID: 224874353372460655}
+  _topFlag: {fileID: 224237992966446003}
+  _bgGame: {fileID: 7050881461847759852}
 --- !u!111 &111378673778436874
 Animation:
   m_ObjectHideFlags: 0
@@ -17813,7 +17815,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &7050881461847759852
 RectTransform:
   m_ObjectHideFlags: 0
@@ -17826,7 +17828,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 224675668060892757}
+  m_Father: {fileID: 224923531771568469}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -17855,7 +17857,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
