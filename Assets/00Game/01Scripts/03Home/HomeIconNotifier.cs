@@ -34,6 +34,10 @@ public class HomeIconNotifier : MonoBehaviour
 		{
 			prefab = Resources.Load<GameObject>("UI/Common/HomeIconNotifier");
 		}
+		if (prefab == null)
+		{
+			prefab = Snui.DataPrefabLibrary.Current?.HomeIconNotifierPrefab;
+		}
 		if (prefab != null)
 		{
 			GameObject go = Instantiate(prefab, parent);

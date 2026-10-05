@@ -23,6 +23,10 @@ namespace Snui
 			{
 				prefab = Resources.Load<GameObject>("UI/Common/HomeIconProgress");
 			}
+			if (prefab == null)
+			{
+				prefab = DataPrefabLibrary.Current?.HomeIconProgressPrefab;
+			}
 			if (prefab != null)
 			{
 				GameObject go = Instantiate(prefab, parent);

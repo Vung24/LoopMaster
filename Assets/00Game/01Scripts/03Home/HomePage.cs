@@ -78,7 +78,7 @@ public class HomePage : MonoBehaviour
 
 		if (_topNode == null)
 		{
-			var topTrans = transform.Find("TopNode");
+			var topTrans = HierarchyReferenceCache.Child(transform, "TopNode");
 			if (topTrans != null)
 			{
 				_topNode = topTrans as RectTransform;
