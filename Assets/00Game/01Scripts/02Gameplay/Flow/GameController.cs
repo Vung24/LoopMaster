@@ -119,8 +119,19 @@ public class GameController : MonoBehaviour
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
 		this, Scene.Boxes, () => _isGameStart, () => Conveyor.LaunchTickCount,
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver));
-	private Camera _mainCamera;
-	private Camera _topCamera;
+	[SerializeField] private Camera _mainCamera;
+	[SerializeField] private Camera _topCamera;
+	[SerializeField] private Camera _uiCamera;
+	[SerializeField] private Camera _backgroundCamera;
+	[SerializeField] private Canvas _backgroundCanvas;
+	[SerializeField] private GameBg _gameBg;
+
+	public Camera MainCamera => _mainCamera;
+	public Camera TopCamera => _topCamera;
+	public Camera UICamera => _uiCamera;
+	public Camera BackgroundCamera => _backgroundCamera;
+	public Canvas BackgroundCanvas => _backgroundCanvas;
+	public GameBg GameBg => _gameBg;
 	private Bounds _cameraBounds;
 	private Rect _cameraViewport;
 	private Rect _cameraPixels;
@@ -250,12 +261,7 @@ public class GameController : MonoBehaviour
 
 	private void ResolveGameplayCameras()
 	{
-		foreach (Camera camera in Camera.allCameras)
-		{
-			if (camera.gameObject.scene != gameObject.scene) continue;
-			if (camera.name == "MainCamera") _mainCamera = camera;
-			else if (camera.name == "TopCamera") _topCamera = camera;
-		}
+		if (_mainCamera != null && _topCamera != null) return;
 		if (_mainCamera == null) _mainCamera = Camera.main;
 	}
 
