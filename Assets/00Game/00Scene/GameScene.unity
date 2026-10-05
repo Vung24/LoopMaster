@@ -1522,10 +1522,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 076827098a907c9c7d689332b4ff5949, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _conveyorTickInterval: 0.04
-  _sliceSpacingScale: 1
   _sliceJumpDuration: 0.4
   _sliceJumpHeight: 2.2
+  _conveyorTickInterval: 0.04
+  _sliceSpacingScale: 1
   UICanvasObjAsset: {fileID: 1915427651029304, guid: 2a8836ea46b50d240ab2fbbb36ad1579, type: 3}
   UICanvasLightObjAsset: {fileID: 0}
   WinDialogPrefab: {fileID: 1450643107258045, guid: ff436616c89c0e74fae0e09d54fde247, type: 3}
@@ -1536,6 +1536,13 @@ MonoBehaviour:
   IsGameFailed: 0
   GameRoot: {fileID: 30}
   ComboInCount: 0
+  _mainCamera: {fileID: 46}
+  _topCamera: {fileID: 47}
+  _uiCamera: {fileID: 45}
+  _backgroundCamera: {fileID: 0}
+  _backgroundCanvas: {fileID: 0}
+  _gameBg: {fileID: 68}
+  _enableSpeedUpTutorial: 1
 --- !u!114 &66
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1671,6 +1678,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_SendPointerHoverToParent: 1
+  m_HorizontalAxis: Horizontal
+  m_VerticalAxis: Vertical
+  m_SubmitButton: Submit
+  m_CancelButton: Cancel
+  m_InputActionsPerSecond: 10
+  m_RepeatDelay: 0.5
+  m_ForceModuleActive: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
