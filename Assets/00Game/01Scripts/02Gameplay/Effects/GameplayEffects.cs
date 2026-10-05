@@ -4,6 +4,21 @@ using UnityEngine;
 /// <summary>Plays authored effects and removes their complete hierarchy after playback.</summary>
 public static class GameplayEffects
 {
+	public static void PlaySlicePopIn(GameObject effect, Color color)
+	{
+		if (effect == null) return;
+		// Stop autoplay before tinting: the secondary Splash keeps its authored color.
+		foreach (ParticleSystem particle in effect.GetComponentsInChildren<ParticleSystem>(true))
+			particle.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+		ParticleSystem primary = effect.GetComponent<ParticleSystem>();
+		if (primary != null)
+		{
+			var main = primary.main;
+			main.startColor = color;
+		}
+		PlayParticles(effect);
+	}
+
     public static void PlayParticles(GameObject effect, Color? tint = null)
     {
         if (effect == null) return;
@@ -15,7 +30,7 @@ public static class GameplayEffects
             main.loop = false;
             if (tint.HasValue) main.startColor = tint.Value;
             lifetime = Mathf.Max(lifetime, main.startDelay.constantMax + main.duration + main.startLifetime.constantMax);
-            if (particle.gameObject.activeInHierarchy) particle.Play();
+            if (particle.gameObject.activeInHierarchy) particle.Play(false);
         }
         foreach (Animation animation in effect.GetComponentsInChildren<Animation>())
         {

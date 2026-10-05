@@ -85,7 +85,6 @@ public class Slice : MonoBehaviour
 			duration, () =>
 			{
 				landed?.Invoke();
-				if (box != null && _info != null) box.PlayCubeAddEffect(GameAssetsConfig.GetCubeColor(_info.Type));
 				Dismiss();
 			}, jumpHeight, Ease.OutQuad);
 		return default;

@@ -105,7 +105,7 @@ public sealed class SliceTransferFlow
 		box.Info.State = BoxState.OnPush;
 		box.OnPushSliceCount++;
 		_data.UndoData.UpdateUndoBox(slice.Info, box.Info);
-		Cube destination = box.ReserveIncomingSlice(slice.Info.Type);
+		Cube destination = box.ReserveIncomingSlice(slice.Info.Type, out bool mergedWithTopCube);
 		if (destination == null)
 		{
 			box.OnPushSliceCount = Mathf.Max(0, box.OnPushSliceCount - 1);
@@ -114,6 +114,9 @@ public sealed class SliceTransferFlow
 			return;
 		}
 		_data.RemoveTransferSlice(slice.Info);
+		// Native JumpSliceToBox emits before flight only when PushSlice succeeds.
+		// Creating the first slice of a new cube follows a separate, quiet branch.
+		if (mergedWithTopCube) box.PlayCubeAddEffect(GameAssetsConfig.GetCubeColor(slice.Info.Type));
 		int version = _version;
 		slice.JumpToBox(box, jumpDuration, () => FinishJumpSliceToBox(box, destination, version), jumpHeight);
 		return;
