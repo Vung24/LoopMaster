@@ -5,10 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-/// <summary>
-/// Bounded, incremental search on detached board states. The returned actions are
-/// box clicks, never direct changes to the live board or calls to CheatWin.
-/// </summary>
 public sealed class DebugLevelSolver
 {
     public sealed class Step

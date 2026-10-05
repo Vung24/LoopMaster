@@ -158,6 +158,7 @@ public sealed class SliceTransferFlow
 
 	public void Launch(Box box, float jumpDuration, float jumpHeight)
 	{
+		if (box == null || box.Info == null || box.Info.State != BoxState.Free || !box.CanPopupSlice()) return;
 		if (!_isGameRunning() || box == null || box.Info == null || _data == null || !_data.CanCubeJumpToTransfer())
 		{
 			if (box != null) box.PlayClickedAnim(false);

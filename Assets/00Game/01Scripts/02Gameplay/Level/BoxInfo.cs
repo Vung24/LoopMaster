@@ -199,7 +199,7 @@ public class BoxInfo
 			top.NumLock <= 0 && top.Type == type;
 	}
 
-	public bool CanPopup() => !CheckLimitedColorPopup() && !IsEnterOnly && !HasBlockingLock();
+	public bool CanPopup() => !IsFinished() && !CheckLimitedColorPopup() && !IsEnterOnly && !HasBlockingLock();
 
 	public bool IsSliceCanJumpIn(SliceInfo slice)
 	{
