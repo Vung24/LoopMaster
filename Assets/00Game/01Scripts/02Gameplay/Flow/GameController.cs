@@ -120,6 +120,13 @@ public class GameController : MonoBehaviour
 		this, Scene.Boxes, () => _isGameStart, () => Conveyor.LaunchTickCount,
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver));
 	private Camera _mainCamera;
+	private Camera _topCamera;
+	private Bounds _cameraBounds;
+	private Rect _cameraViewport;
+	private Rect _cameraPixels;
+	private float _cameraAspect;
+	private bool _cameraLayoutReady;
+	private bool _cameraLayoutPending;
 	private GameObject _uiCanvasInstance;
 	private NewPlayerTutorial _newPlayerTutorial;
 	private FeatureUnlockDialog _featureUnlockDialog;
@@ -141,7 +148,7 @@ public class GameController : MonoBehaviour
 		BuiltinPuzzleLoader puzzleLoader = GetComponent<BuiltinPuzzleLoader>();
 		if (puzzleLoader == null) puzzleLoader = gameObject.AddComponent<BuiltinPuzzleLoader>();
 		_levelFlow = new GameLevelFlow(this, puzzleLoader);
-		_mainCamera = Camera.main;
+		ResolveGameplayCameras();
 		if (GameRoot == null)
 		{
 			GameObject root = new GameObject("RuntimeGameRoot");
@@ -217,6 +224,11 @@ public class GameController : MonoBehaviour
 		_gameLoader.LoadAssetsAsync(data);
 		ClearRuntimeObjects();
 		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
+		_cameraLayoutReady = GameplayCameraLayout.TryGetBounds(GameRoot, out _cameraBounds);
+		if (!_cameraLayoutReady) _cameraBounds = GameplayCameraLayout.FallbackBounds(Data, GameRoot);
+		_cameraLayoutReady = true;
+		_cameraLayoutPending = true;
+		UpdateCamera();
 		_isGameStart = Data.PathPoints.Count > 1;
 		IsGameOver = false;
 		IsGameFailed = false;
@@ -234,6 +246,43 @@ public class GameController : MonoBehaviour
 		GameplayFeedbackRules.AdvanceCombo(ref ComboInCount, ref _comboTime, delta);
 		Conveyor.Tick(delta, GetTickInterval(false), GetTickInterval(true));
 		HandleTouchEvent();
+	}
+
+	private void ResolveGameplayCameras()
+	{
+		foreach (Camera camera in Camera.allCameras)
+		{
+			if (camera.gameObject.scene != gameObject.scene) continue;
+			if (camera.name == "MainCamera") _mainCamera = camera;
+			else if (camera.name == "TopCamera") _topCamera = camera;
+		}
+		if (_mainCamera == null) _mainCamera = Camera.main;
+	}
+
+	private void LateUpdate()
+	{
+		// Framing also refreshes during pause/intro and device orientation changes.
+		if (!_cameraLayoutReady || Data == null) return;
+		UpdateCamera();
+	}
+
+	public void UpdateCamera()
+	{
+		if (!_cameraLayoutReady || Data == null) return;
+		if (_mainCamera == null) ResolveGameplayCameras();
+		if (_mainCamera == null || !_mainCamera.orthographic) return;
+		if (_cameraLayoutPending) Canvas.ForceUpdateCanvases();
+		UICanvas ui = _uiCanvasInstance == null ? null : _uiCanvasInstance.GetComponent<UICanvas>();
+		Rect pixels = _mainCamera.pixelRect;
+		Rect viewport = ui == null ? GameplayCameraLayout.Viewport(pixels, Screen.safeArea, 0, 0)
+			: ui.GetGameplayViewport(_mainCamera);
+		if (!_cameraLayoutPending && pixels == _cameraPixels && viewport == _cameraViewport &&
+			Mathf.Approximately(_cameraAspect, _mainCamera.aspect)) return;
+		GameplayCameraLayout.Fit(_mainCamera, _topCamera, _cameraBounds, viewport, CurrentLevelNumber);
+		_cameraViewport = viewport;
+		_cameraPixels = pixels;
+		_cameraAspect = _mainCamera.aspect;
+		_cameraLayoutPending = false;
 	}
 
 	private void RefreshPathState()
@@ -896,7 +945,7 @@ public class GameController : MonoBehaviour
 		if (_mainCamera == null) return;
 		Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
 		RaycastHit hit;
-		if (Physics.Raycast(ray, out hit, 100f)) OnClickBox(hit.collider.GetComponent<Box>());
+		if (Physics.Raycast(ray, out hit, _mainCamera.farClipPlane)) OnClickBox(hit.collider.GetComponent<Box>());
 	}
 
 	private int WrapPathIndex(int index)
