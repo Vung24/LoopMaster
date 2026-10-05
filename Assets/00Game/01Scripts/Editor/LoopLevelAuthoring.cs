@@ -88,6 +88,126 @@ public static class LoopLevelAuthoring
         return new JObject { ["IsCircle"] = 1, ["ControlPoints"] = points };
     }
 
+    public static JObject RoadFromPositions(IReadOnlyList<Vector3> positions, bool closed, float smoothing)
+    {
+        var points = new JArray();
+        foreach (Vector3 position in positions)
+        {
+            if (points.Count > 0 && (Vector((JObject)points[points.Count - 1], "Position") - position).sqrMagnitude < .000001f) continue;
+            points.Add(Point(position, position, position));
+        }
+        if (closed && points.Count > 1 && (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f)
+            points.RemoveAt(points.Count - 1);
+        if (points.Count < (closed ? 3 : 2)) throw new FormatException(closed ? "A loop needs at least three distinct points." : "A road needs at least two distinct points.");
+        if (points.Count > (closed ? 127 : 128)) throw new FormatException("A road may have at most 128 control points, including its closing point.");
+        var path = new JObject { ["IsCircle"] = closed ? 1 : 0, ["ControlPoints"] = points };
+        SmoothRoad(path, smoothing);
+        return path;
+    }
+
+    /// <summary>Generate aligned, bounded handles from anchor positions; preserve custom JSON fields.</summary>
+    public static void SmoothRoad(JObject path, float smoothing)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count < 2) return;
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        bool closed = Int(path, "IsCircle") > 0 || repeated;
+        if (closed && !repeated)
+        {
+            if (points.Count >= 128) throw new FormatException("Remove a point before closing this road (128 point limit).");
+            points.Add(points[0].DeepClone());
+        }
+        int count = points.Count - (closed ? 1 : 0);
+        float factor = Mathf.Clamp01(smoothing) / 3f;
+        for (int i = 0; i < count; i++)
+        {
+            JObject point = (JObject)points[i]; Vector3 current = Vector(point, "Position");
+            Vector3 previous = Vector((JObject)points[closed ? (i + count - 1) % count : Math.Max(0, i - 1)], "Position");
+            Vector3 next = Vector((JObject)points[closed ? (i + 1) % count : Math.Min(count - 1, i + 1)], "Position");
+            float before = Vector3.Distance(previous, current), after = Vector3.Distance(current, next);
+            Vector3 direction = ((current - previous).normalized + (next - current).normalized).normalized;
+            float length = !closed && i == 0 ? after : !closed && i == count - 1 ? before : Mathf.Min(before, after);
+            Vector3 handle = direction * length * factor;
+            point["InTangent"] = Vector(current - handle); point["OutTangent"] = Vector(current + handle);
+        }
+        if (closed)
+        {
+            var seam = (JObject)points[points.Count - 1]; var first = (JObject)points[0];
+            foreach (string key in new[] { "Position", "InTangent", "OutTangent" }) seam[key] = first[key].DeepClone();
+        }
+    }
+
+    public static bool RemoveRoadPoint(JObject path, int index)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (index < 0 || index >= points.Count || points.Count < 2) return false;
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        bool closed = Int(path, "IsCircle") > 0 || repeated;
+        int anchors = points.Count - (repeated ? 1 : 0);
+        if (anchors <= (closed ? 3 : 2)) return false;
+        JObject seam = repeated ? (JObject)points[points.Count - 1].DeepClone() : null;
+        if (repeated)
+        {
+            if (index == points.Count - 1) index = 0;
+            points.RemoveAt(points.Count - 1);
+        }
+        points.RemoveAt(index);
+        if (closed)
+        {
+            JObject first = (JObject)points[0];
+            if (seam == null) seam = (JObject)first.DeepClone();
+            foreach (string key in new[] { "Position", "InTangent", "OutTangent" }) seam[key] = first[key].DeepClone();
+            points.Add(seam);
+        }
+        return true;
+    }
+
+    public static JObject OvalRoad(Vector3 center, float width, float depth)
+    {
+        CheckRoadSize(width, depth);
+        JObject path = CirclePath(1f);
+        foreach (JObject point in Array(path, "ControlPoints"))
+            foreach (string key in new[] { "Position", "InTangent", "OutTangent" })
+            {
+                Vector3 p = Vector(point, key);
+                point[key] = Vector(center + new Vector3(p.x * width * .5f, 0, p.z * depth * .5f));
+            }
+        return path;
+    }
+
+    public static JObject RoundedRectangleRoad(Vector3 center, float width, float depth, float radius)
+    {
+        CheckRoadSize(width, depth);
+        float x = width * .5f, z = depth * .5f;
+        radius = Mathf.Clamp(radius, 0, Mathf.Min(x, z) * .999f);
+        if (radius < .0001f)
+            return RoadFromPositions(new[] { center + new Vector3(-x, 0, -z), center + new Vector3(-x, 0, z),
+                center + new Vector3(x, 0, z), center + new Vector3(x, 0, -z) }, true, 0);
+        var positions = new[] { new Vector3(-x, 0, -z + radius), new Vector3(-x, 0, z - radius),
+            new Vector3(-x + radius, 0, z), new Vector3(x - radius, 0, z),
+            new Vector3(x, 0, z - radius), new Vector3(x, 0, -z + radius),
+            new Vector3(x - radius, 0, -z), new Vector3(-x + radius, 0, -z) };
+        var directions = new[] { Vector3.forward, Vector3.forward, Vector3.right, Vector3.right,
+            Vector3.back, Vector3.back, Vector3.left, Vector3.left };
+        var points = new JArray();
+        float arcHandle = radius * .55228475f;
+        for (int i = 0; i < positions.Length; i++)
+        {
+            int previous = (i + positions.Length - 1) % positions.Length, next = (i + 1) % positions.Length;
+            float incoming = i % 2 == 0 ? arcHandle : Vector3.Distance(positions[i], positions[previous]) / 3f;
+            float outgoing = i % 2 == 0 ? Vector3.Distance(positions[i], positions[next]) / 3f : arcHandle;
+            Vector3 p = center + positions[i];
+            points.Add(Point(p, p - directions[i] * incoming, p + directions[i] * outgoing));
+        }
+        points.Add(points[0].DeepClone());
+        return new JObject { ["IsCircle"] = 1, ["ControlPoints"] = points };
+    }
+    private static void CheckRoadSize(float width, float depth)
+    {
+        if (float.IsNaN(width) || float.IsInfinity(width) || float.IsNaN(depth) || float.IsInfinity(depth) || width <= 0 || depth <= 0)
+            throw new FormatException("Road width and depth must be positive, finite numbers.");
+    }
+
     public static void MovePoint(JArray points, int index, Vector3 position)
     {
         var point = (JObject)points[index];
