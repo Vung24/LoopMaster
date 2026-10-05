@@ -41,4 +41,6 @@ public class TimeFormatter
 		}
 		return $"{span.Minutes:D2}:{span.Seconds:D2}";
 	}
+
+	public static string FormatSeconds(long seconds) => FormatTimeLeftWithoutI18n(seconds);
 }
