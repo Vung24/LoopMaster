@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using A = LoopLevelAuthoring;
 
-public sealed class LoopLevelEditorWindow : EditorWindow
+public sealed partial class LoopLevelEditorWindow : EditorWindow
 {
     [SerializeField] private LoopLevelDocument _document;
     [SerializeField] private string _filePath, _savedJson, _diskText;
@@ -66,13 +66,19 @@ public sealed class LoopLevelEditorWindow : EditorWindow
         }
         Undo.undoRedoPerformed += OnUndoRedo;
         SceneView.duringSceneGui += DuringSceneGUI;
+        EditorApplication.update += UpdateGeneration;
+        RestoreGeneratedResult();
         SyncDirty();
     }
     private void OnDisable()
     {
+        CaptureGeneratedResult();
         CancelRoadSketch();
+        StopGeneration();
+        _generatorPreview?.Dispose(); _generatorPreview = null; _generatedPreviewJson = null;
         Undo.undoRedoPerformed -= OnUndoRedo;
         SceneView.duringSceneGui -= DuringSceneGUI;
+        EditorApplication.update -= UpdateGeneration;
         _roadPreview?.Dispose(); _roadPreview = null;
         _cachedJson = null; _root = null; _roadLines.Clear();
         SceneView.RepaintAll();
@@ -124,6 +130,13 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     }
     private void Commit(JObject root, string action = "Edit level")
     {
+        // A stored plan describes the generated layout. Manual geometry / puzzle edits invalidate it.
+        if (root["editor_generator"] is JObject metadata && metadata.Value<bool?>("verified") == true)
+        {
+            JObject before = A.Parse(_document.Json);
+            if (JToken.DeepEquals(before["editor_generator"], metadata) && !JToken.DeepEquals(A.Layout(before), A.Layout(root)))
+            { metadata["verified"] = false; metadata.Remove("solution_clicks"); }
+        }
         string json = root.ToString(Formatting.Indented);
         if (json == _document.Json) return;
         Undo.RecordObject(_document, action); _document.Json = json;
@@ -255,12 +268,19 @@ public sealed class LoopLevelEditorWindow : EditorWindow
             _showBindings = EditorGUILayout.ToggleLeft("Box bindings", _showBindings, GUILayout.Width(105));
             if (GUILayout.Button("Frame / Top", GUILayout.Width(95))) Frame();
         }
-        _tab = GUILayout.Toolbar(_tab, Tabs);
+        _editorMode = GUILayout.Toolbar(_editorMode, new[] { "Manual editor", "Auto Generate" });
+        if (_editorMode == 0)
+        {
+            using (new EditorGUI.DisabledScope(HasRawChanges || _drawingRoad || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
+                if (GUILayout.Button("▶ Play draft in Game View")) PlayInGameView(Root());
+            _tab = GUILayout.Toolbar(_tab, Tabs);
+        }
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
         try
         {
             JObject root = Root(), layout = A.Layout(root);
-            if (_tab == 5) DrawJson();
+            if (_editorMode == 1) DrawAutoGenerator();
+            else if (_tab == 5) DrawJson();
             else if (HasRawChanges)
                 EditorGUILayout.HelpBox("There are unapplied JSON edits. Apply or reset them on the JSON tab before using the inspector.", MessageType.Warning);
             else
@@ -286,6 +306,7 @@ public sealed class LoopLevelEditorWindow : EditorWindow
             foreach (string warning in _warnings) EditorGUILayout.HelpBox(warning, MessageType.Warning);
         }
         if (!string.IsNullOrEmpty(_status)) EditorGUILayout.HelpBox(_status, MessageType.Info);
+        if (!string.IsNullOrEmpty(LoopLevelPlaytest.Status)) EditorGUILayout.HelpBox(LoopLevelPlaytest.Status, MessageType.Info);
         EditorGUILayout.EndScrollView(); SyncDirty();
         if (GUI.changed) { Repaint(); SceneView.RepaintAll(); }
     }
@@ -294,6 +315,11 @@ public sealed class LoopLevelEditorWindow : EditorWindow
         Event e = Event.current;
         if (e.type != EventType.KeyDown || !(e.control || e.command) || e.keyCode != KeyCode.S) return;
         TrySave(e.shift); e.Use();
+    }
+    private void PlayInGameView(JObject level)
+    {
+        _status = LoopLevelPlaytest.Play(level, out string error) ? null : error;
+        Repaint();
     }
     private void DrawLevel(JObject root, JObject layout)
     {
@@ -307,17 +333,16 @@ public sealed class LoopLevelEditorWindow : EditorWindow
         EditorGUILayout.HelpBox("PathLength is road capacity in groups, not the Bézier length. Color IDs and box indices follow the game's JSON format.", MessageType.None);
         EditorGUILayout.LabelField("Content", A.Array(layout, "Boxes").Count + " boxes · " + A.Array(layout, "Paths").Count + " paths · " + _slots.Count + " conveyor slots");
         if (GUILayout.Button("Validate draft")) { _errors = A.Validate(root, out _warnings); _hasValidation = true; _status = _errors.Count == 0 ? "Structural validation passed." : _errors.Count + " error(s)."; }
+        using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || _drawingRoad || A.Array(layout, "Boxes").Count == 0))
+            if (GUILayout.Button("Arrange boxes and fit road"))
+            {
+                LoopLevelBoardLayout.Arrange(layout, _generatorSettings ?? new LoopLevelGeneratorSettings(), A.Int(root, "puzzle_id"));
+                _status = "Boxes arranged with full footprints; road and bindings fitted. Cube contents and box indices are preserved. Undo restores the previous board.";
+            }
         if (GUILayout.Button("Rebind all boxes to nearest slots"))
             foreach (JObject box in A.Array(layout, "Boxes")) box["PathIndexV2"] = A.NearestSlot(box, _slots);
         EditorGUILayout.Space(); Header("Playtest");
-        EditorGUILayout.HelpBox("Open GameScene and enter Play Mode, then send this draft to the active controller. Winning records normal progress; use a test level number when needed.", MessageType.None);
-        using (new EditorGUI.DisabledScope(!EditorApplication.isPlaying || GameController.Current == null))
-            if (GUILayout.Button("Play draft on current GameController"))
-            {
-                var errors = A.Validate(root, out _);
-                if (errors.Count > 0) { _errors = errors; _hasValidation = true; _status = "Fix validation errors before playtesting."; }
-                else { GameController.Current.Initialize(GameLevelDataConverter.FromJson(root.ToString(Formatting.None))); DebugLevelWindow.Open(); _status = "Draft sent to gameplay."; }
-            }
+        EditorGUILayout.HelpBox("Play draft in Game View starts gameplay with this unsaved draft. Stop Play Mode to return to editing. Winning records normal progress; use a test level number when needed.", MessageType.None);
     }
     private void DrawBoxes(JObject root, JObject layout)
     {
@@ -714,9 +739,11 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     {
         try
         {
-            JObject layout = A.Layout(Root()); var bounds = new Bounds(Vector3.zero, Vector3.one * 8);
+            JObject layout = _editorMode == 1 && _generationJob?.Candidate != null ? A.Layout(_generationJob.Candidate.Json) : A.Layout(Root());
+            var bounds = new Bounds(Vector3.zero, Vector3.one * 8);
             foreach (JObject box in A.Array(layout, "Boxes")) bounds.Encapsulate(A.Vector(box, "Position"));
-            foreach (Vector3[] road in _roadLines) foreach (Vector3 point in road) bounds.Encapsulate(point);
+            if (_editorMode == 1 && _generationJob?.Candidate != null) { EnsureGeneratedPreview(); bounds.Encapsulate(_generatorPreview.BoundsFor(0, true)); }
+            else foreach (Vector3[] road in _roadLines) foreach (Vector3 point in road) bounds.Encapsulate(point);
             var view = SceneView.lastActiveSceneView ?? GetWindow<SceneView>();
             view.LookAt(bounds.center, Quaternion.LookRotation(Vector3.down, Vector3.forward), Mathf.Max(bounds.size.x, bounds.size.z) * 0.65f + 2, true);
             view.Repaint();
@@ -730,6 +757,7 @@ public sealed class LoopLevelEditorWindow : EditorWindow
         if (!_scenePreview || _document == null || EditorApplication.isPlaying || HasRawChanges) return;
         try
         {
+            if (_editorMode == 1) { DrawGeneratedScene(); return; }
             JObject root = Root(), layout = A.Layout(root);
             Event e = Event.current;
             if (_drawingRoad && _tab == 2)
@@ -775,37 +803,49 @@ public sealed class LoopLevelEditorWindow : EditorWindow
             Handles.DrawAAPolyLine(3f, line.Select(p => p + Vector3.up * .12f).ToArray());
         }
     }
-    private void DrawBoxPreview(JObject layout)
+    private void DrawBoxPreview(JObject layout, bool interactive = true, List<Vector3> previewSlots = null)
     {
         JArray boxes = A.Array(layout, "Boxes");
         for (int i = 0; i < boxes.Count; i++)
         {
             JObject box = (JObject)boxes[i]; Vector3 position = A.Vector(box, "Position"); Quaternion rotation = Quaternion.Euler(A.Vector(box, "Rotation"));
             int type = A.Int(box, "BoxType"), capacity = type == 2 ? 6 : 4;
-            Vector3 size = type == 1 ? new Vector3(.8f,.5f,.8f) : new Vector3(type == 2 ? 2.3f : 1.6f,.5f,1.6f);
+            if (type == 1) rotation = Quaternion.identity; // Single ignores Rotation at runtime.
+            Bounds footprint = LoopLevelBoardLayout.LocalBounds(type);
             using (new Handles.DrawingScope(Matrix4x4.TRS(position, rotation, Vector3.one)))
             {
-                Handles.color = _tab == 1 && _box == i ? Color.yellow : Color.white;
-                Handles.DrawWireCube(Vector3.up * .25f, size);
-                JArray cubes = A.Array(box, "Cubes"); int columns = type == 1 ? 1 : type == 2 ? 3 : 2;
-                for (int c = 0; c < cubes.Count; c++)
+                Handles.color = interactive && _tab == 1 && _box == i ? Color.yellow : Color.white;
+                Handles.DrawWireCube(footprint.center, footprint.size);
+                JArray cubes = A.Array(box, "Cubes");
+                int visible = type == 1 ? Math.Min(1, cubes.Count) : cubes.Count;
+                for (int c = 0; c < visible; c++)
                 {
-                    Vector3 cubePos = type == 1 ? new Vector3(0, .5f + c * .65f, 0) :
-                        new Vector3((c % columns - (columns - 1) * .5f) * .7f, .5f, (c / columns - (capacity / columns - 1) * .5f) * .7f);
-                    Handles.color = A.ColorFor(A.Int((JObject)cubes[c], "Type"));
-                    Handles.CubeHandleCap(0, cubePos, Quaternion.identity, .58f, EventType.Repaint);
+                    JObject cube = (JObject)cubes[type == 1 ? cubes.Count - 1 : c];
+                    Vector3 cubePos = type == 1 ? new Vector3(0, 1.12f, 0) :
+                        new Vector3(0, .8f, (type == 2 ? -2.8f : -1.2f) + c * .8f);
+                    bool hidden = A.Int(cube, "IsSecret") > 0;
+                    Handles.color = hidden ? Color.gray : A.ColorFor(A.Int(cube, "Type"));
+                    Handles.CubeHandleCap(0, cubePos, Quaternion.identity, .72f, EventType.Repaint);
+                    if (hidden) Handles.Label(cubePos + Vector3.up * .35f, "?");
+                    if (A.Int(cube, "GroupKeyId") > 0) Handles.Label(cubePos + Vector3.up * .35f, "Key " + A.Int(cube, "GroupKeyId"));
                 }
+                if (type == 1) Handles.Label(Vector3.up * 1.6f, "Queue: " + cubes.Count);
+                else { Handles.color = Color.cyan; Handles.DrawAAPolyLine(2, new Vector3(0,.35f,1.8f), new Vector3(0,.35f,2.5f)); }
             }
-            Handles.color = _box == i && _tab == 1 ? Color.yellow : Color.white;
-            if (Handles.Button(position + Vector3.up * .75f, rotation, .16f, .2f, Handles.SphereHandleCap)) { _box = i; _tab = 1; Repaint(); }
-            Handles.Label(position + Vector3.up * 1.1f, "Box " + i);
-            if (_showBindings && _slots.Count > 0)
+            Handles.color = interactive && _box == i && _tab == 1 ? Color.yellow : Color.white;
+            if (interactive && Handles.Button(position + Vector3.up * .75f, rotation, .16f, .2f, Handles.SphereHandleCap)) { _box = i; _tab = 1; Repaint(); }
+            string label = "Box " + i;
+            if (A.Int(box, "LockColor") > 0) label += " · color lock " + A.Int(box, "LockColor");
+            if (A.Int(box, "NumLock") > 0) label += " · number lock " + A.Int(box, "NumLock");
+            Handles.Label(position + Vector3.up * 1.1f, label);
+            List<Vector3> slots = previewSlots ?? _slots;
+            if (_showBindings && slots.Count > 0)
             {
-                int slot = A.Int(box, "PathIndexV2"); if (slot < 1) slot = A.NearestSlot(box, _slots);
-                if (slot <= _slots.Count && slot > 0)
+                int slot = A.Int(box, "PathIndexV2"); if (slot < 1) slot = A.NearestSlot(box, slots);
+                if (slot <= slots.Count && slot > 0)
                 {
-                    Handles.color = new Color(1,.8f,.2f,.7f); Handles.DrawDottedLine(position, _slots[slot - 1], 4);
-                    if (_tab == 1 && _box == i) Handles.Label(_slots[slot - 1], "Binding " + slot);
+                    Handles.color = new Color(1,.8f,.2f,.7f); Handles.DrawDottedLine(position, slots[slot - 1], 4);
+                    if (interactive && _tab == 1 && _box == i) Handles.Label(slots[slot - 1], "Binding " + slot);
                 }
             }
         }

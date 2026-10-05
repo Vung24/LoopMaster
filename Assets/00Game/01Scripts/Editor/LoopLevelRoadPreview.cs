@@ -12,6 +12,7 @@ public sealed class LoopLevelRoadPreview : IDisposable
     public readonly List<Vector3[]> Lines = new List<Vector3[]>();
     private readonly List<GamePath> _paths = new List<GamePath>();
     private PreviewRenderUtility _renderer;
+    private bool _rendering;
     private Material _road, _wall;
     private string _pathJson;
 
@@ -122,6 +123,11 @@ public sealed class LoopLevelRoadPreview : IDisposable
 
     public void DrawInspector(Rect rect, int selected, bool all, int mode, Vector2 orbit, float zoom, int point)
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            GUI.Label(rect, "Playtest is in Game View. Stop Play Mode to edit the road preview.", EditorStyles.centeredGreyMiniLabel); return;
+        }
+        if (_rendering) return;
         if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
         {
             GUI.Label(rect, "Road preview requires a graphics device.", EditorStyles.centeredGreyMiniLabel); return;
@@ -137,15 +143,25 @@ public sealed class LoopLevelRoadPreview : IDisposable
         camera.transform.SetPositionAndRotation(bounds.center - rotation * Vector3.forward * radius * 4f, rotation);
         camera.nearClipPlane = .01f; camera.farClipPlane = radius * 10f;
         camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.11f, .13f, .17f);
-        _renderer.BeginPreview(rect, GUIStyle.none);
-        for (int i = 0; i < Meshes.Count; i++)
+        Texture texture = null;
+        _rendering = true;
+        bool began = false;
+        try
         {
-            if (mode == 2 || (!all && i != selected) || Meshes[i] == null) continue;
-            _renderer.DrawMesh(Meshes[i], Matrix4x4.identity, _road, 0);
-            _renderer.DrawMesh(Meshes[i], Matrix4x4.identity, _wall, 1);
+            _renderer.BeginPreview(rect, GUIStyle.none); began = true;
+            for (int i = 0; i < Meshes.Count; i++)
+            {
+                if (mode == 2 || (!all && i != selected) || Meshes[i] == null) continue;
+                _renderer.DrawMesh(Meshes[i], Matrix4x4.identity, _road, 0);
+                _renderer.DrawMesh(Meshes[i], Matrix4x4.identity, _wall, 1);
+            }
+            _renderer.Render();
         }
-        _renderer.Render();
-        Texture texture = _renderer.EndPreview();
+        finally
+        {
+            try { if (began) texture = _renderer.EndPreview(); }
+            finally { _rendering = false; }
+        }
         GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
         // Project handles over the image so points and tangent positions remain legible.
         GUI.BeginGroup(rect);

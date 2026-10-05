@@ -22,6 +22,11 @@ public class GameController : MonoBehaviour
 	[SerializeField, Min(0.02f)] private float _conveyorTickInterval = 0.04f;
 	[SerializeField, Range(0.4f, 1f)] private float _sliceSpacingScale = 1f;
 	public static GameController Current;
+#if UNITY_EDITOR
+	// The editor supplies a detached draft after the Play Mode domain reload.
+	public static System.Func<GameData> EditorPlaytestSource;
+	public void InitializeEditorPlaytest(GameData data) => Initialize(data, true);
+#endif
 	public GameData Data { get; private set; }
 	public GameObject UICanvasObjAsset;
 	public GameObject UICanvasLightObjAsset;
@@ -156,6 +161,10 @@ public class GameController : MonoBehaviour
 
 	private void Start()
 	{
+#if UNITY_EDITOR
+		GameData draft = EditorPlaytestSource?.Invoke();
+		if (draft != null) { InitializeEditorPlaytest(draft); return; }
+#endif
 		if (GameData.Current != null && !GameProgressStore.IsLevelCompleted(GameData.Current.GetPuzzleActualLevel())) Initialize(GameData.Current);
 		else
 		{
@@ -171,8 +180,13 @@ public class GameController : MonoBehaviour
 
 	public void Initialize(GameData data)
 	{
+		Initialize(data, false);
+	}
+
+	private void Initialize(GameData data, bool editorPlaytest)
+	{
 		if (data == null) return;
-		if (GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(Data); return; }
+		if (!editorPlaytest && GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(Data); return; }
 		GameData.SetCurrent(data);
 		CancelBuyToolDialog();
 		CancelLevelPresentation();
