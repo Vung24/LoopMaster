@@ -76,7 +76,6 @@ public class SlidingInput : MonoBehaviour
         float lineHeight = _oneLineHeight.GetValueOrDefault();
         _rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, lineHeight * Mathf.Max(1, _row));
         Vector2 position = _rect.anchoredPosition;
-        // Native shows three rows before sliding the remaining rows upward.
         position.y = _initialY + lineHeight * Mathf.Max(0, _row - 3);
         _rect.anchoredPosition = position;
     }
