@@ -301,7 +301,7 @@ public class Cube : MonoBehaviour
 		if (_info == null || _isDismissing || !_arrivals.Arrive()) return;
 		// Exclude every slice still flying from the visual target.
 		AnimateSize(GetTargetScale(), _box == null ? transform.position :
-			_box.GetCubePos(_info, visibleSize: VisibleSize), 0f, 0.04f, false, false);
+			_box.GetCubePos(_info, visibleSize: VisibleSize), 0f, 0.12f, false, false);
 	}
 	public void PlayDescAnim(float interval = 0.2f)
 	{
