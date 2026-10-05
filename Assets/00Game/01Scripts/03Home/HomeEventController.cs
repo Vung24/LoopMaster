@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Snui
 {
+	[RequireComponent(typeof(CanvasGroup))]
 	public class HomeEventController : MonoBehaviour
 	{
 		public static int ForceGuideCount;
@@ -26,6 +27,11 @@ namespace Snui
 		protected virtual void Awake()
 		{
 			ForceGuideCount = 0;
+			var cg = GetComponent<CanvasGroup>();
+			if (cg != null)
+			{
+				cg.alpha = 0f;
+			}
 		}
 
 		public void SetupSpecialProgress(Snui.SpecialCol.SpecialProgress specialProgress)
@@ -81,12 +87,18 @@ namespace Snui
 
 		public async UniTask PlayEnterAnimation(bool shouldWaitAnim = false)
 		{
+			var cg = GetComponent<CanvasGroup>();
+			if (cg != null)
+			{
+				cg.alpha = 1f;
+			}
+
 			List<UniTask> tasks = new List<UniTask>();
 			for (int i = 0; i < _eventWidgets.Count; i++)
 			{
 				if (_eventWidgets[i] != null)
 				{
-					tasks.Add(_eventWidgets[i].PlayEnterAnimation(i * 0.04f));
+					tasks.Add(_eventWidgets[i].PlayEnterAnimation(i * 0.04f, shouldWaitAnim));
 				}
 			}
 			if (shouldWaitAnim)
@@ -97,6 +109,12 @@ namespace Snui
 
 		public async UniTask PlayEnterAnimation<T>(float delay = 0.04f)
 		{
+			var cg = GetComponent<CanvasGroup>();
+			if (cg != null)
+			{
+				cg.alpha = 1f;
+			}
+
 			List<UniTask> tasks = new List<UniTask>();
 			int idx = 0;
 			foreach (var w in _eventWidgets)
@@ -127,17 +145,36 @@ namespace Snui
 
 		public async UniTask PlayUnlockAnimation()
 		{
-			await UniTask.CompletedTask;
+			if (_specialProgress != null)
+			{
+				await _specialProgress.ShowUnlockAnimation();
+			}
 		}
 
 		public async UniTask PlayAddAnimation()
 		{
-			await UniTask.CompletedTask;
+			var snapshot = new List<HomeEventBase>(_eventWidgets);
+			List<UniTask> tasks = new List<UniTask>();
+			foreach (var widget in snapshot)
+			{
+				if (widget != null)
+				{
+					tasks.Add(widget.PlayAddAnimation());
+				}
+			}
+			await UniTask.WhenAll(tasks);
 		}
 
 		public async UniTask ShowPopupDialog()
 		{
-			await UniTask.CompletedTask;
+			var snapshot = new List<HomeEventBase>(_eventWidgets);
+			foreach (var widget in snapshot)
+			{
+				if (widget != null && widget.gameObject.activeInHierarchy)
+				{
+					await widget.ShowPopupDialog();
+				}
+			}
 		}
 
 		public bool HasNonSkippableAnimation()
@@ -154,7 +191,8 @@ namespace Snui
 
 		public void CommitProgressBeforeEnterGame()
 		{
-			foreach (var w in _eventWidgets)
+			var snapshot = new List<HomeEventBase>(_eventWidgets);
+			foreach (var w in snapshot)
 			{
 				if (w != null)
 				{
@@ -167,9 +205,9 @@ namespace Snui
 		{
 			foreach (var w in _eventWidgets)
 			{
-				if (w != null)
+				if (w != null && w.PlayIdleAnimation())
 				{
-					await w.PlayIdleAnimation(interval);
+					await UniTask.WaitForSeconds(interval);
 				}
 			}
 		}
