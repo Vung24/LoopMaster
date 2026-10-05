@@ -18,6 +18,19 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     [SerializeField] private bool _scenePreview = true, _showSlots, _showBindings = true, _autoBind = true;
     [SerializeField] private float _snap = 0.25f;
     [SerializeField] private Vector2 _scroll;
+    [SerializeField] private int _roadPreviewMode;
+    [SerializeField] private bool _previewAllPaths;
+    [SerializeField] private Vector2 _previewOrbit = new Vector2(0, 90);
+    [SerializeField] private float _previewZoom = 1f;
+    [SerializeField] private int _roadPreset;
+    [SerializeField] private Vector3 _roadCenter = new Vector3(0, .2f, 0);
+    [SerializeField] private float _roadWidth = 8, _roadDepth = 8, _cornerRadius = 1, _roadSmoothing = .6f;
+    [SerializeField] private bool _sketchClosed = true, _sketchSmooth = true, _autoSmoothPoints, _showTangents, _showRoadPresets;
+    private bool _drawingRoad, _sketchCursorValid;
+    private Vector3 _sketchCursor;
+    private readonly List<Vector3> _sketchPoints = new List<Vector3>();
+    private LoopLevelRoadPreview _sketchPreview;
+    private LoopLevelRoadPreview _roadPreview;
     private JObject _root;
     private string _cachedJson, _status;
     private List<Vector3> _slots = new List<Vector3>();
@@ -57,8 +70,11 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     }
     private void OnDisable()
     {
+        CancelRoadSketch();
         Undo.undoRedoPerformed -= OnUndoRedo;
         SceneView.duringSceneGui -= DuringSceneGUI;
+        _roadPreview?.Dispose(); _roadPreview = null;
+        _cachedJson = null; _root = null; _roadLines.Clear();
         SceneView.RepaintAll();
     }
     private void OnDestroy()
@@ -67,6 +83,7 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     }
     private void OnUndoRedo()
     {
+        CancelRoadSketch();
         _cachedJson = null; _root = null; _rawText = _rawBase = null;
         _hasValidation = false; SyncDirty(); Repaint(); SceneView.RepaintAll();
     }
@@ -93,18 +110,16 @@ public sealed class LoopLevelEditorWindow : EditorWindow
         try
         {
             Puzzle puzzle = ExportedPuzzleJsonDecoder.Decode(_document.Json);
-            foreach (GamePath path in puzzle.Paths)
-            {
-                if (path.ControlPoints.Count < 2 || path.ControlPoints.Count > 128) continue;
-                int samples = path.ControlPoints.Count * 30;
-                var line = new Vector3[samples + 1 + (path.IsCircle > 0 ? 1 : 0)];
-                for (int i = 0; i <= samples; i++) line[i] = GameUtils.GetBezierPoint(path.ControlPoints, i / (float)samples);
-                if (path.IsCircle > 0) line[line.Length - 1] = line[0];
-                _roadLines.Add(line);
-            }
+            if (_roadPreview == null) _roadPreview = new LoopLevelRoadPreview();
+            _roadPreview.Update(A.Array(A.Layout(_root), "Paths").ToString(Formatting.None), puzzle);
+            _roadLines.AddRange(_roadPreview.Lines);
             _slots = A.Slots(_root);
         }
-        catch (Exception exception) { _status = "Preview: " + exception.Message; }
+        catch (Exception exception)
+        {
+            _roadPreview?.Dispose(); _roadPreview = null; _roadLines.Clear(); _slots.Clear();
+            _status = "Preview: " + exception.Message;
+        }
         return _root;
     }
     private void Commit(JObject root, string action = "Edit level")
@@ -117,6 +132,7 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     }
     private void SetDocument(JObject root, string path, string diskText)
     {
+        CancelRoadSketch();
         Undo.ClearUndo(_document);
         _document.Json = root.ToString(Formatting.Indented); _savedJson = _document.Json;
         _filePath = path; _diskText = diskText; _root = null; _cachedJson = null;
@@ -159,6 +175,7 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     }
     public bool TrySave(bool saveAs)
     {
+        if (_drawingRoad) { _status = "Finish or cancel the road sketch before saving."; Repaint(); return false; }
         try
         {
             if (!ApplyRaw()) return false;
@@ -360,45 +377,253 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     }
     private void DrawPaths(JObject layout)
     {
-        JArray paths = A.Array(layout, "Paths"); Header("Bézier paths");
-        using (new EditorGUILayout.HorizontalScope())
-        {
-            if (GUILayout.Button("Add rectangle")) { paths.Add(A.RectanglePath()); _path = paths.Count - 1; _point = 0; }
-            if (GUILayout.Button("Add circle")) { paths.Add(A.CirclePath()); _path = paths.Count - 1; _point = 0; }
-        }
+        JArray paths = A.Array(layout, "Paths");
+        DrawQuickRoadTools(paths);
+        if (_drawingRoad) return;
         if (paths.Count == 0) return;
         _path = Mathf.Clamp(_path, 0, paths.Count - 1);
         _path = EditorGUILayout.Popup("Selected path", _path, Enumerable.Range(0, paths.Count).Select(i => "Path " + i).ToArray());
+        DrawPathInspectorPreview();
         JObject path = (JObject)paths[_path]; Flag(path, "IsCircle", "Loop");
+        _autoSmoothPoints = EditorGUILayout.Toggle(new GUIContent("Auto-smooth moved points", "Recalculate tangents after moving, adding or deleting a point."), _autoSmoothPoints);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Smooth road")) A.SmoothRoad(path, _roadSmoothing);
+            if (GUILayout.Button("Straight road")) A.SmoothRoad(path, 0);
+        }
         if (GUILayout.Button("Delete selected path")) { paths.RemoveAt(_path); _point = -1; return; }
         JArray points = A.Array(path, "ControlPoints");
+        bool repeatedEnd = points.Count > 1 && (A.Vector((JObject)points[0], "Position") - A.Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
         for (int i = 0; i < points.Count; i++)
             if (GUILayout.Toggle(_point == i, "Point " + i + "    " + A.Vector((JObject)points[i], "Position").ToString("F2"), "Button")) _point = i;
         using (new EditorGUILayout.HorizontalScope())
         {
-            using (new EditorGUI.DisabledScope(points.Count >= 128))
+            using (new EditorGUI.DisabledScope(points.Count >= (A.Int(path, "IsCircle") > 0 && !repeatedEnd ? 127 : 128)))
                 if (GUILayout.Button("Append point"))
                 {
-                    Vector3 position = points.Count == 0 ? Vector3.zero : A.Vector((JObject)points[points.Count - 1], "Position") + Vector3.right * 2;
-                    points.Add(A.Point(position, position, position)); _point = points.Count - 1;
+                    int lastAnchor = points.Count - (repeatedEnd ? 2 : 1);
+                    Vector3 position = lastAnchor < 0 ? Vector3.zero : A.Vector((JObject)points[lastAnchor], "Position") + Vector3.right * 2;
+                    _point = points.Count - (repeatedEnd ? 1 : 0);
+                    points.Insert(_point, A.Point(position, position, position));
+                    if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
                 }
             using (new EditorGUI.DisabledScope(_point < 0 || _point >= points.Count - 1 || points.Count >= 128))
                 if (GUILayout.Button("Split segment after point")) _point = A.SplitSegment(points, _point);
         }
         if (_point < 0 || _point >= points.Count) return;
-        JObject point = (JObject)points[_point]; Header("Point " + _point + " — drag the point or its tangents in Scene View");
+        JObject point = (JObject)points[_point]; Header("Point " + _point + " — drag in Scene View");
         Vector3 positionBefore = A.Vector(point, "Position");
         Vector3 positionAfter = EditorGUILayout.Vector3Field("Position", positionBefore);
-        if (positionAfter != positionBefore) A.MovePoint(points, _point, positionAfter);
-        VectorField(point, "InTangent"); VectorField(point, "OutTangent");
+        if (positionAfter != positionBefore)
+        {
+            A.MovePoint(points, _point, positionAfter);
+            if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
+        }
+        _showTangents = EditorGUILayout.Foldout(_showTangents, "Advanced: edit tangents", true);
+        if (_showTangents) { VectorField(point, "InTangent"); VectorField(point, "OutTangent"); }
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Straight tangents")) point["InTangent"] = point["OutTangent"] = A.Vector(A.Vector(point, "Position"));
-            if (GUILayout.Button("Mirror outgoing → incoming")) point["InTangent"] = A.Vector(A.Vector(point, "Position") * 2 - A.Vector(point, "OutTangent"));
-            using (new EditorGUI.DisabledScope(points.Count <= 2))
-                if (GUILayout.Button("Delete point")) { points.RemoveAt(_point); _point = Math.Min(_point, points.Count - 1); }
+            if (_showTangents)
+            {
+                if (GUILayout.Button("Straight tangents")) point["InTangent"] = point["OutTangent"] = A.Vector(A.Vector(point, "Position"));
+                if (GUILayout.Button("Mirror outgoing → incoming")) point["InTangent"] = A.Vector(A.Vector(point, "Position") * 2 - A.Vector(point, "OutTangent"));
+            }
+            bool seam = points.Count > 1 && (A.Vector((JObject)points[0], "Position") - A.Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+            int anchors = points.Count - (seam ? 1 : 0);
+            using (new EditorGUI.DisabledScope(anchors <= (A.Int(path, "IsCircle") > 0 || seam ? 3 : 2)))
+                if (GUILayout.Button("Delete point"))
+                {
+                    A.RemoveRoadPoint(path, _point); _point = Math.Min(_point, points.Count - 1);
+                    if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
+                }
         }
-        EditorGUILayout.HelpBox("Tangents are absolute positions. Moving a point moves its tangents with it. A repeated first/last point keeps its seam connected. Split inserts a midpoint without changing the curve.", MessageType.None);
+        EditorGUILayout.HelpBox(_showTangents ? "Tangents are absolute positions. Moving a point moves its tangents with it. Split inserts a midpoint without changing the curve." :
+            "Drag points to shape the road. Auto-smooth moved points keeps bends smooth. Use Advanced only when you need to adjust an individual bend.", MessageType.None);
+    }
+    private void DrawQuickRoadTools(JArray paths)
+    {
+        Header("Build road — click points or use a shape");
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+            _sketchClosed = EditorGUILayout.Toggle("Closed loop", _sketchClosed);
+            _sketchSmooth = EditorGUILayout.Toggle("Smooth bends", _sketchSmooth);
+            if (_sketchSmooth) _roadSmoothing = EditorGUILayout.Slider("Smoothing", _roadSmoothing, 0, 1);
+            _roadCenter.y = EditorGUILayout.FloatField("Road height (Y)", _roadCenter.y);
+            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Grid snap (0 = off)", _snap));
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
+                if (!_drawingRoad && GUILayout.Button("Draw road in Scene View")) StartRoadSketch();
+            if (_drawingRoad)
+            {
+                EditorGUILayout.HelpBox("Click to place points. Enter / Finish creates the road; Backspace removes the last point; Esc cancels. A closed loop needs 3 points, an open road needs 2.", MessageType.Info);
+                EditorGUILayout.LabelField("Placed points", _sketchPoints.Count.ToString());
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.DisabledScope(!CanFinishSketch))
+                        if (GUILayout.Button("Finish road")) FinishRoadSketch();
+                    if (GUILayout.Button("Undo point")) RemoveSketchPoint();
+                    if (GUILayout.Button("Cancel")) CancelRoadSketch();
+                }
+                UpdateSketchPreview(false);
+                Rect rect = GUILayoutUtility.GetRect(100, 200, GUILayout.ExpandWidth(true));
+                if (Event.current.type == EventType.Repaint && _sketchPoints.Count >= 2)
+                    _sketchPreview?.DrawInspector(rect, 0, true, _roadPreviewMode, new Vector2(0, 90), 1, -1);
+            }
+            _showRoadPresets = EditorGUILayout.Foldout(_showRoadPresets, "Or create a shape road", true);
+            if (_showRoadPresets)
+            {
+                _roadPreset = EditorGUILayout.Popup("Shape", _roadPreset, new[] { "Rounded rectangle", "Oval / circle" });
+                _roadCenter = EditorGUILayout.Vector3Field("Center", _roadCenter);
+                _roadWidth = Mathf.Max(.5f, EditorGUILayout.FloatField("Width (X)", _roadWidth));
+                _roadDepth = Mathf.Max(.5f, EditorGUILayout.FloatField("Depth (Z)", _roadDepth));
+                if (_roadPreset == 0) _cornerRadius = EditorGUILayout.Slider("Corner radius", _cornerRadius, 0, Mathf.Min(_roadWidth, _roadDepth) * .5f);
+                using (new EditorGUI.DisabledScope(_drawingRoad))
+                    if (GUILayout.Button("Create shape road"))
+                    {
+                        paths.Add(_roadPreset == 0 ? A.RoundedRectangleRoad(_roadCenter, _roadWidth, _roadDepth, _cornerRadius) : A.OvalRoad(_roadCenter, _roadWidth, _roadDepth));
+                        _path = paths.Count - 1; _point = 0; _scenePreview = true;
+                    }
+            }
+        }
+    }
+
+    private bool CanFinishSketch => _sketchPoints.Count >= (_sketchClosed ? 3 : 2);
+    private void StartRoadSketch()
+    {
+        CancelRoadSketch(); _drawingRoad = true; _scenePreview = true; _tab = 2;
+        Frame();
+        var view = SceneView.lastActiveSceneView ?? GetWindow<SceneView>(); view.wantsMouseMove = true; view.Focus();
+        _status = "Drawing road: click in Scene View, then press Enter to finish.";
+        Repaint(); SceneView.RepaintAll();
+    }
+    private void CancelRoadSketch()
+    {
+        _drawingRoad = false; _sketchCursorValid = false; _sketchPoints.Clear();
+        _sketchPreview?.Dispose(); _sketchPreview = null;
+        Repaint(); SceneView.RepaintAll();
+    }
+    private void AddSketchPoint(Vector3 position)
+    {
+        if (_sketchPoints.Count >= (_sketchClosed ? 127 : 128)) { _status = "Point limit reached; finish the road."; return; }
+        if (_sketchPoints.Count > 0 && (_sketchPoints[_sketchPoints.Count - 1] - position).sqrMagnitude < .000001f) return;
+        if (_sketchClosed && _sketchPoints.Count > 0 && (_sketchPoints[0] - position).sqrMagnitude < .000001f) return;
+        _sketchPoints.Add(position); Repaint(); SceneView.RepaintAll();
+    }
+    private void RemoveSketchPoint()
+    {
+        if (_sketchPoints.Count > 0) _sketchPoints.RemoveAt(_sketchPoints.Count - 1);
+        _sketchCursorValid = false; Repaint(); SceneView.RepaintAll();
+    }
+    private void FinishRoadSketch()
+    {
+        if (!CanFinishSketch) { _status = "Place more points before finishing."; return; }
+        JObject path = A.RoadFromPositions(_sketchPoints, _sketchClosed, _sketchSmooth ? _roadSmoothing : 0);
+        JObject root = Root(); JArray paths = A.Array(A.Layout(root), "Paths");
+        paths.Add(path); _path = paths.Count - 1; _point = 0;
+        // One finished road is one Undo step; cancelled sketches never change the document.
+        Undo.IncrementCurrentGroup(); Commit(root, "Draw road"); Undo.IncrementCurrentGroup();
+        _autoSmoothPoints = _sketchSmooth;
+        CancelRoadSketch(); _status = "Road created. Drag its points to adjust the shape.";
+    }
+    private void UpdateSketchPreview(bool includeCursor)
+    {
+        var positions = new List<Vector3>(_sketchPoints);
+        bool atStart = positions.Count > 0 && (positions[0] - _sketchCursor).sqrMagnitude < .000001f;
+        if (includeCursor && _sketchCursorValid && positions.Count > 0 && positions.Count < (_sketchClosed ? 127 : 128) &&
+            (positions[positions.Count - 1] - _sketchCursor).sqrMagnitude > .000001f && !(_sketchClosed && atStart)) positions.Add(_sketchCursor);
+        if (positions.Count < 2) { _sketchPreview?.Dispose(); _sketchPreview = null; return; }
+        // Preview stays open until a loop has enough anchors, avoiding invalid partial paths.
+        JObject path = A.RoadFromPositions(positions, _sketchClosed && positions.Count >= 3, _sketchSmooth ? _roadSmoothing : 0);
+        string json = new JObject { ["layout"] = new JObject { ["Paths"] = new JArray(path) } }.ToString(Formatting.None);
+        if (_sketchPreview == null) _sketchPreview = new LoopLevelRoadPreview();
+        _sketchPreview.Update(json, ExportedPuzzleJsonDecoder.Decode(json));
+    }
+
+    private void DrawRoadSketch(SceneView view)
+    {
+        Event e = Event.current;
+        Rect panel = new Rect(12, 12, Mathf.Min(560, view.position.width - 24), 110);
+        int control = GUIUtility.GetControlID(FocusType.Passive);
+        bool canvas = !panel.Contains(e.mousePosition);
+        if (e.type == EventType.Layout && !e.alt) HandleUtility.AddDefaultControl(control);
+        if (canvas && !e.alt && (e.type == EventType.MouseMove || e.type == EventType.MouseDown || e.type == EventType.Repaint))
+        {
+            Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+            _sketchCursorValid = new Plane(Vector3.up, new Vector3(0, _roadCenter.y, 0)).Raycast(ray, out float distance);
+            if (_sketchCursorValid) _sketchCursor = Snap(ray.GetPoint(distance));
+        }
+        if (e.type == EventType.MouseMove) view.Repaint();
+        if (e.type == EventType.MouseDown && e.button == 0 && !e.alt && canvas && _sketchCursorValid)
+        {
+            bool close = _sketchClosed && CanFinishSketch && Vector2.Distance(e.mousePosition, HandleUtility.WorldToGUIPoint(_sketchPoints[0])) < 12;
+            if (close) FinishRoadSketch(); else AddSketchPoint(_sketchCursor);
+            e.Use();
+        }
+        if (e.type == EventType.KeyDown)
+        {
+            if (e.keyCode == KeyCode.Escape) { CancelRoadSketch(); e.Use(); }
+            else if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) { FinishRoadSketch(); e.Use(); }
+            else if (e.keyCode == KeyCode.Backspace) { RemoveSketchPoint(); e.Use(); }
+        }
+        if (!_drawingRoad) return;
+        UpdateSketchPreview(canvas);
+        if (e.type == EventType.Repaint && _roadPreviewMode != 2) _sketchPreview?.DrawSceneMeshes();
+        Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+        if (_sketchPreview != null && _roadPreviewMode != 1)
+            foreach (Vector3[] line in _sketchPreview.Lines) if (line.Length > 1) { Handles.color = Color.cyan; Handles.DrawAAPolyLine(3, line); }
+        for (int i = 0; i < _sketchPoints.Count; i++)
+        {
+            Handles.color = i == 0 && _sketchClosed ? Color.green : Color.yellow;
+            Handles.SphereHandleCap(0, _sketchPoints[i], Quaternion.identity, .18f, EventType.Repaint);
+            Handles.Label(_sketchPoints[i] + Vector3.up * .25f, i == 0 && _sketchClosed ? "Start / click to close" : i.ToString());
+        }
+        if (_sketchCursorValid && canvas)
+        {
+            Handles.color = Color.white; Handles.DrawWireDisc(_sketchCursor, Vector3.up, .18f);
+            Handles.Label(_sketchCursor + Vector3.up * .3f, "Click to place point");
+        }
+        Handles.BeginGUI();
+        GUILayout.BeginArea(panel, EditorStyles.helpBox);
+        GUILayout.Label("DRAW ROAD — " + _sketchPoints.Count + " points", EditorStyles.boldLabel);
+        GUILayout.Label("Click to place • Backspace to remove • Enter to finish • Esc to cancel");
+        GUILayout.Label(_sketchClosed ? "Click the green start point to close the loop." : "Open road: place at least two points.");
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            using (new EditorGUI.DisabledScope(!CanFinishSketch)) if (GUILayout.Button("Finish road")) FinishRoadSketch();
+            if (GUILayout.Button("Undo point")) RemoveSketchPoint();
+            if (GUILayout.Button("Cancel")) CancelRoadSketch();
+        }
+        GUILayout.EndArea(); Handles.EndGUI();
+    }
+    private void DrawPathInspectorPreview()
+    {
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+            _roadPreviewMode = EditorGUILayout.Popup("Preview", _roadPreviewMode, new[] { "Road + path", "Road", "Path" });
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _previewAllPaths = GUILayout.Toggle(_previewAllPaths, "All paths", GUILayout.Width(80));
+                if (GUILayout.Button("Top")) { _previewOrbit = new Vector2(0, 90); _previewZoom = 1f; }
+                if (GUILayout.Button("3D")) { _previewOrbit = new Vector2(35, 45); _previewZoom = 1f; }
+                if (GUILayout.Button("Edit in Scene")) { _scenePreview = true; Frame(); }
+            }
+            Rect rect = GUILayoutUtility.GetRect(100, 240, GUILayout.ExpandWidth(true));
+            int id = GUIUtility.GetControlID("RoadPreviewOrbit".GetHashCode(), FocusType.Passive, rect);
+            Event e = Event.current;
+            if (e.type == EventType.MouseDown && rect.Contains(e.mousePosition) && e.button == 0)
+            { GUIUtility.hotControl = id; e.Use(); }
+            if (e.type == EventType.MouseDrag && GUIUtility.hotControl == id)
+            {
+                _previewOrbit.x += e.delta.x * .5f;
+                _previewOrbit.y = Mathf.Clamp(_previewOrbit.y - e.delta.y * .5f, 5, 90);
+                e.Use(); Repaint();
+            }
+            if (e.type == EventType.MouseUp && GUIUtility.hotControl == id) { GUIUtility.hotControl = 0; e.Use(); }
+            if (e.type == EventType.ScrollWheel && rect.Contains(e.mousePosition))
+            { _previewZoom = Mathf.Clamp(_previewZoom * Mathf.Exp(e.delta.y * .06f), .35f, 3f); e.Use(); Repaint(); }
+            if (e.type == EventType.Repaint)
+                _roadPreview?.DrawInspector(rect, _path, _previewAllPaths, _roadPreviewMode, _previewOrbit, _previewZoom, _point);
+            EditorGUILayout.LabelField("Drag to orbit / scroll to zoom. Edit points and tangents in Scene View.", EditorStyles.miniLabel);
+        }
     }
     private void DrawMap(JObject layout)
     {
@@ -507,11 +732,18 @@ public sealed class LoopLevelEditorWindow : EditorWindow
         {
             JObject root = Root(), layout = A.Layout(root);
             Event e = Event.current;
+            if (_drawingRoad && _tab == 2)
+            {
+                using (new Handles.DrawingScope(Matrix4x4.identity)) { DrawRoadPreview(); DrawRoadSketch(view); }
+                return;
+            }
             if (e.type == EventType.MouseDown && e.button == 0) { Undo.IncrementCurrentGroup(); _dragGroup = Undo.GetCurrentGroup(); }
             using (new Handles.DrawingScope(Matrix4x4.identity))
             {
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
                 DrawRoadPreview(); DrawBoxPreview(layout); DrawMapPreview(layout);
+                // Control points sit inside the generated surface. Keep edit handles visible above it.
+                Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
                 if (_showSlots)
                     for (int i = 0; i < _slots.Count; i += Math.Max(1, _slots.Count / 500))
                     {
@@ -533,15 +765,14 @@ public sealed class LoopLevelEditorWindow : EditorWindow
     private void DrawRoadPreview()
     {
         if (Event.current.type != EventType.Repaint) return;
-        Handles.color = new Color(.2f, .65f, .8f, .6f);
+        if (_roadPreviewMode != 2) _roadPreview?.DrawSceneMeshes();
+        if (_roadPreviewMode == 1) return;
+        Handles.color = new Color(.25f, .9f, 1f);
         foreach (Vector3[] line in _roadLines)
         {
-            for (int i = 1; i < line.Length; i++)
-            {
-                Vector3 side = Vector3.Cross(line[i] - line[i - 1], Vector3.up).normalized * .35f;
-                Handles.DrawAAConvexPolygon(line[i - 1] + side, line[i] + side, line[i] - side, line[i - 1] - side);
-            }
-            Handles.color = new Color(.25f, .9f, 1f); Handles.DrawAAPolyLine(3f, line);
+            if (line.Length < 2) continue;
+            // The curve is the centerline, slightly lifted to avoid fighting the road's depth buffer.
+            Handles.DrawAAPolyLine(3f, line.Select(p => p + Vector3.up * .12f).ToArray());
         }
     }
     private void DrawBoxPreview(JObject layout)
@@ -628,7 +859,13 @@ public sealed class LoopLevelEditorWindow : EditorWindow
                 Handles.Label(position + Vector3.up * .3f, p + ":" + i);
                 if (_path != p || _point != i) continue;
                 EditorGUI.BeginChangeCheck(); Vector3 next = Handles.PositionHandle(position, Quaternion.identity);
-                if (EditorGUI.EndChangeCheck()) { A.MovePoint(points, i, Snap(next)); position = A.Vector(point, "Position"); }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    A.MovePoint(points, i, Snap(next));
+                    if (_autoSmoothPoints) A.SmoothRoad((JObject)paths[p], _roadSmoothing);
+                    position = A.Vector(point, "Position");
+                }
+                if (!_showTangents) continue;
                 foreach (string key in new[] { "InTangent", "OutTangent" })
                 {
                     Vector3 tangent = A.Vector(point, key); Handles.color = key == "InTangent" ? Color.magenta : Color.green;
