@@ -8,6 +8,8 @@ using UnityEngine.UI;
 
 namespace Snui
 {
+	[RequireComponent(typeof(CanvasGroup))]
+	[RequireComponent(typeof(Button))]
 	public class HomeEventBase : MonoBehaviour, IPointerDownHandler, IEventSystemHandler, IPointerUpHandler
 	{
 		public enum SideDirection
@@ -19,21 +21,21 @@ namespace Snui
 		public enum BgColor
 		{
 			Blue = 0,
-			Green = 1,
-			Orange = 2,
-			Purple = 3,
-			Red = 4,
-			Yellow = 5
+			Blue2 = 1,
+			Green = 2,
+			Green2 = 3,
+			Purple = 4,
+			Cyan = 5
 		}
 
 		private static readonly Dictionary<BgColor, Color> bgColorMap = new Dictionary<BgColor, Color>
 		{
-			{ BgColor.Blue, new Color(0.2f, 0.6f, 1f) },
-			{ BgColor.Green, new Color(0.3f, 0.8f, 0.3f) },
-			{ BgColor.Orange, new Color(1f, 0.5f, 0.1f) },
-			{ BgColor.Purple, new Color(0.7f, 0.3f, 0.9f) },
-			{ BgColor.Red, new Color(0.9f, 0.2f, 0.2f) },
-			{ BgColor.Yellow, new Color(1f, 0.85f, 0.2f) }
+			{ BgColor.Blue, ColorUtils.RGB(0x2B96FF) },
+			{ BgColor.Blue2, ColorUtils.RGB(0x3E5ED6) },
+			{ BgColor.Green, ColorUtils.RGB(0x3A7B22) },
+			{ BgColor.Green2, ColorUtils.RGB(0x198269) },
+			{ BgColor.Purple, ColorUtils.RGB(0x844ED3) },
+			{ BgColor.Cyan, ColorUtils.RGB(0x26BF9C) }
 		};
 
 		public SideDirection Direction;
@@ -60,9 +62,15 @@ namespace Snui
 				_button.onClick.AddListener(OnClick);
 			}
 
-			_bgImage = GetComponent<Image>();
-			_lock = GetComponentInChildren<HomeEventLock>(true);
-			_textBar = GetComponentInChildren<HomeIconTextBar>(true);
+			Transform bgNode = transform.Find("Bg");
+			_bgImage = bgNode != null ? bgNode.GetComponent<Image>() : GetComponent<Image>();
+
+			Transform lockNode = transform.Find("HomeEventLock");
+			_lock = lockNode != null ? lockNode.GetComponent<HomeEventLock>() : GetComponentInChildren<HomeEventLock>(true);
+
+			Transform textBarNode = transform.Find("HomeIconTextBar");
+			_textBar = textBarNode != null ? textBarNode.GetComponent<HomeIconTextBar>() : GetComponentInChildren<HomeIconTextBar>(true);
+
 			_notifier = GetComponentInChildren<HomeIconNotifier>(true);
 			_progress = GetComponentInChildren<HomeIconProgress>(true);
 			_originScale = transform.localScale.x;
@@ -173,22 +181,49 @@ namespace Snui
 
 		public virtual void OnPointerDown(PointerEventData eventData)
 		{
+			if (_upTween != null && _upTween.IsActive())
+			{
+				_upTween.Kill();
+			}
+			else
+			{
+				_originScale = transform.localScale.x;
+			}
 			_downTween?.Kill();
-			_upTween?.Kill();
-			_downTween = transform.DOScale(_originScale * 0.92f, 0.1f);
+			_downTween = transform.DOScale(_originScale * 0.92f, 0.1f).SetLink(gameObject);
 		}
 
 		public virtual void OnPointerUp(PointerEventData eventData)
 		{
 			_downTween?.Kill();
 			_upTween?.Kill();
-			_upTween = transform.DOScale(_originScale, 0.1f);
+			_upTween = transform.DOScale(_originScale, 0.1f).SetLink(gameObject);
 		}
 
-		public virtual UniTask PlayEnterAnimation(float delay = 0.04f)
+		public virtual async UniTask PlayEnterAnimation(float delay = 0f, bool shouldWaitAnim = false)
 		{
-			transform.localScale = Vector3.zero;
-			return transform.DOScale(_originScale, 0.25f).SetDelay(delay).SetEase(Ease.OutBack).ToUniTask();
+			var canvasGroup = GetComponent<CanvasGroup>();
+			if (canvasGroup != null) canvasGroup.alpha = 1f;
+
+			Vector3 origPos = transform.localPosition;
+			float offsetX = Direction == SideDirection.Left ? -200f : 200f;
+			float rotZ = Direction == SideDirection.Left ? -15f : 15f;
+			transform.localPosition = new Vector3(origPos.x + offsetX, origPos.y, origPos.z);
+			transform.localRotation = Quaternion.Euler(0f, 0f, rotZ);
+
+			Sequence seq = DOTween.Sequence();
+			seq.AppendInterval(delay);
+			seq.Append(transform.DOLocalMoveX(origPos.x, 0.24f));
+			seq.Join(transform.DOLocalMoveY(origPos.y + 18f, 0.14f));
+			seq.Append(transform.DOLocalMoveY(origPos.y - 16f, 0.1f));
+			seq.Append(transform.DOLocalMoveY(origPos.y, 0.14f));
+			seq.Insert(0f, transform.DOLocalRotate(Vector3.zero, 0.64f));
+			seq.SetLink(gameObject);
+
+			if (shouldWaitAnim)
+			{
+				await seq.ToUniTask();
+			}
 		}
 
 		public virtual UniTask PlayExitAnimation(float delay = 0.04f)
@@ -196,15 +231,69 @@ namespace Snui
 			return transform.DOScale(0f, 0.2f).SetDelay(delay).SetEase(Ease.InBack).ToUniTask();
 		}
 
-		public virtual UniTask PlayIdleAnimation(float interval = 0.3f)
+		public virtual UniTask PlayAddAnimation() => UniTask.CompletedTask;
+
+		public virtual UniTask ShowPopupDialog() => UniTask.CompletedTask;
+
+		public virtual bool HasNonSkippableAnimation() => true;
+
+		public virtual void SkipAnimation()
 		{
-			return transform.DOPunchScale(new Vector3(0.08f, 0.08f, 0f), 0.3f, 4, 0.5f).ToUniTask();
 		}
 
-		public virtual bool HasNonSkippableAnimation() => false;
+		public virtual bool PlayIdleAnimation() => false;
 
 		public virtual void CommitProgressBeforeEnterGame()
 		{
+		}
+
+		public Tween PlayLRShakeAnimation(int style = 0)
+		{
+			if (_isPlayingLRShakeAnim) return null;
+			_isPlayingLRShakeAnim = true;
+
+			Transform bg = transform.Find("Bg");
+			Transform spine = transform.Find("Spine");
+			if (bg == null && spine == null)
+			{
+				_isPlayingLRShakeAnim = false;
+				return null;
+			}
+
+			Vector3 bgPos = bg != null ? bg.localPosition : Vector3.zero;
+			Vector3 spinePos = spine != null ? spine.localPosition : Vector3.zero;
+
+			float offsetX1 = Direction == SideDirection.Left ? 15f : -15f;
+			float offsetX2 = Direction == SideDirection.Left ? -20f : 20f;
+			float dirSign = style == 0 ? 1f : -1f;
+
+			Sequence moveSeq = DOTween.Sequence();
+			if (bg != null) moveSeq.Append(bg.DOLocalMove(new Vector3(bgPos.x + offsetX2, bgPos.y + 2f, 0f), 0.13f));
+			if (spine != null) moveSeq.Join(spine.DOLocalMove(new Vector3(spinePos.x + offsetX2, spinePos.y + 2f, 0f), 0.13f));
+
+			if (bg != null) moveSeq.Append(bg.DOLocalMove(new Vector3(bgPos.x + offsetX1, bgPos.y - 1f, 0f), 0.23f));
+			if (spine != null) moveSeq.Join(spine.DOLocalMove(new Vector3(spinePos.x + offsetX1, spinePos.y - 1f, 0f), 0.23f));
+
+			if (bg != null) moveSeq.Append(bg.DOLocalMove(bgPos, 0.17f));
+			if (spine != null) moveSeq.Join(spine.DOLocalMove(spinePos, 0.17f));
+
+			Sequence rotSeq = DOTween.Sequence();
+			if (bg != null) rotSeq.Append(bg.DOLocalRotate(new Vector3(0f, 0f, dirSign * 8f), 0.13f));
+			if (spine != null) rotSeq.Join(spine.DOLocalRotate(new Vector3(0f, 0f, dirSign * 8f), 0.13f));
+
+			if (bg != null) rotSeq.Append(bg.DOLocalRotate(new Vector3(0f, 0f, -dirSign * 6f), 0.23f));
+			if (spine != null) rotSeq.Join(spine.DOLocalRotate(new Vector3(0f, 0f, -dirSign * 6f), 0.23f));
+
+			if (bg != null) rotSeq.Append(bg.DOLocalRotate(Vector3.zero, 0.17f));
+			if (spine != null) rotSeq.Join(spine.DOLocalRotate(Vector3.zero, 0.17f));
+
+			Sequence mainSeq = DOTween.Sequence();
+			mainSeq.Insert(0f, moveSeq);
+			mainSeq.Insert(0f, rotSeq);
+			mainSeq.AppendCallback(() => _isPlayingLRShakeAnim = false);
+			mainSeq.SetLink(gameObject);
+
+			return mainSeq;
 		}
 
 		protected virtual void OnDestroy()
