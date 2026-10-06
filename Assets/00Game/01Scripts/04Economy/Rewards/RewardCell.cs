@@ -12,6 +12,8 @@ namespace Snui
         [SerializeField] private Image _icon;
         [SerializeField] private TMP_Text _count;
         [SerializeField] private GameObject _ribbon;
+        [SerializeField] private TMP_Text _infinityText;
+        [SerializeField] private GameObject _ribbonIcon;
         [SerializeField] private GameObject _infoIcon;
         [SerializeField] private GameObject _backLight;
         private void Awake()
@@ -22,6 +24,16 @@ namespace Snui
             {
                 var r = HierarchyReferenceCache.Descendant(transform, "Ribbon");
                 if (r != null) _ribbon = r.gameObject;
+            }
+            if (_ribbon != null)
+            {
+                if (_infinityText == null)
+                    _infinityText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_ribbon.transform, "Time"));
+                if (_ribbonIcon == null)
+                {
+                    var ri = HierarchyReferenceCache.Child(_ribbon.transform, "Icon");
+                    if (ri != null) _ribbonIcon = ri.gameObject;
+                }
             }
             if (_infoIcon == null)
             {
@@ -48,18 +60,42 @@ namespace Snui
         {
             RewardItem=item;
             Snui_Text.EnsureFontAssets(transform);
-            if(_ribbon!=null) _ribbon.SetActive(false); // no offline heart timer
             if(_infoIcon!=null) _infoIcon.SetActive(false);
             SetBackLight(showBackLight);
             if(item==null || item.Type==null) return UniTask.CompletedTask;
             if(_icon!=null) { _icon.sprite=DataPrefabLibrary.Current?.ResolveRewardIcon(item.Type.GetIconPath()); _icon.enabled=_icon.sprite!=null; }
-            bool heart=item.Type==RewardType.InfinityHeart || item.Type==RewardType.Heart;
-            if(_count!=null)
+
+            bool isTimeLimited = item.Type.IsTimeLimited();
+            if (isTimeLimited)
             {
-                _count.gameObject.SetActive(true);
-                _count.text=heart ? "∞ HEART — OFFLINE" : item.Type==RewardType.Coin ? item.Count.ToString() : "x"+item.Count;
-                if(_icon==null || _icon.sprite==null) _count.text=heart ? "∞ HEART — OFFLINE" : item.Type.Key.ToUpperInvariant()+" "+item.Count;
-                if(heart) { _count.enableAutoSizing=true; _count.fontSizeMax=30; _count.fontSizeMin=16; (_count.transform as RectTransform).sizeDelta=new Vector2(260,58); }
+                if (_count != null) _count.gameObject.SetActive(false);
+                if (_ribbon != null)
+                {
+                    _ribbon.SetActive(true);
+                    if (_ribbonIcon != null)
+                        _ribbonIcon.SetActive(item.Type != RewardType.InfinityHeart);
+                    if (_infinityText != null)
+                    {
+                        _infinityText.gameObject.SetActive(true);
+                        _infinityText.text = TimeFormatter.FormatTimeLeft(item.Count);
+                    }
+                }
+                else if (_count != null)
+                {
+                    _count.gameObject.SetActive(true);
+                    _count.text = TimeFormatter.FormatTimeLeft(item.Count);
+                }
+            }
+            else
+            {
+                if (_ribbon != null) _ribbon.SetActive(false);
+                if (_count != null)
+                {
+                    _count.gameObject.SetActive(!item.Type.IsCardPack());
+                    _count.text = item.Type == RewardType.Coin ? item.Count.ToString("N0") : "x" + item.Count;
+                    if (_icon == null || _icon.sprite == null)
+                        _count.text = item.Type.Key.ToUpperInvariant() + " " + item.Count;
+                }
             }
             return UniTask.CompletedTask;
         }

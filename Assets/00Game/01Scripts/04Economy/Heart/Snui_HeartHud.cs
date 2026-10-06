@@ -64,14 +64,52 @@ namespace Snui
 
 		private void RefreshTimeLabel()
 		{
-			// BaseHeartManager deliberately allows unlimited offline play.
-			if (_infiniteGo != null) _infiniteGo.SetActive(true);
-			if (_icon != null) _icon.gameObject.SetActive(false);
-			if (_text != null) _text.gameObject.SetActive(false);
-			if (_fullLabel != null) _fullLabel.gameObject.SetActive(false);
-			// Native infinite hearts keep TimeText visible. Unlimited offline hearts have no expiry.
-			if (_timeLabel != null) { _timeLabel.gameObject.SetActive(true); _timeLabel.SetText("Unlimited"); }
-			if (_freeHeart != null) _freeHeart.SetActive(false);
+			var heartMgr = Managers.Heart;
+			bool isInfinite = heartMgr != null && heartMgr.IsInfinite();
+
+			if (isInfinite)
+			{
+				if (_infiniteGo != null) _infiniteGo.SetActive(true);
+				if (_icon != null) _icon.gameObject.SetActive(false);
+				if (_text != null) _text.gameObject.SetActive(false);
+				if (_fullLabel != null) _fullLabel.gameObject.SetActive(false);
+				if (_timeLabel != null)
+				{
+					_timeLabel.gameObject.SetActive(true);
+					_timeLabel.SetText(TimeFormatter.FormatTimeLeft(heartMgr.InfiniteLeftTime));
+				}
+				if (_freeHeart != null) _freeHeart.SetActive(false);
+			}
+			else
+			{
+				if (_infiniteGo != null) _infiniteGo.SetActive(false);
+				if (_icon != null) _icon.gameObject.SetActive(true);
+				if (_text != null)
+				{
+					_text.gameObject.SetActive(true);
+					_text.SetText((heartMgr != null ? heartMgr.GetHeartCount() : BaseHeartManager.DEFAULT_MAX_HEART).ToString());
+				}
+				bool isFull = heartMgr == null || heartMgr.IsHeartFull();
+				if (isFull)
+				{
+					if (_timeLabel != null) _timeLabel.gameObject.SetActive(false);
+					if (_fullLabel != null) _fullLabel.gameObject.SetActive(true);
+				}
+				else
+				{
+					if (_fullLabel != null) _fullLabel.gameObject.SetActive(false);
+					if (_timeLabel != null)
+					{
+						_timeLabel.gameObject.SetActive(true);
+						_timeLabel.SetText(TimeFormatter.FormatSeconds(heartMgr.GetRecoverTime()));
+					}
+				}
+				if (_freeHeart != null)
+				{
+					int freeCount = heartMgr != null ? heartMgr.GetTotalFreeHeartCount() : 0;
+					_freeHeart.SetActive(freeCount > 0);
+				}
+			}
 		}
 
 		public override void PlayShakeAnimation() => base.PlayShakeAnimation();

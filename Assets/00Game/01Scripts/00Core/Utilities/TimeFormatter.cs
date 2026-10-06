@@ -26,7 +26,7 @@ public class TimeFormatter
 		}
 		if (minutes > 0)
 		{
-			return $"{minutes}m {secs}s";
+			return secs > 0 ? $"{minutes}m {secs}s" : $"{minutes}m";
 		}
 		return $"{secs}s";
 	}

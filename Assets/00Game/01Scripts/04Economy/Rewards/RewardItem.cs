@@ -12,7 +12,16 @@ public sealed class RewardItem
     public bool Claim(string way = "")
     {
         if (Type == null || Count < 0) return false;
-        if (Type == RewardType.Heart || Type == RewardType.InfinityHeart) return true; // unlimited offline
+        if (Type == RewardType.InfinityHeart)
+        {
+            Managers.Heart?.AddInfinite(Count);
+            return true;
+        }
+        if (Type == RewardType.Heart)
+        {
+            Managers.Heart?.AddFreeHeart(FreeHeartType.LevelChest, null, Count);
+            return true;
+        }
         return InventoryManager.Ensure().Add(Type.ToInventoryKey(), Count, way);
     }
 }
