@@ -1,30 +1,71 @@
+using Cysharp.Threading.Tasks;
+using ShopUI;
+using Snui;
+using Sugar.UI;
 using UnityEngine;
-using TMPro;
 
 public class ShopPage : MonoBehaviour
 {
-	[SerializeField] private RectTransform _safeArea;
-	[SerializeField] private RectTransform _offlineMessageTemplate;
-	[SerializeField] private TMP_Text _titleTemplate;
+	[SerializeField] private Transform _safeArea;
+	private ShopDialogContent _content;
+	private bool _contentLoaded;
+
 	private void Awake()
 	{
-		// The recovered shop delegate has no offline products. Keep its tab navigable
-		// and use the scene's authored connection message instead of an empty page.
-		if (_safeArea == null) _safeArea = HierarchyReferenceCache.Child(transform, "SafeArea") as RectTransform;
-		if (_safeArea == null) return;
-		if (_titleTemplate != null)
+		var pageView = GetComponent<PageViewCell>();
+		if (pageView == null)
 		{
-			var title = Instantiate(_titleTemplate, _safeArea, false);
-			title.text = "SHOP";
-			title.rectTransform.anchorMin = title.rectTransform.anchorMax = new Vector2(0.5f, 1f);
-			title.rectTransform.anchoredPosition = new Vector2(0f, -75f);
+			pageView = gameObject.AddComponent<PageViewCell>();
 		}
-		if (_offlineMessageTemplate != null)
+		pageView.OnEnterPage -= OnEnterPage;
+		pageView.OnEnterPage += OnEnterPage;
+	}
+
+	private void OnEnable()
+	{
+		if (_content == null)
 		{
-			var message = Instantiate(_offlineMessageTemplate, _safeArea, false);
-			message.gameObject.SetActive(true);
-			foreach (var label in message.GetComponentsInChildren<TMP_Text>(true))
-				label.text = label.name == "Title" ? "Unavailable offline" : "The shop is unavailable in offline mode.";
+			_contentLoaded = false;
+		}
+		LoadContentAsync().Forget();
+	}
+
+	private void Start()
+	{
+		LoadContentAsync().Forget();
+	}
+
+	private void OnEnterPage()
+	{
+		LoadContentAsync().Forget();
+	}
+
+	private async UniTaskVoid LoadContentAsync()
+	{
+		if (_contentLoaded && _content != null) return;
+		_contentLoaded = true;
+
+		if (_safeArea == null)
+		{
+			_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea")
+				?? HierarchyReferenceCache.Descendant(transform, "SafeArea")
+				?? transform;
+		}
+
+		if (_safeArea is RectTransform rt)
+		{
+			rt.anchorMin = Vector2.zero;
+			rt.anchorMax = Vector2.one;
+			rt.offsetMin = Vector2.zero;
+			rt.offsetMax = Vector2.zero;
+		}
+
+		_content = await ShopDialogContent.Show(_safeArea, new ShopDelegate(), "ShopPage");
+		if (_content != null)
+		{
+			_content.HideCloseBtn();
+			float navBottom = NavigationBar.GetNavigationBottomOffset();
+			_content.SetContentBottom((int)navBottom);
 		}
 	}
 }
