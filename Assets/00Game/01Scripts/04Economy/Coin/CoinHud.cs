@@ -13,7 +13,13 @@ public sealed class CoinHud : Snui_CoinHud
 		}
 	}
 
-	private void OnClicked() { if (CanClick()) PlayShakeAnimation(); }
+	private void OnClicked()
+	{
+		if (!CanClick()) return;
+		var home = HomeController.ForScene(gameObject.scene);
+		if (home != null) home.JumpToPage(HomeController.SHOP_PAGE_INDEX);
+		else PlayShakeAnimation();
+	}
 	public override void PlayAddNumberAnimation(int num) => base.PlayAddNumberAnimation(num);
 	public bool CanClick() => _button != null && _button.IsInteractable();
 
