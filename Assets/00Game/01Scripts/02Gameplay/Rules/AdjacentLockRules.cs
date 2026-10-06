@@ -5,8 +5,6 @@ public static class AdjacentLockRules
 {
 	private const float BoxFootprintWidth = 1.55f;
 	private const float AdjacentPositionTolerance = 0.55f;
-	// Native TryGetFlatAxes (RVA 0x1259D78) rejects almost vertical axes
-	// before normalization: squared horizontal length must exceed 0.0001.
 	private const float MinimumFlatAxisSquaredMagnitude = 0.0001f;
 	private static readonly float SameDirectionDotThreshold = Mathf.Cos(5f * Mathf.Deg2Rad);
 
