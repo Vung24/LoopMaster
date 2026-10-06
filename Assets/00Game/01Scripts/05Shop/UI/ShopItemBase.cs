@@ -19,16 +19,12 @@ namespace ShopUI
 		{
 			if (_buyBtn == null)
 			{
-				Transform buyTrans = HierarchyReferenceCache.Child(transform, "BuyButton");
-				if (buyTrans != null)
-				{
-					_buyBtn = buyTrans.GetComponent<Button>();
-				}
-				if (_buyBtn == null)
-				{
-					_buyBtn = GetComponentInChildren<Button>();
-				}
+				_buyBtn = HierarchyReferenceCache.ChildComponent<Button>(transform, "BuyBtn")
+					?? HierarchyReferenceCache.ChildComponent<Button>(transform, "BuyButton")
+					?? HierarchyReferenceCache.DescendantComponent<Button>(transform, "BuyBtn")
+					?? GetComponentInChildren<Button>(true);
 			}
+
 			if (_buyBtn != null)
 			{
 				_buyBtn.onClick.AddListener(OnClickBuyBtn);
@@ -36,7 +32,12 @@ namespace ShopUI
 
 			if (_price == null)
 			{
-				_price = GetComponentInChildren<Snui_Price>();
+				_price = HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "BuyBtn")
+					?? HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "Snui_Price")
+					?? HierarchyReferenceCache.DescendantComponent<Snui_Price>(transform, "Snui_Price")
+					?? HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "Price")
+					?? HierarchyReferenceCache.DescendantComponent<Snui_Price>(transform, "Price")
+					?? GetComponentInChildren<Snui_Price>(true);
 			}
 		}
 
@@ -46,7 +47,7 @@ namespace ShopUI
 			SetPrice(type);
 		}
 
-		private void SetPrice(string type)
+		protected void SetPrice(string type)
 		{
 			if (_price != null)
 			{
