@@ -5,6 +5,16 @@ namespace Snui
 {
 	public class HomeEventLock : MonoBehaviour
 	{
+		[SerializeField] private TMP_Text _text;
+
+		private void Awake()
+		{
+			if (_text == null)
+			{
+				_text = GetComponentInChildren<TMP_Text>(true);
+			}
+		}
+
 		public void SetUnlockLevel(int lv)
 		{
 			int curLevel = GameProgressStore.NextPlayableLevel;
@@ -12,14 +22,13 @@ namespace Snui
 			gameObject.SetActive(isLocked);
 			if (isLocked)
 			{
-				var text = HierarchyReferenceCache.Child(transform, "Text")?.GetComponent<TMP_Text>();
-				if (text == null)
+				if (_text == null)
 				{
-					text = GetComponentInChildren<TMP_Text>(true);
+					_text = GetComponentInChildren<TMP_Text>(true);
 				}
-				if (text != null)
+				if (_text != null)
 				{
-					text.text = $"Lv.{lv}";
+					_text.text = $"Lv.{lv}";
 				}
 			}
 		}

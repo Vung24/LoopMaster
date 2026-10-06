@@ -181,14 +181,11 @@ public sealed class GameResultUI : MonoBehaviour
 			Button replay = CreateButton("ReplayButton", panel, "REPLAY LEVEL", new Vector2(0f, -105f));
 			_failContent = panel.gameObject.AddComponent<FailDialogContent>();
 			_failContent.Bind(_controller, title, reason, replay);
-			CreateButton("AdButton", panel, "FREE (OFFLINE)", new Vector2(-130f, -40f));
+			Button adButton = CreateButton("AdButton", panel, "FREE (OFFLINE)", new Vector2(-130f, -40f));
 			Button coinOffer = CreateButton("CoinButton", panel, "900 COINS", new Vector2(130f, -40f));
 			coinOffer.GetComponentInChildren<Text>().gameObject.name = "Number";
-			foreach (string name in new[] { "AdButton", "CoinButton" })
-			{
-				RectTransform rect = (RectTransform)HierarchyReferenceCache.Descendant(panel, name);
-				rect.sizeDelta = new Vector2(240f, 65f);
-			}
+			((RectTransform)adButton.transform).sizeDelta = new Vector2(240f, 65f);
+			((RectTransform)coinOffer.transform).sizeDelta = new Vector2(240f, 65f);
 			// Rebind after the fallback controls are created.
 			_failContent.BindFallbackOffers();
 		}
@@ -288,8 +285,7 @@ public sealed class GameResultUI : MonoBehaviour
 		var instance = Instantiate(prefab, content.transform, false);
 		_failTutorial = instance.GetComponent<NewPlayerTutorial>();
 		if (_failTutorial == null) { Destroy(instance); return; }
-		Transform capacity = UICanvas.Current == null ? null :
-			HierarchyReferenceCache.Descendant(UICanvas.Current.transform, "Capacity");
+		Transform capacity = UICanvas.Current == null ? null : UICanvas.Current.CapacityNode;
 		if (capacity != null) _failTutorial.ShowFail(capacity);
 		else _failTutorial.ShowFail(content.transform.InverseTransformPoint(content.FreeButtonNode.position));
 		PlayerPrefs.SetInt("offline_HasShowFailTutorial", 1);

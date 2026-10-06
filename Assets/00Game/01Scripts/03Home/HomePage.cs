@@ -36,9 +36,12 @@ public class HomePage : MonoBehaviour
 
 	private SpecialStreakProgress _specialStreakProgress;
 	private CancellationTokenSource _cts;
+	private Canvas _headerCanvas;
+	private float _topNodeY;
 
 	public PlayButton PlayButton => _playButton;
 	public HomeEventController EventController => _eventController;
+	public Button SettingButton => _settingButton;
 
 	private void Awake()
 	{
@@ -84,6 +87,15 @@ public class HomePage : MonoBehaviour
 				_topNode = topTrans as RectTransform;
 			}
 		}
+		if (_topNode != null) { _topNodeY = _topNode.anchoredPosition.y; _headerCanvas = GetComponentInParent<Canvas>(); }
+	}
+
+	private void LateUpdate()
+	{
+		if (_topNode == null || _headerCanvas == null) return;
+		Vector2 position = _topNode.anchoredPosition;
+		position.y = _topNodeY - ScreenHelper.GetCanvasNotchHeight(_headerCanvas);
+		_topNode.anchoredPosition = position;
 	}
 
 	private void OnEnable()
@@ -107,11 +119,6 @@ public class HomePage : MonoBehaviour
 		if (_eventController != null)
 		{
 			await _eventController.PlayEnterAnimation(false);
-		}
-
-		if (_levelBoxMachine != null)
-		{
-			_levelBoxMachine.Bind(Controller());
 		}
 
 		if (_eventController != null)
@@ -189,4 +196,3 @@ public class HomePage : MonoBehaviour
 		}
 	}
 }
-

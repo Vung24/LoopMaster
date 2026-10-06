@@ -12,6 +12,7 @@ namespace Snui
 		[SerializeField] private TMP_Text _timeLabel;
 		[SerializeField] private TMP_Text _fullLabel;
 		[SerializeField] private GameObject _infiniteGo;
+		[SerializeField] private GameObject _freeHeart;
 		private Coroutine _updateTime;
 		private readonly WaitForSecondsRealtime _oneSecondWait = new WaitForSecondsRealtime(1f);
 
@@ -27,6 +28,11 @@ namespace Snui
 			{
 				Transform infinite = HierarchyReferenceCache.Descendant(transform, "InfiniteIcon");
 				if (infinite != null) _infiniteGo = infinite.gameObject;
+			}
+			if (_freeHeart == null)
+			{
+				Transform free = HierarchyReferenceCache.Child(transform, "FreeHeart");
+				if (free != null) _freeHeart = free.gameObject;
 			}
 		}
 
@@ -60,11 +66,12 @@ namespace Snui
 		{
 			// BaseHeartManager deliberately allows unlimited offline play.
 			if (_infiniteGo != null) _infiniteGo.SetActive(true);
+			if (_icon != null) _icon.gameObject.SetActive(false);
 			if (_text != null) _text.gameObject.SetActive(false);
 			if (_fullLabel != null) _fullLabel.gameObject.SetActive(false);
-			if (_timeLabel != null) _timeLabel.gameObject.SetActive(false);
-			Transform freeHeart = HierarchyReferenceCache.Child(transform, "FreeHeart");
-			if (freeHeart != null) freeHeart.gameObject.SetActive(false);
+			// Native infinite hearts keep TimeText visible. Unlimited offline hearts have no expiry.
+			if (_timeLabel != null) { _timeLabel.gameObject.SetActive(true); _timeLabel.SetText("Unlimited"); }
+			if (_freeHeart != null) _freeHeart.SetActive(false);
 		}
 
 		public override void PlayShakeAnimation() => base.PlayShakeAnimation();

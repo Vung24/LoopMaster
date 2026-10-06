@@ -15,9 +15,10 @@ namespace Snui
         public GameObject RewardCellPrefab, SpecialSparksPrefab, Fireworks;
         public AudioClip RewardSound, ChestSound, FireworksClip, RewardsPopAfterCardsClip;
         private readonly List<RewardCell> _cells=new List<RewardCell>();
-        private Button _fullBtn;
-        private TMP_Text _desc;
-        private Transform _safeArea;
+        [SerializeField] private Button _fullBtn;
+        [SerializeField] private TMP_Text _desc;
+        [SerializeField] private Transform _safeArea;
+        [SerializeField] private Image _mask;
         private SkeletonGraphic _chest;
         private ClaimCoinAnim _coins;
         private int _milestone;
@@ -49,10 +50,12 @@ namespace Snui
         }
         private void Awake()
         {
-            _fullBtn=GetComponent<Button>(); if(_fullBtn==null) _fullBtn=gameObject.AddComponent<Button>();
+            if (_fullBtn == null) _fullBtn = GetComponent<Button>();
+            if (_fullBtn == null) _fullBtn = gameObject.AddComponent<Button>();
             _fullBtn.onClick.AddListener(OnClickReceive);
-            _safeArea=HierarchyReferenceCache.Descendant(transform,"SafeArea") ?? transform;
-            _desc=HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Text"));
+            if (_safeArea == null) _safeArea = HierarchyReferenceCache.Descendant(transform,"SafeArea") ?? transform;
+            if (_desc == null) _desc = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Text"));
+            if (_mask == null) _mask = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Mask"));
         }
         private void Initialize(int milestone,bool saved,SkeletonGraphic sourceChest,bool waitForMachine)
         {
@@ -130,7 +133,7 @@ namespace Snui
                 HudContainer.TrySetTop(1301);
                 _coins=gameObject.AddComponent<ClaimCoinAnim>();
                 // Hide the opaque mask while coins fly on the existing HUD flight layer.
-                var mask=HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Mask")); if(mask!=null) mask.color=new Color(0,0,0,.15f);
+                if(_mask!=null) _mask.color=new Color(0,0,0,.15f);
                 yield return _coins.Play(coins,transform.parent,start,HudContainer.Current.CoinHud,null,1302);
             }
             Close();

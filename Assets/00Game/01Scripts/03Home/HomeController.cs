@@ -54,12 +54,10 @@ public class HomeController : MonoBehaviour
 		_canvas = HomePage.GetComponentInParent<Canvas>()?.rootCanvas;
 		if (_canvas == null) return;
 		_ready = true;
-		if (_canvas.GetComponent<CanvasScaler>() == null)
-		{
-			var scaler = _canvas.gameObject.AddComponent<CanvasScaler>();
-			scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-			scaler.referenceResolution = new Vector2(1080f, 1920f); scaler.matchWidthOrHeight = 0f;
-		}
+		var scaler = _canvas.GetComponent<CanvasScaler>() ?? _canvas.gameObject.AddComponent<CanvasScaler>();
+		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+		// UiUtils::.cctor in the native build initializes the Home design to 750 x 1334.
+		scaler.referenceResolution = new Vector2(750f, 1334f); scaler.matchWidthOrHeight = 0f;
 		// Home remains the only available offline page; preserve the exported viewport fix.
 		RectTransform strip = HomePage.transform.parent as RectTransform;
 		if (strip != null && strip.name == "Content" && strip.parent != null && strip.parent.name == "Viewport")
@@ -72,19 +70,19 @@ public class HomeController : MonoBehaviour
 		if (_navigationBar == null) _navigationBar = _canvas.GetComponentInChildren<NavigationBar>(true);
 		if (_navigationBar != null)
 		{
-			_navigationBar.NavigationAnim = NavigationAnim.Default;
 			_navigationBar.SetEnabledPages(HOME_PAGE_INDEX);
 			_navigationBar.OnClickCell.AddListener(OnClickNavigationCell);
 			_navigationBar.Init(HOME_PAGE_INDEX);
 		}
-		_settingButton = HierarchyReferenceCache.Component<Button>(HierarchyReferenceCache.Descendant(HomePage.transform, "SettingBtn"));
+		_settingButton = HomePage.SettingButton
+			?? HierarchyReferenceCache.Component<Button>(HierarchyReferenceCache.Descendant(HomePage.transform, "SettingBtn"));
 		if (_settingButton == null) _settingButton = HierarchyReferenceCache.Component<Button>(HierarchyReferenceCache.Descendant(_canvas.transform, "SettingBtn"));
 		if (_settingButton != null) _settingButton.onClick.AddListener(OpenSettings);
 		HomePage.RefreshProgress();
 		_levelBox = HomePage.GetComponentInChildren<LevelBoxMachine>(true);
 		if (_levelBox != null && !_levelBox.HasAuthoredLayout && RecoveryPrefabLibrary.Current?.LevelBoxMachinePrefab != null)
 		{
-			// The reconstructed HomeScene contains a field-less placeholder. Restore its original prefab at the scene slot.
+			// Restore legacy scenes that still contain a field-less LevelBox placeholder.
 			Transform slot = _levelBox.transform;
 			var restored = Instantiate(RecoveryPrefabLibrary.Current.LevelBoxMachinePrefab, slot.parent, false);
 			var target = restored.transform as RectTransform; var source = slot as RectTransform;

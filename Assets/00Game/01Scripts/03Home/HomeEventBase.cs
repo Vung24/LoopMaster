@@ -40,12 +40,13 @@ namespace Snui
 
 		public SideDirection Direction;
 		public UnityEvent<HomeEventBase> OnDestroyEvent = new UnityEvent<HomeEventBase>();
-		protected Button _button;
-		protected Image _bgImage;
-		protected HomeEventLock _lock;
-		protected HomeIconTextBar _textBar;
-		protected HomeIconNotifier _notifier;
-		protected HomeIconProgress _progress;
+		[SerializeField] protected Button _button;
+		[SerializeField] protected Image _bgImage;
+		[SerializeField] protected HomeEventLock _lock;
+		[SerializeField] protected HomeIconTextBar _textBar;
+		[SerializeField] protected HomeIconNotifier _notifier;
+		[SerializeField] protected HomeIconProgress _progress;
+		[SerializeField] protected Transform _spine;
 		private bool _isPlayingLRShakeAnim;
 		private Tween _downTween;
 		private Tween _upTween;
@@ -56,23 +57,33 @@ namespace Snui
 
 		protected virtual void Awake()
 		{
-			_button = GetComponent<Button>();
+			if (_button == null) _button = GetComponent<Button>();
 			if (_button != null)
 			{
 				_button.onClick.AddListener(OnClick);
 			}
 
-			Transform bgNode = HierarchyReferenceCache.Child(transform, "Bg");
-			_bgImage = bgNode != null ? bgNode.GetComponent<Image>() : GetComponent<Image>();
+			if (_bgImage == null)
+			{
+				Transform bgNode = HierarchyReferenceCache.Child(transform, "Bg");
+				_bgImage = bgNode != null ? bgNode.GetComponent<Image>() : GetComponent<Image>();
+			}
 
-			Transform lockNode = HierarchyReferenceCache.Child(transform, "HomeEventLock");
-			_lock = lockNode != null ? lockNode.GetComponent<HomeEventLock>() : GetComponentInChildren<HomeEventLock>(true);
+			if (_lock == null)
+			{
+				Transform lockNode = HierarchyReferenceCache.Child(transform, "HomeEventLock");
+				_lock = lockNode != null ? lockNode.GetComponent<HomeEventLock>() : GetComponentInChildren<HomeEventLock>(true);
+			}
 
-			Transform textBarNode = HierarchyReferenceCache.Child(transform, "HomeIconTextBar");
-			_textBar = textBarNode != null ? textBarNode.GetComponent<HomeIconTextBar>() : GetComponentInChildren<HomeIconTextBar>(true);
+			if (_textBar == null)
+			{
+				Transform textBarNode = HierarchyReferenceCache.Child(transform, "HomeIconTextBar");
+				_textBar = textBarNode != null ? textBarNode.GetComponent<HomeIconTextBar>() : GetComponentInChildren<HomeIconTextBar>(true);
+			}
 
-			_notifier = GetComponentInChildren<HomeIconNotifier>(true);
-			_progress = GetComponentInChildren<HomeIconProgress>(true);
+			if (_notifier == null) _notifier = GetComponentInChildren<HomeIconNotifier>(true);
+			if (_progress == null) _progress = GetComponentInChildren<HomeIconProgress>(true);
+			if (_spine == null) _spine = HierarchyReferenceCache.Child(transform, "Spine");
 			_originScale = transform.localScale.x;
 		}
 
@@ -257,8 +268,8 @@ namespace Snui
 			if (_isPlayingLRShakeAnim) return null;
 			_isPlayingLRShakeAnim = true;
 
-			Transform bg = HierarchyReferenceCache.Child(transform, "Bg");
-			Transform spine = HierarchyReferenceCache.Child(transform, "Spine");
+			Transform bg = _bgImage != null ? _bgImage.transform : null;
+			Transform spine = _spine;
 			if (bg == null && spine == null)
 			{
 				_isPlayingLRShakeAnim = false;
