@@ -37,4 +37,10 @@ internal static class HierarchyReferenceCache
 
 	public static T Component<T>(Transform node) where T : Component =>
 		node != null ? node.GetComponent<T>() : null;
+
+	public static T ChildComponent<T>(Transform root, string childName) where T : Component =>
+		Component<T>(Child(root, childName));
+
+	public static T DescendantComponent<T>(Transform root, string objectName) where T : Component =>
+		Component<T>(Descendant(root, objectName));
 }
