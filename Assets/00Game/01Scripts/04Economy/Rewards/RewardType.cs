@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-// RewardType..cctor RVA 0x126FCD0. This is a native data class, not a component.
 public sealed class RewardType
 {
     public readonly string Key;
