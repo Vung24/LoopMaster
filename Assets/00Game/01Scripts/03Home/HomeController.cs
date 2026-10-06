@@ -3,12 +3,17 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Snui;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 
 public class HomeController : MonoBehaviour
 {
 	public const int SHOP_PAGE_INDEX = 0, RANK_PAGE_INDEX = 1, HOME_PAGE_INDEX = 2, TEAM_PAGE_INDEX = 3;
 	public static HomeController Current { get; private set; }
 	[SerializeField] private NavigationBar _navigationBar;
+	[SerializeField] private RectTransform _pageContent;
+	[SerializeField] private RectTransform[] _pages;
+	private Tween _pageTween;
+	private Vector2 _pageSize;
 	public HomePage HomePage;
 	private Canvas _canvas;
 	private Button _settingButton;
@@ -16,9 +21,9 @@ public class HomeController : MonoBehaviour
 	private LevelBoxMachine _levelBox;
 	private SpecialStreakProgress _specialStreak;
 	public bool HasSpecialStreakOpen => _specialStreak != null && (_specialStreak.HasDialogOpen || _specialStreak.IsAnimating);
-	public bool CanOpenSpecialStreak => !_openingGame && !HasSettingsOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
+	public bool CanOpenSpecialStreak => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
 	public bool HasLevelBoxOpen => _levelBox != null && _levelBox.HasDialogOpen;
-	public bool CanOpenLevelBox(LevelBoxMachine machine) => !_openingGame && !HasSettingsOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
+	public bool CanOpenLevelBox(LevelBoxMachine machine) => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
 	private bool _ready, _openingGame;
 	public int CurrentPageIndex { get; private set; } = HOME_PAGE_INDEX;
 	public bool HasSettingsOpen => _settings != null && _settings.gameObject.activeSelf;
@@ -56,21 +61,15 @@ public class HomeController : MonoBehaviour
 		_ready = true;
 		var scaler = _canvas.GetComponent<CanvasScaler>() ?? _canvas.gameObject.AddComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		// UiUtils::.cctor in the native build initializes the Home design to 750 x 1334.
-		scaler.referenceResolution = new Vector2(750f, 1334f); scaler.matchWidthOrHeight = 0f;
-		// Home remains the only available offline page; preserve the exported viewport fix.
-		RectTransform strip = HomePage.transform.parent as RectTransform;
-		if (strip != null && strip.name == "Content" && strip.parent != null && strip.parent.name == "Viewport")
-		{
-			foreach (Behaviour layout in strip.GetComponents<Behaviour>())
-				if (layout is LayoutGroup || layout is ContentSizeFitter) layout.enabled = false;
-			foreach (Transform page in strip) if (page != HomePage.transform) page.gameObject.SetActive(false);
-			Stretch(strip); Stretch(HomePage.transform as RectTransform);
-		}
+		// HomeScene's original CanvasScaler uses Expand at 750 x 1624.
+		scaler.referenceResolution = new Vector2(750f, 1624f);
+		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand; scaler.matchWidthOrHeight = 0f;
+		if (_canvas.GetComponent<GraphicRaycaster>() == null) _canvas.gameObject.AddComponent<GraphicRaycaster>();
+		InitializePages();
 		if (_navigationBar == null) _navigationBar = _canvas.GetComponentInChildren<NavigationBar>(true);
 		if (_navigationBar != null)
 		{
-			_navigationBar.SetEnabledPages(HOME_PAGE_INDEX);
+			_navigationBar.SetEnabledPages(SHOP_PAGE_INDEX, RANK_PAGE_INDEX, HOME_PAGE_INDEX, TEAM_PAGE_INDEX);
 			_navigationBar.OnClickCell.AddListener(OnClickNavigationCell);
 			_navigationBar.Init(HOME_PAGE_INDEX);
 		}
@@ -117,32 +116,100 @@ public class HomeController : MonoBehaviour
 		if (_specialStreak != null) { _specialStreak.gameObject.SetActive(true); _specialStreak.Bind(this); }
 		HudContainer.Show(_canvas.transform).Forget(); HudContainer.Current?.DisableClick();
 	}
-	private static void Stretch(RectTransform rect)
+	private void InitializePages()
 	{
-		if (rect == null) return;
-		rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+		if (_pageContent == null) _pageContent = HomePage.transform.parent as RectTransform;
+		if (_pageContent == null || !(_pageContent.parent is RectTransform)) return;
+		if (_pages == null || _pages.Length == 0)
+			_pages = new[] { GetComponentInScene<ShopPage>()?.transform as RectTransform,
+				GetComponentInScene<RankPage>()?.transform as RectTransform, HomePage.transform as RectTransform,
+				GetComponentInScene<TeamPage>()?.transform as RectTransform };
+		foreach (Behaviour layout in _pageContent.GetComponents<Behaviour>())
+			if (layout is LayoutGroup || layout is ContentSizeFitter) layout.enabled = false;
+		_pageContent.anchorMin = Vector2.zero; _pageContent.anchorMax = new Vector2(0f, 1f);
+		_pageContent.pivot = new Vector2(0f, 0.5f);
+		Canvas.ForceUpdateCanvases();
+		LayoutPages();
+		FinishPageTransition();
+	}
+	private void LayoutPages()
+	{
+		_pageTween?.Kill(); _pageTween = null;
+		_pageSize = ((RectTransform)_pageContent.parent).rect.size;
+		_pageContent.sizeDelta = new Vector2(_pageSize.x * _pages.Length, 0f);
+		for (int i = 0; i < _pages.Length; i++)
+		{
+			if (_pages[i] == null) continue;
+			var page = _pages[i];
+			page.anchorMin = Vector2.zero; page.anchorMax = new Vector2(0f, 1f); page.pivot = new Vector2(0f, 0.5f);
+			page.sizeDelta = new Vector2(_pageSize.x, 0f); page.anchoredPosition = new Vector2(_pageSize.x * i, 0f);
+		}
+		_pageContent.anchoredPosition = new Vector2(-_pageSize.x * CurrentPageIndex, 0f);
+	}
+	private void LateUpdate()
+	{
+		if (!_ready || _pageContent == null || _pages == null) return;
+		if (((RectTransform)_pageContent.parent).rect.size != _pageSize) { LayoutPages(); FinishPageTransition(); }
+	}
+	private void FinishPageTransition()
+	{
+		if (_pages == null) return;
+		for (int i = 0; i < _pages.Length; i++)
+			if (_pages[i] != null) _pages[i].gameObject.SetActive(i == CurrentPageIndex);
+		_pageTween = null;
+	}
+	private void SelectPage(int index, bool animate)
+	{
+		Initialize();
+		if (!_ready || _openingGame || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled
+			|| _pages == null || index < 0 || index >= _pages.Length || _pages[index] == null) return;
+		if (animate && index == CurrentPageIndex) return;
+		_pageTween?.Kill();
+		int previous = CurrentPageIndex;
+		CurrentPageIndex = index;
+		for (int i = 0; i < _pages.Length; i++)
+		{
+			if (_pages[i] == null) continue;
+			var group = _pages[i].GetComponent<CanvasGroup>();
+			if (group == null) group = _pages[i].gameObject.AddComponent<CanvasGroup>();
+			group.interactable = group.blocksRaycasts = i == index;
+			bool crossed = i >= Mathf.Min(previous, index) && i <= Mathf.Max(previous, index);
+			if (i == index || (animate && crossed)) _pages[i].gameObject.SetActive(true);
+		}
+		if (previous != index) _pages[index].GetComponent<Sugar.UI.PageViewCell>()?.OnEnterPage?.Invoke();
+		if (animate)
+		{
+			_navigationBar?.SwitchPage(index);
+			// Native PageView scrolls to -viewWidth * index in 0.2 seconds.
+			_pageTween = _pageContent.DOAnchorPosX(-_pageSize.x * index, 0.2f).SetUpdate(true).OnComplete(FinishPageTransition);
+		}
+		else
+		{
+			_navigationBar?.JumpToPage(index);
+			_pageContent.anchoredPosition = new Vector2(-_pageSize.x * index, 0f);
+			FinishPageTransition();
+		}
 	}
 	private void OnClickNavigationCell(int index)
 	{
-		if (_openingGame || HasSettingsOpen || HasLevelBoxOpen || index != HOME_PAGE_INDEX) return;
-		CurrentPageIndex = HOME_PAGE_INDEX; _navigationBar?.SwitchPage(index);
+		SelectPage(index, true);
 	}
 	public void JumpToPage(int index)
 	{
-		if (_openingGame || HasSettingsOpen || HasLevelBoxOpen || index != HOME_PAGE_INDEX) return;
-		CurrentPageIndex = HOME_PAGE_INDEX; _navigationBar?.JumpToPage(index);
+		SelectPage(index, false);
 	}
+	public void SetPageIndex(int index) => JumpToPage(index);
 	public void OpenSettings()
 	{
 		Initialize();
-		if (!_ready || _openingGame || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return;
+		if (!_ready || CurrentPageIndex != HOME_PAGE_INDEX || _openingGame || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return;
 		_settings = SettingsDialog.Show(_canvas.transform).GetAwaiter().GetResult();
 		if (_settings != null) _settings.Closed += OnSettingsClosed;
 	}
 	private void OnSettingsClosed() { if (_settings != null) _settings.Closed -= OnSettingsClosed; _settings = null; }
 	public bool TryEnterGame()
 	{
-		if (_openingGame || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
+		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
 		if (GameProgressStore.IsCampaignComplete || !SpecialStreakManager.Ensure().SettlePending()) return false;
 		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
 		if (catalog == null || catalog.GetLevel(GameProgressStore.NextPlayableLevel) == null) { HomePage.RefreshProgress(); return false; }
@@ -155,6 +222,7 @@ public class HomeController : MonoBehaviour
 	}
 	private void OnDisable()
 	{
+		_pageTween?.Kill(); _pageTween = null;
 		if (_levelBox != null) _levelBox.gameObject.SetActive(false);
 		if (_specialStreak != null) _specialStreak.gameObject.SetActive(false);
 		if (_settings != null) { _settings.Closed -= OnSettingsClosed; _settings.gameObject.SetActive(false); Destroy(_settings.gameObject); }
