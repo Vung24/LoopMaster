@@ -267,7 +267,6 @@ public class GameController : MonoBehaviour
 
 	private void LateUpdate()
 	{
-		// Framing also refreshes during pause/intro and device orientation changes.
 		if (!_cameraLayoutReady || Data == null) return;
 		UpdateCamera();
 	}
@@ -317,7 +316,7 @@ public class GameController : MonoBehaviour
 			box.Info.State != BoxState.Free || !box.CanPopupSlice()) return;
 		Transfers.Launch(box, _sliceJumpDuration, _sliceJumpHeight);
 		if (_newPlayerTutorial != null && _uiCanvasInstance != null)
-			_newPlayerTutorial.OnClickBox(HierarchyReferenceCache.Descendant(_uiCanvasInstance.transform, "Capacity"));
+			_newPlayerTutorial.OnClickBox(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvasInstance.GetComponent<UICanvas>()?.CapacityNode);
 	}
 
 

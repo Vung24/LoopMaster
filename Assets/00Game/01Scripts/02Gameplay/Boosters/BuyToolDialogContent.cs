@@ -9,7 +9,8 @@ public class BuyToolDialogContent : DialogContent
 	public const int RESULT_PURCHASED = 1;
 	private string _toolKey;
 	[SerializeField] private Button _adBtn, _coinBtn;
-	private Transform _titleText, _desc, _icon;
+	[SerializeField] private Transform _titleText, _desc, _icon;
+	[SerializeField] private TMP_Text _coinPriceLabel;
 	private Func<bool> _isValid;
 	private bool _processing;
 	public int Price { get; private set; }
@@ -20,9 +21,11 @@ public class BuyToolDialogContent : DialogContent
 		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdBtn");
 		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinBtn");
 		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.ResolveButton(transform, "CloseButton");
-		_titleText = HierarchyReferenceCache.Descendant(transform, "Title");
-		_desc = HierarchyReferenceCache.Descendant(transform, "Desc");
-		_icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh");
+		if (_titleText == null) _titleText = HierarchyReferenceCache.Descendant(transform, "Title");
+		if (_desc == null) _desc = HierarchyReferenceCache.Descendant(transform, "Desc");
+		if (_icon == null) _icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh");
+		if (_coinPriceLabel == null && _coinBtn != null)
+			_coinPriceLabel = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"));
 		RecoveryDialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
 		RecoveryDialogUI.Bind(_coinBtn, OnClickCoinBtn);
 		RecoveryDialogUI.Bind(_closeBtn, OnClickCloseButton);
@@ -40,7 +43,8 @@ public class BuyToolDialogContent : DialogContent
 		if (_icon != null)
 			foreach (Transform child in _icon)
 				if (InventoryManager.IsBoosterKey(child.name)) child.gameObject.SetActive(child.name == toolKey);
-		if (_coinBtn != null) RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
+		if (_coinPriceLabel != null) _coinPriceLabel.text = Price.ToString();
+		else if (_coinBtn != null) RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
 		if (_adBtn != null)
 		{
 			RecoveryDialogUI.HideNamed(_adBtn.transform, "Ad");

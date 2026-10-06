@@ -18,11 +18,15 @@ namespace Snui
 		private Tween _cursorTween;
 		private bool _layoutDirty;
 		private Vector2 _lastSize;
+		private RectTransform _rect;
+		private float _authoredHeight;
+		private Rect _lastSafeArea;
 		public int CurrIndex { get; private set; } = -1;
 		public int PageIndex => CurrIndex;
 		private void Awake()
 		{
 			Current = this;
+			_rect = (RectTransform)transform; _authoredHeight = _rect.sizeDelta.y;
 			if (_cursor == null) _cursor = HierarchyReferenceCache.Child(transform, "Cursor") as RectTransform;
 			if (_cellsNode == null) _cellsNode = HierarchyReferenceCache.Child(transform, "Buttons");
 			if (_cells == null || _cells.Length == 0) _cells = _cellsNode == null ? new NavigationCell[0] : _cellsNode.GetComponentsInChildren<NavigationCell>(true);
@@ -44,47 +48,91 @@ namespace Snui
 		private void Select(int index, bool animate)
 		{
 			if (!CanSelect(index)) return;
+			if (animate && CurrIndex == index) return;
 			CurrIndex = index;
-			foreach (var cell in _cells) if (cell != null)
-			{
-				if (animate) cell.SetSelected(cell == _cells[index], Snui.NavigationAnim.Default);
-				else cell.Init(cell == _cells[index], 0f, 0f);
-			}
-			Canvas.ForceUpdateCanvases(); LayoutDefault(); MoveCursor(animate); _layoutDirty = false;
+			ApplySafeBottom(); Canvas.ForceUpdateCanvases();
+			LayoutCells(animate); MoveCursor(animate); _lastSize = _rect.rect.size; _layoutDirty = false;
 		}
-		private void LayoutDefault()
+		private void ApplySafeBottom()
 		{
-			if (_cells == null || _cells.Length == 0 || _cellsNode == null) return;
+			float bottom = ScreenHelper.GetCanvasSafeBottom(GetComponentInParent<Canvas>());
+			_rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _authoredHeight + bottom);
+			_lastSafeArea = Screen.safeArea;
+		}
+		private void LayoutCells(bool animate)
+		{
+			if (CurrIndex < 0 || _cells == null || _cells.Length == 0 || _cellsNode == null) return;
 			RectTransform strip = _cellsNode as RectTransform;
 			if (strip == null || strip.rect.width <= 0f) return;
-			float width = strip.rect.width / _cells.Length;
+			// Native Init rebuilds the exported layout before taking ownership of cell positions.
+			if (!animate && strip.GetComponent<UnityEngine.UI.LayoutGroup>()?.enabled == true)
+				UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(strip);
 			foreach (var layout in strip.GetComponents<UnityEngine.UI.LayoutGroup>()) layout.enabled = false;
 			var fitter = strip.GetComponent<UnityEngine.UI.ContentSizeFitter>(); if (fitter != null) fitter.enabled = false;
+			float width = _rect.rect.width / _cells.Length;
+			float selectedWidth = NavigationAnim == Snui.NavigationAnim.Default ? width : width * Mathf.Max(1f, CursorExpand);
+			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && _cells.Length > 1
+				? (_rect.rect.width - selectedWidth) / (_cells.Length - 1) : width;
+			float left = _rect.rect.xMin;
 			for (int i = 0; i < _cells.Length; i++)
 			{
+				if (_cells[i] == null) continue;
 				RectTransform cell = _cells[i].transform as RectTransform;
 				if (cell == null) continue;
-				cell.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-				Vector3 pos = cell.localPosition; pos.x = strip.rect.xMin + width * (i + 0.5f); cell.localPosition = pos;
+				bool selected = i == CurrIndex;
+				float cellWidth = selected && NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth;
+				cell.DOKill();
+				if (animate)
+				{
+					_cells[i].SetSelected(selected, NavigationAnim);
+					cell.DOSizeDelta(new Vector2(cellWidth, cell.sizeDelta.y), 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
+					cell.DOLocalMoveX(left + cellWidth * 0.5f, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
+				}
+				else
+				{
+					_cells[i].Init(selected, normalWidth, NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth);
+					Vector3 pos = cell.localPosition; pos.x = left + cellWidth * 0.5f; cell.localPosition = pos;
+				}
+				_cells[i].SetLineActive(NavigationAnim != Snui.NavigationAnim.Default);
+				if (NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically) _cells[i].SetIconPivot(new Vector2(0.5f, 0.5f));
+				left += cellWidth;
 			}
-			if (_cursor != null) _cursor.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+			if (_cursor != null) _cursor.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, selectedWidth);
 		}
 		private void MoveCursor(bool animate)
 		{
 			if (_cursor == null || !CanSelect(CurrIndex)) return;
 			_cursorTween?.Kill();
-			float x = _cursor.parent.InverseTransformPoint(_cells[CurrIndex].transform.position).x;
-			if (animate) _cursorTween = _cursor.DOLocalMoveX(x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
+			float width = _rect.rect.width / _cells.Length;
+			float selectedWidth = width * Mathf.Max(1f, CursorExpand);
+			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && _cells.Length > 1
+				? (_rect.rect.width - selectedWidth) / (_cells.Length - 1) : width;
+			float x = _rect.rect.xMin + normalWidth * CurrIndex + (NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : width) * 0.5f;
+			if (animate && NavigationAnim == Snui.NavigationAnim.PoppedUp)
+			{
+				Vector3 pos = _cursor.localPosition; pos.x = x; _cursor.localPosition = pos;
+				_cursorTween = DOTween.Sequence().Append(_cursor.DOScale(1.1f, 0.12f)).Append(_cursor.DOScale(1f, 0.08f)).SetUpdate(true);
+			}
+			else if (animate) _cursorTween = _cursor.DOLocalMoveX(x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
 			else { Vector3 pos = _cursor.localPosition; pos.x = x; _cursor.localPosition = pos; }
 		}
 		private void OnRectTransformDimensionsChange() => _layoutDirty = true;
 		private void LateUpdate()
 		{
-			Vector2 size = ((RectTransform)transform).rect.size;
-			if (size != _lastSize || _layoutDirty) { _lastSize = size; LayoutDefault(); MoveCursor(false); _layoutDirty = false; }
+			if (_rect == null || CurrIndex < 0) return;
+			Vector2 size = _rect.rect.size;
+			if (size != _lastSize || _layoutDirty || Screen.safeArea != _lastSafeArea)
+			{
+				ApplySafeBottom(); LayoutCells(false); MoveCursor(false); _lastSize = _rect.rect.size; _layoutDirty = false;
+			}
 		}
 		private void OnEnable() => _layoutDirty = true;
-		private void OnDisable() { _cursorTween?.Kill(); _cursorTween = null; }
+		private void OnDisable()
+		{
+			_cursorTween?.Kill(); _cursorTween = null;
+			if (_cells != null) foreach (var cell in _cells) if (cell != null) cell.transform.DOKill();
+			if (_cursor != null) _cursor.localScale = Vector3.one;
+		}
 		private void OnDestroy()
 		{
 			OnDisable();

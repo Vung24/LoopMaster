@@ -20,7 +20,10 @@ public sealed class UICanvas : MonoBehaviour
 	[SerializeField] private TMP_Text _capacityLabel;
 	[SerializeField] private Image _capacityFill;
 	[SerializeField] private RectTransform _capacityFillRect;
+	[SerializeField] private Transform _capacityNode;
 	[SerializeField] private GameObject PauseDialogPrefab;
+
+	public Transform CapacityNode => _capacityNode != null ? _capacityNode : (_capacityNode = HierarchyReferenceCache.Descendant(transform, "Capacity"));
 	[SerializeField] private SafeArea _safeArea;
 	[SerializeField] private Transform _top;
 	[SerializeField] private Transform _bottom;
