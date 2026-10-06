@@ -1,7 +1,5 @@
 using System;
 
-// Native combo window/pitch come from GameController.UpdateCombo and Box.PlayPopInAudio.
-// Conveyor spacing and offline audio fallbacks retain the recovery's gameplay settings.
 public static class GameplayFeedbackRules
 {
     public const float SliceComboWindow = 0.6f;
