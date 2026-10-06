@@ -17,13 +17,16 @@ public class HomeController : MonoBehaviour
 	public HomePage HomePage;
 	private Canvas _canvas;
 	private Button _settingButton;
+	private Button _heartButton;
+	private MoreHeartDialogContent _heartDialog;
+	public bool HasHeartDialogOpen => _heartDialog != null;
 	private SettingsDialog _settings;
 	private LevelBoxMachine _levelBox;
 	private SpecialStreakProgress _specialStreak;
 	public bool HasSpecialStreakOpen => _specialStreak != null && (_specialStreak.HasDialogOpen || _specialStreak.IsAnimating);
-	public bool CanOpenSpecialStreak => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
+	public bool CanOpenSpecialStreak => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasHeartDialogOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
 	public bool HasLevelBoxOpen => _levelBox != null && _levelBox.HasDialogOpen;
-	public bool CanOpenLevelBox(LevelBoxMachine machine) => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
+	public bool CanOpenLevelBox(LevelBoxMachine machine) => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasHeartDialogOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
 	private bool _ready, _openingGame;
 	public int CurrentPageIndex { get; private set; } = HOME_PAGE_INDEX;
 	public bool HasSettingsOpen => _settings != null && _settings.gameObject.activeSelf;
@@ -114,7 +117,14 @@ public class HomeController : MonoBehaviour
 			_specialStreak = restored.GetComponent<SpecialStreakProgress>();
 		}
 		if (_specialStreak != null) { _specialStreak.gameObject.SetActive(true); _specialStreak.Bind(this); }
-		HudContainer.Show(_canvas.transform).Forget(); HudContainer.Current?.DisableClick();
+		HudContainer.Show(_canvas.transform).Forget();
+		var hud = HudContainer.Current;
+		if (hud != null)
+		{
+			hud.CoinHud?.EnableClick();
+			_heartButton = hud.HeartHud == null ? null : hud.HeartHud.GetComponent<Button>();
+			if (_heartButton != null) { _heartButton.interactable = true; _heartButton.onClick.AddListener(OpenHeartDialog); }
+		}
 	}
 	private void InitializePages()
 	{
@@ -161,7 +171,7 @@ public class HomeController : MonoBehaviour
 	private void SelectPage(int index, bool animate)
 	{
 		Initialize();
-		if (!_ready || _openingGame || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled
+		if (!_ready || _openingGame || HasSettingsOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled
 			|| _pages == null || index < 0 || index >= _pages.Length || _pages[index] == null) return;
 		if (animate && index == CurrentPageIndex) return;
 		_pageTween?.Kill();
@@ -199,17 +209,29 @@ public class HomeController : MonoBehaviour
 		SelectPage(index, false);
 	}
 	public void SetPageIndex(int index) => JumpToPage(index);
+	public void OpenHeartDialog()
+	{
+		Initialize();
+		if (!_ready || !CanOpenLevelBox(_levelBox)) return;
+		_heartDialog = MoreHeartDialogContent.Show(_canvas.transform, JumpHeartDialogSourceScene.HudIn).GetAwaiter().GetResult();
+		if (_heartDialog != null) _heartDialog.Closed += OnHeartDialogClosed;
+	}
+	private void OnHeartDialogClosed()
+	{
+		if (_heartDialog != null) _heartDialog.Closed -= OnHeartDialogClosed;
+		_heartDialog = null;
+	}
 	public void OpenSettings()
 	{
 		Initialize();
-		if (!_ready || CurrentPageIndex != HOME_PAGE_INDEX || _openingGame || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return;
+		if (!_ready || CurrentPageIndex != HOME_PAGE_INDEX || _openingGame || HasSettingsOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return;
 		_settings = SettingsDialog.Show(_canvas.transform).GetAwaiter().GetResult();
 		if (_settings != null) _settings.Closed += OnSettingsClosed;
 	}
 	private void OnSettingsClosed() { if (_settings != null) _settings.Closed -= OnSettingsClosed; _settings = null; }
 	public bool TryEnterGame()
 	{
-		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
+		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
 		if (GameProgressStore.IsCampaignComplete || !SpecialStreakManager.Ensure().SettlePending()) return false;
 		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
 		if (catalog == null || catalog.GetLevel(GameProgressStore.NextPlayableLevel) == null) { HomePage.RefreshProgress(); return false; }
@@ -223,6 +245,8 @@ public class HomeController : MonoBehaviour
 	private void OnDisable()
 	{
 		_pageTween?.Kill(); _pageTween = null;
+		if (_heartDialog != null) { _heartDialog.Closed -= OnHeartDialogClosed; _heartDialog.CloseOverlay(); }
+		_heartDialog = null;
 		if (_levelBox != null) _levelBox.gameObject.SetActive(false);
 		if (_specialStreak != null) _specialStreak.gameObject.SetActive(false);
 		if (_settings != null) { _settings.Closed -= OnSettingsClosed; _settings.gameObject.SetActive(false); Destroy(_settings.gameObject); }
@@ -233,6 +257,7 @@ public class HomeController : MonoBehaviour
 		OnDisable();
 		if (_navigationBar != null) _navigationBar.OnClickCell.RemoveListener(OnClickNavigationCell);
 		if (_settingButton != null) _settingButton.onClick.RemoveListener(OpenSettings);
+		if (_heartButton != null) _heartButton.onClick.RemoveListener(OpenHeartDialog);
 		if (Current == this) Current = null;
 	}
 }
