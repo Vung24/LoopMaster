@@ -517,7 +517,11 @@ public class Box : MonoBehaviour
 		finally { _finishAnimationPending = false; }
 	}
 
-	private void OnDisable() { _finishAnimationPending = false; CancelSurpriseTransformation(); }
+	private void OnDisable()
+	{
+		_finishAnimationPending = false;
+		CancelSurpriseTransformation();
+	}
 
 	private void PlayBoxFinishEffect(int combo, float interval, int finished)
 	{
@@ -538,8 +542,6 @@ public class Box : MonoBehaviour
 				if (square != null)
 				{
 					square.sprite = GameAssetsConfig.GetBoxFinishSprite(combo);
-					// Face the view independently of box rotation without adding another tilt
-					// to the prefab's sprite or changing its animated position/scale.
 					Camera view = Camera.main;
 					if (view != null) square.transform.rotation = view.transform.rotation;
 					square.gameObject.SetActive(square.sprite != null);

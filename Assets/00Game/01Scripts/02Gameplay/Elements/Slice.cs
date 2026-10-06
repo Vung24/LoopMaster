@@ -55,8 +55,6 @@ public class Slice : MonoBehaviour
 	public UniTask JumpToTransfer(int targetPathIndex, float delayTime, float jumpHeight = JumpArcHeight)
 	{
 		if (_info == null || GameData.Current == null) return default;
-		// A negative index keeps the conveyor tick from moving this slice again
-		// while its jump from the box is still in progress.
 		_info.PathIndex = -1;
 		_info.IsMoved = false;
 		Vector3 target = GetRoadPosition(targetPathIndex);
@@ -65,7 +63,6 @@ public class Slice : MonoBehaviour
 		Vector3 direction = next - target;
 		Quaternion rotation = direction.sqrMagnitude > 0.0001f
 			? Quaternion.LookRotation(direction, Vector3.up) : transform.rotation;
-		// Apply the road thickness as the slice lands on the conveyor.
 		StartAnimation(target, rotation, RoadScale, duration, () =>
 		{
 			if (_info == null) return;

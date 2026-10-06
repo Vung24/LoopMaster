@@ -28,8 +28,10 @@ public class BoxNumLock : MonoBehaviour
 		if (_canvas == null) _canvas = HierarchyReferenceCache.Child(transform, "Canvas");
 		if (_countText == null)
 			_countText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Child(_canvas, "Count"));
-		_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall")) ?? _decParticle;
-		_unlockParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCube")) ?? _unlockParticle;
+		if (_decParticle == null)
+			_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall"));
+		if (_unlockParticle == null)
+			_unlockParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCube"));
 	}
 
 	public void Init(BoxInfo info)
