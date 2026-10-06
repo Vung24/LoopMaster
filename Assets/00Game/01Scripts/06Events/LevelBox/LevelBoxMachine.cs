@@ -6,9 +6,10 @@ using DG.Tweening;
 using Snui;
 using Spine.Unity;
 using TMPro;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class LevelBoxMachine : MonoBehaviour
+public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private Transform _bar1, _bar2;
     [SerializeField] private RectTransform _progressMaskRect;
@@ -22,6 +23,7 @@ public class LevelBoxMachine : MonoBehaviour
     private LevelBoxDialogContent _progress;
     private GameObject _progressRoot;
     private Tweener _maskTween;
+    private Spine.AnimationState _machineState;
     private LevelBoxStageInfo _displayStage;
     private bool _busy;
     private readonly System.Collections.Generic.List<Material> _ownedMaterials = new System.Collections.Generic.List<Material>();
@@ -33,12 +35,22 @@ public class LevelBoxMachine : MonoBehaviour
     {
         RestoreSpineMaterials(_machineSpine);
         RestoreSpineMaterials(_chest);
+        if(_machineSpine!=null) _machineSpine.Initialize(true);
+        if(_chest!=null) _chest.Initialize(true);
+        foreach(var follower in GetComponentsInChildren<BoneFollowerGraphic>(true))
+            if(follower.skeletonGraphic==_machineSpine || follower.skeletonGraphic==_chest)
+                follower.Initialize();
         if(_button!=null) _button.onClick.AddListener(OnClickBtn);
-        if(_machineSpine!=null) { _machineSpine.UnscaledTime=true; if(_machineSpine.AnimationState!=null) _machineSpine.AnimationState.Event+=OnMachineEvent; }
+        if(_machineSpine!=null)
+        {
+            _machineSpine.UnscaledTime=true;
+            _machineSpine.OnAnimationRebuild+=OnMachineAnimationRebuilt;
+            BindMachineEvents();
+        }
         if(_chest!=null) _chest.gameObject.SetActive(false);
     }
-    // The exported materials reference placeholder shaders. Use the installed Spine
-    // package shaders on owned copies; leave original assets and other UI untouched.
+    // Keep recovery for older prefabs, using the package shader references instead
+    // of Shader.Find: exported placeholder shaders have the same shader names.
     private void RestoreSpineMaterials(SkeletonGraphic graphic)
     {
         var library=DataPrefabLibrary.Current;
@@ -80,6 +92,10 @@ public class LevelBoxMachine : MonoBehaviour
         PlayMachine(manager.IsUnlock ? "idle" : "static",true);
     }
     public static float GetTargetMaskOffsetPosX(int progress,int goal) => progress<=0 ? 0 : (goal>5 ? NormalMask : FastMask)[Mathf.Clamp(progress-1,0,goal>5 ? 9 : 4)];
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if(eventData.button==PointerEventData.InputButton.Left) OnClickBtn();
+    }
     public void OnClickBtn()
     {
         if(_busy || !isActiveAndEnabled || (_home!=null && !_home.CanOpenLevelBox(this))) return;
@@ -112,7 +128,12 @@ public class LevelBoxMachine : MonoBehaviour
         catch(Exception error) { _busy=false; Debug.LogWarning("LevelBox UI unavailable: "+error.Message); }
     }
     private void OnRewardClosed() { if(_rewards!=null) _rewards.Closed-=OnRewardClosed; _rewards=null; _busy=false; if(isActiveAndEnabled) RefreshProgress(); }
-    private void OnProgressClosed(int result) { if(_progress!=null) _progress.Dismissed-=OnProgressClosed; _progress=null; _busy=false; }
+    private void OnProgressClosed(int result)
+    {
+        if(_progress!=null) _progress.Dismissed-=OnProgressClosed;
+        _progress=null; _busy=false;
+        if(isActiveAndEnabled) RefreshProgress();
+    }
     public UniTask PlayAnims()
     {
         if(!isActiveAndEnabled) return UniTask.CompletedTask;
@@ -136,7 +157,20 @@ public class LevelBoxMachine : MonoBehaviour
     }
     private void PlayMachine(string name,bool loop)
     {
-        if(_machineSpine?.SkeletonData?.FindAnimation(name)!=null) _machineSpine.AnimationState.SetAnimation(0,name,loop);
+        if(_machineSpine?.SkeletonData?.FindAnimation(name)!=null)
+        {
+            _machineSpine.AnimationState.SetAnimation(0,name,loop);
+            _machineSpine.Update(0);
+        }
+    }
+    private void OnMachineAnimationRebuilt(ISkeletonAnimation animation) => BindMachineEvents();
+    private void BindMachineEvents()
+    {
+        var state=_machineSpine==null ? null : _machineSpine.AnimationState;
+        if(ReferenceEquals(state,_machineState)) return;
+        if(_machineState!=null) _machineState.Event-=OnMachineEvent;
+        _machineState=state;
+        if(_machineState!=null) _machineState.Event+=OnMachineEvent;
     }
     private void OnMachineEvent(Spine.TrackEntry track,Spine.Event evt)
     {
@@ -166,7 +200,9 @@ public class LevelBoxMachine : MonoBehaviour
     private void OnDestroy()
     {
         if(_button!=null) _button.onClick.RemoveListener(OnClickBtn);
-        if(_machineSpine!=null && _machineSpine.AnimationState!=null) _machineSpine.AnimationState.Event-=OnMachineEvent;
+        if(_machineSpine!=null) _machineSpine.OnAnimationRebuild-=OnMachineAnimationRebuilt;
+        if(_machineState!=null) _machineState.Event-=OnMachineEvent;
+        _machineState=null;
         foreach(var material in _ownedMaterials) if(material!=null) Destroy(material);
         _ownedMaterials.Clear();
     }

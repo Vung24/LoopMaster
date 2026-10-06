@@ -23,6 +23,11 @@ namespace Snui
 		private Rect _lastSafeArea;
 		public int CurrIndex { get; private set; } = -1;
 		public int PageIndex => CurrIndex;
+		public static float GetNavigationBottomOffset()
+		{
+			if (Current == null || Current._rect == null) return 140f;
+			return Current._rect.rect.height;
+		}
 		private void Awake()
 		{
 			Current = this;

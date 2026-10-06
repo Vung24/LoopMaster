@@ -9,6 +9,7 @@ namespace Snui
         public GameObject FlyCoinPrefab;
         public GameObject HudContainerPrefab;
         public GameObject SettingsDialogPrefab;
+        public GameObject MoreHeartDialogPrefab;
         public GameObject HomeIconNotifierPrefab;
         public GameObject HomeIconProgressPrefab;
         public GameObject SpecialStreakProgressPrefab;
@@ -38,6 +39,13 @@ namespace Snui
         public GameObject QuitConfirmPrefab;
         public GameObject BuyToolDialogPrefab;
         public GameObject FeatureUnlockDialogPrefab;
+        public GameObject ShopDialogContentPrefab;
+        public GameObject ShopCoinItemPrefab;
+        public GameObject ShopBundleItemPrefab;
+        public GameObject ShopMoreOffersItemPrefab;
+        public GameObject PurchaseFailDialogContentPrefab;
+        public GameObject ShopRewardItemPrefab;
+        public GameObject ShopRibbonPrefab;
         public Sprite[] CoinSprites;
         private static DataPrefabLibrary current;
 
@@ -61,6 +69,7 @@ namespace Snui
             if (path == "Snui/Common/Prefabs/FlyCoin.prefab") return FlyCoinPrefab;
             if (path == "Common/Prefab/HudContainer.prefab" || path == "Common/Prefab/HudContainer") return HudContainerPrefab;
             if (path == "Settings/Prefab/SettingsDialog.prefab" || path == "Settings/Prefab/SettingsDialog") return SettingsDialogPrefab;
+            if (path == MoreHeartDialogContent.PATH) return MoreHeartDialogPrefab;
             if (path.EndsWith("SpecialStreakProgress.prefab")) return SpecialStreakProgressPrefab;
             if (path.EndsWith("SpecialStreakDialog.prefab")) return SpecialStreakDialogPrefab;
             if (path.EndsWith("SpecialStreakInfoDialog.prefab")) return SpecialStreakInfoDialogPrefab;
@@ -75,6 +84,13 @@ namespace Snui
             if (path == "Game/Prefab/UI/SpeedUpTutorialDialogContent.prefab") return SpeedUpTutorialPrefab;
             if (path == "Game/Prefab/Pause/ReplayDialogContent.prefab") return ReplayConfirmPrefab;
             if (path == "Game/Prefab/Pause/QuitLevelDialogContent.prefab") return QuitConfirmPrefab;
+            if (path.IndexOf("ShopDialogContent", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopDialogContentPrefab;
+            if (path.IndexOf("PurchaseFail", System.StringComparison.OrdinalIgnoreCase) >= 0) return PurchaseFailDialogContentPrefab;
+            if (path.IndexOf("MoreOffer", System.StringComparison.OrdinalIgnoreCase) >= 0 || path.IndexOf("moreoffers", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopMoreOffersItemPrefab;
+            if (path.IndexOf("CoinItem", System.StringComparison.OrdinalIgnoreCase) >= 0 || path.IndexOf("coins_", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopCoinItemPrefab;
+            if (path.IndexOf("ShopRewardItem", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopRewardItemPrefab;
+            if (path.IndexOf("ShopRibbon", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopRibbonPrefab;
+            if (path.IndexOf("Bundle", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopBundleItemPrefab;
             return Resources.Load<GameObject>(path.EndsWith(".prefab") ? path.Substring(0, path.Length - 7) : path);
         }
         public Sprite ResolveRewardIcon(string path)
