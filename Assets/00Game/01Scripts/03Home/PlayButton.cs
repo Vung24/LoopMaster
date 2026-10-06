@@ -247,28 +247,36 @@ public class PlayButton : MonoBehaviour
 	}
 
 	private CountdownHelper _unlimitedCountdown;
+	private bool _updatingUnlimitedTip;
 
 	private void UpdateUnlimitedTip()
 	{
-		bool isInfinite = Managers.Heart != null && Managers.Heart.IsInfinite();
-		if (_unlimitedTip != null)
+		// Replacing/stopping the countdown invokes OnTimerStoped synchronously.
+		if (_updatingUnlimitedTip) return;
+		_updatingUnlimitedTip = true;
+		try
 		{
-			_unlimitedTip.gameObject.SetActive(isInfinite);
+			bool isInfinite = Managers.Heart != null && Managers.Heart.IsInfinite();
+			if (_unlimitedTip != null)
+			{
+				_unlimitedTip.gameObject.SetActive(isInfinite);
+			}
+			if (isInfinite && _unlimitedTipTime != null)
+			{
+				if (_unlimitedCountdown == null)
+					_unlimitedCountdown = _unlimitedTipTime.GetComponent<CountdownHelper>() ?? _unlimitedTipTime.gameObject.AddComponent<CountdownHelper>();
+				_unlimitedCountdown.OnTimerTick.RemoveListener(OnUnlimitedTick);
+				_unlimitedCountdown.OnTimerStoped.RemoveListener(OnUnlimitedStop);
+				_unlimitedCountdown.OnTimerTick.AddListener(OnUnlimitedTick);
+				_unlimitedCountdown.OnTimerStoped.AddListener(OnUnlimitedStop);
+				_unlimitedCountdown.CountdownUntil(Managers.Heart.InfiniteHeartEndTime);
+			}
+			else if (_unlimitedCountdown != null)
+			{
+				_unlimitedCountdown.StopTimer();
+			}
 		}
-		if (isInfinite && _unlimitedTipTime != null)
-		{
-			if (_unlimitedCountdown == null)
-				_unlimitedCountdown = _unlimitedTipTime.GetComponent<CountdownHelper>() ?? _unlimitedTipTime.gameObject.AddComponent<CountdownHelper>();
-			_unlimitedCountdown.OnTimerTick.RemoveListener(OnUnlimitedTick);
-			_unlimitedCountdown.OnTimerStoped.RemoveListener(OnUnlimitedStop);
-			_unlimitedCountdown.OnTimerTick.AddListener(OnUnlimitedTick);
-			_unlimitedCountdown.OnTimerStoped.AddListener(OnUnlimitedStop);
-			_unlimitedCountdown.CountdownUntil(Managers.Heart.InfiniteHeartEndTime);
-		}
-		else if (_unlimitedCountdown != null)
-		{
-			_unlimitedCountdown.StopTimer();
-		}
+		finally { _updatingUnlimitedTip = false; }
 	}
 
 	private void OnUnlimitedTick(long seconds)

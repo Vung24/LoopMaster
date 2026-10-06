@@ -14,30 +14,33 @@ namespace ShopUI
 
 	public class ShopDelegate : IShopDelegate
 	{
-		private GameObject _loading;
-
 		public virtual List<string> GetShopProducts()
 		{
-			var list = new List<string>();
-			if (!IsLimitShowProduct("beginbundle")) list.Add("beginbundle");
-			if (!IsLimitShowProduct("removead")) list.Add("removead");
-			list.Add("coins_500");
-			list.Add("coins_1200");
-			list.Add("coins_2500");
-			list.Add("coins_6500");
-			list.Add("coins_14000");
-			if (!IsLimitShowProduct("megabundle")) list.Add("megabundle");
-			if (!IsLimitShowProduct("ultrabundle")) list.Add("ultrabundle");
-			if (!IsLimitShowProduct("masterbundle")) list.Add("masterbundle");
-			if (!IsLimitShowProduct("legendarybundle")) list.Add("legendarybundle");
-			list.Add("moreoffers");
+			// ShopDelegate.GetShopProducts, RVA 0x17C444C.
+			var list = new List<string>
+			{
+				ShopProductCatalog.GoldenPass, ShopProductCatalog.Beginner,
+				"loop.master.bundle", "loop.mega.bundle", "loop.ultra.bundle",
+				"loop.giant.bundle", "loop.legendary.bundle",
+				"loop.coins.1000", "loop.coins.5000", "loop.coins.10000",
+				"loop.coins.25000", "loop.coins.50000", "loop.coins.100000"
+			};
+			// Local counterpart of the original remote-config/deeplink gate (default: closed).
+			if (PlayerPrefs.GetInt("is_open_remove_ad", 0) == 1)
+			{
+				list.Insert(1, ShopProductCatalog.NoAdsPlus);
+				list.Insert(2, ShopProductCatalog.NoAds);
+			}
 			return list;
 		}
 
 		public virtual bool IsLimitShowProduct(string type)
 		{
-			if (string.IsNullOrEmpty(type)) return false;
-			if (type.Equals("removead", StringComparison.OrdinalIgnoreCase) || type.Equals("removeads", StringComparison.OrdinalIgnoreCase))
+			type = ShopProductCatalog.CanonicalId(type);
+			// The pass system is still a placeholder in this offline project.
+			if (type == ShopProductCatalog.GoldenPass) return true;
+			if (type == ShopProductCatalog.Beginner) return OfflineShopPurchases.PurchaseCount(type) > 0;
+			if (type == ShopProductCatalog.NoAds || type == ShopProductCatalog.NoAdsPlus)
 			{
 				return PlayerPrefs.GetInt("HasRemovedAds", 0) == 1;
 			}
@@ -46,46 +49,32 @@ namespace ShopUI
 
 		public void ClaimFreeCoins(int amount)
 		{
-			int currentCoins = PlayerPrefs.GetInt("GameCoins", 1000);
-			PlayerPrefs.SetInt("GameCoins", currentCoins + amount);
-			PlayerPrefs.Save();
+			InventoryManager.Ensure().Add(InventoryKeys.COIN, amount, "shop_free_coin");
 		}
 
 		public virtual string GetProductResPath(string id)
 		{
 			if (string.IsNullOrEmpty(id)) return "";
-			switch (id.ToLowerInvariant())
+			switch (ShopProductCatalog.CanonicalId(id))
 			{
-				case "beginbundle":
-				case "beginnerbundle":
-				case "begin_bundle":
+				case ShopProductCatalog.Beginner:
 					return "ShopUI/Prefab/BeginBundleItem.prefab";
-				case "removead":
-				case "remove_ads":
-				case "removeads":
+				case ShopProductCatalog.NoAds:
 					return "ShopUI/Prefab/RemoveAdItem.prefab";
-				case "removeadbundle":
-				case "remove_ad_bundle":
+				case ShopProductCatalog.NoAdsPlus:
 					return "ShopUI/Prefab/RemoveAdBundleItem.prefab";
-				case "megabundle":
-				case "mega_bundle":
+				case "loop.mega.bundle":
 					return "ShopUI/Prefab/MegaBundleItem.prefab";
-				case "ultrabundle":
-				case "ultra_bundle":
+				case "loop.ultra.bundle":
 					return "ShopUI/Prefab/UltraBundleItem.prefab";
-				case "giantbundle":
-				case "giant_bundle":
+				case "loop.giant.bundle":
 					return "ShopUI/Prefab/GiantBundleItem.prefab";
-				case "masterbundle":
-				case "master_bundle":
+				case "loop.master.bundle":
 					return "ShopUI/Prefab/MasterBundleItem.prefab";
-				case "legendarybundle":
-				case "legendary_bundle":
+				case "loop.legendary.bundle":
 					return "ShopUI/Prefab/LegendaryBundleItem.prefab";
-				case "moreoffers":
-				case "more_offers":
-				case "moreoffer":
-					return "04Prefabs/Shop/MoreOffer.prefab";
+				case ShopProductCatalog.MoreOffers:
+					return "ShopUI/Prefabs/MoreOffer.prefab";
 				default:
 					if (id.IndexOf("coin", StringComparison.OrdinalIgnoreCase) >= 0)
 						return "ShopUI/Prefab/CoinItem.prefab";
@@ -100,13 +89,25 @@ namespace ShopUI
 	{
 		public override List<string> GetShopProducts()
 		{
-			return new List<string>
+			var list = new List<string>();
+			if (!OfflineShopPurchases.IsAnyPurchased)
 			{
-				"coins_500",
-				"coins_1200",
-				"coins_2500",
-				"coins_6500"
-			};
+				list.Add(ShopProductCatalog.Beginner);
+				list.Add("loop.master.bundle");
+				list.Add("loop.coins.1000");
+			}
+			else
+			{
+				if (OfflineShopPurchases.PurchaseCount(ShopProductCatalog.Beginner) == 0)
+					list.Add(ShopProductCatalog.Beginner);
+				list.Add("loop.master.bundle");
+				if (OfflineShopPurchases.PurchaseCount(ShopProductCatalog.Beginner) > 0)
+					list.Add("loop.mega.bundle");
+				list.Add("loop.coins.5000");
+			}
+			list.Add("loop.coins.10000");
+			list.Add(ShopProductCatalog.MoreOffers);
+			return list;
 		}
 	}
 }

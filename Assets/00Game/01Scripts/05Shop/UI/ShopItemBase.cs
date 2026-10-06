@@ -32,7 +32,8 @@ namespace ShopUI
 
 			if (_price == null)
 			{
-				_price = HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "BuyBtn")
+				_price = (_buyBtn == null ? null : _buyBtn.GetComponentInChildren<Snui_Price>(true))
+					?? HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "BuyBtn")
 					?? HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "Snui_Price")
 					?? HierarchyReferenceCache.DescendantComponent<Snui_Price>(transform, "Snui_Price")
 					?? HierarchyReferenceCache.ChildComponent<Snui_Price>(transform, "Price")

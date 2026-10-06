@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
 
 namespace ShopUI
 {
-    // IapManager.SetupProducts, RVA 0x17BA0C8. Prices are offline USD fallbacks.
+    // Product IDs and rewards from IapManager.SetupProducts, RVA 0x17BA0C8.
     public static class ShopProductCatalog
     {
         public const string Beginner = "loop.beginner.bundle";
