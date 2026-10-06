@@ -20,6 +20,8 @@ GameObject:
   m_Component:
   - component: {fileID: 420}
   - component: {fileID: 419}
+  - component: {fileID: 672}
+  - component: {fileID: 673}
   m_Layer: 5
   m_Name: UICanvas
   m_TagString: Untagged
@@ -3668,7 +3670,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &206
 GameObject:
   m_ObjectHideFlags: 0
@@ -61818,7 +61820,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 19379d1a7dee77f56db2ef18d33b54d4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  _navigationBar: {fileID: 902}
+  HomePage: {fileID: 740}
+  _pageContent: {fileID: 421}
+  _pages:
+  - {fileID: 508}
+  - {fileID: 445}
+  - {fileID: 548}
+  - {fileID: 425}
 --- !u!114 &682
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62020,7 +62030,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dfe3649a55edefb0e8ba77ae73626d4d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  _noNetwork: {fileID: 60}
+  _loading: {fileID: 78}
 --- !u!114 &694
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63193,7 +63205,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b8c6e1f61ad626da764baf967582fd6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  _noNetwork: {fileID: 73}
+  _loading: {fileID: 50}
 --- !u!114 &750
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64791,7 +64805,10 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6a5ad230b53cdd7025d9bc9cca43b5b9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  _safeArea: {fileID: 470}
+  _offlineMessageTemplate: {fileID: 613}
+  _titleTemplate: {fileID: 668}
 --- !u!114 &823
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69022,3 +69039,43 @@ SceneRoots:
   - {fileID: 214}
   - {fileID: 215}
   - {fileID: 420}
+--- !u!114 &673
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 13}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_UiScaleMode: 1
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 750, y: 1624}
+  m_ScreenMatchMode: 1
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
+--- !u!114 &672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 13}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
