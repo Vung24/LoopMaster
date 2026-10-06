@@ -24,7 +24,8 @@ public class CubeNumLock : MonoBehaviour
 		if (_countText == null)
 			_countText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Child(_canvas, "Count"));
 		// Play the whole effect rather than the serialized SnowPiont sub-particle.
-		_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall")) ?? _decParticle;
+		if (_decParticle == null)
+			_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall"));
 		_isLoaded = true;
 	}
 
