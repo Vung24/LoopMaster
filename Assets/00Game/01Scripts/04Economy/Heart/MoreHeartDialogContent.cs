@@ -47,16 +47,28 @@ public class MoreHeartDialogContent : DialogContent
 	}
 	public void Init(JumpHeartDialogSourceScene scene)
 	{
-		// The recovered heart manager grants unlimited offline play.
+		var heartMgr = Managers.Heart;
+		bool isInfinite = heartMgr != null && heartMgr.IsInfinite();
 		RecoveryDialogUI.Label(HierarchyReferenceCache.Child(transform, "Title"), "LIVES");
 		if (_heartNum != null)
 		{
-			_heartNum.text = "FULL";
+			_heartNum.text = isInfinite ? "∞" : (heartMgr != null ? heartMgr.GetHeartCount().ToString() : "5");
 			_heartNum.enableAutoSizing = true; _heartNum.fontSizeMin = 24f; _heartNum.fontSizeMax = 60f;
 		}
 		if (_timeLabel != null)
 		{
-			_timeLabel.text = "Unlimited";
+			if (isInfinite)
+			{
+				_timeLabel.text = TimeFormatter.FormatTimeLeft(heartMgr.InfiniteLeftTime);
+			}
+			else if (heartMgr != null && !heartMgr.IsHeartFull())
+			{
+				_timeLabel.text = TimeFormatter.FormatSeconds(heartMgr.GetRecoverTime());
+			}
+			else
+			{
+				_timeLabel.text = "FULL";
+			}
 			_timeLabel.enableAutoSizing = true; _timeLabel.fontSizeMin = 18f; _timeLabel.fontSizeMax = 34f;
 			_timeLabel.enableWordWrapping = false;
 		}
