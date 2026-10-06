@@ -99,7 +99,6 @@ public class GameController : MonoBehaviour
 		int reward = GetWinRewardCoins(data);
 		if (reward <= 0 || _winRewardClaimed || _isTransitioningLevel) return false;
 		reward *= doubled ? 2 : 1;
-		// Reserve before publishing inventory events: listeners can reenter this controller.
 		_winRewardClaimed = true;
 		if (!InventoryManager.Ensure().Add(InventoryKeys.COIN, reward, doubled ? "win_offline_double" : "win"))
 		{
