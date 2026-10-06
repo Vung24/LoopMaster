@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using System.Collections.Generic;
 
 public class Cube : MonoBehaviour
 {
@@ -27,7 +28,7 @@ public class Cube : MonoBehaviour
 	private CancellationTokenSource _surpriseLifetime;
 	private UniTask _surpriseTask;
 	private int _visualVersion;
-	private readonly System.Collections.Generic.List<GameObject> _secretParticles = new System.Collections.Generic.List<GameObject>();
+	private readonly List<GameObject> _secretParticles = new List<GameObject>();
 
 	public CubeInfo Info => _info;
 	public SecretBlockMarker SecretMarker => _secretMarker;
