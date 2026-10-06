@@ -21,6 +21,8 @@ namespace ShopUI
 
 			if (_moreBtn != null)
 			{
+				// MoreOffer has a single button; base Awake must not also dispatch a purchase.
+				if (_moreBtn == _buyBtn) _buyBtn.onClick.RemoveListener(OnClickBuyBtn);
 				_moreBtn.onClick.AddListener(OnClickMoreBtn);
 			}
 		}

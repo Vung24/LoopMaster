@@ -18,18 +18,27 @@ namespace ShopUI
 		public float Spacing = 20f;
 		public bool UploadShowingLog = true;
 		[SerializeField] private ScrollRect _scrollList;
+		[SerializeField] private Image _ribbonImage;
 		private List<ShopItemBase> _items = new List<ShopItemBase>();
 		private IShopDelegate _delegate;
+		private bool _initializing;
+		private bool _initialized;
+		private readonly List<Sequence> _itemAnimations = new List<Sequence>();
 
 		public IShopDelegate Delegate { set => _delegate = value; }
 
 		public static async UniTask<ShopDialogContent> Show(Transform parent, IShopDelegate shopDelegate, string route)
 		{
+			HeartManager.EnsureInitialized();
 			var settings = ShopUISettings_SO.Instance;
 			ShopDialogContent content = null;
 			if (settings != null && settings.ShopDialogContentPrefab != null && settings.ShopDialogContentPrefab.RuntimeKeyIsValid())
 			{
-				content = await Dialog.ShowContent<ShopDialogContent>(parent, settings.ShopDialogContentPrefab);
+				// Native Show instantiates content under the supplied parent, without a modal wrapper.
+				var go = await AddressableUtils.AsyncLoadAsGameObject(settings.ShopDialogContentPrefab, parent).Task;
+				if (parent == null) { if (go != null) Destroy(go); return null; }
+				content = go == null ? null : go.GetComponent<ShopDialogContent>();
+				if (go != null && content == null) Destroy(go);
 			}
 
 			if (content == null)
@@ -106,21 +115,47 @@ namespace ShopUI
 			{
 				_items = new List<ShopItemBase>();
 			}
+			if (_closeBtn != null)
+			{
+				_closeBtn.onClick.RemoveListener(OnClickCloseButton);
+				_closeBtn.onClick.AddListener(OnClickCloseButton);
+			}
+			OfflineShopPurchases.PurchaseFinished += OnPurchaseFinish;
 		}
 
 		protected override void Start()
 		{
 			base.Start();
-			if (_closeBtn != null)
-			{
-				_closeBtn.onClick.AddListener(() => Hide());
-			}
-
 			InitAsync(this.GetCancellationTokenOnDestroy()).Forget();
+			if (_ribbonImage != null)
+			{
+				var ribbon = _ribbonImage.rectTransform;
+				ribbon.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+					ribbon.rect.height + ScreenHelper.GetCanvasNotchHeight(_canvas));
+			}
+		}
+
+		private void OnEnable()
+		{
+			if (_initialized) RefreshShop();
+		}
+
+		private void OnDisable()
+		{
+			StopItemAnimations(true);
+		}
+
+		private void StopItemAnimations(bool complete)
+		{
+			foreach (var animation in _itemAnimations)
+				if (animation != null && animation.IsActive()) animation.Kill(complete);
+			_itemAnimations.Clear();
 		}
 
 		private void OnDestroy()
 		{
+			OfflineShopPurchases.PurchaseFinished -= OnPurchaseFinish;
+			StopItemAnimations(false);
 			if (_items != null)
 			{
 				foreach (var item in _items)
@@ -132,37 +167,47 @@ namespace ShopUI
 
 		private async UniTask InitAsync(CancellationToken token)
 		{
-			if (_delegate == null) _delegate = new ShopDelegate();
-			var products = _delegate.GetShopProducts();
-			if (products == null || products.Count == 0) return;
-
-			var tasks = new List<UniTask>();
-			for (int i = 0; i < products.Count; i++)
+			if (_initialized || _initializing) return;
+			_initializing = true;
+			try
 			{
-				string product = products[i];
-				if (!_delegate.IsLimitShowProduct(product))
+				if (_delegate == null) _delegate = new ShopDelegate();
+				var products = _delegate.GetShopProducts();
+				if (products == null) return;
+
+				var tasks = new List<UniTask>();
+				for (int i = 0; i < products.Count; i++)
 				{
-					tasks.Add(AddItems(product, i, token));
+					string product = products[i];
+					if (!_delegate.IsLimitShowProduct(product))
+					{
+						tasks.Add(AddItems(product, i, token));
+					}
 				}
+
+				await UniTask.WhenAll(tasks);
+				if (token.IsCancellationRequested) return;
+
+				UpdateItemOrder();
+				Relayout();
+				_initialized = true;
+				if (isActiveAndEnabled) PlayItemsEnterAnimation();
+				else foreach (var item in _items) if (item != null) item.gameObject.SetActive(true);
 			}
-
-			await UniTask.WhenAll(tasks);
-			if (token.IsCancellationRequested) return;
-
-			UpdateItemOrder();
-			Relayout();
-			PlayItemsEnterAnimation();
+			finally { _initializing = false; }
 		}
 
 		private void RefreshShop()
 		{
 			if (_items == null || _delegate == null) return;
+			StopItemAnimations(true);
 			bool changed = false;
 			for (int i = _items.Count - 1; i >= 0; i--)
 			{
 				var item = _items[i];
 				if (item != null && _delegate.IsLimitShowProduct(item.Type))
 				{
+					item.gameObject.SetActive(false);
 					Destroy(item.gameObject);
 					_items.RemoveAt(i);
 					changed = true;
@@ -171,6 +216,7 @@ namespace ShopUI
 
 			if (changed)
 			{
+				UpdateItemOrder();
 				Relayout();
 			}
 		}
@@ -195,7 +241,7 @@ namespace ShopUI
 			float contentHeight = totalItemHeights + Padding.top + Padding.bottom + Spacing * Mathf.Max(0, _items.Count - 1);
 			if (contentRt != null)
 			{
-				contentRt.sizeDelta = new Vector2(contentRt.sizeDelta.x, contentHeight);
+				contentRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, contentHeight);
 			}
 
 			float currentY = 0f;
@@ -209,7 +255,7 @@ namespace ShopUI
 				rt.anchorMin = new Vector2(0.5f, 1f);
 				rt.anchorMax = new Vector2(0.5f, 1f);
 				float h = rt.rect.height;
-				float x = (Padding.left - Padding.right) * 0.5f;
+				float x = Padding.left - Padding.right;
 				float y = -Padding.top - currentY - h * 0.5f - Spacing * i;
 				rt.anchoredPosition = new Vector2(x, y);
 				currentY += h;
@@ -231,6 +277,7 @@ namespace ShopUI
 
 		private async UniTask AddItems(string type, int index, CancellationToken token)
 		{
+			token.ThrowIfCancellationRequested();
 			string resPath = _delegate != null ? _delegate.GetProductResPath(type) : type;
 			GameObject prefab = null;
 
@@ -241,7 +288,7 @@ namespace ShopUI
 
 			if (prefab == null && !string.IsNullOrEmpty(resPath))
 			{
-				prefab = Resources.Load<GameObject>(resPath)
+				prefab = Resources.Load<GameObject>(resPath.EndsWith(".prefab") ? resPath.Substring(0, resPath.Length - 7) : resPath)
 					?? Resources.Load<GameObject>("Shop/Prefab/" + System.IO.Path.GetFileNameWithoutExtension(resPath))
 					?? Resources.Load<GameObject>("04Prefabs/Shop/" + System.IO.Path.GetFileNameWithoutExtension(resPath));
 			}
@@ -266,6 +313,7 @@ namespace ShopUI
 					prefab = Resources.Load<GameObject>("Shop/Prefab/BundleBase") ?? Resources.Load<GameObject>("04Prefabs/Shop/BundleBase");
 			}
 
+			token.ThrowIfCancellationRequested();
 			Transform container = _scrollList != null && _scrollList.content != null ? _scrollList.content : transform;
 			if (prefab != null)
 			{
@@ -294,27 +342,13 @@ namespace ShopUI
 				_items.Add(item);
 			}
 
-			await UniTask.Yield();
+			else Debug.LogWarning("Shop prefab is missing for " + type, this);
+			await UniTask.Yield(token);
 		}
 
 		private void OnItemClickBuy(string type)
 		{
-			int coinReward = 0;
-			var match = System.Text.RegularExpressions.Regex.Match(type ?? "", @"\d+");
-			if (match.Success && int.TryParse(match.Value, out int count))
-			{
-				coinReward = count;
-			}
-			else
-			{
-				coinReward = 1000;
-			}
-
-			int currentCoins = PlayerPrefs.GetInt("GameCoins", 1000);
-			PlayerPrefs.SetInt("GameCoins", currentCoins + coinReward);
-			PlayerPrefs.Save();
-
-			OnPurchaseFinish(type, true);
+			OfflineShopPurchases.Purchase(type, Route);
 		}
 
 		private void OnPurchaseFinish(string product, bool isSuccess)
@@ -325,7 +359,8 @@ namespace ShopUI
 
 		private async UniTaskVoid CheckRefreshShop(string product)
 		{
-			await UniTask.Delay(100);
+			await UniTask.WaitUntil(() => !OfflineShopPurchases.IsBusy,
+				cancellationToken: this.GetCancellationTokenOnDestroy());
 			if (_delegate != null && _delegate.IsLimitShowProduct(product))
 			{
 				RefreshShop();
@@ -334,22 +369,16 @@ namespace ShopUI
 
 		private void OnClickMoreOffer(string type)
 		{
-			if (_scrollList != null)
-			{
-				_scrollList.DOVerticalNormalizedPos(1f, 0.3f).SetLink(_scrollList.gameObject);
-			}
-			else
-			{
-				Dismiss(RESULT_MORE_OFFER);
-			}
+			Dismiss(RESULT_MORE_OFFER);
 		}
 
 		private void PlayItemsEnterAnimation()
 		{
 			if (_items == null || _items.Count == 0) return;
+			StopItemAnimations(true);
 
 			float screenWidth = Screen.width;
-			RectTransform rect = transform as RectTransform;
+			RectTransform rect = _canvas == null ? transform as RectTransform : _canvas.rootCanvas.transform as RectTransform;
 			if (rect != null && rect.rect.width > 0)
 			{
 				screenWidth = rect.rect.width;
@@ -366,12 +395,14 @@ namespace ShopUI
 				pos.x -= screenWidth;
 				item.transform.localPosition = pos;
 
-				float delay = item.Index * 0.05f;
+				item.transform.DOKill();
+				float delay = item.Index * 0.066f;
 				var seq = DOTween.Sequence();
-				seq.Append(item.transform.DOLocalMoveX(targetX + 20f, 0.37f).SetEase(Ease.OutQuad));
-				seq.Append(item.transform.DOLocalMoveX(targetX, 0.28f).SetEase(Ease.OutCubic));
+				seq.Append(item.transform.DOLocalMoveX(targetX + 74f, 0.37f).SetEase(Ease.OutCubic));
+				seq.Append(item.transform.DOLocalMoveX(targetX, 0.28f).SetEase(Ease.InOutSine));
 				seq.SetDelay(delay);
-				seq.SetLink(item.gameObject);
+				seq.SetLink(gameObject);
+				_itemAnimations.Add(seq);
 			}
 		}
 	}

@@ -42,6 +42,9 @@ namespace Snui
         public GameObject ShopDialogContentPrefab;
         public GameObject ShopCoinItemPrefab;
         public GameObject ShopBundleItemPrefab;
+        public GameObject ShopBeginnerItemPrefab, ShopMasterItemPrefab, ShopMegaItemPrefab;
+        public GameObject ShopUltraItemPrefab, ShopGiantItemPrefab, ShopLegendaryItemPrefab;
+        public GameObject ShopNoAdsItemPrefab, ShopNoAdsPlusItemPrefab;
         public GameObject ShopMoreOffersItemPrefab;
         public GameObject PurchaseFailDialogContentPrefab;
         public GameObject ShopRewardItemPrefab;
@@ -84,6 +87,17 @@ namespace Snui
             if (path == "Game/Prefab/UI/SpeedUpTutorialDialogContent.prefab") return SpeedUpTutorialPrefab;
             if (path == "Game/Prefab/Pause/ReplayDialogContent.prefab") return ReplayConfirmPrefab;
             if (path == "Game/Prefab/Pause/QuitLevelDialogContent.prefab") return QuitConfirmPrefab;
+            switch (System.IO.Path.GetFileNameWithoutExtension(path))
+            {
+                case "BeginBundleItem": return ShopBeginnerItemPrefab;
+                case "MasterBundleItem": return ShopMasterItemPrefab;
+                case "MegaBundleItem": return ShopMegaItemPrefab;
+                case "UltraBundleItem": return ShopUltraItemPrefab;
+                case "GiantBundleItem": return ShopGiantItemPrefab;
+                case "LegendaryBundleItem": return ShopLegendaryItemPrefab;
+                case "RemoveAdItem": return ShopNoAdsItemPrefab;
+                case "RemoveAdBundleItem": return ShopNoAdsPlusItemPrefab;
+            }
             if (path.IndexOf("ShopDialogContent", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopDialogContentPrefab;
             if (path.IndexOf("PurchaseFail", System.StringComparison.OrdinalIgnoreCase) >= 0) return PurchaseFailDialogContentPrefab;
             if (path.IndexOf("MoreOffer", System.StringComparison.OrdinalIgnoreCase) >= 0 || path.IndexOf("moreoffers", System.StringComparison.OrdinalIgnoreCase) >= 0) return ShopMoreOffersItemPrefab;

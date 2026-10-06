@@ -94,7 +94,7 @@ namespace Snui
 
 		private void PlayClickButtonSound()
 		{
-			if (!EnableClickAudio || !GameAudioSettings.EffectsEnabled) return;
+			if (!isActiveAndEnabled || !EnableClickAudio || !GameAudioSettings.EffectsEnabled) return;
 			AudioClip clip = GameAssetsConfig.Instance?.ButtonClickAudio;
 			if (clip == null) return;
 			if (GameAudioPlayer.Current != null) GameAudioPlayer.Current.PlayOneShot(clip);

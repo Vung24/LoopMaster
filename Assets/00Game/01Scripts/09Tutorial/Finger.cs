@@ -12,11 +12,8 @@ namespace Snui
         public static UniTask<Finger> Show(Transform parent)
         {
             RecoveryPrefabLibrary library = RecoveryPrefabLibrary.Current;
-            if (library == null || library.FingerPrefab == null)
-                throw new System.InvalidOperationException("The recovered Finger prefab is not assigned.");
             GameObject instance = Instantiate(library.FingerPrefab, parent, false);
             Finger finger = instance.GetComponent<Finger>();
-            if (finger == null) { Destroy(instance); throw new System.InvalidOperationException("Finger prefab has no Finger component."); }
             return UniTask.FromResult(finger);
         }
 

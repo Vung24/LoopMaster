@@ -15,6 +15,7 @@ namespace ShopUI
 		[SerializeField] private TMP_Text _priceOld;
 		[SerializeField] private TMP_Text _ribbonText;
 		[SerializeField] private Transform _rewardsRoot;
+		[SerializeField] private bool _usePrefabDetails;
 
 		[BoxGroup("Bundle Config")]
 		[ListDrawerSettings(ShowIndexLabels = true, Expanded = true)]
@@ -67,7 +68,8 @@ namespace ShopUI
 		public override void Init(string type, IShopDelegate shopDelegate)
 		{
 			base.Init(type, shopDelegate);
-			SetPrice(type);
+			// Native ShopBundleItem only inherits Init; its rewards and labels are authored in each prefab.
+			if (_usePrefabDetails) return;
 			ResolveBundleConfig(type);
 			ConfigureBundleDetails();
 			PopulateRewards();
