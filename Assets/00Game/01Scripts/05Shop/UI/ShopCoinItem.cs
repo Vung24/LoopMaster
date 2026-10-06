@@ -37,29 +37,11 @@ namespace ShopUI
 		public override void Init(string type, IShopDelegate shopDelegate)
 		{
 			base.Init(type, shopDelegate);
-			SetPrice(type);
-
-			int coins = 0;
-			var match = System.Text.RegularExpressions.Regex.Match(type ?? "", @"\d+");
-			if (match.Success && int.TryParse(match.Value, out int parsed))
-			{
-				coins = parsed;
-			}
+			int coins = ShopProductCatalog.CoinAmount(type);
 
 			if (_count != null)
 			{
-				_count.text = coins > 0 ? coins.ToString("N0") : "1,000";
-			}
-
-			var lib = DataPrefabLibrary.Current;
-			if (lib != null && lib.CoinSprites != null && lib.CoinSprites.Length > 0 && _coinIcon != null)
-			{
-				int spriteIdx = 0;
-				if (coins >= 14000) spriteIdx = Mathf.Min(12, lib.CoinSprites.Length - 1);
-				else if (coins >= 6500) spriteIdx = Mathf.Min(8, lib.CoinSprites.Length - 1);
-				else if (coins >= 2500) spriteIdx = Mathf.Min(4, lib.CoinSprites.Length - 1);
-				else if (coins >= 1200) spriteIdx = Mathf.Min(2, lib.CoinSprites.Length - 1);
-				_coinIcon.sprite = lib.CoinSprites[spriteIdx];
+				_count.text = coins.ToString();
 			}
 		}
 	}

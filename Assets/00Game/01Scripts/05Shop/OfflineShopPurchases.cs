@@ -28,13 +28,13 @@ namespace ShopUI
             }
         }
 
-        private static bool Grant(string id, string route)
+		private static bool Grant(string id, string route)
         {
             if (new ShopDelegate().IsLimitShowProduct(id)) return false;
             var rewards = ShopProductCatalog.GetRewards(id);
             if (rewards == null) return false;
             foreach (var reward in rewards)
-                if (reward.Type == RewardType.InfinityHeart && Managers.Heart == null) return false;
+                if (reward.Type == RewardType.InfinityHeart) HeartManager.EnsureInitialized();
             if (rewards.Count > 0)
             {
                 var inventory = InventoryManager.Ensure();

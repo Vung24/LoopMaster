@@ -79,38 +79,36 @@ namespace ShopUI
 
 		private void OnEnable()
 		{
+			OfflineShopPurchases.PurchaseFinished += OnPurchaseFinished;
 		}
 
 		private void OnDisable()
 		{
+			OfflineShopPurchases.PurchaseFinished -= OnPurchaseFinished;
 		}
 
 		public void Init(string id, string route)
 		{
-			_productId = id;
+			_productId = ShopProductCatalog.CanonicalId(id);
 			_route = route;
 
 			if (_price != null)
 			{
-				_price.text = "$2.99";
+				_price.text = Snui_Price.GetPriceString(_productId);
 			}
 		}
 
 		private void OnBuyBtnClicked()
 		{
-			OnPurchaseFinished(_productId, true);
+			OfflineShopPurchases.Purchase(_productId, _route);
 		}
 
-		private async void OnPurchaseFinished(string product, bool isSuccess)
+		private void OnPurchaseFinished(string product, bool isSuccess)
 		{
-			if (isSuccess)
+			if (isSuccess && product == _productId)
 			{
-				// Remove ads purchased
-				PlayerPrefs.SetInt("HasRemovedAds", 1);
-				PlayerPrefs.Save();
-				Hide();
+				Dismiss();
 			}
-			await UniTask.Yield();
 		}
 
 		private void OnDontBuyBtnClicked()

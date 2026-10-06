@@ -9,16 +9,18 @@ public class ShopPage : MonoBehaviour
 	[SerializeField] private Transform _safeArea;
 	private ShopDialogContent _content;
 	private bool _contentLoaded;
+	private bool _loading;
+	private PageViewCell _pageView;
 
 	private void Awake()
 	{
-		var pageView = GetComponent<PageViewCell>();
-		if (pageView == null)
+		_pageView = GetComponent<PageViewCell>();
+		if (_pageView == null)
 		{
-			pageView = gameObject.AddComponent<PageViewCell>();
+			_pageView = gameObject.AddComponent<PageViewCell>();
 		}
-		pageView.OnEnterPage -= OnEnterPage;
-		pageView.OnEnterPage += OnEnterPage;
+		_pageView.OnEnterPage -= OnEnterPage;
+		_pageView.OnEnterPage += OnEnterPage;
 	}
 
 	private void OnEnable()
@@ -27,12 +29,11 @@ public class ShopPage : MonoBehaviour
 		{
 			_contentLoaded = false;
 		}
-		LoadContentAsync().Forget();
 	}
 
-	private void Start()
+	private void OnDestroy()
 	{
-		LoadContentAsync().Forget();
+		if (_pageView != null) _pageView.OnEnterPage -= OnEnterPage;
 	}
 
 	private void OnEnterPage()
@@ -42,30 +43,27 @@ public class ShopPage : MonoBehaviour
 
 	private async UniTaskVoid LoadContentAsync()
 	{
-		if (_contentLoaded && _content != null) return;
-		_contentLoaded = true;
-
-		if (_safeArea == null)
+		if (_loading || (_contentLoaded && _content != null)) return;
+		_loading = true;
+		try
 		{
-			_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea")
-				?? HierarchyReferenceCache.Descendant(transform, "SafeArea")
-				?? transform;
-		}
+			if (_safeArea == null)
+			{
+				_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea")
+					?? HierarchyReferenceCache.Descendant(transform, "SafeArea")
+					?? transform;
+			}
 
-		if (_safeArea is RectTransform rt)
-		{
-			rt.anchorMin = Vector2.zero;
-			rt.anchorMax = Vector2.one;
-			rt.offsetMin = Vector2.zero;
-			rt.offsetMax = Vector2.zero;
+			_content = await ShopDialogContent.Show(_safeArea, new ShopDelegate(), "home_shop");
+			if (this == null) { if (_content != null) Destroy(_content.gameObject); return; }
+			if (_content != null)
+			{
+				_contentLoaded = true;
+				_content.HideCloseBtn();
+				float navBottom = NavigationBar.GetNavigationBottomOffset();
+				_content.SetContentBottom((int)navBottom);
+			}
 		}
-
-		_content = await ShopDialogContent.Show(_safeArea, new ShopDelegate(), "ShopPage");
-		if (_content != null)
-		{
-			_content.HideCloseBtn();
-			float navBottom = NavigationBar.GetNavigationBottomOffset();
-			_content.SetContentBottom((int)navBottom);
-		}
+		finally { _loading = false; }
 	}
 }

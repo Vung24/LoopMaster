@@ -35,7 +35,8 @@ public sealed class TMPSetRealtime : MonoBehaviour
 		UpdateMaterial(_textComponent.fontMaterial);
 		TMP_SubMeshUI[] subMeshes = GetComponentsInChildren<TMP_SubMeshUI>(true);
 		for (int i = 0; i < subMeshes.Length; i++)
-			if (subMeshes[i] != null && subMeshes[i].material != null) UpdateMaterial(subMeshes[i].material);
+			// TMP's material getter creates an instance and throws when its source was released on disable.
+			if (subMeshes[i] != null && subMeshes[i].sharedMaterial != null) UpdateMaterial(subMeshes[i].material);
 		_textComponent.SetMaterialDirty();
 	}
 
