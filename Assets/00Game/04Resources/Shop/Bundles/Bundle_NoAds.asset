@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0f8571d1b44b1c4da9759e502201a5e, type: 3}
+  m_Name: Bundle_NoAds
+  m_EditorClassIdentifier: 
+  _productId: removead
+  _aliases:
+  - removeads
+  - remove_ad
+  - removeadbundle
+  _title: NO ADS BUNDLE
+  _oldPrice: $5.99
+  _ribbonText: BEST VALUE!
+  _rewards:
+  - _customIcon: {fileID: 0}
+    _rewardSO: {fileID: 11400000, guid: 5baa15e680f2b66459fc1b03d923353b, type: 2}
+    _amount: 
+  - _customIcon: {fileID: 0}
+    _rewardSO: {fileID: 11400000, guid: 22b6ea934f8337441954cc57ad190825, type: 2}
+    _amount: 
+  _directRewardSOs: []

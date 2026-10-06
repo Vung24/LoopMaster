@@ -20,10 +20,29 @@ public class BaseHeartManager : BaseManager
 
 	private readonly List<FreeHeart> _freeHearts = new List<FreeHeart>();
 
-	public int LastRecoverHeartTime { get; set; }
-	public int InfiniteHeartEndTime { get; set; }
-	private int HeartCount { get; set; } = DEFAULT_MAX_HEART;
-	public int InfiniteLeftTime => int.MaxValue;
+	private const string InfiniteHeartEndTimeKey = "infiniteHeartEndTime";
+	private const string LastRecoverHeartTimeKey = "lastRecoverHeartTime";
+	private const string HeartCountKey = "Heart";
+
+	public int LastRecoverHeartTime
+	{
+		get => PlayerPrefs.GetInt(LastRecoverHeartTimeKey, 0);
+		set { PlayerPrefs.SetInt(LastRecoverHeartTimeKey, value); PlayerPrefs.Save(); }
+	}
+
+	public int InfiniteHeartEndTime
+	{
+		get => PlayerPrefs.GetInt(InfiniteHeartEndTimeKey, 0);
+		set { PlayerPrefs.SetInt(InfiniteHeartEndTimeKey, value); PlayerPrefs.Save(); }
+	}
+
+	private int HeartCount
+	{
+		get => PlayerPrefs.GetInt(HeartCountKey, MAX_HEART);
+		set { PlayerPrefs.SetInt(HeartCountKey, value); PlayerPrefs.Save(); }
+	}
+
+	public int InfiniteLeftTime => Mathf.Max(0, InfiniteHeartEndTime - (int)TimeUtils.GetUnixTimestamp());
 	public int MAX_HEART { get; private set; } = DEFAULT_MAX_HEART;
 
 	public List<FreeHeart> GetFreeHearts() => _freeHearts;
@@ -31,9 +50,8 @@ public class BaseHeartManager : BaseManager
 	public override void Startup()
 	{
 		MAX_HEART = DEFAULT_MAX_HEART;
-		HeartCount = MAX_HEART;
 		status = ManagerStatus.Started;
-		OnHeartChanged?.Invoke();
+		UpdateHeart();
 	}
 
 	public virtual bool IsMoreHeartDialogShowRvBtn() => false;
@@ -56,36 +74,87 @@ public class BaseHeartManager : BaseManager
 
 	public void UpdateHeart()
 	{
-		HeartCount = MAX_HEART;
+		int count = HeartCount;
+		int max = MAX_HEART;
+		int now = (int)TimeUtils.GetUnixTimestamp();
+		if (count < max)
+		{
+			int last = LastRecoverHeartTime;
+			if (last == 0)
+			{
+				LastRecoverHeartTime = now;
+			}
+			else
+			{
+				int elapsed = now - last;
+				if (elapsed >= RECOVER_TIME)
+				{
+					int recovered = elapsed / RECOVER_TIME;
+					HeartCount = Mathf.Min(max, count + recovered);
+					LastRecoverHeartTime = last + recovered * RECOVER_TIME;
+				}
+			}
+		}
+		else
+		{
+			LastRecoverHeartTime = now;
+		}
 		OnHeartChanged?.Invoke();
+		OnInfinityHeartChanged?.Invoke();
 	}
 
 	public void FillFullHeart(FillHeartWay type)
 	{
 		HeartCount = MAX_HEART;
+		LastRecoverHeartTime = (int)TimeUtils.GetUnixTimestamp();
 		OnHeartChanged?.Invoke();
 	}
 
-	public int GetRecoverTime() => 0;
-	public bool UseHeart() => true;
+	public int GetRecoverTime()
+	{
+		if (HeartCount >= MAX_HEART) return 0;
+		int elapsed = (int)TimeUtils.GetUnixTimestamp() - LastRecoverHeartTime;
+		if (elapsed < 0) elapsed = 0;
+		return Mathf.Max(0, RECOVER_TIME - (elapsed % RECOVER_TIME));
+	}
+
+	public bool UseHeart()
+	{
+		if (IsInfinite()) return true;
+		UpdateHeart();
+		if (HeartCount > 0)
+		{
+			if (HeartCount == MAX_HEART)
+				LastRecoverHeartTime = (int)TimeUtils.GetUnixTimestamp();
+			HeartCount--;
+			OnHeartChanged?.Invoke();
+			return true;
+		}
+		return false;
+	}
 
 	public bool AddHeart()
 	{
-		HeartCount = MAX_HEART;
+		HeartCount = Mathf.Min(MAX_HEART, HeartCount + 1);
 		OnHeartChanged?.Invoke();
 		return true;
 	}
 
 	public void AddInfinite(int time)
 	{
-		InfiniteHeartEndTime = int.MaxValue;
+		if (time <= 0) return;
+		int now = (int)TimeUtils.GetUnixTimestamp();
+		int end = InfiniteHeartEndTime;
+		if (end - now < 1)
+			end = now;
+		InfiniteHeartEndTime = end + time;
 		OnInfinityHeartChanged?.Invoke();
 	}
 
-	public bool IsHeartFull() => true;
-	public bool IsHeartEnough() => true;
-	public bool IsInfinite() => true;
-	public int GetHeartCount() => MAX_HEART;
+	public bool IsHeartFull() => HeartCount >= MAX_HEART;
+	public bool IsHeartEnough() => IsInfinite() || HeartCount > 0;
+	public bool IsInfinite() => InfiniteHeartEndTime > (int)TimeUtils.GetUnixTimestamp();
+	public int GetHeartCount() => HeartCount;
 	public void OnApplicationFocus(bool hasFocus) { if (hasFocus) UpdateHeart(); }
 
 	public void AddFreeHeart(FreeHeartType type, string sourceName = null, int count = 1)
@@ -110,9 +179,14 @@ public class BaseHeartManager : BaseManager
 	public override void ClearData()
 	{
 		_freeHearts.Clear();
+		PlayerPrefs.DeleteKey(InfiniteHeartEndTimeKey);
+		PlayerPrefs.DeleteKey(LastRecoverHeartTimeKey);
+		PlayerPrefs.DeleteKey(HeartCountKey);
+		PlayerPrefs.Save();
 		MAX_HEART = DEFAULT_MAX_HEART;
 		HeartCount = MAX_HEART;
 		OnHeartChanged?.Invoke();
 		OnFreeHeartChanged?.Invoke();
+		OnInfinityHeartChanged?.Invoke();
 	}
 }

@@ -246,6 +246,8 @@ public class PlayButton : MonoBehaviour
 		}
 	}
 
+	private CountdownHelper _unlimitedCountdown;
+
 	private void UpdateUnlimitedTip()
 	{
 		bool isInfinite = Managers.Heart != null && Managers.Heart.IsInfinite();
@@ -253,13 +255,27 @@ public class PlayButton : MonoBehaviour
 		{
 			_unlimitedTip.gameObject.SetActive(isInfinite);
 		}
+		if (isInfinite && _unlimitedTipTime != null)
+		{
+			if (_unlimitedCountdown == null)
+				_unlimitedCountdown = _unlimitedTipTime.GetComponent<CountdownHelper>() ?? _unlimitedTipTime.gameObject.AddComponent<CountdownHelper>();
+			_unlimitedCountdown.OnTimerTick.RemoveListener(OnUnlimitedTick);
+			_unlimitedCountdown.OnTimerStoped.RemoveListener(OnUnlimitedStop);
+			_unlimitedCountdown.OnTimerTick.AddListener(OnUnlimitedTick);
+			_unlimitedCountdown.OnTimerStoped.AddListener(OnUnlimitedStop);
+			_unlimitedCountdown.CountdownUntil(Managers.Heart.InfiniteHeartEndTime);
+		}
+		else if (_unlimitedCountdown != null)
+		{
+			_unlimitedCountdown.StopTimer();
+		}
 	}
 
 	private void OnUnlimitedTick(long seconds)
 	{
 		if (_unlimitedTipTime != null)
 		{
-			_unlimitedTipTime.text = TimeFormatter.FormatSeconds(seconds);
+			_unlimitedTipTime.text = TimeFormatter.FormatTimeLeft(seconds);
 		}
 	}
 

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using Snui;
 using TMPro;
 using UnityEngine;
@@ -7,10 +10,27 @@ namespace ShopUI
 {
 	public class ShopBundleItem : ShopItemBase
 	{
+		[Title("UI Elements")]
 		[SerializeField] private TMP_Text _desc;
 		[SerializeField] private TMP_Text _priceOld;
 		[SerializeField] private TMP_Text _ribbonText;
 		[SerializeField] private Transform _rewardsRoot;
+
+		[BoxGroup("Bundle Config")]
+		[ListDrawerSettings(ShowIndexLabels = true, Expanded = true)]
+		[InlineEditor(InlineEditorObjectFieldModes.Foldout)]
+		[SerializeField] private List<ShopBundleSO> _bundleConfigs = new List<ShopBundleSO>();
+
+		[BoxGroup("Bundle Config")]
+		[InlineEditor]
+		[SerializeField] private ShopBundleDatabaseSO _bundleDatabase;
+
+		[BoxGroup("Bundle Config")]
+		[InlineEditor]
+		[SerializeField] private ShopBundleSO _currentBundle;
+
+		public List<ShopBundleSO> BundleConfigs => _bundleConfigs;
+		public ShopBundleSO CurrentBundle => _currentBundle;
 
 		protected override void Awake()
 		{
@@ -48,60 +68,69 @@ namespace ShopUI
 		{
 			base.Init(type, shopDelegate);
 			SetPrice(type);
-			ConfigureBundleDetails(type);
-			PopulateRewards(type);
+			ResolveBundleConfig(type);
+			ConfigureBundleDetails();
+			PopulateRewards();
 		}
 
-		private void ConfigureBundleDetails(string type)
+		private void ResolveBundleConfig(string type)
 		{
-			string t = (type ?? "").ToLowerInvariant();
-			string title = "SPECIAL BUNDLE";
-			string oldPrice = "$4.99";
-			string ribbon = "LIMITED OFFER!";
-
-			if (t.Contains("begin"))
+			// 1. If currently assigned bundle matches, keep it
+			if (_currentBundle != null && _currentBundle.Matches(type))
 			{
-				title = "BEGINNER BUNDLE";
-				oldPrice = "$4.99";
-				ribbon = "SAVE 60%";
-			}
-			else if (t.Contains("removead"))
-			{
-				title = "NO ADS BUNDLE";
-				oldPrice = "$5.99";
-				ribbon = "BEST VALUE!";
-			}
-			else if (t.Contains("mega"))
-			{
-				title = "MEGA BUNDLE";
-				oldPrice = "$9.99";
-				ribbon = "SAVE 50%";
-			}
-			else if (t.Contains("ultra"))
-			{
-				title = "ULTRA BUNDLE";
-				oldPrice = "$19.99";
-				ribbon = "SAVE 50%";
-			}
-			else if (t.Contains("master"))
-			{
-				title = "MASTER BUNDLE";
-				oldPrice = "$39.99";
-				ribbon = "SAVE 50%";
-			}
-			else if (t.Contains("legendary"))
-			{
-				title = "LEGENDARY BUNDLE";
-				oldPrice = "$99.99";
-				ribbon = "SAVE 50%";
+				return;
 			}
 
-			if (_desc != null) _desc.text = title;
-			if (_priceOld != null) _priceOld.text = oldPrice;
-			if (_ribbonText != null) _ribbonText.text = ribbon;
+			// 2. Search local inspector list of bundle SOs
+			if (_bundleConfigs != null)
+			{
+				for (int i = 0; i < _bundleConfigs.Count; i++)
+				{
+					var bundle = _bundleConfigs[i];
+					if (bundle != null && bundle.Matches(type))
+					{
+						_currentBundle = bundle;
+						return;
+					}
+				}
+			}
+
+			// 3. Search assigned database
+			if (_bundleDatabase != null)
+			{
+				var bundle = _bundleDatabase.FindBundle(type);
+				if (bundle != null)
+				{
+					_currentBundle = bundle;
+					return;
+				}
+			}
+
+			// 4. Search global singleton database
+			var globalDb = ShopBundleDatabaseSO.Instance;
+			if (globalDb != null)
+			{
+				var bundle = globalDb.FindBundle(type);
+				if (bundle != null)
+				{
+					_currentBundle = bundle;
+					return;
+				}
+			}
+
+			_currentBundle = null;
 		}
 
-		private void PopulateRewards(string type)
+		private void ConfigureBundleDetails()
+		{
+			if (_currentBundle == null) return;
+
+			if (_desc != null) _desc.text = _currentBundle.Title;
+			if (_priceOld != null) _priceOld.text = _currentBundle.OldPrice;
+			if (_ribbonText != null) _ribbonText.text = _currentBundle.RibbonText;
+		}
+
+		private void PopulateRewards()
 		{
 			if (_rewardsRoot == null) return;
 
@@ -121,45 +150,30 @@ namespace ShopUI
 				layout.childForceExpandHeight = false;
 			}
 
-			// Clear existing dynamic reward items if any
+			// Remove old items immediately from layout, including during editor preview.
 			for (int i = _rewardsRoot.childCount - 1; i >= 0; i--)
 			{
-				Destroy(_rewardsRoot.GetChild(i).gameObject);
+				var child = _rewardsRoot.GetChild(i).gameObject;
+				if (Application.isPlaying)
+				{
+					child.SetActive(false);
+					Destroy(child);
+				}
+#if UNITY_EDITOR
+				else
+				{
+					UnityEditor.Undo.DestroyObjectImmediate(child);
+				}
+#endif
 			}
 
-			string t = (type ?? "").ToLowerInvariant();
-			if (t.Contains("begin"))
+			if (_currentBundle == null) return;
+
+			var rewards = _currentBundle.GetRewardPairs();
+			for (int i = 0; i < rewards.Count; i++)
 			{
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardCoinSprite, "1,000");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardInfinityHeartSprite, "30m");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardUndoSprite, "x3");
-			}
-			else if (t.Contains("removead"))
-			{
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardCoinSprite, "1,000");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardInfinityHeartSprite, "1h");
-			}
-			else if (t.Contains("mega"))
-			{
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardCoinSprite, "3,000");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardInfinityHeartSprite, "1h");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardUndoSprite, "x5");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardShuffleSprite, "x5");
-			}
-			else if (t.Contains("ultra"))
-			{
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardCoinSprite, "7,000");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardInfinityHeartSprite, "2h");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardUndoSprite, "x10");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardShuffleSprite, "x10");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardPathSprite, "x10");
-			}
-			else
-			{
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardCoinSprite, "15,000");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardInfinityHeartSprite, "6h");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardUndoSprite, "x20");
-				CreateRewardItem(lib.ShopRewardItemPrefab, lib.RewardShuffleSprite, "x20");
+				var (sprite, amount) = rewards[i];
+				CreateRewardItem(lib.ShopRewardItemPrefab, sprite, amount);
 			}
 		}
 
@@ -167,11 +181,19 @@ namespace ShopUI
 		{
 			if (prefab == null || _rewardsRoot == null) return;
 			var go = Instantiate(prefab, _rewardsRoot, false);
+#if UNITY_EDITOR
+			if (!Application.isPlaying)
+			{
+				UnityEditor.Undo.RegisterCreatedObjectUndo(go, "Preview Bundle Rewards");
+			}
+#endif
 			var icon = HierarchyReferenceCache.ChildComponent<Image>(go.transform, "Icon")
 				?? HierarchyReferenceCache.DescendantComponent<Image>(go.transform, "Icon");
-			if (icon != null && sprite != null)
+			if (icon != null)
 			{
 				icon.sprite = sprite;
+				icon.preserveAspect = true;
+				icon.enabled = sprite != null;
 			}
 
 			var txt = HierarchyReferenceCache.ChildComponent<TMP_Text>(go.transform, "Text")
@@ -181,5 +203,18 @@ namespace ShopUI
 				txt.text = amount;
 			}
 		}
+
+#if UNITY_EDITOR
+		[Button("Preview Bundle Layout"), BoxGroup("Editor Preview")]
+		private void EditorPreviewBundle()
+		{
+			if (_currentBundle == null && _bundleConfigs != null && _bundleConfigs.Count > 0)
+			{
+				_currentBundle = _bundleConfigs[0];
+			}
+			ConfigureBundleDetails();
+			PopulateRewards();
+		}
+#endif
 	}
 }
