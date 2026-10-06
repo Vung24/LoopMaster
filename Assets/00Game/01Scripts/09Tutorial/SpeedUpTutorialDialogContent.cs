@@ -6,7 +6,8 @@ using UnityEngine.UI;
 
 public class SpeedUpTutorialDialogContent : DialogContent
 {
-	private Button _btnClose;
+	[SerializeField] private Button _btnClose;
+	[SerializeField] private TMP_Text _descText;
 
 	public static UniTask<SpeedUpTutorialDialogContent> Show(Transform parent)
 	{
@@ -17,13 +18,19 @@ public class SpeedUpTutorialDialogContent : DialogContent
 	protected override void Awake()
 	{
 		base.Awake();
-		Transform close = HierarchyReferenceCache.Descendant(transform, "CloseButton");
-		_btnClose = close == null ? null : close.GetComponent<Button>();
+		if (_btnClose == null)
+		{
+			Transform close = HierarchyReferenceCache.Descendant(transform, "CloseButton");
+			_btnClose = close == null ? null : close.GetComponent<Button>();
+		}
 		if (_btnClose != null && _btnClose != _closeBtn)
 			_btnClose.onClick.AddListener(OnClickCloseBtn);
-		Transform desc = HierarchyReferenceCache.Descendant(transform, "Desc");
-		TMP_Text label = desc == null ? null : desc.GetComponent<TMP_Text>();
-		if (label != null) label.text = "Tap the speed button to switch between 2x and 4x.";
+		if (_descText == null)
+		{
+			Transform desc = HierarchyReferenceCache.Descendant(transform, "Desc");
+			_descText = desc == null ? null : desc.GetComponent<TMP_Text>();
+		}
+		if (_descText != null) _descText.text = "Tap the speed button to switch between 2x and 4x.";
 		Snui_Text.EnsureFontAssets(transform);
 	}
 

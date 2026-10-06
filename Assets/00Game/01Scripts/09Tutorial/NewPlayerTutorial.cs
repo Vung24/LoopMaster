@@ -18,6 +18,7 @@ public class NewPlayerTutorial : MonoBehaviour
 	[SerializeField] private Transform _topMask;
 	[SerializeField] private Button _bgBtn;
 	[SerializeField] private Button _tapBtn;
+	[SerializeField] private TMP_Text _descText;
 	private TutorialStage _stage;
 	private bool _hasClickedBox;
 	private bool _isHiding;
@@ -47,6 +48,11 @@ public class NewPlayerTutorial : MonoBehaviour
 		{
 			Transform tap = HierarchyReferenceCache.Descendant(transform, "BtnTapTo");
 			if (tap != null) _tapBtn = tap.GetComponent<Button>();
+		}
+		if (_descText == null && _textNode != null)
+		{
+			Transform desc = HierarchyReferenceCache.Descendant(_textNode, "Desc");
+			_descText = desc != null ? desc.GetComponent<TMP_Text>() : _textNode.GetComponentInChildren<TMP_Text>(true);
 		}
 		_lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
 		// Decorative graphics must not swallow the tap intended for a box behind the UI.
@@ -111,9 +117,7 @@ public class NewPlayerTutorial : MonoBehaviour
 
 	private void SetDescription(string fallback)
 	{
-		Transform desc = _textNode == null ? null : HierarchyReferenceCache.Descendant(_textNode, "Desc");
-		TMP_Text label = desc == null ? null : desc.GetComponent<TMP_Text>();
-		if (label != null) label.text = fallback;
+		if (_descText != null) _descText.text = fallback;
 		Snui_Text.EnsureFontAssets(transform);
 	}
 
