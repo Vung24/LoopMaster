@@ -53,6 +53,9 @@ public sealed class PauseDialogContent : MonoBehaviour
 		Time.timeScale = 0f;
 		_ownsPause = true;
 		_isClosing = false;
+		// OnlyOnce buttons stay disabled after closing this reused dialog.
+		EnableResumeButton(_closeBtn);
+		EnableResumeButton(_continueBtn);
 		if (_canvasGroup != null)
 		{
 			_canvasGroup.interactable = true;
@@ -252,6 +255,13 @@ public sealed class PauseDialogContent : MonoBehaviour
 		if (button == null) return;
 		button.onClick.RemoveListener(callback);
 		button.onClick.AddListener(callback);
+	}
+
+	private static void EnableResumeButton(Button button)
+	{
+		if (button == null) return;
+		button.interactable = true;
+		button.GetComponent<Snui.Snui_Button>()?.EnableButton();
 	}
 
 	private static void AddToggleListener(Toggle toggle, UnityEngine.Events.UnityAction<bool> callback)
