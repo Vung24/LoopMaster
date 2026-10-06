@@ -14,9 +14,10 @@ namespace Snui
 		public UnityAction<Type> OnClickCellButton;
 		[SerializeField] private Type _type;
 		[SerializeField, Range(0f, 1f)] private float _clickAlpha = 0.3f;
-		private Button _button;
-		private CanvasGroup _canvasGroup;
-		private Transform _toggleOn, _toggleOff;
+		[SerializeField] private Button _button;
+		[SerializeField] private CanvasGroup _canvasGroup;
+		[SerializeField] private Transform _toggleOn, _toggleOff;
+		[SerializeField] private TMPro.TMP_Text _label;
 		private float _originAlpha;
 		private bool _pressed;
 		public Type ButtonType => _type;
@@ -24,16 +25,19 @@ namespace Snui
 
 		private void Awake()
 		{
-			_button = GetComponent<Button>();
-			_canvasGroup = GetComponent<CanvasGroup>();
-			_toggleOn = HierarchyReferenceCache.Child(transform, "ToggleOn");
-			_toggleOff = HierarchyReferenceCache.Child(transform, "ToggleOff");
-			// The exported Sound row retains a placeholder while localization is offline.
-			if (_type == Type.Sound)
+			if (_button == null) _button = GetComponent<Button>();
+			if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+			if (_toggleOn == null) _toggleOn = HierarchyReferenceCache.Child(transform, "ToggleOn");
+			if (_toggleOff == null) _toggleOff = HierarchyReferenceCache.Child(transform, "ToggleOff");
+			if (_label == null)
 			{
 				var label = HierarchyReferenceCache.Child(transform, "Text");
-				var text = label == null ? null : label.GetComponent<TMPro.TMP_Text>();
-				if (text != null) text.text = "Sound";
+				_label = label == null ? GetComponentInChildren<TMPro.TMP_Text>(true) : label.GetComponent<TMPro.TMP_Text>();
+			}
+			// The exported Sound row retains a placeholder while localization is offline.
+			if (_type == Type.Sound && _label != null)
+			{
+				_label.text = "Sound";
 			}
 			if (_button != null) _button.onClick.AddListener(OnClickButton);
 		}

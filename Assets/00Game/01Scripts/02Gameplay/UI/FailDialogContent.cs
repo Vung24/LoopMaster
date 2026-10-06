@@ -12,6 +12,8 @@ public class FailDialogContent : DialogContent
 	[SerializeField] private Transform _addPathNode;
 	[SerializeField] private Transform _safeArea;
 	[SerializeField] private LoseContainer _loseContainer;
+	[SerializeField] private Text _coinNumberText;
+	[SerializeField] private TMP_Text _coinNumberTmpText;
 	public string ReviveRoute;
 
 	private GameController _controller;
@@ -35,6 +37,15 @@ public class FailDialogContent : DialogContent
 		_coinOnlyBtn = _coinOnlyBtn != null ? _coinOnlyBtn : RecoveryDialogUI.ResolveButton(transform, "CoinOnlyButton");
 		_freeBtn = _freeBtn != null ? _freeBtn : RecoveryDialogUI.ResolveButton(transform, "FreeButton");
 		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.ResolveButton(transform, "CloseButton");
+		if (_coinNumberTmpText == null && _coinNumberText == null && _coinBtn != null)
+		{
+			Transform numNode = HierarchyReferenceCache.Descendant(_coinBtn.transform, "Number");
+			if (numNode != null)
+			{
+				_coinNumberTmpText = numNode.GetComponent<TMP_Text>();
+				if (_coinNumberTmpText == null) _coinNumberText = numNode.GetComponent<Text>();
+			}
+		}
 		Bind(_controller != null ? _controller : GameController.Current);
 	}
 
@@ -124,7 +135,9 @@ public class FailDialogContent : DialogContent
 		if (_coinBtn != null)
 		{
 			_coinBtn.gameObject.SetActive(!_isFreeRevive || _freeBtn == null);
-			RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Number"), RevivePrice.ToString());
+			if (_coinNumberTmpText != null) _coinNumberTmpText.text = RevivePrice.ToString();
+			else if (_coinNumberText != null) _coinNumberText.text = RevivePrice.ToString();
+			else RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Number"), RevivePrice.ToString());
 		}
 		SetUnavailable(_coinOnlyBtn);
 		if (_addPathNode != null) _addPathNode.gameObject.SetActive(true);

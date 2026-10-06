@@ -10,21 +10,24 @@ namespace ShopUI
 		public UnityEvent<string> OnClickBuyButton = new UnityEvent<string>();
 		[HideInInspector] public string Type;
 		[HideInInspector] public int Index;
-		protected Button _buyBtn;
-		protected Snui_Price _price;
+		[SerializeField] protected Button _buyBtn;
+		[SerializeField] protected Snui_Price _price;
 
 		public RectTransform RectTransform => (RectTransform)transform;
 
 		protected virtual void Awake()
 		{
-			Transform buyTrans = HierarchyReferenceCache.Child(transform, "BuyButton");
-			if (buyTrans != null)
-			{
-				_buyBtn = buyTrans.GetComponent<Button>();
-			}
 			if (_buyBtn == null)
 			{
-				_buyBtn = GetComponentInChildren<Button>();
+				Transform buyTrans = HierarchyReferenceCache.Child(transform, "BuyButton");
+				if (buyTrans != null)
+				{
+					_buyBtn = buyTrans.GetComponent<Button>();
+				}
+				if (_buyBtn == null)
+				{
+					_buyBtn = GetComponentInChildren<Button>();
+				}
 			}
 			if (_buyBtn != null)
 			{

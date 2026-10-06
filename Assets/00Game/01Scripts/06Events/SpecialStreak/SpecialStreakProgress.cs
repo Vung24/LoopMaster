@@ -50,11 +50,16 @@ public class SpecialStreakProgress : MonoBehaviour
         var manager = _manager ?? SpecialStreakManager.Ensure();
         bool locked = manager.IsLocked, completed = manager.IsCompleted();
         SpecialStreakPresentation.SetActive(_lockTextNode, locked);
+        if (locked && _lockTextNode != null)
+        {
+            var lockText = _lockTextNode.GetComponentInChildren<TMP_Text>(true);
+            if (lockText != null) lockText.text = "Unlock at LV " + manager.GetUnlockLevel();
+        }
         SpecialStreakPresentation.SetActive(_lockIcon, locked);
         SpecialStreakPresentation.SetActive(_completedTickNode, completed);
         SpecialStreakPresentation.SetActive(_progressBarText, !locked && !completed);
         SpecialStreakPresentation.SetActive(_timer, false);
-        if (_timerText != null) _timerText.text = locked ? "UNLOCKS AT LEVEL 21" : completed ? "COMPLETED" : "OFFLINE — NO TIME LIMIT";
+        if (_timerText != null) _timerText.text = locked ? "UNLOCKS AT LEVEL " + manager.GetUnlockLevel() : completed ? "COMPLETED" : "OFFLINE — NO TIME LIMIT";
         if (_button != null) _button.interactable = !locked && !IsAnimating;
         var stage = manager.GetCurrRewardInfo();
         _progressBar?.SetPercent(manager.CurrCount, stage?.Goal ?? 0);

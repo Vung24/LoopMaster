@@ -9,12 +9,30 @@ namespace Snui
 	{
         public RewardItem RewardItem;
         public AudioClip CollectSound;
-        private Image _icon;
-        private TMP_Text _count;
+        [SerializeField] private Image _icon;
+        [SerializeField] private TMP_Text _count;
+        [SerializeField] private GameObject _ribbon;
+        [SerializeField] private GameObject _infoIcon;
+        [SerializeField] private GameObject _backLight;
         private void Awake()
         {
-            _icon = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Icon"));
-            _count = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Count"));
+            if (_icon == null) _icon = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Icon"));
+            if (_count == null) _count = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Count"));
+            if (_ribbon == null)
+            {
+                var r = HierarchyReferenceCache.Descendant(transform, "Ribbon");
+                if (r != null) _ribbon = r.gameObject;
+            }
+            if (_infoIcon == null)
+            {
+                var info = HierarchyReferenceCache.Descendant(transform, "InfoIcon");
+                if (info != null) _infoIcon = info.gameObject;
+            }
+            if (_backLight == null)
+            {
+                var bl = HierarchyReferenceCache.Descendant(transform, "BackLight");
+                if (bl != null) _backLight = bl.gameObject;
+            }
             foreach (var graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
             if (RewardItem != null && RewardItem.Type != null) Init(RewardItem,false,false).Forget();
         }
@@ -30,9 +48,8 @@ namespace Snui
         {
             RewardItem=item;
             Snui_Text.EnsureFontAssets(transform);
-            var ribbon=HierarchyReferenceCache.Descendant(transform,"Ribbon");
-            if(ribbon!=null) ribbon.gameObject.SetActive(false); // no offline heart timer
-            var info=HierarchyReferenceCache.Descendant(transform,"InfoIcon"); if(info!=null) info.gameObject.SetActive(false);
+            if(_ribbon!=null) _ribbon.SetActive(false); // no offline heart timer
+            if(_infoIcon!=null) _infoIcon.SetActive(false);
             SetBackLight(showBackLight);
             if(item==null || item.Type==null) return UniTask.CompletedTask;
             if(_icon!=null) { _icon.sprite=DataPrefabLibrary.Current?.ResolveRewardIcon(item.Type.GetIconPath()); _icon.enabled=_icon.sprite!=null; }
@@ -47,7 +64,7 @@ namespace Snui
             return UniTask.CompletedTask;
         }
         public void SetBackLight(bool active)
-        { var light=HierarchyReferenceCache.Descendant(transform,"BackLight"); if(light!=null) light.gameObject.SetActive(active); }
+        { if(_backLight!=null) _backLight.SetActive(active); }
         public void PlayCollectSound() { if(AudioManager.Current!=null) AudioManager.Current.PlayOneShot(CollectSound,gameObject); }
 	}
 }

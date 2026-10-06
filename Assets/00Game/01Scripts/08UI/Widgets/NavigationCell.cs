@@ -18,7 +18,7 @@ namespace Snui
 		[SerializeField] private Transform _line;
 		private Button _button;
 		private Tween _iconTween;
-		private Vector3 _authoredScale;
+		private Tween _positionTween, _textTween;
 		public UnityEvent OnClick { get; } = new UnityEvent();
 		public bool IsSelected { get; private set; }
 		public bool IsAvailable => _button != null && _button.interactable;
@@ -30,30 +30,59 @@ namespace Snui
 			if (_line == null) _line = HierarchyReferenceCache.Child(transform, "Line");
 			if (_icon != null)
 			{
-				_authoredScale = _icon.transform.localScale;
 				if (_normalSprite == null) _normalSprite = _icon.sprite;
 				if (_selectedSprite == null) _selectedSprite = _icon.sprite;
 			}
 			if (_button != null) _button.onClick.AddListener(HandleClick);
 		}
 		private void HandleClick() { if (isActiveAndEnabled && IsAvailable) OnClick.Invoke(); }
-		private void OnEnable() => ApplySelection(IsSelected, false);
 		public void SetAvailable(bool value) { if (_button != null) _button.interactable = value; }
-		public void Init(bool select, float normalWidth, float selectWidth) => ApplySelection(select, false);
-		public void SetSelected(bool select, NavigationAnim navigationAnim) => ApplySelection(select, true);
-		private void ApplySelection(bool select, bool animate)
+		public void Init(bool select, float normalWidth, float selectWidth)
 		{
+			StopAnimation();
 			IsSelected = select;
-			_iconTween?.Kill();
+			((RectTransform)transform).SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, select ? selectWidth : normalWidth);
+			if (_icon != null)
+			{
+				_icon.sprite = select ? _selectedSprite : _normalSprite;
+				_icon.SetNativeSize();
+				_icon.transform.localScale = Vector3.one * (select ? SelectedScale : UnselectedScale);
+				var position = _icon.rectTransform.anchoredPosition;
+				position.y = select ? IconSelectPosition : IconNormalPosition;
+				_icon.rectTransform.anchoredPosition = position;
+			}
+			if (_text != null) { var color = _text.color; color.a = select ? 1f : 0f; _text.color = color; }
+		}
+		public void SetSelected(bool select, NavigationAnim navigationAnim)
+		{
+			if (IsSelected == select) return;
+			StopAnimation(); IsSelected = select;
 			if (_icon == null) return;
 			_icon.sprite = select ? _selectedSprite : _normalSprite;
-			Vector3 scale = _authoredScale * (select ? SelectedScale : UnselectedScale);
-			// Native Default animates icon scale for 0.16s; other navigation styles are deferred.
-			if (animate && isActiveAndEnabled) _iconTween = _icon.transform.DOScale(scale, 0.16f).SetUpdate(true);
-			else _icon.transform.localScale = scale;
+			float scale = select ? SelectedScale : UnselectedScale;
+			if (navigationAnim == NavigationAnim.PoppedUp && select)
+			{
+				_icon.transform.localScale = Vector3.one * UnselectedScale;
+				_iconTween = DOTween.Sequence().Append(_icon.transform.DOScale(scale * 1.1f, 0.12f))
+					.Append(_icon.transform.DOScale(scale, 0.08f)).SetUpdate(true);
+			}
+			else
+			{
+				if (select && navigationAnim == NavigationAnim.WidthChangesDynamically)
+					_icon.transform.localScale = Vector3.one * (SelectedScale + 0.12f);
+				_iconTween = _icon.transform.DOScale(scale, navigationAnim == NavigationAnim.Default ? 0.16f : 0.3f).SetUpdate(true);
+			}
+			_positionTween = _icon.rectTransform.DOAnchorPosY(select ? IconSelectPosition : IconNormalPosition, 0.3f).SetUpdate(true);
+			if (_text != null) _textTween = _text.DOFade(select ? 1f : 0f, 0.1f).SetUpdate(true);
+		}
+		public void SetIconPivot(Vector2 pivot) { if (_icon != null) _icon.rectTransform.pivot = pivot; }
+		private void StopAnimation()
+		{
+			_iconTween?.Kill(); _positionTween?.Kill(); _textTween?.Kill();
+			_iconTween = _positionTween = _textTween = null;
 		}
 		public void SetLineActive(bool value) { if (_line != null) _line.gameObject.SetActive(value); }
-		private void OnDisable() { _iconTween?.Kill(); _iconTween = null; }
+		private void OnDisable() => StopAnimation();
 		private void OnDestroy() { OnDisable(); if (_button != null) _button.onClick.RemoveListener(HandleClick); OnClick.RemoveAllListeners(); }
 	}
 }

@@ -9,9 +9,9 @@ namespace Snui
 	{
 		public bool EnableClickAudio = true;
 
-		private Button _button;
-		private CanvasGroup _canvasGroup;
-		private Transform _content;
+		[SerializeField] private Button _button;
+		[SerializeField] private CanvasGroup _canvasGroup;
+		[SerializeField] private Transform _content;
 
 		public Button Button => _button ??= GetComponent<Button>();
 		public CanvasGroup CanvasGroup => _canvasGroup ??= GetComponent<CanvasGroup>();
@@ -19,9 +19,9 @@ namespace Snui
 
 		private void Awake()
 		{
-			_button = GetComponent<Button>();
-			_canvasGroup = GetComponent<CanvasGroup>();
-			_content = HierarchyReferenceCache.Child(transform, "Content") ?? transform;
+			if (_button == null) _button = GetComponent<Button>();
+			if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+			if (_content == null) _content = HierarchyReferenceCache.Child(transform, "Content") ?? transform;
 
 			if (_button != null)
 			{

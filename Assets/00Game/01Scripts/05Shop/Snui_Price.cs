@@ -7,13 +7,13 @@ namespace Snui
 	public class Snui_Price : MonoBehaviour
 	{
 		private string _id;
-		private TMP_Text _tmpText;
-		private Transform _loading;
+		[SerializeField] private TMP_Text _tmpText;
+		[SerializeField] private Transform _loading;
 
 		private void Awake()
 		{
-			_tmpText = GetComponent<TMP_Text>();
-			_loading = HierarchyReferenceCache.Child(transform, "Loading");
+			if (_tmpText == null) _tmpText = GetComponent<TMP_Text>();
+			if (_loading == null) _loading = HierarchyReferenceCache.Child(transform, "Loading");
 			if (_loading != null)
 			{
 				_loading.gameObject.SetActive(false);
