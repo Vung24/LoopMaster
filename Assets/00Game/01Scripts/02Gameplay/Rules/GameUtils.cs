@@ -81,28 +81,6 @@ public class GameUtils
 		foreach (ParticleSystem particle in node.GetComponentsInChildren<ParticleSystem>()) particle.Play();
 	}
 
-	public static string GetColorNameByType(int type)
-	{
-		switch (type)
-		{
-			case 1: return "红";
-			case 2: return "蓝";
-			case 3: return "黄";
-			case 4: return "绿";
-			case 5: return "紫";
-			case 6: return "橙";
-			case 7: return "粉";
-			case 8: return "深绿";
-			case 9: return "棕";
-			case 10: return "蓝绿";
-			case 11: return "白";
-			case 12: return "灰";
-			case 13: return "天蓝";
-			case 14: return "黑";
-			default: return string.Format("未知{0}", type);
-		}
-	}
-
 	public static List<Vector3> ResamplePointsOptimized(List<Vector3> originalPoints, int n)
 	{
 		if (originalPoints == null || originalPoints.Count < 2 || n < 2)
