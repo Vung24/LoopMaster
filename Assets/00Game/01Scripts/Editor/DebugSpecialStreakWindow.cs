@@ -117,7 +117,7 @@ public sealed class DebugSpecialStreakWindow : EditorWindow
                 SetStatus("Requested dialog through the home widget.");
             }
         }
-        if (GUILayout.Button("Open Debug Level / Auto Play")) DebugLevelWindow.Open();
+        if (GUILayout.Button("Open Debug Level")) DebugLevelWindow.Open();
         EditorGUILayout.HelpBox("Force Win, then press CLAIM in the Win dialog: coins, SpecialStreak collection, milestone reward popup, then next level. Play Pending Win previews the same streak presentation. Direct Next/Home settles without presentation. Lose keeps multiplier for Revive; Retry/Quit resets it.", MessageType.Info);
         EditorGUILayout.HelpBox(_status, MessageType.None);
         EditorGUILayout.EndScrollView();
