@@ -20,7 +20,16 @@ public sealed class SpecialStreakManager : MonoBehaviour
     public int ClaimedIndex => _data?.ClaimedIndex ?? 0;
     public int MultiplierIndex => _data?.MultiplierIndex ?? 0;
     public int LastMultiplierIndex => _data?.LastMultiplierIndex ?? 0;
-    public bool IsTutorialFinished => _data?.TutorialFinished ?? false;
+    public bool IsTutorialFinished
+    {
+        get => _data?.TutorialFinished ?? false;
+        set { if (_data != null) { _data.TutorialFinished = value; SaveData(); } }
+    }
+    public bool PendingPopDialog
+    {
+        get => _data?.PendingPopDialog ?? false;
+        set { if (_data != null) { _data.PendingPopDialog = value; SaveData(); } }
+    }
     [Serializable] private sealed class Config { public SpecialStreakRewardInfo[] Items; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void InitializeBeforeScene() => Ensure();
@@ -88,10 +97,48 @@ public sealed class SpecialStreakManager : MonoBehaviour
     public int GetMultipliedCount(int count, int index) => checked(count * GetMultiplier(index));
     public SpecialStreakRewardInfo GetRewardInfo(int index) => _rewardInfoConfigs != null && index >= 0 && index < _rewardInfoConfigs.Count ? _rewardInfoConfigs[index] : null;
     public SpecialStreakRewardInfo GetCurrRewardInfo() => GetRewardInfo(ClaimedIndex);
+    public int GetLastGoal()
+    {
+        if (_rewardInfoConfigs != null && _rewardInfoConfigs.Count > 0)
+            return _rewardInfoConfigs[_rewardInfoConfigs.Count - 1].Goal;
+        return 0;
+    }
     public bool ShouldSettleCollectionResult() => !_invalid && (_data?.Settling == true || TempCount > 0 || (GetCurrRewardInfo() != null && CurrCount >= GetCurrRewardInfo().Goal));
-    public bool ShouldShowLoseItem() => IsOngoing && MultiplierIndex > 0;
-    public bool ShouldShowFailBanner() => IsOngoing && LastMultiplierIndex > 0;
+    public bool ShouldShowLoseItem() => IsOngoing && !IsCompleted() && !IsExpired() && MultiplierIndex > 0;
+    public bool ShouldShowFailBanner() => IsOngoing && !IsCompleted() && !IsExpired() && LastMultiplierIndex > 0;
     public bool ShouldShowTutorial() => IsOngoing && !IsTutorialFinished;
+    public bool ShouldPopDialog() => IsOngoing && !IsExpired() && !IsCompleted() && PendingPopDialog;
+    public void SetDialogPopped() => PendingPopDialog = false;
+    public bool WillPendingCollectionClaimReward()
+    {
+        var curr = GetCurrRewardInfo();
+        if (curr == null) return false;
+        return curr.Goal <= CurrCount + GetMultiplier(MultiplierIndex) * TempCount;
+    }
+    public void SetNextMultiplierIndex()
+    {
+        if (_invalid || _data == null) return;
+        int mult = GetMultiplier(MultiplierIndex);
+        int nextMultIdx = MultiplierIndex;
+        if (!IsExpired() && !IsCompleted(ClaimedIndex))
+        {
+            nextMultIdx = GetNextMultiplierIndex(MultiplierIndex);
+        }
+        CommitCollectionResult(checked(CurrCount + mult * TempCount), ClaimedIndex, nextMultIdx);
+    }
+    public void CommitCollectionResult(int currCount, int claimedIndex, int multiplierIndex)
+    {
+        if (_invalid || _data == null) return;
+        _data.TempCount = 0;
+        _data.CurrCount = IsCompleted(claimedIndex) ? 0 : currCount;
+        _data.ClaimedIndex = claimedIndex;
+        _data.LastWonLevel = GameProgressStore.HighestCompletedLevel;
+        _data.LastMultiplierIndex = _data.MultiplierIndex;
+        _data.MultiplierIndex = multiplierIndex;
+        _data.Settling = false;
+        SaveData();
+        Changed?.Invoke();
+    }
     public void SetTutorialShown() { if (_invalid || _data == null) return; _data.TutorialFinished = true; SaveData(); }
     public void OnGameWon(int level)
     {
@@ -104,7 +151,6 @@ public sealed class SpecialStreakManager : MonoBehaviour
     public void OnGameFailed()
     {
         if (!IsOngoing || _settling) return;
-        if (!SettlePending()) return;
         _data.LastMultiplierIndex = _data.MultiplierIndex;
         _data.MultiplierIndex = 0; // 0x128D4B4. Revive never calls this.
         SaveData(); Changed?.Invoke();
@@ -147,6 +193,26 @@ public sealed class SpecialStreakManager : MonoBehaviour
         Changed?.Invoke();
         return true;
     }
+#if UNITY_EDITOR
+    // Keep claimed stages and reward journal intact when preparing a playtest.
+    public bool TryDebugPrepare(int multiplierIndex, bool nearReward, bool showTutorial, bool pendingWin = false)
+    {
+        if (!Application.isPlaying || _invalid || _settling || _data == null ||
+            _data.Settling || TempCount > 0 || IsCompleted()) return false;
+        _data.Activated = true;
+        _data.MultiplierIndex = Mathf.Clamp(multiplierIndex, 0, Multipliers.Length - 1);
+        _data.LastMultiplierIndex = _data.MultiplierIndex;
+        _data.CurrCount = nearReward ? Mathf.Max(0, GetCurrRewardInfo().Goal - GetCurrentMultiplier()) : 0;
+        _data.TempCount = pendingWin ? 1 : 0;
+        _data.TutorialFinished = !showTutorial;
+        _data.PendingPopDialog = false;
+        _data.LastWonLevel = GameProgressStore.HighestCompletedLevel;
+        LastError = null;
+        SaveData();
+        Changed?.Invoke();
+        return true;
+    }
+#endif
     private void SaveData() { PlayerPrefs.SetString(DATA_PATH, JsonUtility.ToJson(_data)); PlayerPrefs.Save(); }
     public static void ClearOfflineData()
     {
@@ -161,7 +227,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
 public sealed class SpecialStreakData
 {
     public int Version = 1;
-    public bool Activated, TutorialFinished, Settling;
+    public bool Activated, TutorialFinished, Settling, PendingPopDialog;
     public int CurrCount, TempCount, ClaimedIndex, MultiplierIndex, LastMultiplierIndex, LastWonLevel;
     public int TargetCount, TargetMultiplier;
 }

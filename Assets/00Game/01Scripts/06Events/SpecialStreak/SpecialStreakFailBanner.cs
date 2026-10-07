@@ -27,7 +27,6 @@ public class SpecialStreakFailBanner : MonoBehaviour
         if (rect == null) return;
         var p = rect.anchoredPosition; p.y = -290; rect.anchoredPosition = p;
         _tween?.Kill();
-        // Native 0x128AE00: -290 -> 11 -> 0, .1s each, Ease values 6/4.
         _tween = DOTween.Sequence().Append(rect.DOAnchorPosY(11, .1f).SetEase(Ease.OutQuad))
             .Append(rect.DOAnchorPosY(0, .1f).SetEase(Ease.InOutSine)).SetUpdate(true).SetLink(gameObject);
     }

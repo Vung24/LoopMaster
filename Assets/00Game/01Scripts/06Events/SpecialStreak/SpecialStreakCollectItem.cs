@@ -25,7 +25,6 @@ public class SpecialStreakCollectItem : MonoBehaviour
     {
         if (node == null) return null;
         node.gameObject.SetActive(true); node.localScale = Vector3.zero;
-        // Native 0x1283688: 1.5/.9 in .13s, 1.02/1 in .07s.
         var sequence = DOTween.Sequence().Append(node.DOScale(1.5f, .13f).SetEase(Ease.OutQuad)).Append(node.DOScale(.9f, .13f).SetEase(Ease.InQuart))
             .Append(node.DOScale(1.02f, .07f).SetEase(Ease.OutQuad)).Append(node.DOScale(1f, .07f).SetEase(Ease.InOutSine)).SetUpdate(true).SetLink(gameObject);
         sequence.timeScale = _speed; _tweens.Add(sequence); return sequence;
@@ -54,6 +53,9 @@ public class SpecialStreakCollectItem : MonoBehaviour
                     await UniTask.Delay(TimeSpan.FromSeconds(Mathf.Max(0, labelAnimation.Duration - .1f) / _speed), ignoreTimeScale: true, cancellationToken: token);
                     RemoveLabelListener();
                 }
+                // The wait ends before the Spine disappear event, especially when sped up.
+                // Hide the multiplier badge before replacing the count with the total.
+                SpecialStreakPresentation.SetActive(_multiplierLabel, false);
                 _numParticle?.Play(); _boneParticle?.Play(); SpecialStreakPresentation.Sound(_doubleAudioClip, gameObject);
                 if (_numText != null)
                 {
@@ -78,7 +80,6 @@ public class SpecialStreakCollectItem : MonoBehaviour
         SpecialStreakPresentation.Sound(_flyAudioClip, gameObject);
         Vector3 destination = transform.parent == null ? target.position : transform.parent.InverseTransformPoint(target.position);
         Vector3 delta = destination - transform.localPosition;
-        // 0x12845FC; ELF literal RVA 0x1284CEC = 150.
         var sequence = DOTween.Sequence().Append(transform.DOBlendableLocalMoveBy(new Vector3(0, -150, 0), .17f).SetEase(Ease.OutQuad))
             .Join(transform.DOScale(1.1f, .17f))
             .Append(transform.DOBlendableLocalMoveBy(new Vector3(0, delta.y + 150, 0), .27f).SetEase(Ease.InCubic))
