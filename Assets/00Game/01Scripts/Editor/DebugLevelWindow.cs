@@ -65,6 +65,7 @@ public sealed class DebugLevelWindow : EditorWindow
         EditorGUILayout.LabelField("State", controller == null ? "-" : controller.EndState.ToString());
         EditorGUILayout.LabelField("Played steps", _playedSteps.ToString());
 
+        DrawForceResults(controller);
         DrawResultChecks(controller);
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Playback", EditorStyles.boldLabel);
@@ -107,6 +108,19 @@ public sealed class DebugLevelWindow : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 
+    private void DrawForceResults(GameController controller)
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Force Win / Lose", EditorStyles.boldLabel);
+        using (new EditorGUI.DisabledScope(!IsRunning || controller == null || !controller.IsGameplayActive))
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Force Win", GUILayout.Height(32f))) ForceResult(controller, GameEndState.Won);
+            if (GUILayout.Button("Force Lose", GUILayout.Height(32f))) ForceResult(controller, GameEndState.Failed);
+        }
+        EditorGUILayout.HelpBox("Force Win/Lose runs the normal result flow and opens its dialog. Force Win saves level progress; Force Lose increments the fail count. Auto Play stops when forcing a result.", MessageType.Info);
+    }
+
     private void DrawResultChecks(GameController controller)
     {
         EditorGUILayout.Space();
@@ -141,12 +155,6 @@ public sealed class DebugLevelWindow : EditorWindow
                 if (controller.EndState != GameEndState.Playing) StopPlayback();
                 _status = "Win/Lose checked. State: " + controller.EndState + ".";
                 Debug.Log("[Debug Level] " + _status, controller);
-            }
-            EditorGUILayout.HelpBox("Force Win/Lose runs the normal result flow and opens its dialog. Force Win saves level progress; Force Lose increments the fail count. Auto Play stops when forcing a result.", MessageType.Info);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Force Win")) ForceResult(controller, GameEndState.Won);
-                if (GUILayout.Button("Force Lose")) ForceResult(controller, GameEndState.Failed);
             }
         }
         using (new EditorGUI.DisabledScope(!IsRunning || !controller.CanReplayLevel))
