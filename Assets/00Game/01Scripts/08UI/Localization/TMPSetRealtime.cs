@@ -37,6 +37,10 @@ public sealed class TMPSetRealtime : MonoBehaviour
 		for (int i = 0; i < subMeshes.Length; i++)
 			// TMP's material getter creates an instance and throws when its source was released on disable.
 			if (subMeshes[i] != null && subMeshes[i].sharedMaterial != null) UpdateMaterial(subMeshes[i].material);
+		// Direct material edits do not refresh TMP's cached glyph padding.
+		// Recalculate after all effects are applied, then rebuild the quads to fit the outline/underlay.
+		_textComponent.UpdateMeshPadding();
+		_textComponent.SetVerticesDirty();
 		_textComponent.SetMaterialDirty();
 	}
 
