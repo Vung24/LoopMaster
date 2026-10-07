@@ -174,7 +174,7 @@ public class WinDialogContent : DialogContent
 	public void SetLevel(int level, bool canLoadNext)
 	{
 		_canAdvance = canLoadNext;
-		string title = canLoadNext ? "LEVEL " + level + " COMPLETE" : GameProgressStore.IsCampaignComplete ? "ALL LEVELS COMPLETE" : "NEXT LEVEL DATA MISSING";
+		string title = GameProgressStore.IsCampaignComplete && !canLoadNext ? "ALL LEVELS COMPLETE" : "LEVEL " + level + " COMPLETE";
 		SetArtTitle(title);
 		if (_fallbackTitle != null)
 			_fallbackTitle.text = title;
@@ -184,7 +184,7 @@ public class WinDialogContent : DialogContent
 	public void SetNoMoreLevels()
 	{
 		_canAdvance = false;
-		string title = GameProgressStore.IsCampaignComplete ? "ALL LEVELS COMPLETE" : "NEXT LEVEL DATA MISSING";
+		string title = GameProgressStore.IsCampaignComplete ? "ALL LEVELS COMPLETE" : "LEVEL COMPLETE";
 		SetArtTitle(title);
 		if (_fallbackTitle != null) _fallbackTitle.text = title;
 		RefreshRewardButtons();
@@ -256,8 +256,19 @@ public class WinDialogContent : DialogContent
 		GameData data = _offeredData ?? (_controller == null ? null : _controller.Data);
 		bool claimed = _controller != null && _controller.HasClaimedWinReward(data);
 		int coins = _controller == null ? 0 : _controller.GetWinRewardCoins(data);
+		bool centered = _claimButtonCenter != null && (claimed || _claimButton == null);
+		if (_claimButtonCenter != null) _claimButtonCenter.gameObject.SetActive(centered);
+		if (_claimButton != null) _claimButton.gameObject.SetActive(!centered);
+		if (centered)
+		{
+			// The centered prefab has a separate coin/amount line below its caption.
+			RecoveryDialogUI.HideNamed(_claimButtonCenter.transform, "Coin");
+			TMP_Text[] captions = _claimButtonCenter.GetComponentsInChildren<TMP_Text>(true);
+			for (int i = 0; i < captions.Length; i++) captions[i].gameObject.SetActive(i == 0);
+			if (captions.Length > 0) captions[0].rectTransform.anchoredPosition = Vector2.zero;
+		}
 		string normal = claimed ? (_canAdvance ? "NEXT LEVEL" : "HOME") : "CLAIM " + coins;
-		string doubled = "FREE x2 (OFFLINE)\n" + (coins * 2);
+		string doubled = "FREE x2\n" + (coins * 2);
 		foreach (Button button in new[] { _claimButton, _claimButtonCenter, _fallbackNextButton })
 		{
 			SetButtonLabel(button, normal);
@@ -301,13 +312,13 @@ public class WinDialogContent : DialogContent
 				tmpLabels[i].text = label;
 				tmpLabels[i].enableAutoSizing = true;
 				tmpLabels[i].fontSizeMin = 16f;
-				tmpLabels[i].fontSizeMax = label.Contains("OFFLINE") ? 28f : 36f;
+				tmpLabels[i].fontSizeMax = 36f;
 				// The authored horizontal layout sizes text from preferred width.
-				// Reserve a bounded column so the longer offline label stays inside the button.
+				// Reserve a bounded column so reward labels stay inside the button.
 				LayoutElement column = tmpLabels[i].GetComponent<LayoutElement>();
 				if (column == null) column = tmpLabels[i].gameObject.AddComponent<LayoutElement>();
 				column.minWidth = 0f;
-				column.preferredWidth = label.Contains("OFFLINE") ? 220f : 180f;
+				column.preferredWidth = 180f;
 				column.flexibleWidth = 0f;
 				column.minHeight = 72f; column.preferredHeight = 72f;
 			}

@@ -122,7 +122,7 @@ public class FailDialogContent : DialogContent
 			_freeBtn.gameObject.SetActive(_isFreeRevive);
 			RecoveryDialogUI.HideNamed(_freeBtn.transform, "TipCoin");
 			RecoveryDialogUI.HideNamed(_freeBtn.transform, "TipAd");
-			SetButtonLabel(_freeBtn, "CONTINUE FREE");
+			SetButtonLabel(_freeBtn, "FREE");
 		}
 		if (_adBtn != null)
 		{
@@ -130,7 +130,7 @@ public class FailDialogContent : DialogContent
 			RecoveryDialogUI.HideNamed(_adBtn.transform, "Ad");
 			RecoveryDialogUI.HideNamed(_adBtn.transform, "Image");
 			RecoveryDialogUI.HideNamed(_adBtn.transform, "TipAd");
-			SetButtonLabel(_adBtn, "FREE (OFFLINE)");
+			SetButtonLabel(_adBtn, "FREE");
 		}
 		if (_coinBtn != null)
 		{
@@ -155,7 +155,7 @@ public class FailDialogContent : DialogContent
 	{
 		string title = "LEVEL " + level + " FAILED";
 		string reason = failReason == "roadsfull" || failReason == "road_full" ? "THE ROAD IS FULL" : "NO AVAILABLE MOVE";
-		SetTitle(title);
+		SetTitle("CONTINUE?");
 		if (_fallbackTitle != null) _fallbackTitle.text = title;
 		if (_fallbackReason != null) _fallbackReason.text = reason;
 	}
@@ -193,12 +193,13 @@ public class FailDialogContent : DialogContent
 	private static void SetButtonLabel(Button button, string label)
 	{
 		if (button == null) return;
-		Snui_Text[] snuiLabels = button.GetComponentsInChildren<Snui_Text>(true);
-		for (int i = 0; i < snuiLabels.Length; i++)
-			if (snuiLabels[i] != null) snuiLabels[i].SetText(label);
-		TMP_Text[] tmpLabels = button.GetComponentsInChildren<TMP_Text>(true);
-		for (int i = 0; i < tmpLabels.Length; i++)
-			if (tmpLabels[i] != null) tmpLabels[i].text = label;
-		foreach (Text labelText in button.GetComponentsInChildren<Text>(true)) labelText.text = label;
+		Transform content = HierarchyReferenceCache.Child(button.transform, "Content") ?? button.transform;
+		RecoveryDialogUI.Label(content, label);
+		foreach (TMP_Text text in content.GetComponentsInChildren<TMP_Text>(true))
+		{
+			text.enableAutoSizing = true;
+			text.fontSizeMin = 20f;
+			text.fontSizeMax = 40f;
+		}
 	}
 }
