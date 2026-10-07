@@ -41,14 +41,6 @@ public class LevelDifficultyPanel : MonoBehaviour
 					if (GameAudioPlayer.Current != null) GameAudioPlayer.Current.PlayOneShot(_audioClip);
 					else AudioSource.PlayClipAtPoint(_audioClip, transform.position);
 				}
-				if (_text != null)
-				{
-					_text.gameObject.SetActive(true);
-					Color color = _text.color;
-					color.a = 0f;
-					_text.color = color;
-					textTween = _text.DOFade(1f, 0.16f).SetLink(gameObject);
-				}
 				if (_spine != null && _spine.skeletonDataAsset != null)
 				{
 					_spine.gameObject.SetActive(true);
@@ -57,6 +49,23 @@ public class LevelDifficultyPanel : MonoBehaviour
 					var animation = GameUtils.GetSkeletonAnimation(data, "idle");
 					if (animation != null && _spine.AnimationState != null)
 						_spine.AnimationState.SetAnimation(0, animation, false);
+					// Apply the opening pose before positioning the banner's attached label.
+					_spine.Update(0f);
+				}
+				if (_text != null)
+				{
+					Snui.Snui_Text.EnsureFontAssets(_text.transform);
+					var follower = _text.GetComponentInParent<BoneFollowerGraphic>();
+					if (follower != null)
+					{
+						follower.Initialize();
+						follower.LateUpdate();
+					}
+					Color color = _text.color;
+					color.a = 1f;
+					_text.color = color;
+					_text.gameObject.SetActive(true);
+					_text.ForceMeshUpdate();
 				}
 				await UniTask.WaitForSeconds(1.4f, cancellationToken: lifetime.Token);
 				if (_text != null) textTween = _text.DOFade(0f, 0.2f).SetLink(gameObject);
