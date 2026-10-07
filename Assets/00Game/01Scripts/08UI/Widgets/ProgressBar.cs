@@ -26,6 +26,7 @@ public class ProgressBar : MonoBehaviour
     protected virtual void Awake() { EnsureObject(); }
     public int GetCurrentCount() { return currCount; }
     public int GetTotalCount() { return totalCount; }
+    public int CurrentValue => currCount;
 
     public virtual void EnsureObject()
     {
