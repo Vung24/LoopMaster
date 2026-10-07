@@ -136,14 +136,19 @@ public static class GameSceneManager
 				addressablesLoaded = true;
 			}
 		}
-		catch
+		catch (Exception ex)
 		{
+			Debug.LogWarning($"[GameSceneManager] Addressables load '{scenePath}' failed: {ex.Message}. Trying Build Settings fallback.");
 			addressablesLoaded = false;
 		}
 
 		if (!addressablesLoaded)
 		{
 			string sceneName = GetSceneName(sceneType);
+			if (!Application.CanStreamedLevelBeLoaded(sceneName))
+			{
+				throw new InvalidOperationException($"Scene '{sceneName}' could not be loaded through Addressables and is not enabled in Build Settings. Check its Address and rebuild Addressables content.");
+			}
 			var asyncOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);
 			if (asyncOp != null)
 			{
@@ -161,10 +166,10 @@ public static class GameSceneManager
 	{
 		switch (sceneType)
 		{
-			case SceneType.Home: return "Home/HomeScene.unity";
-			case SceneType.Game: return "Game/GameScene.unity";
-			case SceneType.Splash: return "Splash/SplashScene.unity";
-			default: return "Home/HomeScene.unity";
+			case SceneType.Home: return "HomeScene";
+			case SceneType.Game: return "GameScene";
+			case SceneType.Splash: return "SplashScene";
+			default: return "HomeScene";
 		}
 	}
 

@@ -60,20 +60,34 @@ namespace Snui
 			if (_icon == null) return;
 			_icon.sprite = select ? _selectedSprite : _normalSprite;
 			float scale = select ? SelectedScale : UnselectedScale;
+			if (!select && navigationAnim != NavigationAnim.Default)
+			{
+				_icon.transform.localScale = Vector3.one * scale;
+				var position = _icon.rectTransform.anchoredPosition;
+				position.y = IconNormalPosition;
+				_icon.rectTransform.anchoredPosition = position;
+				if (_text != null) _textTween = _text.DOFade(0f, 0.1f).SetUpdate(true).SetLink(gameObject);
+				return;
+			}
 			if (navigationAnim == NavigationAnim.PoppedUp && select)
 			{
+				var position = _icon.rectTransform.anchoredPosition;
+				position.y = IconSelectPosition;
+				_icon.rectTransform.anchoredPosition = position;
 				_icon.transform.localScale = Vector3.one * UnselectedScale;
 				_iconTween = DOTween.Sequence().Append(_icon.transform.DOScale(scale * 1.1f, 0.12f))
-					.Append(_icon.transform.DOScale(scale, 0.08f)).SetUpdate(true);
+					.Append(_icon.transform.DOScale(scale, 0.08f)).SetUpdate(true).SetLink(gameObject);
 			}
 			else
 			{
 				if (select && navigationAnim == NavigationAnim.WidthChangesDynamically)
 					_icon.transform.localScale = Vector3.one * (SelectedScale + 0.12f);
-				_iconTween = _icon.transform.DOScale(scale, navigationAnim == NavigationAnim.Default ? 0.16f : 0.3f).SetUpdate(true);
+				_iconTween = _icon.transform.DOScale(scale, navigationAnim == NavigationAnim.Default ? 0.16f : 0.3f).SetUpdate(true).SetLink(gameObject);
 			}
-			_positionTween = _icon.rectTransform.DOAnchorPosY(select ? IconSelectPosition : IconNormalPosition, 0.3f).SetUpdate(true);
-			if (_text != null) _textTween = _text.DOFade(select ? 1f : 0f, 0.1f).SetUpdate(true);
+			if (navigationAnim == NavigationAnim.WidthChangesDynamically)
+				_positionTween = _icon.rectTransform.DOAnchorPosY(IconSelectPosition, 0.3f).SetUpdate(true).SetLink(gameObject);
+			if (navigationAnim != NavigationAnim.Default && _text != null)
+				_textTween = _text.DOFade(1f, 0.1f).SetUpdate(true).SetLink(gameObject);
 		}
 		public void SetIconPivot(Vector2 pivot) { if (_icon != null) _icon.rectTransform.pivot = pivot; }
 		private void StopAnimation()

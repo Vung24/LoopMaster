@@ -8,6 +8,7 @@ public partial class InventoryManager
 {
     private const string RewardJournalKey = "offline_reward_journal_v1";
     private const string RewardReceiptsKey = "offline_reward_receipts_v1";
+    private const string InfiniteHeartRewardKey = "infiniteHeartEndTime";
     private bool _rewardTransaction;
     private bool _rewardStoreInvalid;
     private bool IsMutationBlocked => _isApplyingBooster || _rewardTransaction || _rewardStoreInvalid || PlayerPrefs.HasKey(RewardJournalKey);
@@ -19,6 +20,10 @@ public partial class InventoryManager
         public string[] keys;
         public int[] before;
         public int[] after;
+        // Optional fields keep existing version-1 wallet journals readable.
+        public bool hasInfiniteHeart;
+        public int infiniteHeartBefore;
+        public int infiniteHeartAfter;
     }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     // Verification-only fault/process interruption injection; never grants anything.
@@ -50,10 +55,17 @@ public partial class InventoryManager
         {
             if (ReadReceipts().ids.Contains(claimId)) { result = RewardClaimResult.AlreadyClaimed; return true; }
             var totals = new Dictionary<string, long>();
+            long infiniteSeconds = 0;
             foreach (var item in items)
             {
                 if (item == null || item.Type == null || item.Count < 0) return false;
-                if (item.Type == RewardType.Heart || item.Type == RewardType.InfinityHeart) continue;
+                if (item.Type == RewardType.InfinityHeart)
+                {
+                    infiniteSeconds += item.Count;
+                    if (infiniteSeconds > int.MaxValue) return false;
+                    continue;
+                }
+                if (item.Type == RewardType.Heart) continue;
                 string key = item.Type.ToInventoryKey();
                 if (!IsInventoryKey(key)) return false;
                 long previous = totals.TryGetValue(key, out long count) ? count : 0;
@@ -62,6 +74,16 @@ public partial class InventoryManager
                 totals[key] = total;
             }
             var journal = new Journal { id = claimId, keys = new string[totals.Count], before = new int[totals.Count], after = new int[totals.Count] };
+            if (infiniteSeconds > 0)
+            {
+                HeartManager.EnsureInitialized();
+                int before = Math.Max(0, PlayerPrefs.GetInt(InfiniteHeartRewardKey));
+                long after = Math.Max((long)before, TimeUtils.GetUnixTimestamp()) + infiniteSeconds;
+                if (after > int.MaxValue) return false;
+                journal.hasInfiniteHeart = true;
+                journal.infiniteHeartBefore = before;
+                journal.infiniteHeartAfter = (int)after;
+            }
             int index = 0;
             foreach (var pair in totals)
             {
@@ -87,12 +109,16 @@ public partial class InventoryManager
         _rewardTransaction = true;
         try
         {
+            if (PlayerPrefs.GetInt(InfiniteHeartRewardKey, 0) > TimeUtils.GetUnixTimestamp())
+                HeartManager.EnsureInitialized();
             ReadReceipts(); // A corrupt receipt store must never be silently reset.
             if (!PlayerPrefs.HasKey(RewardJournalKey)) { _rewardStoreInvalid=false; return true; }
             var journal = JsonUtility.FromJson<Journal>(PlayerPrefs.GetString(RewardJournalKey));
             if (journal == null || journal.version != 1 || string.IsNullOrEmpty(journal.id) || journal.keys == null ||
                 journal.before == null || journal.after == null || journal.keys.Length != journal.before.Length || journal.keys.Length != journal.after.Length)
                 throw new InvalidOperationException("Invalid reward journal; original data retained.");
+            if (journal.hasInfiniteHeart && (journal.infiniteHeartBefore < 0 || journal.infiniteHeartAfter < journal.infiniteHeartBefore))
+                throw new InvalidOperationException("Invalid infinite-heart reward journal; original data retained.");
             var unique = new HashSet<string>();
             for (int i = 0; i < journal.keys.Length; i++)
                 if (!IsInventoryKey(journal.keys[i]) || !unique.Add(journal.keys[i]) || journal.before[i] < 0 || journal.after[i] < journal.before[i])
@@ -106,11 +132,13 @@ public partial class InventoryManager
     }
     private void CompleteJournal(Journal journal)
     {
+        if (journal.hasInfiniteHeart) HeartManager.EnsureInitialized();
         var receipts = ReadReceipts();
         bool already = receipts.ids.Contains(journal.id);
         if (!already)
         {
             for (int i = 0; i < journal.keys.Length; i++) PlayerPrefs.SetInt(CountKey(journal.keys[i]), journal.after[i]);
+            if (journal.hasInfiniteHeart) PlayerPrefs.SetInt(InfiniteHeartRewardKey, journal.infiniteHeartAfter);
             // Allows process interruption between wallet and receipt writes.
             PlayerPrefs.Save(); Checkpoint("balances-saved");
             receipts.ids.Add(journal.id);
@@ -119,9 +147,14 @@ public partial class InventoryManager
         }
         PlayerPrefs.DeleteKey(RewardJournalKey); PlayerPrefs.Save();
         if (!already)
+        {
             for (int i = 0; i < journal.keys.Length; i++)
                 try { OnInventoryChanged.Invoke(journal.keys[i], journal.after[i] - journal.before[i]); }
                 catch (Exception error) { Debug.LogWarning("Reward saved; inventory listener failed: " + error.Message); }
+            if (journal.hasInfiniteHeart)
+                try { Managers.Heart?.OnInfinityHeartChanged?.Invoke(); }
+                catch (Exception error) { Debug.LogWarning("Reward saved; heart listener failed: " + error.Message); }
+        }
     }
     // Called only by the existing explicit full-user-data reset.
     public void ClearRewardData()

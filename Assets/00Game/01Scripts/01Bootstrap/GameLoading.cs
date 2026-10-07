@@ -20,12 +20,12 @@ public class GameLoading : LoadingPanel
 		GameObject instance = null;
 		try
 		{
-			var handle = Addressables.InstantiateAsync("Common/Prefab/GameLoading.prefab");
+			var handle = Addressables.InstantiateAsync("GameLoading");
 			instance = await handle.Task;
 		}
-		catch
+		catch (System.Exception ex)
 		{
-			// Fallback if Addressables bundle is not built in offline/editor environment
+			Debug.LogWarning($"[GameLoading] Addressables failed to instantiate 'GameLoading': {ex.Message}. Trying fallback.");
 		}
 
 		if (instance == null)
@@ -121,6 +121,9 @@ public class GameLoading : LoadingPanel
 		{
 			Current = null;
 		}
-		Destroy(gameObject);
+		if (!Addressables.ReleaseInstance(gameObject))
+		{
+			Destroy(gameObject);
+		}
 	}
 }

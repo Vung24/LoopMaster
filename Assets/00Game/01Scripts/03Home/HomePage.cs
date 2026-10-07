@@ -116,6 +116,11 @@ public class HomePage : MonoBehaviour
 			AudioManager.Current.PlayOneShot(_homeInAudioClip);
 		}
 
+		if (_playButton != null)
+		{
+			_playButton.PlayEnterAnim();
+		}
+
 		if (_eventController != null)
 		{
 			await _eventController.PlayEnterAnimation(false);

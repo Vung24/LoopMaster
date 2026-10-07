@@ -1,9 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-
-/// <summary>
-/// Toggle used by the pause prefab; swaps its authored On and Off graphics.
-/// </summary>
 public sealed class PauseToggle : Toggle
 {
 	[SerializeField] private GameObject _onObject;

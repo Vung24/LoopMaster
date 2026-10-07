@@ -663,7 +663,7 @@ public class GameController : MonoBehaviour
 		CommitAbandonedLevel();
 		_isTransitioningLevel = true;
 		GameData.ClearCurrent(); Time.timeScale = 1f;
-		SceneManager.LoadScene("HomeScene");
+		GameSceneManager.ExitGame().Forget();
 		return true;
 	}
 
