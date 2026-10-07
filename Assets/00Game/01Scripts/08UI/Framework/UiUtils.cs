@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public static class UiUtils
 {
@@ -29,5 +30,26 @@ public static class UiUtils
 		Vector3 deltaPosition = new Vector3(deltaPivot.x * size.x, deltaPivot.y * size.y);
 		rectTransform.pivot = pivot;
 		rectTransform.localPosition -= deltaPosition;
+	}
+
+	public static Image CreateMask(Transform parent)
+	{
+		if (parent == null) return null;
+		var go = new GameObject("TutorialMask", typeof(RectTransform), typeof(Image));
+		go.transform.SetParent(parent, false);
+		var rect = go.GetComponent<RectTransform>();
+		rect.anchorMin = Vector2.zero;
+		rect.anchorMax = Vector2.one;
+		rect.sizeDelta = Vector2.zero;
+		rect.anchoredPosition = Vector2.zero;
+		var img = go.GetComponent<Image>();
+		img.color = new Color(0f, 0f, 0f, 0f);
+		img.raycastTarget = true;
+		return img;
+	}
+
+	public static Image CreateMask(Canvas canvas)
+	{
+		return CreateMask(canvas != null ? canvas.transform : null);
 	}
 }
