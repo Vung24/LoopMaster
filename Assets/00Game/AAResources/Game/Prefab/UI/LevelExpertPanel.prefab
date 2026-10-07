@@ -212,7 +212,6 @@ GameObject:
   - component: {fileID: 114447839711849842}
   - component: {fileID: 114776568293066607}
   - component: {fileID: 114481787365304073}
-  - component: {fileID: 114380227067399204}
   - component: {fileID: 114636122673484987}
   m_Layer: 5
   m_Name: Text
@@ -818,7 +817,7 @@ MonoBehaviour:
   followLocalScale: 1
   followParentWorldScale: 0
   followXYPosition: 1
-  followZPosition: 0
+  followZPosition: 1
   maintainedAxisOrientation: 1
 --- !u!224 &224444880867840542
 RectTransform:
@@ -886,7 +885,7 @@ MonoBehaviour:
   m_text: EXPERT
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 550bd1ef4ca84e04f9d07cfb386b69a2, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: baecc37ce56c484188d8a9b00cc95fd4, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 4996e1d70f9c72c43aaa69b0d99df941, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -977,33 +976,6 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   text: {fileID: 114447839711849842}
---- !u!114 &114380227067399204
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1010061102411538}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7335b355655841ea5d577aa27d78f724, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  OutlineColor: {r: 0.18447499, g: 0.008568125, b: 0.32314324, a: 1}
-  OutlineWidth: 0.25
-  FaceDilate: 0.2
-  EnableUnderlay: 1
-  UnderlayColor: {r: 0.10224175, g: 0.004024717, b: 0.18116423, a: 1}
-  UnderlayOffsetX: 0
-  UnderlayOffsetY: -1
-  UnderlaySoftness: 0
-  UnderlayDilate: 0
-  EnableGlow: 0
-  GlowColor: {r: 0, g: 1, b: 1, a: 1}
-  GlowOffset: 0
-  GlowInner: 0.05
-  GlowOuter: 0.05
-  GlowPower: 0.75
 --- !u!114 &114636122673484987
 MonoBehaviour:
   m_ObjectHideFlags: 0
