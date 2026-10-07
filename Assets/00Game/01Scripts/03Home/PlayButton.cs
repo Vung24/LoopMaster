@@ -35,6 +35,9 @@ public class PlayButton : MonoBehaviour
 
 	private void Awake()
 	{
+		if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+		if (_btn == null) _btn = GetComponent<Button>();
+		if (_animation == null) _animation = GetComponent<Animation>();
 		_homePage = HomeController.Current != null ? HomeController.Current.HomePage : GetComponentInParent<HomePage>(true);
 		if (_btnText != null)
 		{
@@ -55,7 +58,7 @@ public class PlayButton : MonoBehaviour
 	{
 		if (_canvasGroup != null)
 		{
-			_canvasGroup.alpha = 0f;
+			_canvasGroup.alpha = 1f;
 		}
 
 		if (_btn != null)
@@ -107,13 +110,15 @@ public class PlayButton : MonoBehaviour
 
 	public void PlayEnterAnim()
 	{
-		if (_animation != null)
-		{
-			_animation.Play();
-		}
-		else if (_canvasGroup != null)
+		if (_canvasGroup != null)
 		{
 			_canvasGroup.alpha = 1f;
+		}
+
+		if (_animation != null)
+		{
+			_animation.Rewind();
+			_animation.Play();
 		}
 	}
 

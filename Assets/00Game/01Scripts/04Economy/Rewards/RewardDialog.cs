@@ -26,6 +26,31 @@ namespace Snui
         private Coroutine _animation;
         public event Action Closed;
         public bool RewardSaved => _saved;
+        // Presentation receipt only: SpecialStreak has already journaled these rewards.
+        public static UniTask<RewardDialog> ShowSpecialStreakRewards(List<RewardItem> items, Transform parent)
+        {
+            var prefab = RecoveryPrefabLibrary.Current?.Resolve(PATH);
+            if (parent == null || prefab == null || items == null || items.Count == 0)
+                return UniTask.FromResult<RewardDialog>(null);
+            var instance = Instantiate(prefab, parent, false);
+            var dialog = instance.GetComponent<RewardDialog>();
+            if (dialog == null) { Destroy(instance); return UniTask.FromResult<RewardDialog>(null); }
+            PrepareOverlay(instance, 1350);
+            dialog._saved = true;
+            var layout = RewardLayoutHelper.GetRewardsLayoutPos(items.Count);
+            for (int i = 0; i < items.Count; i++)
+            {
+                var cell = RewardCell.Show(items[i], dialog._safeArea, true, true).GetAwaiter().GetResult();
+                if (cell == null) continue;
+                cell.transform.localPosition = new Vector3(layout.Item2[i].x, layout.Item2[i].y, 0f);
+                cell.transform.localScale = Vector3.one * layout.Item1;
+                dialog._cells.Add(cell);
+            }
+            HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
+            Snui_HeartHud.TrySetAutoUpdate(true);
+            dialog.Reveal();
+            return UniTask.FromResult(dialog);
+        }
         public static UniTask<RewardDialog> ShowLevelBox(int milestone, Transform parent, SkeletonGraphic chest=null, bool waitForMachine=false)
         {
             if(parent==null) return UniTask.FromResult<RewardDialog>(null);

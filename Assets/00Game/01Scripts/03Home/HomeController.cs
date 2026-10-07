@@ -235,12 +235,22 @@ public class HomeController : MonoBehaviour
 		if (GameProgressStore.IsCampaignComplete || !SpecialStreakManager.Ensure().SettlePending()) return false;
 		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
 		if (catalog == null || catalog.GetLevel(GameProgressStore.NextPlayableLevel) == null) { HomePage.RefreshProgress(); return false; }
-		if (!Application.CanStreamedLevelBeLoaded("GameScene")) { Debug.LogWarning("GameScene is not enabled in Build Settings."); return false; }
 		_openingGame = true;
 		_specialStreak?.CommitProgressBeforeEnterGame();
 		GameData.ClearCurrent(); Time.timeScale = 1f;
-		GameSceneManager.EnterGame(GameEnterRoute.Home).Forget();
+		EnterGameAsync().Forget();
 		return true;
+	}
+	private async UniTask EnterGameAsync()
+	{
+		try
+		{
+			await GameSceneManager.EnterGame(GameEnterRoute.Home);
+		}
+		finally
+		{
+			if (this != null) _openingGame = false;
+		}
 	}
 	private void OnDisable()
 	{

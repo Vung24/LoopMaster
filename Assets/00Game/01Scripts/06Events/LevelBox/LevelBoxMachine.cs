@@ -23,6 +23,8 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     private LevelBoxDialogContent _progress;
     private GameObject _progressRoot;
     private Tweener _maskTween;
+    private Tweener _textTween;
+    private float _shownProgress;
     private Spine.AnimationState _machineState;
     private LevelBoxStageInfo _displayStage;
     private bool _busy;
@@ -87,11 +89,29 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         if(_button!=null) _button.interactable=manager.IsUnlock;
         if(_bar1!=null) _bar1.gameObject.SetActive(stage.Goal==5);
         if(_bar2!=null) _bar2.gameObject.SetActive(stage.Goal==10);
-        if(_progressText!=null) _progressText.text=stage.Progress+"/"+stage.Goal;
-        if(_progressMaskRect!=null) { _maskTween?.Kill(); var offset=_progressMaskRect.offsetMax; offset.x=GetTargetMaskOffsetPosX(stage.Progress,stage.Goal); _progressMaskRect.offsetMax=offset; }
+        KillProgressTweens();
+        SetProgressText(stage.Progress);
+        if(_progressMaskRect!=null) SetProgressMaskWidth(GetTargetMaskOffsetPosX(stage.Progress,stage.Goal));
         PlayMachine(manager.IsUnlock ? "idle" : "static",true);
     }
     public static float GetTargetMaskOffsetPosX(int progress,int goal) => progress<=0 ? 0 : (goal>5 ? NormalMask : FastMask)[Mathf.Clamp(progress-1,0,goal>5 ? 9 : 4)];
+    private void SetProgressMaskWidth(float width)
+    {
+        // The authored mask has a left pivot at x=-105. Progress values are
+        // widths, not offsetMax coordinates relative to the parent's anchor.
+        _progressMaskRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,width);
+    }
+    private void SetProgressText(float progress)
+    {
+        _shownProgress=progress;
+        int goal=_displayStage==null ? 0 : _displayStage.Goal;
+        if(_progressText!=null) _progressText.text=(goal>0 ? Mathf.Clamp01(progress/goal)*100f : 0).ToString("0")+"%";
+    }
+    private void KillProgressTweens()
+    {
+        _maskTween?.Kill(); _maskTween=null;
+        _textTween?.Kill(); _textTween=null;
+    }
     public void OnPointerClick(PointerEventData eventData)
     {
         if(eventData.button==PointerEventData.InputButton.Left) OnClickBtn();
@@ -139,7 +159,8 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         if(!isActiveAndEnabled) return UniTask.CompletedTask;
         var manager=LevelBoxManager.Ensure(); var old=manager.GetStageInfo(manager.LastViewedLevel);
         RefreshProgress();
-        if(_progressMaskRect!=null) { var p=_progressMaskRect.offsetMax; p.x=GetTargetMaskOffsetPosX(old.Progress,old.Goal); _progressMaskRect.offsetMax=p; }
+        if(_progressMaskRect!=null) SetProgressMaskWidth(GetTargetMaskOffsetPosX(old.Progress,old.Goal));
+        SetProgressText(old.Progress);
         PlayMachine("first",false); manager.OnViewed();
         StartCoroutine(ProgressFallback());
         return UniTask.CompletedTask;
@@ -180,17 +201,20 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         {
             case "progress":
                 PlaySound(_sliceDropAudioClip); var stage=_displayStage ?? LevelBoxManager.Ensure().GetCurStageInfo();
-                if(_progressMaskRect!=null) { _maskTween?.Kill(); _maskTween=DOTween.To(()=>_progressMaskRect.offsetMax.x,x=> { var p=_progressMaskRect.offsetMax; p.x=x; _progressMaskRect.offsetMax=p; },GetTargetMaskOffsetPosX(stage.Progress,stage.Goal),.5f).SetUpdate(true); }
+                KillProgressTweens();
+                // Native RVA 0x179B844 runs width and percentage together for 0.6s.
+                if(_progressMaskRect!=null) _maskTween=DOTween.To(()=>_progressMaskRect.rect.width,SetProgressMaskWidth,GetTargetMaskOffsetPosX(stage.Progress,stage.Goal),.6f).SetUpdate(true);
+                if(_progressText!=null) _textTween=DOTween.To(()=>_shownProgress,SetProgressText,stage.Progress,.6f).SetUpdate(true);
                 break;
-            case "text_scale": _progressText?.transform.DOPunchScale(Vector3.one*.15f,.25f).SetUpdate(true); break;
+            case "text_scale": PlaySound(_progressFullAudioClip); break;
             case "rocker": PlaySound(_rockerAudioClip); break;
-            case "replace": if(_rewards!=null && _rewards.RewardSaved) { PlaySound(_progressFullAudioClip); _rewards.BeginChestAnimation(); } break;
+            case "replace": if(_rewards!=null && _rewards.RewardSaved) _rewards.BeginChestAnimation(); break;
         }
     }
     private void PlaySound(AudioClip clip) { if(clip!=null && AudioManager.Current!=null) AudioManager.Current.PlayOneShot(clip,gameObject); }
     private void OnDisable()
     {
-        StopAllCoroutines(); _maskTween?.Kill(); _maskTween=null;
+        StopAllCoroutines(); KillProgressTweens();
         if(_progressText!=null) _progressText.transform.DOKill();
         if(_rewards!=null) { _rewards.Closed-=OnRewardClosed; _rewards.Close(); } _rewards=null;
         if(_progress!=null) _progress.Dismissed-=OnProgressClosed; _progress=null;
