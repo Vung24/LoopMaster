@@ -12,6 +12,7 @@ public class CountdownHelper : MonoBehaviour
 	private ICountdownTimer _countdownTimer;
 	private Coroutine timerCoroutine;
 	private WaitForSeconds oneSecond;
+	private bool _notifyingTimerStopped;
 
 	private void Awake()
 	{
@@ -39,11 +40,12 @@ public class CountdownHelper : MonoBehaviour
 	{
 		if (TimeUtils.IsExpired(timestamp))
 		{
-			OnTimerStoped?.Invoke();
+			StopTimer();
 			return;
 		}
 
-		StopTimer();
+		// Replacing a countdown is not a completion event. Stop listeners may restart it.
+		ClearTimer();
 		_countdownTimer = new CountdownUntil(timestamp);
 		_countdownTimer.OnTimerTick += UpdateTimer;
 		StartTimer();
@@ -57,11 +59,11 @@ public class CountdownHelper : MonoBehaviour
 	{
 		if (fixTime <= 0)
 		{
-			OnTimerStoped?.Invoke();
+			StopTimer();
 			return;
 		}
 
-		StopTimer();
+		ClearTimer();
 		_countdownTimer = new CountdownFixTime(fixTime);
 		_countdownTimer.OnTimerTick += UpdateTimer;
 		StartTimer();
@@ -94,8 +96,11 @@ public class CountdownHelper : MonoBehaviour
 			yield return oneSecond;
 			if (_countdownTimer == null) yield break;
 
-			_countdownTimer.UpdateTimer();
-			if (_countdownTimer.GetCurrTime() <= 0)
+			var currentTimer = _countdownTimer;
+			currentTimer.UpdateTimer();
+			// Tick/stop listeners can clear or replace the timer synchronously.
+			if (_countdownTimer != currentTimer) yield break;
+			if (currentTimer.GetCurrTime() <= 0)
 			{
 				StopTimer();
 				yield break;
@@ -105,14 +110,31 @@ public class CountdownHelper : MonoBehaviour
 
 	private void UpdateTimer(long time)
 	{
+		var currentTimer = _countdownTimer;
 		OnTimerTick?.Invoke(time);
-		if (time <= 0)
+		if (time <= 0 && _countdownTimer == currentTimer)
 		{
 			StopTimer();
 		}
 	}
 
 	public void StopTimer()
+	{
+		ClearTimer();
+		if (_notifyingTimerStopped) return;
+
+		_notifyingTimerStopped = true;
+		try
+		{
+			OnTimerStoped?.Invoke();
+		}
+		finally
+		{
+			_notifyingTimerStopped = false;
+		}
+	}
+
+	private void ClearTimer()
 	{
 		if (timerCoroutine != null)
 		{
@@ -125,7 +147,5 @@ public class CountdownHelper : MonoBehaviour
 			_countdownTimer.OnTimerTick -= UpdateTimer;
 			_countdownTimer = null;
 		}
-
-		OnTimerStoped?.Invoke();
 	}
 }

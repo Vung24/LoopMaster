@@ -9,7 +9,6 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
     private const string ViewedKey = "LevelBoxLastViewedLevel";
     public static LevelBoxManager Current { get; private set; }
     public ManagerStatus status { get; private set; } = ManagerStatus.Shutdown;
-    // Constructor RVA 0x179F1DC: I=1800s, C=50, U/S/P=1.
     private static readonly string[] Fast = { "I","S","IC","U","IP","C","I","C","IS","C","S","C","I","C","P","C","I","C","U" };
     private static readonly string[] Normal = { "I","U","C","I","P","C","S","I","U","C" };
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -87,8 +86,6 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
     {
         result=RewardClaimResult.Failed;
         var inventory=InventoryManager.Ensure();
-        // A saved receipt can still have an unfinished journal (for example a
-        // failed final Save). Finish it before accepting a retry as already claimed.
         if(!inventory.RecoverRewardJournal()) return false;
         if (inventory.IsRewardClaimed(ClaimId(milestone))) { result=RewardClaimResult.AlreadyClaimed; return true; }
         if (milestone<=0 || milestone!=PendingMilestone) return false;

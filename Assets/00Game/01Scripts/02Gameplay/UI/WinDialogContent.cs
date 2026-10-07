@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Snui;
+using Cysharp.Threading.Tasks;
 
 public class WinDialogContent : DialogContent
 {
@@ -202,7 +203,13 @@ public class WinDialogContent : DialogContent
 	private void ClaimReward(bool doubled)
 	{
 		if (!OfferValid || _isClaiming || _isNavigating) return;
-		if (_controller.HasClaimedWinReward(_offeredData)) { AdvanceAfterClaim(); return; }
+		if (_controller.HasClaimedWinReward(_offeredData))
+		{
+			_isClaiming = true;
+			RefreshRewardButtons();
+			_claimRoutine = StartCoroutine(CollectAndAdvance(0, false));
+			return;
+		}
 		_isClaiming = true;
 		RefreshRewardButtons();
 		if (!_controller.TryClaimWinReward(_offeredData, doubled, out int coins))
@@ -233,11 +240,15 @@ public class WinDialogContent : DialogContent
 		HudContainer.TrySetTop();
 		Snui_CoinHud hud = HudContainer.Current == null ? Snui_CoinHud.Current : HudContainer.Current.CoinHud;
 		Vector3 start = _coinsSpine != null ? _coinsSpine.transform.position : transform.position;
-		yield return _coinAnimation.Play(coins, parent, start, hud, _flyCoinAsset);
+		if (coins > 0) yield return _coinAnimation.Play(coins, parent, start, hud, _flyCoinAsset);
+		if (!OfferValid) { CancelClaimAnimation(); yield break; }
+		bool streakPresented = false;
+		yield return SpecialStreakProgress.ShowWinCollection(parent).ToCoroutine(result => streakPresented = result);
 		_claimRoutine = null;
 		_isClaiming = false;
 		HudContainer.TryRevertToOriginLayer();
-		if (OfferValid) AdvanceAfterClaim();
+		if (OfferValid && streakPresented) AdvanceAfterClaim();
+		else if (OfferValid) RefreshRewardButtons();
 	}
 
 	private void AdvanceAfterClaim()
