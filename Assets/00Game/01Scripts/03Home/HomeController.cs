@@ -239,7 +239,7 @@ public class HomeController : MonoBehaviour
 		_openingGame = true;
 		_specialStreak?.CommitProgressBeforeEnterGame();
 		GameData.ClearCurrent(); Time.timeScale = 1f;
-		SceneManager.LoadScene("GameScene");
+		GameSceneManager.EnterGame(GameEnterRoute.Home).Forget();
 		return true;
 	}
 	private void OnDisable()
