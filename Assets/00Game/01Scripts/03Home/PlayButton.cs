@@ -4,6 +4,7 @@ using DG.Tweening;
 using Spine.Unity;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class PlayButton : MonoBehaviour
@@ -30,10 +31,19 @@ public class PlayButton : MonoBehaviour
 	private HardLevel _hardLevel;
 	private bool IsPlayLevelChangeAnim;
 	private HomePage _homePage;
+	private Color _normalOutlineColor = Color.black;
 
 	private void Awake()
 	{
 		_homePage = HomeController.Current != null ? HomeController.Current.HomePage : GetComponentInParent<HomePage>(true);
+		if (_btnText != null)
+		{
+			var realtime = _btnText.GetComponent<TMPSetRealtime>();
+			if (realtime != null)
+			{
+				_normalOutlineColor = realtime.OutlineColor;
+			}
+		}
 	}
 
 	public void Bind(HomePage home)
@@ -43,6 +53,11 @@ public class PlayButton : MonoBehaviour
 
 	private void Start()
 	{
+		if (_canvasGroup != null)
+		{
+			_canvasGroup.alpha = 0f;
+		}
+
 		if (_btn != null)
 		{
 			_btn.onClick.AddListener(() => OnClick(false).Forget());
@@ -51,6 +66,16 @@ public class PlayButton : MonoBehaviour
 		if (_btnText != null)
 		{
 			_btnText.text = GameProgressStore.NextPlayableLevel.ToString();
+		}
+
+		if (_unlimitedTipTime != null)
+		{
+			var countdown = _unlimitedTipTime.GetComponent<CountdownHelper>();
+			if (countdown != null)
+			{
+				countdown.OnTimerTick.AddListener(OnUnlimitedTick);
+				countdown.OnTimerStoped.AddListener(OnUnlimitedStop);
+			}
 		}
 
 		if (Managers.Heart != null)
@@ -94,34 +119,73 @@ public class PlayButton : MonoBehaviour
 
 	public void PlayShakeAnim()
 	{
+		Transform parentTrans = transform.parent;
+		if (parentTrans != null)
+		{
+			var sparksTrans = HierarchyReferenceCache.Child(parentTrans, "BtnSparks") ?? HierarchyReferenceCache.Descendant(parentTrans, "BtnSparks");
+			if (sparksTrans != null)
+			{
+				var ps = sparksTrans.GetComponent<ParticleSystem>();
+				if (ps != null)
+				{
+					ps.gameObject.SetActive(true);
+					ps.Play();
+				}
+			}
+		}
+
 		transform.DOKill();
-		transform.DOShakeScale(0.3f, 0.1f, 10, 90f, true);
+		Sequence seq = DOTween.Sequence();
+		seq.Append(transform.DOScale(0.9f, 0.06f).SetEase(Ease.OutQuad));
+		seq.Append(transform.DOScale(1.12f, 0.1f).SetEase(Ease.InQuad));
+		seq.Append(transform.DOScale(1.0f, 0.13f).SetEase(Ease.OutQuad));
+		seq.SetLink(gameObject);
+
+		UpdateUnlimitedTip();
 	}
 
 	public async UniTaskVoid PlaySweepAnim()
 	{
 		_sweepAnimDone = false;
-		string animName = _hardLevel == HardLevel.VeryHard ? "very_hard_light" : (_hardLevel == HardLevel.Hard ? "hard_light" : "normal_light");
+		string animName = _hardLevel switch
+		{
+			HardLevel.VeryHard => "very_hard_light",
+			HardLevel.Hard => "hard_light",
+			_ => "normal_light"
+		};
 
 		while (this != null && !_sweepAnimDone)
 		{
 			if (_levelLightSpine != null)
 			{
 				_levelLightSpine.gameObject.SetActive(true);
+				_levelLightSpine.Initialize(true);
 				if (_levelLightSpine.AnimationState != null)
 				{
 					_levelLightSpine.AnimationState.SetAnimation(0, animName, false);
 				}
 			}
-			await UniTask.Delay(TimeSpan.FromSeconds(3f));
+			await UniTask.WaitForSeconds(5f);
 		}
 	}
 
 	private async UniTask PlayClickFeedback(float pressDuration = 0.08f)
 	{
-		transform.DOKill();
-		await transform.DOScale(0.92f, pressDuration).SetEase(Ease.OutQuad).ToUniTask();
-		await transform.DOScale(1f, pressDuration).SetEase(Ease.OutBack).ToUniTask();
+		if (_btn == null || EventSystem.current == null || !_btn.interactable || !_btn.enabled)
+		{
+			return;
+		}
+
+		var eventData = new PointerEventData(EventSystem.current)
+		{
+			pointerPress = _btn.gameObject
+		};
+		ExecuteEvents.Execute(_btn.gameObject, eventData, ExecuteEvents.pointerDownHandler);
+		bool isCanceled = await UniTask.WaitForSeconds(pressDuration).SuppressCancellationThrow();
+		if (!isCanceled && _btn != null)
+		{
+			ExecuteEvents.Execute(_btn.gameObject, eventData, ExecuteEvents.pointerUpHandler);
+		}
 	}
 
 	public void TriggerSkipAnimationsClick()
@@ -132,14 +196,15 @@ public class PlayButton : MonoBehaviour
 
 	public async UniTask PlayChangeLevelAnim()
 	{
+		transform.DOKill();
 		Sequence seq = DOTween.Sequence();
 		seq.Append(transform.DOScale(0.94f, 0.1f).SetEase(Ease.OutQuad));
 		seq.Append(transform.DOScale(1.2f, 0.23f).SetEase(Ease.OutBack));
 		seq.AppendCallback(() =>
 		{
-			if (_levelChangeAudioClip != null)
+			if (_levelChangeAudioClip != null && AudioManager.Current != null)
 			{
-				AudioSource.PlayClipAtPoint(_levelChangeAudioClip, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+				AudioManager.Current.PlayOneShot(_levelChangeAudioClip);
 			}
 		});
 		seq.Append(transform.DOScale(0.94f, 0.17f).SetEase(Ease.OutQuad));
@@ -152,11 +217,12 @@ public class PlayButton : MonoBehaviour
 			if (_levelChangeSpine != null)
 			{
 				_levelChangeSpine.gameObject.SetActive(true);
-				_levelChangeSpine.AnimationState?.SetAnimation(0, "level_change", false);
+				_levelChangeSpine.AnimationState?.SetAnimation(0, "animation", false);
 			}
 			UpdateStyle(_hardLevel);
 		});
 		seq.Append(transform.DOScale(1.0f, 0.17f).SetEase(Ease.OutBack));
+		seq.SetLink(gameObject);
 		await seq.ToUniTask();
 	}
 
@@ -172,16 +238,25 @@ public class PlayButton : MonoBehaviour
 			return;
 		}
 
-		if (Managers.Heart != null && !Managers.Heart.IsHeartEnough())
+		if (Managers.Heart == null || Managers.Heart.IsHeartEnough())
 		{
-			var dialog = await MoreHeartDialogContent.ShowInDialog(JumpHeartDialogSourceScene.HomeBoosterIn);
-			if (dialog != null)
-			{
-				return;
-			}
+			EnterGame(skipAnimations).Forget();
+			return;
 		}
 
-		EnterGame(skipAnimations).Forget();
+		var dialog = await MoreHeartDialogContent.ShowInDialog(JumpHeartDialogSourceScene.HomeBoosterIn);
+		if (dialog != null)
+		{
+			var utcs = new UniTaskCompletionSource();
+			void OnDialogClosed() => utcs.TrySetResult();
+			dialog.Closed += OnDialogClosed;
+			await utcs.Task;
+		}
+
+		if (Managers.Heart != null && Managers.Heart.IsHeartEnough())
+		{
+			EnterGame(skipAnimations).Forget();
+		}
 	}
 
 	private async UniTaskVoid EnterGame(bool skipAnimations)
@@ -192,10 +267,15 @@ public class PlayButton : MonoBehaviour
 			{
 				return;
 			}
-			await UniTask.Delay(TimeSpan.FromSeconds(0.2f));
+			await UniTask.WaitForSeconds(0.2f);
 		}
 
 		_sweepAnimDone = true;
+		if (AudioManager.Current != null)
+		{
+			AudioManager.Current.StopMusic();
+		}
+
 		if (_homePage != null)
 		{
 			_homePage.OnClickPlay();
@@ -209,74 +289,103 @@ public class PlayButton : MonoBehaviour
 	private void UpdateStyle(HardLevel hardLevel)
 	{
 		_hardLevel = hardLevel;
-		if (_btn != null)
+		var normalSprite = PlayBtnNormalSpriteState.highlightedSprite ?? PlayBtnNormalSpriteState.pressedSprite;
+		var hardSprite = PlayBtnHardSpriteState.highlightedSprite ?? PlayBtnHardSpriteState.pressedSprite;
+		var veryHardSprite = PlayBtnVeryHardSpriteState.highlightedSprite ?? PlayBtnVeryHardSpriteState.pressedSprite;
+
+		Color outlineColor;
+		var btnImg = _btn != null ? _btn.GetComponent<Image>() : null;
+		var btnTextRealtime = _btnText != null ? _btnText.GetComponent<TMPSetRealtime>() : null;
+		var hardTextRealtime = _hardText != null ? _hardText.GetComponent<TMPSetRealtime>() : null;
+
+		switch (hardLevel)
 		{
-			switch (hardLevel)
-			{
-				case HardLevel.VeryHard:
+			case HardLevel.VeryHard:
+				if (_btn != null)
+				{
 					_btn.spriteState = PlayBtnVeryHardSpriteState;
-					break;
-				case HardLevel.Hard:
+				}
+				if (btnImg != null && veryHardSprite != null)
+				{
+					btnImg.sprite = veryHardSprite;
+				}
+				outlineColor = ColorUtils.RGB(0x2b0001);
+				if (btnTextRealtime != null) btnTextRealtime.OutlineColor = outlineColor;
+				if (hardTextRealtime != null) hardTextRealtime.OutlineColor = outlineColor;
+				if (_hardText != null)
+				{
+					_hardText.text = "SUPER HARD";
+					_hardText.color = ColorUtils.FromString("#FFBFB4");
+					_hardText.gameObject.SetActive(true);
+				}
+				if (_hardTagNode != null)
+				{
+					var tagImage = _hardTagNode.GetComponent<Image>();
+					if (tagImage != null && _veryHardCoinTagSp != null) tagImage.sprite = _veryHardCoinTagSp;
+					_hardTagNode.gameObject.SetActive(true);
+				}
+				break;
+
+			case HardLevel.Hard:
+				if (_btn != null)
+				{
 					_btn.spriteState = PlayBtnHardSpriteState;
-					break;
-				default:
+				}
+				if (btnImg != null && hardSprite != null)
+				{
+					btnImg.sprite = hardSprite;
+				}
+				outlineColor = ColorUtils.RGB(0x11003c);
+				if (btnTextRealtime != null) btnTextRealtime.OutlineColor = outlineColor;
+				if (hardTextRealtime != null) hardTextRealtime.OutlineColor = outlineColor;
+				if (_hardText != null)
+				{
+					_hardText.text = "HARD";
+					_hardText.color = ColorUtils.FromString("#FFB3F5");
+					_hardText.gameObject.SetActive(true);
+				}
+				if (_hardTagNode != null)
+				{
+					var tagImage = _hardTagNode.GetComponent<Image>();
+					if (tagImage != null && _hardCoinTagSp != null) tagImage.sprite = _hardCoinTagSp;
+					_hardTagNode.gameObject.SetActive(true);
+				}
+				break;
+
+			default:
+				if (_btn != null)
+				{
 					_btn.spriteState = PlayBtnNormalSpriteState;
-					break;
-			}
+				}
+				if (btnImg != null && normalSprite != null)
+				{
+					btnImg.sprite = normalSprite;
+				}
+				if (btnTextRealtime != null) btnTextRealtime.OutlineColor = _normalOutlineColor;
+				if (_hardTagNode != null) _hardTagNode.gameObject.SetActive(false);
+				if (_hardText != null) _hardText.gameObject.SetActive(false);
+				break;
 		}
 
-		bool isHardOrVeryHard = hardLevel != HardLevel.Normal;
-		if (_hardTagNode != null)
-		{
-			_hardTagNode.gameObject.SetActive(isHardOrVeryHard);
-			var tagImage = _hardTagNode.GetComponent<Image>();
-			if (tagImage != null)
-			{
-				tagImage.sprite = hardLevel == HardLevel.VeryHard ? _veryHardCoinTagSp : _hardCoinTagSp;
-			}
-		}
-
-		if (_hardText != null)
-		{
-			_hardText.gameObject.SetActive(isHardOrVeryHard);
-			if (isHardOrVeryHard)
-			{
-				_hardText.text = hardLevel == HardLevel.VeryHard ? "SUPER HARD" : "HARD";
-			}
-		}
+		if (btnTextRealtime != null) btnTextRealtime.ApplyFontSettings();
+		if (hardTextRealtime != null) hardTextRealtime.ApplyFontSettings();
 	}
-
-	private CountdownHelper _unlimitedCountdown;
-	private bool _updatingUnlimitedTip;
 
 	private void UpdateUnlimitedTip()
 	{
-		// Replacing/stopping the countdown invokes OnTimerStoped synchronously.
-		if (_updatingUnlimitedTip) return;
-		_updatingUnlimitedTip = true;
-		try
+		int infiniteLeftTime = Managers.Heart != null ? Managers.Heart.InfiniteLeftTime : 0;
+		if (_unlimitedTip != null)
 		{
-			bool isInfinite = Managers.Heart != null && Managers.Heart.IsInfinite();
-			if (_unlimitedTip != null)
+			_unlimitedTip.gameObject.SetActive(infiniteLeftTime > 0);
+		}
+		if (infiniteLeftTime > 0 && _unlimitedTipTime != null)
+		{
+			var countdown = _unlimitedTipTime.GetComponent<CountdownHelper>();
+			if (countdown != null && Managers.Heart != null)
 			{
-				_unlimitedTip.gameObject.SetActive(isInfinite);
-			}
-			if (isInfinite && _unlimitedTipTime != null)
-			{
-				if (_unlimitedCountdown == null)
-					_unlimitedCountdown = _unlimitedTipTime.GetComponent<CountdownHelper>() ?? _unlimitedTipTime.gameObject.AddComponent<CountdownHelper>();
-				_unlimitedCountdown.OnTimerTick.RemoveListener(OnUnlimitedTick);
-				_unlimitedCountdown.OnTimerStoped.RemoveListener(OnUnlimitedStop);
-				_unlimitedCountdown.OnTimerTick.AddListener(OnUnlimitedTick);
-				_unlimitedCountdown.OnTimerStoped.AddListener(OnUnlimitedStop);
-				_unlimitedCountdown.CountdownUntil(Managers.Heart.InfiniteHeartEndTime);
-			}
-			else if (_unlimitedCountdown != null)
-			{
-				_unlimitedCountdown.StopTimer();
+				countdown.CountdownUntil(Managers.Heart.InfiniteHeartEndTime);
 			}
 		}
-		finally { _updatingUnlimitedTip = false; }
 	}
 
 	private void OnUnlimitedTick(long seconds)
@@ -295,6 +404,15 @@ public class PlayButton : MonoBehaviour
 	private void OnDestroy()
 	{
 		_sweepAnimDone = true;
+		if (_unlimitedTipTime != null)
+		{
+			var countdown = _unlimitedTipTime.GetComponent<CountdownHelper>();
+			if (countdown != null)
+			{
+				countdown.OnTimerTick.RemoveListener(OnUnlimitedTick);
+				countdown.OnTimerStoped.RemoveListener(OnUnlimitedStop);
+			}
+		}
 		if (Managers.Heart != null)
 		{
 			Managers.Heart.OnInfinityHeartChanged.RemoveListener(OnHeartHudChanged);
