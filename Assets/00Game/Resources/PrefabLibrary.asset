@@ -10,8 +10,39 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8afb0ef382d4523b54d40f7e00d8643, type: 3}
-  m_Name: RecoveryPrefabLibrary
+  m_Name: PrefabLibrary
   m_EditorClassIdentifier:
+  EventPrefabs:
+  - Name: HomeEventLava
+    Prefab: {fileID: 1616289912235187, guid: ed43d87bd9d8c544b842fdc7aed2fd11, type: 3}
+  - Name: LavaOpenDialog
+    Prefab: {fileID: 1191856784714027, guid: b6dec0e63996df34b80f0b005c4c2831, type: 3}
+  - Name: LavaStartDialog
+    Prefab: {fileID: 1039295284288229, guid: 144b10b148c86e84780a5921a36d0cd9, type: 3}
+  - Name: LavaDetailDialog
+    Prefab: {fileID: 1214021919001889, guid: a4d7323f4e3b30b4882d2ddd93427be3, type: 3}
+  - Name: LavaWinDialog
+    Prefab: {fileID: 1854738125786890, guid: 0938331c0390bea40b33a63e36a90f29, type: 3}
+  - Name: LavaTipDialog
+    Prefab: {fileID: 1474702220238098, guid: a3c25f9a4aa7b2a48b53db7c0d0a427a, type: 3}
+  - Name: LavaCdDialog
+    Prefab: {fileID: 1031220342531467, guid: 6e92cb837f319604987bcbc5762b8466, type: 3}
+  - Name: LavaHint
+    Prefab: {fileID: 1307307730306112, guid: 7bcfa31d313ada54187bd65b708ad643, type: 3}
+  - Name: StreakLineDialog
+    Prefab: {fileID: 1424314058913768, guid: 0e76174a53917884b91e309a1bddd999, type: 3}
+  - Name: StreakLineInfoDialog
+    Prefab: {fileID: 1530285430474280, guid: 52cf942407ded6649a7e9e98c2b192cc, type: 3}
+  - Name: StreakLineCompleteContent
+    Prefab: {fileID: 1032345525136585, guid: 524eed459c21ef5418849ee3fee7ee36, type: 3}
+  - Name: HomeEventStreakLine
+    Prefab: {fileID: 1119244102007132, guid: 3fed0d66632ff2149bf74f43c297d0a0, type: 3}
+  - Name: StreakLineAssetsCache
+    Prefab: {fileID: 1627549249009009, guid: ccecbff325f9f83428d9fe90952c44f4, type: 3}
+  - Name: LoopStreakLineBanner
+    Prefab: {fileID: 1151687743856222, guid: 9fb16a89556fa024d999ad3a2ccfd79c, type: 3}
+  CheatDialogPrefab: {fileID: 1013808333576558, guid: ffbc26fccafd3de41a5b4091ff05b1f9, type: 3}
+  CheatItemSelectorPrefab: {fileID: 1326392866407276, guid: 3f5c21aa3f1e63e4683fcdcf036f4d6f, type: 3}
   FeatureUnlockDialogPrefab: {fileID: 1000205989405893, guid: 2a3418d6279ceba43bce89b7115e6bbd, type: 3}
   DialogPrefab: {fileID: 1659686862352295, guid: 2617ac88a473cfe419d89c4098452c04, type: 3}
   FingerPrefab: {fileID: 1902524124569359, guid: cc55de2108048444b903d5236ec7f3b2, type: 3}
