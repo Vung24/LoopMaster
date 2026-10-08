@@ -16,18 +16,19 @@ public class BaseHeartManager : BaseManager
 
 	public const int DEFAULT_MAX_HEART = 5;
 	public const int PASS_VIP_MAX_HEART = 8;
-	public const int RECOVER_TIME = 900;
+	public const int HEART_REFILL_INTERVAL = 900;
 
 	private readonly List<FreeHeart> _freeHearts = new List<FreeHeart>();
 
 	private const string InfiniteHeartEndTimeKey = "infiniteHeartEndTime";
-	private const string LastRecoverHeartTimeKey = "lastRecoverHeartTime";
+	// Keep the existing save key for player-data compatibility.
+	private const string LastHeartRefillTimeKey = "lastRecoverHeartTime";
 	private const string HeartCountKey = "Heart";
 
-	public int LastRecoverHeartTime
+	public int LastHeartRefillTime
 	{
-		get => PlayerPrefs.GetInt(LastRecoverHeartTimeKey, 0);
-		set { PlayerPrefs.SetInt(LastRecoverHeartTimeKey, value); PlayerPrefs.Save(); }
+		get => PlayerPrefs.GetInt(LastHeartRefillTimeKey, 0);
+		set { PlayerPrefs.SetInt(LastHeartRefillTimeKey, value); PlayerPrefs.Save(); }
 	}
 
 	public int InfiniteHeartEndTime
@@ -49,7 +50,7 @@ public class BaseHeartManager : BaseManager
 
 	public override void Startup()
 	{
-		MAX_HEART = DEFAULT_MAX_HEART;
+		MAX_HEART = Managers.Pass != null && Managers.Pass.HasActiveVip ? PASS_VIP_MAX_HEART : DEFAULT_MAX_HEART;
 		status = ManagerStatus.Started;
 		UpdateHeart();
 	}
@@ -62,6 +63,15 @@ public class BaseHeartManager : BaseManager
 	{
 		MAX_HEART = PASS_VIP_MAX_HEART;
 		HeartCount = MAX_HEART;
+		OnHeartChanged?.Invoke();
+	}
+
+	public void SetPassVipActive(bool active)
+	{
+		int maximum = active ? PASS_VIP_MAX_HEART : DEFAULT_MAX_HEART;
+		if (MAX_HEART == maximum) return;
+		MAX_HEART = maximum;
+		if (HeartCount > maximum) HeartCount = maximum;
 		OnHeartChanged?.Invoke();
 	}
 
@@ -79,25 +89,25 @@ public class BaseHeartManager : BaseManager
 		int now = (int)TimeUtils.GetUnixTimestamp();
 		if (count < max)
 		{
-			int last = LastRecoverHeartTime;
+			int last = LastHeartRefillTime;
 			if (last == 0)
 			{
-				LastRecoverHeartTime = now;
+				LastHeartRefillTime = now;
 			}
 			else
 			{
 				int elapsed = now - last;
-				if (elapsed >= RECOVER_TIME)
+				if (elapsed >= HEART_REFILL_INTERVAL)
 				{
-					int recovered = elapsed / RECOVER_TIME;
-					HeartCount = Mathf.Min(max, count + recovered);
-					LastRecoverHeartTime = last + recovered * RECOVER_TIME;
+					int refilledHearts = elapsed / HEART_REFILL_INTERVAL;
+					HeartCount = Mathf.Min(max, count + refilledHearts);
+					LastHeartRefillTime = last + refilledHearts * HEART_REFILL_INTERVAL;
 				}
 			}
 		}
 		else
 		{
-			LastRecoverHeartTime = now;
+			LastHeartRefillTime = now;
 		}
 		OnHeartChanged?.Invoke();
 		OnInfinityHeartChanged?.Invoke();
@@ -106,16 +116,16 @@ public class BaseHeartManager : BaseManager
 	public void FillFullHeart(FillHeartWay type)
 	{
 		HeartCount = MAX_HEART;
-		LastRecoverHeartTime = (int)TimeUtils.GetUnixTimestamp();
+		LastHeartRefillTime = (int)TimeUtils.GetUnixTimestamp();
 		OnHeartChanged?.Invoke();
 	}
 
-	public int GetRecoverTime()
+	public int GetHeartRefillTime()
 	{
 		if (HeartCount >= MAX_HEART) return 0;
-		int elapsed = (int)TimeUtils.GetUnixTimestamp() - LastRecoverHeartTime;
+		int elapsed = (int)TimeUtils.GetUnixTimestamp() - LastHeartRefillTime;
 		if (elapsed < 0) elapsed = 0;
-		return Mathf.Max(0, RECOVER_TIME - (elapsed % RECOVER_TIME));
+		return Mathf.Max(0, HEART_REFILL_INTERVAL - (elapsed % HEART_REFILL_INTERVAL));
 	}
 
 	public bool UseHeart()
@@ -125,7 +135,7 @@ public class BaseHeartManager : BaseManager
 		if (HeartCount > 0)
 		{
 			if (HeartCount == MAX_HEART)
-				LastRecoverHeartTime = (int)TimeUtils.GetUnixTimestamp();
+				LastHeartRefillTime = (int)TimeUtils.GetUnixTimestamp();
 			HeartCount--;
 			OnHeartChanged?.Invoke();
 			return true;
@@ -180,7 +190,7 @@ public class BaseHeartManager : BaseManager
 	{
 		_freeHearts.Clear();
 		PlayerPrefs.DeleteKey(InfiniteHeartEndTimeKey);
-		PlayerPrefs.DeleteKey(LastRecoverHeartTimeKey);
+		PlayerPrefs.DeleteKey(LastHeartRefillTimeKey);
 		PlayerPrefs.DeleteKey(HeartCountKey);
 		PlayerPrefs.Save();
 		MAX_HEART = DEFAULT_MAX_HEART;

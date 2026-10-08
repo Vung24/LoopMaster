@@ -101,7 +101,7 @@ namespace Snui
 					if (_timeLabel != null)
 					{
 						_timeLabel.gameObject.SetActive(true);
-						_timeLabel.SetText(TimeFormatter.FormatSeconds(heartMgr.GetRecoverTime()));
+						_timeLabel.SetText(TimeFormatter.FormatSeconds(heartMgr.GetHeartRefillTime()));
 					}
 				}
 				if (_freeHeart != null)

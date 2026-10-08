@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Snui;
@@ -28,6 +29,8 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     private Spine.AnimationState _machineState;
     private LevelBoxStageInfo _displayStage;
     private bool _busy;
+    private int _dialogVersion;
+    private CancellationTokenSource _dialogLoad;
     private readonly System.Collections.Generic.List<Material> _ownedMaterials = new System.Collections.Generic.List<Material>();
     public bool HasDialogOpen => _busy || _rewards!=null || _progress!=null;
     public bool HasAuthoredLayout => _machineSpine!=null && _button!=null;
@@ -116,11 +119,15 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     {
         if(eventData.button==PointerEventData.InputButton.Left) OnClickBtn();
     }
-    public void OnClickBtn()
+    public void OnClickBtn() => OpenDialog().Forget();
+    private async UniTask OpenDialog()
     {
         if(_busy || !isActiveAndEnabled || (_home!=null && !_home.CanOpenLevelBox(this))) return;
         var manager=LevelBoxManager.Ensure(); if(!manager.IsUnlock) return;
         _busy=true;
+        int version=_dialogVersion;
+        var lifetime=CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+        _dialogLoad=lifetime;
         try
         {
             Transform parent=GetComponentInParent<Canvas>()?.rootCanvas.transform;
@@ -128,7 +135,9 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
             int milestone=manager.PendingMilestone;
             if(milestone>0)
             {
-                _rewards=RewardDialog.ShowLevelBox(milestone,parent,receiveImmediately:true).GetAwaiter().GetResult();
+                var rewards=await RewardDialog.ShowLevelBox(milestone,parent,receiveImmediately:true,cancellationToken:lifetime.Token);
+                if(this==null || version!=_dialogVersion || !isActiveAndEnabled) { if(rewards!=null) Destroy(rewards.gameObject); return; }
+                _rewards=rewards;
                 if(_rewards==null) { _busy=false; return; }
                 _rewards.Closed+=OnRewardClosed;
                 manager.OnViewed(); PlayMachine("last",false);
@@ -136,14 +145,18 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
             }
             else
             {
-                _progress=Dialog.ShowContent<LevelBoxDialogContent>(parent,LevelBoxManager.PATH).GetAwaiter().GetResult();
+                var progress=await Dialog.ShowContent<LevelBoxDialogContent>(parent,"LevelBoxDialogContent");
+                if(this==null || version!=_dialogVersion || !isActiveAndEnabled) { if(progress!=null) Destroy(progress.GetComponentInParent<Dialog>().gameObject); return; }
+                _progress=progress;
                 _progressRoot=_progress.GetComponentInParent<Dialog>().gameObject;
                 RewardDialog.PrepareOverlay(_progressRoot,1300);
                 _progress.Dismissed+=OnProgressClosed;
                 manager.OnViewed();
             }
         }
-        catch(Exception error) { _busy=false; Debug.LogWarning("LevelBox UI unavailable: "+error.Message); }
+        catch(OperationCanceledException) when(lifetime.IsCancellationRequested) { }
+        catch(Exception error) { if(this!=null && version==_dialogVersion) _busy=false; Debug.LogWarning("LevelBox UI unavailable: "+error.Message); }
+        finally { if(_dialogLoad==lifetime) _dialogLoad=null; lifetime.Dispose(); }
     }
     private void OnRewardClosed() { if(_rewards!=null) _rewards.Closed-=OnRewardClosed; _rewards=null; _busy=false; if(isActiveAndEnabled) RefreshProgress(); }
     private void OnProgressClosed(int result)
@@ -207,6 +220,9 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     private void PlaySound(AudioClip clip) { if(clip!=null && AudioManager.Current!=null) AudioManager.Current.PlayOneShot(clip,gameObject); }
     private void OnDisable()
     {
+        _dialogVersion++;
+        _dialogLoad?.Cancel();
+        _dialogLoad=null;
         StopAllCoroutines(); KillProgressTweens();
         if(_progressText!=null) _progressText.transform.DOKill();
         if(_rewards!=null) { _rewards.Closed-=OnRewardClosed; _rewards.Close(); } _rewards=null;

@@ -51,8 +51,8 @@ public class Snui_CoinHud : Snui_BaseHud
 		_coinIcon = _coinIconReference != null
 			? _coinIconReference
 			: HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform, "Icon"));
-		if (_coinIcon != null && _coinIcon.sprite == null && DataPrefabLibrary.Current != null)
-			_coinIcon.sprite = DataPrefabLibrary.Current.HudCoinSprite;
+		if (_coinIcon != null && _coinIcon.sprite == null && PrefabLibrary.Current != null)
+			_coinIcon.sprite = PrefabLibrary.Current.HudCoinSprite;
 	}
 
 	public override void PlayShakeAnimation()

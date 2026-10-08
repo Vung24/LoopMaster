@@ -36,7 +36,7 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		if (status == ManagerStatus.Started) return;
 		status = ManagerStatus.Initializing;
 		DontDestroyOnLoad(transform.root.gameObject);
-		if (!RecoverRewardJournal()) { status = ManagerStatus.Started; return; }
+		if (!ReplayPendingRewardJournal()) { status = ManagerStatus.Started; return; }
 		InitializeCounts();
 		status = ManagerStatus.Started;
 	}
