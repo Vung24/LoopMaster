@@ -17,6 +17,16 @@ namespace Snui.Profile
 			if (_frame == null) _frame = GetComponentInChildren<AvatarFrame>(true);
 		}
 
+		public void Init(PlayerInfo player)
+		{
+			SetPlayerInfo(player);
+		}
+
+		public void BindData(PlayerInfo player)
+		{
+			SetPlayerInfo(player);
+		}
+
 		public void SetPlayerInfo(PlayerInfo player)
 		{
 			if (player == null) return;
