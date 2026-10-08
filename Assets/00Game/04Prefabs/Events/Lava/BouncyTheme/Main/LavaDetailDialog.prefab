@@ -1825,6 +1825,26 @@ MonoBehaviour:
   LightClip: {fileID: 8300000, guid: 8f30622c8b64d7840aa8ea997afcb51c, type: 3}
   HoldDialogAfterClose: 0
   _fallPlayerSides: 0000000000000000010000000100000001000000010000000000000000000000
+  _tipBtn: {fileID: 114146679007609405}
+  _closeBtn: {fileID: 114912319135114245}
+  _continueBtn: {fileID: 114620799090419494}
+  _timer: {fileID: 114666354759110125}
+  _topNode: {fileID: 224495805806514194}
+  _failNode: {fileID: 224212504264734335}
+  _playerNode: {fileID: 224722979066068175}
+  _planes:
+  - {fileID: 114268094166745803}
+  - {fileID: 114917243961925533}
+  - {fileID: 114471162682336049}
+  - {fileID: 114974178627333631}
+  - {fileID: 114515882105171531}
+  - {fileID: 114405688665135992}
+  - {fileID: 114540712898820060}
+  - {fileID: 114900566898027734}
+  _playerPrefab: {fileID: 1287522486202573, guid: 546854e02742d0249b16f898e2897536, type: 2}
+  _playerCountText: {fileID: 114881994058410824}
+  _levelCountText: {fileID: 114172880003375458}
+  _descriptionText: {fileID: 114219626265256977}
 --- !u!224 &224927031492998570
 RectTransform:
   serializedVersion: 2
@@ -2450,6 +2470,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67f959505f17c0cc7ce38580a4d21f9b, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _coinText: {fileID: 114519287074791449}
 --- !u!222 &222673373250494054
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3473,6 +3494,10 @@ MonoBehaviour:
   IdleType: 1
   Index: 6
   RippleSpine: {fileID: 114332452302396892}
+  _planeIndex: 6
+  PlaneType: 1
+  _splashGraphic: {fileID: 114332452302396892}
+  _skeletonGraphic: {fileID: 114722295591876758}
 --- !u!224 &224400609097649645
 RectTransform:
   serializedVersion: 2
@@ -3675,6 +3700,10 @@ MonoBehaviour:
   IdleType: 1
   Index: 5
   RippleSpine: {fileID: 0}
+  _planeIndex: 5
+  PlaneType: 1
+  _splashGraphic: {fileID: 0}
+  _skeletonGraphic: {fileID: 114677991338287365}
 --- !u!224 &224787356600648421
 RectTransform:
   serializedVersion: 2
@@ -3794,6 +3823,10 @@ MonoBehaviour:
   IdleType: 1
   Index: 4
   RippleSpine: {fileID: 0}
+  _planeIndex: 4
+  PlaneType: 1
+  _splashGraphic: {fileID: 0}
+  _skeletonGraphic: {fileID: 114895803055220217}
 --- !u!224 &224307847749492711
 RectTransform:
   serializedVersion: 2
@@ -3913,6 +3946,10 @@ MonoBehaviour:
   IdleType: 1
   Index: 3
   RippleSpine: {fileID: 0}
+  _planeIndex: 3
+  PlaneType: 1
+  _splashGraphic: {fileID: 0}
+  _skeletonGraphic: {fileID: 114107806221393738}
 --- !u!224 &224953761210907522
 RectTransform:
   serializedVersion: 2
@@ -4032,6 +4069,10 @@ MonoBehaviour:
   IdleType: 1
   Index: 2
   RippleSpine: {fileID: 0}
+  _planeIndex: 2
+  PlaneType: 1
+  _splashGraphic: {fileID: 0}
+  _skeletonGraphic: {fileID: 114546887521060368}
 --- !u!224 &224751633518880710
 RectTransform:
   serializedVersion: 2
@@ -4153,6 +4194,10 @@ MonoBehaviour:
   IdleType: 1
   Index: 1
   RippleSpine: {fileID: 0}
+  _planeIndex: 1
+  PlaneType: 1
+  _splashGraphic: {fileID: 0}
+  _skeletonGraphic: {fileID: 114132047927162385}
 --- !u!224 &224513472958562728
 RectTransform:
   serializedVersion: 2

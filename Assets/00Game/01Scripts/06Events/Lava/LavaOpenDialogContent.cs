@@ -17,7 +17,8 @@ namespace Snui.Lava
 
 		public static async UniTask ShowWithDialog(Transform parent)
 		{
-			await Show(parent);
+			var dialog = await Show(parent);
+			await UniTask.WaitUntil(() => dialog == null || dialog.Result != RESULT_UNKNOWN);
 		}
 
 		protected override void Awake()
@@ -77,12 +78,13 @@ namespace Snui.Lava
 
 		private void OnClickStartBtn()
 		{
+			if (Result != RESULT_UNKNOWN || Managers.Lava == null || !Managers.Lava.IsWaitingStart()) return;
 			AnalyticsManager.LogEvent("lava_dialog_play");
 			if (Managers.Lava != null)
 			{
 				Managers.Lava.StartEvent();
 			}
-			Dismiss();
+			Dismiss(1);
 		}
 	}
 }

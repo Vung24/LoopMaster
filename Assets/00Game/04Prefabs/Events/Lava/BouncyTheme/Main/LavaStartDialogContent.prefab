@@ -3810,6 +3810,13 @@ MonoBehaviour:
   _closeBtn: {fileID: 0}
   UserShowClip: {fileID: 8300000, guid: 4aa7bd3ccd695d243bc757e99ae80c09, type: 3}
   PanelShowClip: {fileID: 8300000, guid: 5cd2489e4c6c28c4ab3891a9c2d544e0, type: 3}
+  _titleNode: {fileID: 224332949134892339}
+  _treasureNode: {fileID: 224466259662808634}
+  _contentNode: {fileID: 224120983423899751}
+  _playerNode: {fileID: 224721604967926435}
+  _lavaSpark: {fileID: 198228127388525347}
+  _playerCountText: {fileID: 114575217681148726}
+  _fullButton: {fileID: 114182602743579761}
 --- !u!224 &224332949134892339
 RectTransform:
   serializedVersion: 2
@@ -4466,6 +4473,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67f959505f17c0cc7ce38580a4d21f9b, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _coinText: {fileID: 114680142948798179}
 --- !u!222 &222431203906178410
 CanvasRenderer:
   m_ObjectHideFlags: 0

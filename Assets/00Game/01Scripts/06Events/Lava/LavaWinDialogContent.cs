@@ -32,7 +32,8 @@ namespace Snui.Lava
 
 		public static async UniTask ShowWithDialog(Transform parent)
 		{
-			await Show(parent);
+			var dialog = await Show(parent);
+			await UniTask.WaitUntil(() => dialog == null || dialog.Result != RESULT_UNKNOWN);
 		}
 
 		protected override void Awake()
@@ -41,7 +42,7 @@ namespace Snui.Lava
 			if (Managers.Lava != null)
 			{
 				_sharedCoinCount = Managers.Lava.GetSharedCoinRewardCount();
-				_remainingPlayers = Managers.Lava.GetRemainingPlayers();
+				_remainingPlayers = Mathf.Max(1, Managers.Lava.GetRemainingPlayers() - Managers.Lava.GetTempLosePlayers());
 				if (_rewardCell != null) _rewardCell.Init(RewardItem.Coin(_sharedCoinCount), false, true).Forget();
 			}
 
@@ -65,6 +66,9 @@ namespace Snui.Lava
 			{
 				_fullButton = HierarchyReferenceCache.ChildComponent<Snui_FullButton>(transform, "FullButton");
 			}
+			if (_fullButton != null)
+				foreach (var graphic in GetComponentsInChildren<UnityEngine.UI.Graphic>(true))
+					graphic.raycastTarget = graphic.transform.IsChildOf(_fullButton.transform);
 
 			Transform flyNode = HierarchyReferenceCache.Child(transform, "FlyCoinNode");
 			if (flyNode != null && _flyCoinNode == null)
@@ -183,6 +187,7 @@ namespace Snui.Lava
 
 		private async UniTaskVoid PlayAnimation()
 		{
+			await CreatePlayers();
 			await ShowPlayers();
 			await PlayFlyingCoin();
 
@@ -199,17 +204,42 @@ namespace Snui.Lava
 
 			if (_fullButton != null)
 			{
-				_fullButton.EnableButton();
 				Transform content = _fullButton.Content;
 				if (content != null)
 				{
 					content.DOScale(1f, 0.3f).SetEase(Ease.OutBack).SetLink(gameObject);
+					await UniTask.Delay(300, cancellationToken: this.GetCancellationTokenOnDestroy());
 				}
+				_fullButton.EnableButton();
 			}
 		}
 
 		private async UniTask CreatePlayers()
 		{
+			Transform template = HierarchyReferenceCache.Child(transform, "Player");
+			if (_playerContainer != null && template != null && _players.Count == 0)
+			{
+				// Native shows self separately and at most five surviving opponents.
+				var layout = _playerContainer.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+				if (layout != null) layout.enabled = false;
+				if (_playerContainer is RectTransform row)
+					row.anchoredPosition = new Vector2(row.anchoredPosition.x, -460f);
+				int count = Mathf.Min(5, Mathf.Max(0, _remainingPlayers - 1));
+				float spacing = count > 1 ? Mathf.Min(120f, 560f / (count - 1)) : 0f;
+				for (int i = 0; i < count; i++)
+				{
+					var node = Instantiate(template.gameObject, _playerContainer, false);
+					var player = node.GetOrAddComponent<LavaPlayer>();
+					player.IsUser = false;
+					LavaPlayer.SetDisplayAvatar(player.transform, i + 1);
+					player.Avatar?.SetAvatar(new Snui.Profile.PlayerInfo { Avatar = "avatar_" + (i + 2), AvatarFrame = "default" });
+					node.transform.localPosition = new Vector3((i - (count - 1) * 0.5f) * spacing, 0f, 0f);
+					node.SetActive(false);
+					_players.Add(player);
+				}
+				LavaPlayer.SetDisplayAvatar(template, 0);
+				template.gameObject.SetActive(true);
+			}
 			await UniTask.CompletedTask;
 		}
 
@@ -222,7 +252,7 @@ namespace Snui.Lava
 				{
 					p.gameObject.SetActive(true);
 					p.transform.DOScale(1f, 0.2f).SetEase(Ease.OutBack).SetLink(p.gameObject);
-					await UniTask.Delay(100);
+					await UniTask.Delay(100, cancellationToken: this.GetCancellationTokenOnDestroy());
 				}
 			}
 		}
@@ -244,7 +274,7 @@ namespace Snui.Lava
 				}
 			}, _sharedCoinCount, 0.8f).SetLink(gameObject);
 
-			await UniTask.Delay(800);
+			await UniTask.Delay(800, cancellationToken: this.GetCancellationTokenOnDestroy());
 		}
 
 		private void DestroyAllParticles()
@@ -269,15 +299,14 @@ namespace Snui.Lava
 
 		private async UniTaskVoid ClaimAsync()
 		{
+			if (Managers.Lava == null || !Managers.Lava.TryClaimRewards())
+			{
+				_claiming = false;
+				return;
+			}
 			DOHideButton();
 			DestroyAllParticles();
-
-			if (Managers.Lava != null)
-			{
-				Managers.Lava.OnClaimRewards();
-			}
-
-			await UniTask.Delay(300);
+			await UniTask.Delay(300, cancellationToken: this.GetCancellationTokenOnDestroy());
 			Dismiss();
 		}
 
