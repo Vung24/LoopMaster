@@ -45,6 +45,14 @@ public partial class InventoryManager
         try { return ReadReceipts().ids.Contains(claimId); }
         catch (Exception error) { Debug.LogWarning(error.Message); return false; }
     }
+#if UNITY_EDITOR
+    // Read once per debug panel without initializing inventory or replaying pending rewards.
+    public static bool TryDebugReadRewardReceipts(out HashSet<string> ids, out string error)
+    {
+        try { ids = new HashSet<string>(ReadReceipts().ids); error = null; return true; }
+        catch (Exception exception) { ids = null; error = exception.Message; return false; }
+    }
+#endif
     public bool TryClaimRewards(string claimId, IReadOnlyList<RewardItem> items, out RewardClaimResult result)
     {
         result = RewardClaimResult.Failed;

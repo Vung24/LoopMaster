@@ -194,6 +194,9 @@ public sealed class SpecialStreakManager : MonoBehaviour
         return true;
     }
 #if UNITY_EDITOR
+    public long DebugPendingCollectionCount => _data?.Settling == true ? _data.TargetCount :
+        (long)CurrCount + (long)GetCurrentMultiplier() * TempCount;
+
     // Keep claimed stages and reward journal intact when preparing a playtest.
     public bool TryDebugPrepare(int multiplierIndex, bool nearReward, bool showTutorial, bool pendingWin = false)
     {

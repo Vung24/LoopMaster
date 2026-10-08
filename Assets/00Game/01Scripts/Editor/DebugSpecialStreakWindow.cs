@@ -32,6 +32,7 @@ public sealed class DebugSpecialStreakPanel
         var home = EditorApplication.isPlaying ? HomeController.Current : null;
         var progress = home == null ? null : home.GetComponentInChildren<SpecialStreakProgress>(true);
         DrawState(manager, controller, progress);
+        if (manager != null) DebugEventRewards.DrawSpecialStreak(manager);
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Prepare scenario", EditorStyles.boldLabel);
