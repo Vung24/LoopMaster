@@ -14,10 +14,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     [SerializeField] private LoopLevelDocument _document;
     [SerializeField] private string _filePath, _savedJson, _diskText;
     [SerializeField] private string _rawText, _rawBase;
-    [SerializeField] private int _tab, _box = -1, _path, _point = -1, _map = -1;
+    [SerializeField] private int _tab, _box = -1, _path, _point = -1, _tabLayoutVersion;
     [SerializeField] private bool _scenePreview = true, _showSlots, _showBindings = true, _autoBind = true;
     [SerializeField] private float _snap = 0.25f;
     [SerializeField] private Vector2 _scroll;
+    [SerializeField] private int _boxTool, _brushColor = 1, _placementType;
+    [SerializeField] private float _placementHeight, _placementYaw;
+    [SerializeField] private bool _showCubeDetails;
     [SerializeField] private int _roadPreviewMode;
     [SerializeField] private bool _previewAllPaths;
     [SerializeField] private Vector2 _previewOrbit = new Vector2(0, 90);
@@ -38,7 +41,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     private List<string> _errors = new List<string>(), _warnings = new List<string>();
     private bool _hasValidation;
     private int _dragGroup = -1;
-    private static readonly string[] Tabs = { "Level", "Boxes", "Paths", "Map", "Groups / Covers", "JSON" };
+    private static readonly string[] Tabs = { "Level", "Boxes", "Paths", "Groups / Covers", "JSON" };
 
     [MenuItem("Tools/LoopMaster/Level Editor")]
     public static void Open() => GetWindow<LoopLevelEditorWindow>("Level Editor").Show();
@@ -57,6 +60,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     private void OnEnable()
     {
         minSize = new Vector2(470, 520);
+        if (_tabLayoutVersion == 0)
+        {
+            // Restore old Groups/JSON selections after removing the Map tab.
+            _tab = _tab == 3 ? 0 : _tab > 3 ? _tab - 1 : _tab;
+            _tabLayoutVersion = 1;
+        }
+        _tab = Mathf.Clamp(_tab, 0, Tabs.Length - 1);
         if (_document == null)
         {
             _document = CreateInstance<LoopLevelDocument>();
@@ -149,7 +159,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         Undo.ClearUndo(_document);
         _document.Json = root.ToString(Formatting.Indented); _savedJson = _document.Json;
         _filePath = path; _diskText = diskText; _root = null; _cachedJson = null;
-        _box = _point = _map = -1; _path = 0; _rawText = _rawBase = null;
+        _box = _point = -1; _path = 0; _rawText = _rawBase = null;
         _hasValidation = false; _status = string.IsNullOrEmpty(path) ? "New level draft." : "Opened " + Path.GetFileName(path);
         SyncDirty(); Repaint(); SceneView.RepaintAll();
     }
@@ -280,7 +290,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         {
             JObject root = Root(), layout = A.Layout(root);
             if (_editorMode == 1) DrawAutoGenerator();
-            else if (_tab == 5) DrawJson();
+            else if (_tab == 4) DrawJson();
             else if (HasRawChanges)
                 EditorGUILayout.HelpBox("There are unapplied JSON edits. Apply or reset them on the JSON tab before using the inspector.", MessageType.Warning);
             else
@@ -291,8 +301,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     case 0: DrawLevel(root, layout); break;
                     case 1: DrawBoxes(root, layout); break;
                     case 2: DrawPaths(layout); break;
-                    case 3: DrawMap(layout); break;
-                    case 4: DrawGroups(layout); break;
+                    case 3: DrawGroups(layout); break;
                 }
                 EditorGUI.EndChangeCheck(); // Compare JSON so list-button changes are recorded as well.
                 Commit(root);
@@ -346,12 +355,16 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void DrawBoxes(JObject root, JObject layout)
     {
+        DrawBoxTools(layout);
         JArray boxes = A.Array(layout, "Boxes"); Header("Boxes — select here or click a box in Scene View");
-        for (int i = 0; i < boxes.Count; i++)
-        {
-            var item = (JObject)boxes[i];
-            if (GUILayout.Toggle(_box == i, "Box " + i + "   " + (BoxType)A.Int(item, "BoxType") + "   " + A.Array(item, "Cubes").Count + " cubes", "Button")) _box = i;
-        }
+        for (int first = 0; first < boxes.Count; first += 4)
+            using (new EditorGUILayout.HorizontalScope())
+                for (int i = first; i < Math.Min(first + 4, boxes.Count); i++)
+                {
+                    var item = (JObject)boxes[i];
+                    string label = i + ": " + (BoxType)A.Int(item, "BoxType") + " (" + A.Array(item, "Cubes").Count + ")";
+                    if (GUILayout.Toggle(_box == i, label, "Button")) _box = i;
+                }
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button("Add box")) { boxes.Add(A.NewBox(Vector3.zero)); _box = boxes.Count - 1; }
@@ -377,9 +390,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         Integer(box, "LimitedColor", "Limited color"); Flag(box, "IsEnterOnly", "Enter only"); Flag(box, "IsAdjacentLocked", "Adjacent locked");
         Indices(box, "MultiColorLock", "Multi-color lock IDs", true);
         Header("Cubes — bottom to top");
+        DrawCubeStrip(box);
+        _showCubeDetails = EditorGUILayout.Foldout(_showCubeDetails, "Advanced cube fields: color ID, secrets, keys, locks", true);
         JArray cubes = A.Array(box, "Cubes"); int capacity = A.Int(box, "BoxType") == 2 ? 6 : A.Int(box, "BoxType") == 1 ? 64 : 4;
         if (A.Int(box, "BoxType") == 1) EditorGUILayout.HelpBox("Single boxes hold a queue and release one cube per click. The editor limits this queue to 64 entries.", MessageType.None);
-        for (int i = 0; i < cubes.Count; i++)
+        for (int i = 0; _showCubeDetails && i < cubes.Count; i++)
         {
             var cube = (JObject)cubes[i];
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -397,8 +412,70 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             }
         }
         using (new EditorGUI.DisabledScope(cubes.Count >= capacity))
-            if (GUILayout.Button("Add cube (" + cubes.Count + " / " + capacity + ")")) { cubes.Add(A.NewCube(1)); box["Cubes"] = cubes; }
+            if (GUILayout.Button("Add cube (" + cubes.Count + " / " + capacity + ")")) A.PaintCube(box, cubes.Count, _brushColor);
         EditorGUILayout.HelpBox("Normal colors: 1–14. Long colors: 101–105. Surprise colors: 201+; define replacements in layout.SurpriseDatas on the JSON tab. LinkedCubes is preserved and editable there.", MessageType.None);
+    }
+
+    private void DrawBoxTools(JObject layout)
+    {
+        Header("Quick box tools");
+        _boxTool = GUILayout.Toolbar(_boxTool, new[] { "Select / Move", "Place box", "Paint cubes", "Erase cubes" });
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Edit in Scene / Top")) { _scenePreview = true; Frame(); SceneView.lastActiveSceneView?.Focus(); }
+            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Grid snap", _snap));
+        }
+        if (_boxTool == 1)
+        {
+            _placementType = EditorGUILayout.Popup("New box type", _placementType, new[] { "Normal", "Single", "Long" });
+            _placementHeight = EditorGUILayout.FloatField("Placement height", _placementHeight);
+            _placementYaw = EditorGUILayout.FloatField("Rotation Y", _placementYaw);
+        }
+        Header("Color brush");
+        JArray boxes = A.Array(layout, "Boxes");
+        bool longBrush = _boxTool == 1 ? _placementType == 2 : _box >= 0 && _box < boxes.Count && A.Int((JObject)boxes[_box], "BoxType") == 2;
+        if (longBrush) _brushColor = Mathf.Clamp(_brushColor, 1, 5);
+        for (int row = 0; row < 2; row++)
+            using (new EditorGUILayout.HorizontalScope())
+                for (int column = 0; column < 7; column++)
+                {
+                    int color = row * 7 + column + 1;
+                    Color previous = GUI.backgroundColor; GUI.backgroundColor = A.ColorFor(color);
+                    using (new EditorGUI.DisabledScope(longBrush && color > 5))
+                        if (GUILayout.Toggle(_brushColor == color, (longBrush ? 100 + color : color).ToString(), "Button", GUILayout.Height(28))) _brushColor = color;
+                    GUI.backgroundColor = previous;
+                }
+        EditorGUILayout.HelpBox("Click a colored cube to paint; click + to append. Right-click a cube to remove it. Scene tools work on the preview; Alt keeps camera controls. Esc returns to Select / Move. Long uses colors 101–105 (brush 1–5).", MessageType.None);
+    }
+
+    private void DrawCubeStrip(JObject box)
+    {
+        JArray cubes = A.Array(box, "Cubes");
+        int count = cubes.Count + (cubes.Count < A.CubeCapacity(box) ? 1 : 0);
+        for (int first = 0; first < count; first += 8)
+            using (new EditorGUILayout.HorizontalScope())
+                for (int i = first; i < Math.Min(first + 8, count); i++)
+                {
+                    bool occupied = i < cubes.Count;
+                    string label = occupied ? A.Int((JObject)cubes[i], "Type").ToString() : "+";
+                    if (occupied && A.Int((JObject)cubes[i], "IsSecret") > 0) label += " ?";
+                    Rect rect = GUILayoutUtility.GetRect(42, 34, GUILayout.MaxWidth(65));
+                    Event e = Event.current;
+                    bool erase = occupied && e.type == EventType.MouseDown && e.button == 1 && rect.Contains(e.mousePosition);
+                    Color previous = GUI.backgroundColor;
+                    GUI.backgroundColor = occupied ? A.ColorFor(A.Int((JObject)cubes[i], "Type")) : Color.white;
+                    bool click = GUI.Button(rect, new GUIContent(label, "Cube " + i + " (bottom to top). Click: paint/add. Right-click: remove."));
+                    GUI.backgroundColor = previous;
+                    if (erase)
+                    { A.RemoveCube(box, i); e.Use(); return; }
+                    if (click) { A.PaintCube(box, i, _brushColor); return; }
+                }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Fill with brush")) A.FillBox(box, _brushColor);
+            using (new EditorGUI.DisabledScope(cubes.Count == 0))
+                if (GUILayout.Button("Remove top cube")) A.RemoveCube(box, cubes.Count - 1);
+        }
     }
     private void DrawPaths(JObject layout)
     {
@@ -650,22 +727,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             EditorGUILayout.LabelField("Drag to orbit / scroll to zoom. Edit points and tangents in Scene View.", EditorStyles.miniLabel);
         }
     }
-    private void DrawMap(JObject layout)
-    {
-        JArray items = A.Array(layout, "MapData"); Header("Map decorations");
-        for (int i = 0; i < items.Count; i++)
-            if (GUILayout.Toggle(_map == i, i + ": " + items[i].Value<string>("Name"), "Button")) _map = i;
-        if (GUILayout.Button("Add map item"))
-        {
-            items.Add(new JObject { ["Name"] = "Decor9", ["Position"] = A.Vector(Vector3.zero), ["Rotation"] = A.Vector(Vector3.zero), ["Scale"] = A.Vector(Vector3.one) }); layout["MapData"] = items; _map = items.Count - 1;
-        }
-        if (_map < 0 || _map >= items.Count) return;
-        JObject item = (JObject)items[_map];
-        item["Name"] = EditorGUILayout.TextField("Prefab name", item.Value<string>("Name"));
-        VectorField(item, "Position"); VectorField(item, "Rotation"); VectorField(item, "Scale");
-        if (GUILayout.Button("Delete map item")) { items.RemoveAt(_map); _map = Math.Min(_map, items.Count - 1); }
-        EditorGUILayout.HelpBox("Use the existing map prefab name (for example Decor9). Scene preview shows decoration bounds and labels, not prefab artwork.", MessageType.None);
-    }
     private void DrawGroups(JObject layout)
     {
         Header("Groups — zero-based box indices"); JArray groups = A.Array(layout, "Groups");
@@ -765,11 +826,14 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 using (new Handles.DrawingScope(Matrix4x4.identity)) { DrawRoadPreview(); DrawRoadSketch(view); }
                 return;
             }
+            if (_tab == 1 && e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+            { _boxTool = 0; e.Use(); Repaint(); }
+            if (_tab == 1) DrawSceneBoxToolbar();
             if (e.type == EventType.MouseDown && e.button == 0) { Undo.IncrementCurrentGroup(); _dragGroup = Undo.GetCurrentGroup(); }
             using (new Handles.DrawingScope(Matrix4x4.identity))
             {
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
-                DrawRoadPreview(); DrawBoxPreview(layout); DrawMapPreview(layout);
+                DrawRoadPreview(); DrawBoxPreview(layout, _tab != 1 || _boxTool == 0);
                 // Control points sit inside the generated surface. Keep edit handles visible above it.
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
                 if (_showSlots)
@@ -779,16 +843,99 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                         Handles.Label(_slots[i] + Vector3.up * 0.1f, (i + 1).ToString());
                     }
                 if (_tab == 2) DrawPointHandles(layout);
-                else if (_tab == 1 && _box >= 0 && _box < A.Array(layout, "Boxes").Count)
-                    TransformHandle((JObject)A.Array(layout, "Boxes")[_box], true);
-                else if (_tab == 3 && _map >= 0 && _map < A.Array(layout, "MapData").Count)
-                    TransformHandle((JObject)A.Array(layout, "MapData")[_map], false);
+                else if (_tab == 1 && _boxTool == 0 && _box >= 0 && _box < A.Array(layout, "Boxes").Count)
+                    TransformHandle((JObject)A.Array(layout, "Boxes")[_box]);
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+                if (_tab == 1 && _boxTool == 1) PlaceSceneBox(view, root);
+                else if (_tab == 1 && (_boxTool == 2 || _boxTool == 3)) DrawSceneCubeButtons(layout);
             }
-            Commit(root, "Move level element");
+            Commit(root, _tab == 1 && _boxTool != 0 ? "Edit boxes in Scene" : "Move level element");
             if (e.rawType == EventType.MouseUp && _dragGroup >= 0) { Undo.CollapseUndoOperations(_dragGroup); _dragGroup = -1; }
         }
-        catch (Exception) { /* Invalid drafts remain repairable in the window; do not spam every repaint. */ }
+        catch (Exception exception) { _status = "Scene edit: " + exception.Message; /* Keep invalid drafts repairable without logging on every repaint. */ }
+    }
+
+    private void DrawSceneBoxToolbar()
+    {
+        Handles.BeginGUI();
+        GUILayout.BeginArea(new Rect(12, 12, 400, 60), EditorStyles.helpBox);
+        int next = GUILayout.Toolbar(_boxTool, new[] { "Select", "Place", "Paint", "Erase" });
+        if (next != _boxTool) { _boxTool = next; Repaint(); }
+        GUILayout.Label("Brush " + _brushColor + "  |  Alt: camera  |  Esc: select", EditorStyles.miniLabel);
+        GUILayout.EndArea();
+        Handles.EndGUI();
+    }
+
+    private void PlaceSceneBox(SceneView view, JObject root)
+    {
+        Event e = Event.current;
+        if (e.alt || new Rect(12, 12, 400, 60).Contains(e.mousePosition)) return;
+        int control = GUIUtility.GetControlID(FocusType.Passive);
+        if (e.type == EventType.Layout) HandleUtility.AddDefaultControl(control);
+        Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+        if (!new Plane(Vector3.up, new Vector3(0, _placementHeight, 0)).Raycast(ray, out float distance)) return;
+        Vector3 position = Snap(ray.GetPoint(distance));
+        Bounds footprint = LoopLevelBoardLayout.LocalBounds(_placementType);
+        Quaternion rotation = Quaternion.Euler(0, _placementYaw, 0);
+        using (new Handles.DrawingScope(Matrix4x4.TRS(position, rotation, Vector3.one)))
+        { Handles.color = Color.green; Handles.DrawWireCube(footprint.center, footprint.size); }
+        Handles.Label(position + Vector3.up, "Click: place " + (BoxType)_placementType);
+        if (e.type == EventType.MouseDown && e.button == 0 && HandleUtility.nearestControl == control && GUIUtility.hotControl == 0)
+        {
+            JObject box = A.NewBox(position); box["BoxType"] = _placementType;
+            box["Rotation"] = A.Vector(new Vector3(0, _placementYaw, 0));
+            if (_autoBind) box["PathIndexV2"] = A.NearestSlot(box, _slots);
+            JArray boxes = A.Array(A.Layout(root), "Boxes"); boxes.Add(box); A.Layout(root)["Boxes"] = boxes;
+            _box = boxes.Count - 1; e.Use(); Repaint();
+        }
+        if (e.type == EventType.MouseMove) view.Repaint();
+    }
+
+    private void DrawSceneCubeButtons(JObject layout)
+    {
+        Event e = Event.current;
+        if (e.alt || new Rect(12, 12, 400, 60).Contains(e.mousePosition)) return;
+        int control = GUIUtility.GetControlID(FocusType.Passive);
+        if (e.type == EventType.Layout) HandleUtility.AddDefaultControl(control);
+        Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+        float nearest = float.PositiveInfinity;
+        int hitBox = -1, hitCube = -1;
+        JArray boxes = A.Array(layout, "Boxes");
+        for (int b = 0; b < boxes.Count; b++)
+        {
+            JObject box = (JObject)boxes[b]; int type = A.Int(box, "BoxType");
+            JArray cubes = A.Array(box, "Cubes");
+            int visible = type == 1 ? Math.Min(1, cubes.Count) : cubes.Count;
+            Matrix4x4 matrix = Matrix4x4.TRS(A.Vector(box, "Position"), Quaternion.Euler(A.Vector(box, "Rotation")), Vector3.one);
+            Ray localRay = new Ray(matrix.inverse.MultiplyPoint3x4(ray.origin), matrix.inverse.MultiplyVector(ray.direction));
+            using (new Handles.DrawingScope(matrix))
+            {
+                for (int c = 0; c < visible; c++)
+                {
+                    int index = type == 1 ? cubes.Count - 1 : c;
+                    Vector3 position = type == 1 ? new Vector3(0, 1.12f, 0) :
+                        new Vector3(0, .8f, (type == 2 ? -2.8f : -1.2f) + c * .8f);
+                    Handles.color = A.ColorFor(A.Int((JObject)cubes[index], "Type"));
+                    if (e.type == EventType.Repaint) Handles.DrawWireCube(position, Vector3.one * .78f);
+                    if (new Bounds(position, Vector3.one * .8f).IntersectRay(localRay, out float distance) && distance < nearest)
+                    { nearest = distance; hitBox = b; hitCube = index; }
+                }
+                if (_boxTool != 2 || cubes.Count >= A.CubeCapacity(box)) continue;
+                Vector3 append = type == 1 ? new Vector3(0, 1.7f, 0) :
+                    new Vector3(0, .8f, (type == 2 ? -2.8f : -1.2f) + cubes.Count * .8f);
+                Handles.color = Color.green; Handles.Label(append + Vector3.up * .4f, "+");
+                if (e.type == EventType.Repaint) Handles.SphereHandleCap(0, append, Quaternion.identity, .32f, EventType.Repaint);
+                if (new Bounds(append, Vector3.one * .5f).IntersectRay(localRay, out float appendDistance) && appendDistance < nearest)
+                { nearest = appendDistance; hitBox = b; hitCube = cubes.Count; }
+            }
+        }
+        // Pick the nearest visible cube in world space, including boxes rotated off the grid.
+        if (hitBox >= 0 && e.type == EventType.MouseDown && e.button == 0 && GUIUtility.hotControl == 0)
+        {
+            JObject box = (JObject)boxes[hitBox]; _box = hitBox;
+            if (_boxTool == 3) A.RemoveCube(box, hitCube); else A.PaintCube(box, hitCube, _brushColor);
+            e.Use(); Repaint();
+        }
     }
     private void DrawRoadPreview()
     {
@@ -850,20 +997,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             }
         }
     }
-    private void DrawMapPreview(JObject layout)
-    {
-        JArray items = A.Array(layout, "MapData");
-        for (int i = 0; i < items.Count; i++)
-        {
-            JObject item = (JObject)items[i]; Vector3 position = A.Vector(item, "Position");
-            Quaternion rotation = Quaternion.Euler(A.Vector(item, "Rotation"));
-            Handles.color = new Color(.8f,.5f,1f);
-            using (new Handles.DrawingScope(Matrix4x4.TRS(position, rotation, A.Vector(item, "Scale")))) Handles.DrawWireCube(Vector3.up * .5f, Vector3.one);
-            Handles.Label(position, item.Value<string>("Name"));
-            if (_tab == 3 && Handles.Button(position, rotation, .12f, .15f, Handles.CubeHandleCap)) { _map = i; Repaint(); }
-        }
-    }
-    private void TransformHandle(JObject obj, bool box)
+    private void TransformHandle(JObject obj)
     {
         Vector3 previous = A.Vector(obj, "Position"), angles = A.Vector(obj, "Rotation");
         Quaternion rotation = Quaternion.Euler(angles);
@@ -873,17 +1007,12 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             Quaternion next = Handles.RotationHandle(rotation, previous);
             if (EditorGUI.EndChangeCheck()) obj["Rotation"] = A.Vector(next.eulerAngles);
         }
-        else if (!box && Tools.current == Tool.Scale)
-        {
-            Vector3 scale = Handles.ScaleHandle(A.Vector(obj, "Scale"), previous, rotation, HandleUtility.GetHandleSize(previous));
-            if (EditorGUI.EndChangeCheck()) obj["Scale"] = A.Vector(scale);
-        }
         else
         {
             Vector3 next = Handles.PositionHandle(previous, Tools.pivotRotation == PivotRotation.Local ? rotation : Quaternion.identity);
             if (EditorGUI.EndChangeCheck()) obj["Position"] = A.Vector(Snap(next));
         }
-        if (box && _autoBind && (previous != A.Vector(obj, "Position") || angles != A.Vector(obj, "Rotation"))) obj["PathIndexV2"] = A.NearestSlot(obj, _slots);
+        if (_autoBind && (previous != A.Vector(obj, "Position") || angles != A.Vector(obj, "Rotation"))) obj["PathIndexV2"] = A.NearestSlot(obj, _slots);
     }
     private void DrawPointHandles(JObject layout)
     {

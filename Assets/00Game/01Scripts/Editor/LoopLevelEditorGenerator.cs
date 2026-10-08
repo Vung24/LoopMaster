@@ -175,7 +175,7 @@ public sealed partial class LoopLevelEditorWindow
         Undo.IncrementCurrentGroup(); Undo.RecordObject(this, "Use generated level");
         Commit((JObject)_generationJob.Result.Json.DeepClone(), "Use generated level");
         _filePath = _diskText = null; _rawText = _rawBase = null;
-        _editorMode = 0; _tab = 0; _box = _point = _map = -1; _path = 0;
+        _editorMode = 0; _tab = 0; _box = _point = -1; _path = 0;
         Undo.IncrementCurrentGroup();
         _status = "Generated draft ready. Save As Level " + A.Int(Root(), "level_number") + ".json.";
         SyncDirty(); Frame(); Repaint(); SceneView.RepaintAll();

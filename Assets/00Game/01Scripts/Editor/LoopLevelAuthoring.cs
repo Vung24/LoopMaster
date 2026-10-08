@@ -45,7 +45,7 @@ public static class LoopLevelAuthoring
             ["layout"] = new JObject { ["Version"] = 4, ["HardLevel"] = 0, ["Size"] = 10f,
                 ["PathLength"] = 8, ["PathSectionDistance"] = 0.2f,
                 ["Boxes"] = new JArray(), ["Paths"] = new JArray(RectanglePath()),
-                ["MapData"] = new JArray(), ["Groups"] = new JArray(),
+                ["Groups"] = new JArray(),
                 ["Covers"] = new JArray(), ["SurpriseDatas"] = new JArray() } };
         return root;
     }
@@ -59,6 +59,30 @@ public static class LoopLevelAuthoring
 
     public static JObject NewCube(int color) => new JObject { ["Type"] = color,
         ["IsSecret"] = 0, ["GroupKeyId"] = 0, ["NumLock"] = 0, ["IsFixed"] = 0 };
+
+    public static int CubeCapacity(JObject box) => Int(box, "BoxType") == 1 ? 64 : Int(box, "BoxType") == 2 ? 6 : 4;
+
+    // Palette colors obey the native long-color range. Special colors stay available in JSON/inspector.
+    public static int BrushColor(JObject box, int paletteColor) =>
+        Int(box, "BoxType") == 2 ? 100 + Mathf.Clamp(paletteColor, 1, 5) : Mathf.Clamp(paletteColor, 1, 14);
+
+    public static bool PaintCube(JObject box, int index, int paletteColor)
+    {
+        JArray cubes = Array(box, "Cubes");
+        if (index < 0 || index > cubes.Count || index >= CubeCapacity(box)) return false;
+        int color = BrushColor(box, paletteColor);
+        if (index == cubes.Count) { cubes.Add(NewCube(color)); box["Cubes"] = cubes; return true; }
+        // Recolor the existing token so keys, locks, secrets, links and unknown metadata survive.
+        JObject cube = (JObject)cubes[index];
+        if (Int(cube, "Type") == color) return false;
+        cube["Type"] = color; return true;
+    }
+
+    public static void FillBox(JObject box, int paletteColor)
+    {
+        int target = Int(box, "BoxType") == 1 ? Math.Max(1, Array(box, "Cubes").Count) : CubeCapacity(box);
+        for (int i = 0; i < target; i++) PaintCube(box, i, paletteColor);
+    }
     public static JObject Point(Vector3 position, Vector3 incoming, Vector3 outgoing) =>
         new JObject { ["Position"] = Vector(position), ["InTangent"] = Vector(incoming),
             ["OutTangent"] = Vector(outgoing) };
@@ -338,7 +362,7 @@ public static class LoopLevelAuthoring
             CheckFinite(root, errors, "level");
             foreach (string key in new[] { "Boxes", "Paths" })
                 if (!(layout[key] is JArray)) errors.Add("layout." + key + " must be an array.");
-            foreach (string key in new[] { "MapData", "Groups", "Covers", "SurpriseDatas" })
+            foreach (string key in new[] { "Groups", "Covers", "SurpriseDatas" })
                 if (layout[key] != null && layout[key].Type != JTokenType.Null && !(layout[key] is JArray))
                     errors.Add("layout." + key + " must be an array or null.");
             if (errors.Count > 0) return errors;
@@ -382,11 +406,6 @@ public static class LoopLevelAuthoring
                             if (value.Value<int>() < 0 || value.Value<int>() >= cubes.Count) errors.Add("Box " + index + ": invalid LinkedCubes index.");
             }
             if (boxes.Count == 0) errors.Add("Add at least one box.");
-            foreach (JObject item in Array(layout, "MapData"))
-            {
-                if (string.IsNullOrWhiteSpace(item.Value<string>("Name"))) errors.Add("Map item needs a prefab Name.");
-                foreach (string key in new[] { "Position", "Rotation", "Scale" }) CheckVector(item, key, errors);
-            }
             var groupIds = new HashSet<int>();
             foreach (JObject group in Array(layout, "Groups"))
                 if (Int(group, "Id") <= 0 || !groupIds.Add(Int(group, "Id"))) errors.Add("Group IDs must be positive and unique.");
