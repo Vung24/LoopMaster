@@ -86,7 +86,7 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
     {
         result=RewardClaimResult.Failed;
         var inventory=InventoryManager.Ensure();
-        if(!inventory.RecoverRewardJournal()) return false;
+        if(!inventory.ReplayPendingRewardJournal()) return false;
         if (inventory.IsRewardClaimed(ClaimId(milestone))) { result=RewardClaimResult.AlreadyClaimed; return true; }
         if (milestone<=0 || milestone!=PendingMilestone) return false;
         return inventory.TryClaimRewards(ClaimId(milestone),GetMilestoneRewards(milestone),out result);
