@@ -26,6 +26,7 @@ namespace Snui.StreakLine
 
 		private BaseStreakLineManager _manager;
 		private int _currentLevel;
+		private float _displayLevel;
 		[SerializeField] private int _index;
 		[SerializeField] private RectTransform _head;
 		[SerializeField] private RectTransform _next;
@@ -54,25 +55,34 @@ namespace Snui.StreakLine
 			return rect != null ? rect.rect.height : 546f;
 		}
 
+		private void EnsureReferences()
+		{
+			if (_head == null) _head = HierarchyReferenceCache.ChildComponent<RectTransform>(transform, "Head");
+			if (_next == null) _next = HierarchyReferenceCache.ChildComponent<RectTransform>(transform, "Next");
+			if (_cursor == null) _cursor = HierarchyReferenceCache.ChildComponent<RectTransform>(transform, "Cursor");
+			if (_levelText == null && _cursor != null) _levelText = _cursor.GetComponentInChildren<TMP_Text>(true);
+			if (_bar == null) _bar = HierarchyReferenceCache.ChildComponent<ProgressBar>(transform, "Progress");
+			if (_chestImage == null) _chestImage = HierarchyReferenceCache.DescendantComponent<Image>(transform, "Chest");
+			if (_chestImage != null && _chestPosition == Vector3.zero) _chestPosition = _chestImage.transform.localPosition;
+			if (_tick == null) _tick = HierarchyReferenceCache.Child(transform, "Tick")?.gameObject;
+			if (_platformImage == null) _platformImage = HierarchyReferenceCache.DescendantComponent<Image>(transform, "Platform");
+			if (_nextImage == null && _next != null) _nextImage = _next.GetComponent<Image>();
+			if (_endText == null && _next != null) _endText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(_next, "Text");
+			if (_claimButton == null) _claimButton = HierarchyReferenceCache.DescendantComponent<Button>(transform, "ClaimButton");
+			if (_claimButtonNode == null && _claimButton != null) _claimButtonNode = _claimButton.GetComponent<RectTransform>();
+			if (_claimButtonNode != null && _claimParent == null)
+			{
+				_claimPosition = _claimButtonNode.localPosition;
+				_claimParent = _claimButtonNode.parent;
+				_claimSibling = _claimButtonNode.GetSiblingIndex();
+			}
+			if (_claimMask == null) _claimMask = HierarchyReferenceCache.Child(transform, "Mask");
+			if (_rewardButton == null && _chestImage != null) _rewardButton = _chestImage.GetComponent<Button>();
+		}
+
 		private void Awake()
 		{
-			_head = _head != null ? _head : HierarchyReferenceCache.ChildComponent<RectTransform>(transform, "Head");
-			_next = _next != null ? _next : HierarchyReferenceCache.ChildComponent<RectTransform>(transform, "Next");
-			_cursor = _cursor != null ? _cursor : HierarchyReferenceCache.ChildComponent<RectTransform>(transform, "Cursor");
-			_levelText = _levelText != null ? _levelText : _cursor?.GetComponentInChildren<TMP_Text>(true);
-			_bar = _bar != null ? _bar : HierarchyReferenceCache.ChildComponent<ProgressBar>(transform, "Progress");
-			_chestImage = _chestImage != null ? _chestImage : HierarchyReferenceCache.DescendantComponent<Image>(transform, "Chest");
-			if (_chestImage != null) _chestPosition = _chestImage.transform.localPosition;
-			_tick = _tick != null ? _tick : HierarchyReferenceCache.Child(transform, "Tick")?.gameObject;
-			_platformImage = HierarchyReferenceCache.DescendantComponent<Image>(transform, "Platform");
-			_nextImage = _next?.GetComponent<Image>();
-			_endText = _next != null ? HierarchyReferenceCache.DescendantComponent<TMP_Text>(_next, "Text") : null;
-			_claimButton = _claimButton != null ? _claimButton : HierarchyReferenceCache.DescendantComponent<Button>(transform, "ClaimButton");
-			_claimButtonNode = _claimButtonNode != null ? _claimButtonNode : _claimButton?.GetComponent<RectTransform>();
-			if (_claimButtonNode != null) _claimPosition = _claimButtonNode.localPosition;
-			if (_claimButtonNode != null) { _claimParent = _claimButtonNode.parent; _claimSibling = _claimButtonNode.GetSiblingIndex(); }
-			_claimMask = HierarchyReferenceCache.Child(transform, "Mask");
-			_rewardButton = _rewardButton != null ? _rewardButton : _chestImage?.GetComponent<Button>();
+			EnsureReferences();
 			var extraLabel = HierarchyReferenceCache.Child(transform, "GoalLabel");
 			if (extraLabel != null) extraLabel.gameObject.SetActive(false);
 			if (_rewardButton != null) _rewardButton.onClick.AddListener(() => ShowRewardDetail(Chest).Forget());
@@ -84,11 +94,13 @@ namespace Snui.StreakLine
 
 		public void Init(BaseStreakLineManager manager)
 		{
+			EnsureReferences();
 			_manager = manager;
 			if (_manager == null) return;
 
 			if (Chest == null) return;
 			_currentLevel = Mathf.Clamp(_manager.GetPrevViewLevel(), FromLevel, Chest.Level);
+			_displayLevel = _currentLevel;
 			if (_head != null) _head.gameObject.SetActive(Index == 0);
 			if (_endText != null) _endText.text = Chest.Level.ToString();
 			InitLines();
@@ -102,7 +114,7 @@ namespace Snui.StreakLine
 			Release();
 			Index = index;
 			Init(manager);
-			SetDisplayLevel(displayLevel);
+			SetDisplayLevel(displayLevel, false);
 		}
 
 		public void OffsetContent(float offsetX)
@@ -144,11 +156,12 @@ namespace Snui.StreakLine
 			}
 		}
 
-		public void SetDisplayLevel(float level)
+		public void SetDisplayLevel(float level, bool animateClaim = true)
 		{
 			var chest = Chest;
 			if (chest == null) return;
 			level = Mathf.Clamp(level, FromLevel, chest.Level);
+			_displayLevel = level;
 			int previousLevel = _currentLevel;
 			_currentLevel = Mathf.FloorToInt(level);
 			UpdateNode();
@@ -161,8 +174,7 @@ namespace Snui.StreakLine
 				_cursor.gameObject.SetActive(level > FromLevel && level < chest.Level);
 			}
 			if (_levelText != null) _levelText.text = _currentLevel.ToString();
-			if (_bar != null) _bar.SetPercent((level - FromLevel) / Mathf.Max(1, chest.Level - FromLevel));
-			if (previousLevel < chest.Level && _currentLevel >= chest.Level && _manager.CanClaimChest(chest.Level))
+			if (animateClaim && previousLevel < chest.Level && _currentLevel >= chest.Level && _manager.CanClaimChest(chest.Level))
 				DOClaimButtonSlideIn().Forget();
 		}
 
@@ -172,12 +184,13 @@ namespace Snui.StreakLine
 			if (template == null || _bar == null) return;
 			if (_lines.Count == 0) _lines.Add(template);
 			int count = Mathf.Max(0, Chest.Level - FromLevel - 1);
+			int span = Mathf.Max(1, Chest.Level - FromLevel);
 			while (_lines.Count < count) _lines.Add(Instantiate(template, template.transform.parent, false));
 			float width = ((RectTransform)_bar.transform).rect.width;
 			for (int i = 0; i < _lines.Count; i++)
 			{
 				_lines[i].gameObject.SetActive(i < count);
-				_lines[i].rectTransform.anchoredPosition = new Vector2(width * (i + 1) / (Chest.Level - FromLevel) - width * .5f, 0);
+				_lines[i].rectTransform.anchoredPosition = new Vector2(width * (i + 1) / span - width * .5f, 0);
 			}
 		}
 
@@ -195,7 +208,11 @@ namespace Snui.StreakLine
 					_chestImage.sprite = cache.GetChestSprite(Index, _manager.GetChests().Count, claimed);
 				if (_platformImage != null && cache != null) _platformImage.sprite = cache.GetPlatformSprite(Index, _manager.GetChests().Count);
 				if (_nextImage != null && cache != null) _nextImage.sprite = _currentLevel >= milestone.Level ? cache.ProgressNodeGreenSprite : cache.ProgressNodeBlueSprite;
-				if (_bar != null) _bar.SetProgress(_currentLevel - FromLevel, milestone.Level - FromLevel);
+				if (_bar != null)
+				{
+					_bar.SetProgress(_currentLevel - FromLevel, milestone.Level - FromLevel);
+					_bar.SetPercent((_displayLevel - FromLevel) / Mathf.Max(1, milestone.Level - FromLevel));
+				}
 				if (cache != null) for (int i = 0; i < _lines.Count; i++) _lines[i].sprite = i < _currentLevel - FromLevel ? cache.ProgressLineGreenSprite : cache.ProgressLineBlueSprite;
 			}
 			var chests = _manager.GetChests();
@@ -267,32 +284,16 @@ namespace Snui.StreakLine
 		public Tween IncreaseToLevel(int targetLevel, float duration)
 		{
 			_rise?.Kill();
-			int start = _currentLevel;
-			int end = Chest != null ? Mathf.Clamp(targetLevel, FromLevel, Chest.Level) : start;
-			float startY = GetLevelLocalPosition(start).y, endY = GetLevelLocalPosition(end).y;
+			float start = _displayLevel;
+			int end = Chest != null ? Mathf.Clamp(targetLevel, FromLevel, Chest.Level) : Mathf.FloorToInt(start);
 			float fraction = 0;
 			_rise = DOTween.To(() => fraction, value =>
 			{
 				fraction = value;
-				float level = Mathf.Lerp(start, end, value);
-				_currentLevel = Mathf.RoundToInt(level);
-				if (_bar != null) _bar.SetPercent((level - FromLevel) / Mathf.Max(1, Chest.Level - FromLevel));
-				if (_cursor != null)
-				{
-					_cursor.gameObject.SetActive(level > FromLevel && level < Chest.Level);
-					var position = _cursor.localPosition;
-					position.y = Mathf.Lerp(startY, endY, value);
-					_cursor.localPosition = position;
-				}
-				if (_levelText != null) _levelText.text = _currentLevel.ToString();
-				var cache = _manager.AssetsCache;
-				if (cache != null) for (int i = 0; i < _lines.Count; i++) _lines[i].sprite = i < _currentLevel - FromLevel ? cache.ProgressLineGreenSprite : cache.ProgressLineBlueSprite;
+				SetDisplayLevel(Mathf.Lerp(start, end, value));
 			}, 1, duration).SetEase(Ease.Linear).SetLink(gameObject).OnComplete(() =>
 			{
-				_currentLevel = end;
-				UpdateCursor(end);
-				UpdateNode();
-				if (start < end && end == Chest.Level && _manager.CanClaimChest(end)) DOClaimButtonSlideIn().Forget();
+				SetDisplayLevel(end);
 			});
 			return _rise;
 		}

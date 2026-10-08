@@ -626,6 +626,7 @@ public class GameController : MonoBehaviour
 		}
 
 		_isTransitioningLevel = true;
+		Managers.StreakLine?.SynchronizeTempLevel();
 		bool loaded = _levelFlow.LoadNext(CurrentLevelNumber);
 		if (!loaded) _isTransitioningLevel = false;
 		else LevelAdvanced?.Invoke(nextLevel);
@@ -670,6 +671,7 @@ public class GameController : MonoBehaviour
 	{
 		if (_isTransitioningLevel || !Application.CanStreamedLevelBeLoaded("HomeScene")) return false;
 		if (!SpecialStreakManager.Ensure().SettlePending()) return false;
+		Managers.StreakLine?.SynchronizeTempLevel();
 		CommitAbandonedLevel();
 		_isTransitioningLevel = true;
 		GameData.ClearCurrent(); Time.timeScale = 1f;

@@ -244,6 +244,9 @@ public class WinDialogContent : DialogContent
 		if (!OfferValid) { CancelClaimAnimation(); yield break; }
 		bool streakPresented = false;
 		yield return SpecialStreakProgress.ShowWinCollection(parent).ToCoroutine(result => streakPresented = result);
+		if (!OfferValid) { CancelClaimAnimation(); yield break; }
+		if (streakPresented)
+			yield return Snui.StreakLine.StreakLineBanner.ShowWinProgress(parent).ToCoroutine();
 		_claimRoutine = null;
 		_isClaiming = false;
 		HudContainer.TryRevertToOriginLayer();

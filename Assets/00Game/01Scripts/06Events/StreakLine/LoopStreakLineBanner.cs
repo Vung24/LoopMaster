@@ -33,8 +33,9 @@ namespace Snui.StreakLine
 		private ProgressBar _midProgress2;
 		private SkeletonGraphic _balloonSkeleton;
 
-		private void Awake()
+		protected override void Awake()
 		{
+			base.Awake();
 			_canvasGroup = GetComponent<CanvasGroup>();
 			_titleText = HierarchyReferenceCache.PathComponent<TMP_Text>(transform, "Frame", "Top", "Title");
 
@@ -82,9 +83,7 @@ namespace Snui.StreakLine
 
 			if (Managers.StreakLine != null)
 			{
-				int curr = Managers.StreakLine.GetCurrLevel();
-				int prev = Managers.StreakLine.GetPrevViewLevel();
-				UpdateLevelDisplay(prev > 0 ? prev : curr);
+				UpdateLevelDisplay(_currentLevel);
 			}
 		}
 
@@ -98,25 +97,10 @@ namespace Snui.StreakLine
 			}
 		}
 
-		public override async UniTask IncreaseToLevel(int targetLevel)
+		public override void PlayProgressAudio()
 		{
-			if (Managers.StreakLine == null) return;
-			int curr = Managers.StreakLine.GetPrevViewLevel();
-			while (curr < targetLevel)
-			{
-				curr++;
-				if (ProgressAudioClip != null && AudioManager.Current != null)
-				{
-					AudioManager.Current.PlayOneShot(ProgressAudioClip);
-				}
-				else
-				{
-					PlayProgressAudio();
-				}
-
-				await DOBalloonMove(curr);
-				DOIncreaseLevelText(curr);
-			}
+			if (ProgressAudioClip != null && AudioManager.Current != null) AudioManager.Current.PlayOneShot(ProgressAudioClip);
+			else base.PlayProgressAudio();
 		}
 
 		protected override void UpdateLevelDisplay(int level)
@@ -127,17 +111,24 @@ namespace Snui.StreakLine
 				_cursorText.text = level.ToString();
 			}
 
+			var range = GetActiveRange(level);
+			float middle = (range.start + range.end) * .5f;
+			if (_startText != null) _startText.text = range.start.ToString();
+			if (_midText != null) _midText.text = middle.ToString("0.#");
+			if (_endText != null) _endText.text = range.end.ToString();
+		}
+
+		protected override void UpdateProgress(float level)
+		{
+			base.UpdateProgress(level);
 			if (_midProgress1 != null && _midProgress2 != null)
 			{
-				var range = GetDisplayRange(level);
+				var range = GetActiveRange(level);
 				float middle = (range.start + range.end) * .5f;
 				float progress1 = Mathf.InverseLerp(range.start, middle, level);
 				float progress2 = Mathf.InverseLerp(middle, range.end, level);
 				_midProgress1.SetProgress(progress1);
 				_midProgress2.SetProgress(progress2);
-				if (_startText != null) _startText.text = range.start.ToString();
-				if (_midText != null) _midText.text = Mathf.RoundToInt(middle).ToString();
-				if (_endText != null) _endText.text = range.end.ToString();
 			}
 		}
 	}
