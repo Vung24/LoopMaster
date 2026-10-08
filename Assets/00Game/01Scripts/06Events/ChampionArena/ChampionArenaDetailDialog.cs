@@ -207,8 +207,7 @@ namespace Snui.ChampionArena
 		private void OnInfoButtonClicked()
 		{
 			var canvas = SnuiManager.GetCurrentUiCanvas();
-			var prefab = EventPrefabUI.Load("ChampionInfoDialog");
-			if (prefab != null)
+			if (canvas != null || transform.parent != null)
 			{
 				EventPrefabUI.Show<EventInfoDialog>(canvas != null ? canvas.transform : transform.parent, "ChampionInfoDialog").Forget();
 			}
