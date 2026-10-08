@@ -25,7 +25,17 @@ public class FailDialogContent : DialogContent
 	private System.Action _declined;
 	private bool _isFreeRevive;
 	public const int RevivePrice = 900;
-	public Transform FreeButtonNode => _freeBtn == null ? null : _freeBtn.transform;
+	public Transform FreeButtonNode
+	{
+		get
+		{
+			if (_freeBtn != null && _freeBtn.gameObject.activeInHierarchy) return _freeBtn.transform;
+			if (_adBtn != null && _adBtn.gameObject.activeInHierarchy) return _adBtn.transform;
+			if (_freeBtn != null) return _freeBtn.transform;
+			if (_adBtn != null) return _adBtn.transform;
+			return null;
+		}
+	}
 	public Transform SafeArea => _safeArea != null ? _safeArea : (_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea"));
 
 	protected override void Awake()
