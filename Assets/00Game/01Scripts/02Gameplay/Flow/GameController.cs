@@ -148,7 +148,7 @@ public class GameController : MonoBehaviour
 	private GameBoosterUIFlow _boosterUI;
 	private GameBoosterUIFlow BoosterUI => _boosterUI ?? (_boosterUI = new GameBoosterUIFlow(this));
 	private bool IsBoosterShopOpen => _boosterUI != null && _boosterUI.IsOpen;
-	[SerializeField] private bool _enableSpeedUpTutorial = true;
+	[SerializeField] private bool _enableSpeedUpTutorial = false;
 
 	private void Awake()
 	{
