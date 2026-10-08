@@ -8,6 +8,13 @@ using Debug = UnityEngine.Debug;
 public static class DebugLevelWindow
 {
     public static void Open() => LoopMasterDebugWindow.Open(LoopMasterDebugWindow.Tab.Level);
+
+    [MenuItem("Tools/LoopMaster/Reset Player Progress (Level 1)")]
+    public static void ResetPlayerProgress()
+    {
+        GameProgressStore.DeleteProgress();
+        Debug.Log("[LoopMaster] Player progress reset to Level 1.");
+    }
 }
 
 [Serializable]
@@ -15,6 +22,7 @@ public sealed class DebugLevelPanel
 {
     private string _status = "Ready. Enter Play Mode and open a level.";
     private Vector2 _scrollPosition;
+    [SerializeField] private int _targetLevelInput = 1;
 
     private static GameController Controller
     {
@@ -39,6 +47,7 @@ public sealed class DebugLevelPanel
 
         DrawForceResults(controller);
         DrawResultChecks(controller);
+        DrawProgressControls();
 
         EditorGUILayout.Space();
         EditorGUILayout.HelpBox(_status, MessageType.None);
@@ -108,6 +117,43 @@ public sealed class DebugLevelPanel
             if (GUILayout.Button("Next Level"))
             {
                 _status = controller.TryLoadNextLevel() ? "Next level loaded." : "Could not load next level.";
+            }
+        }
+    }
+
+    private void DrawProgressControls()
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Progress & Level Save", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Highest Unlocked", GameProgressStore.HighestUnlockedLevel.ToString());
+        EditorGUILayout.LabelField("Highest Completed", GameProgressStore.HighestCompletedLevel.ToString());
+        EditorGUILayout.LabelField("Next Playable", GameProgressStore.NextPlayableLevel.ToString());
+        EditorGUILayout.LabelField("Campaign Complete", GameProgressStore.IsCampaignComplete ? "Yes" : "No");
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            _targetLevelInput = EditorGUILayout.IntField("Set Level", _targetLevelInput);
+            if (GUILayout.Button("Apply", GUILayout.Width(70f)))
+            {
+                int lvl = Mathf.Max(1, _targetLevelInput);
+                GameProgressStore.SetProgress(lvl);
+                _status = "Saved progress set to Level " + lvl + ".";
+                Debug.Log("[Debug Level] " + _status);
+            }
+        }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Reset Progress (Level 1)"))
+            {
+                GameProgressStore.DeleteProgress();
+                _targetLevelInput = 1;
+                _status = "Progress reset to Level 1.";
+                Debug.Log("[Debug Level] " + _status);
+            }
+            if (GUILayout.Button("Refresh Catalog"))
+            {
+                BuiltinLevelCatalogBuild.RefreshCatalog();
+                _status = "BuiltinLevelCatalog refreshed.";
             }
         }
     }

@@ -7,14 +7,23 @@ public static class GameProgressStore
     public static int HighestCompletedLevel => Mathf.Max(0, PlayerPrefs.HasKey(CompletedKey)
         ? PlayerPrefs.GetInt(CompletedKey) : HighestUnlockedLevel - 1);
     public static bool IsLevelCompleted(int level) => level > 0 && level <= HighestCompletedLevel;
-    public static int NextPlayableLevel => Mathf.Max(HighestUnlockedLevel, HighestCompletedLevel == int.MaxValue ? int.MaxValue : HighestCompletedLevel + 1);
+    public static int NextPlayableLevel
+    {
+        get
+        {
+            int next = Mathf.Max(HighestUnlockedLevel, HighestCompletedLevel == int.MaxValue ? int.MaxValue : HighestCompletedLevel + 1);
+            var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
+            int last = catalog == null ? 0 : catalog.GetHighestLevelAtOrBelow(int.MaxValue);
+            return last > 0 && next > last ? last : next;
+        }
+    }
     public static bool IsCampaignComplete
     {
         get
         {
             var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
             int last = catalog == null ? 0 : catalog.GetHighestLevelAtOrBelow(int.MaxValue);
-            return last > 0 && HighestCompletedLevel == last && HighestUnlockedLevel <= last;
+            return last > 0 && HighestCompletedLevel >= last;
         }
     }
     private static int LegacyLevel()
@@ -39,6 +48,16 @@ public static class GameProgressStore
         PlayerPrefs.SetInt("offline_NormalPuzzleIndex", unlocked - 1);
         PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", unlocked - 1);
         if (newlyCompleted) HomeLevelChangePresentation.Record(level, unlocked, previousHardLevel);
+        PlayerPrefs.Save();
+    }
+    public static void SetProgress(int level)
+    {
+        if (level < 1) level = 1;
+        HomeLevelChangePresentation.Clear();
+        PlayerPrefs.SetInt(UnlockedKey, level);
+        PlayerPrefs.SetInt(CompletedKey, level - 1);
+        PlayerPrefs.SetInt("offline_NormalPuzzleIndex", level - 1);
+        PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", level - 1);
         PlayerPrefs.Save();
     }
     public static void DeleteProgress()

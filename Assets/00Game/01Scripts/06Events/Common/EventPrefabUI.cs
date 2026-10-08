@@ -85,6 +85,10 @@ namespace Snui
                 var content = instance.GetComponent<DialogContent>();
                 if (content != null)
                 {
+                    // Keep input and Start animations inactive until the async frame is ready.
+                    // AddDialogContent calls Show, which resets the result; an early click
+                    // must not join the event and then lose its dismissal result here.
+                    instance.SetActive(false);
                     var frame = await Dialog.ShowEmpty(parent);
                     root = frame.gameObject;
                     if (pending.Canceled) throw new OperationCanceledException();
