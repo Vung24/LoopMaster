@@ -1169,12 +1169,6 @@ namespace DG.Tweening
         static void InitCheck()
         {
             bool skip = initialized || !Application.isPlaying || isQuitting;
-#if DEBUG
-            Debug.Log(DebugPrefix + string.Format(
-                "DOTween.InitCheck ► {0} (initialized: {1}, Application.isPlaying: {2}, isQuitting: {3})",
-                skip ? "Skip initialization" : "Initialize", initialized, Application.isPlaying, isQuitting
-            ));
-#endif
             if (skip) return;
 
             AutoInit();
