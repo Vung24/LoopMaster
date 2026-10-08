@@ -21,7 +21,8 @@ namespace Snui.Lava
 
 		public static async UniTask ShowWithDialog(Transform parent)
 		{
-			await Show(parent);
+			var dialog = await Show(parent);
+			await UniTask.WaitUntil(() => dialog == null || dialog.Result != RESULT_UNKNOWN);
 		}
 
 		protected override void Awake()
@@ -58,6 +59,9 @@ namespace Snui.Lava
 			{
 				_fullButton = HierarchyReferenceCache.ChildComponent<Snui_FullButton>(transform, "FullButton");
 			}
+			if (_fullButton != null)
+				foreach (var graphic in GetComponentsInChildren<UnityEngine.UI.Graphic>(true))
+					graphic.raycastTarget = graphic.transform.IsChildOf(_fullButton.transform);
 		}
 
 		protected override void Start()
@@ -112,6 +116,7 @@ namespace Snui.Lava
 			await ShowPlayers();
 
 			ShowPlayerCountIncreaseAnim();
+			await UniTask.Delay(700, cancellationToken: this.GetCancellationTokenOnDestroy());
 
 			if (Managers.Lava != null)
 			{
@@ -140,6 +145,7 @@ namespace Snui.Lava
 		private void ShowOnePlayer(Transform player)
 		{
 			if (player == null) return;
+			LavaPlayer.SetDisplayAvatar(player, player.GetSiblingIndex());
 			player.gameObject.SetActive(true);
 			Vector3 origScale = player.localScale;
 			player.localScale = Vector3.zero;

@@ -416,6 +416,9 @@ MonoBehaviour:
   _bg: {fileID: 0}
   _title: {fileID: 0}
   _closeBtn: {fileID: 0}
+  _closeButton: {fileID: 114226598579144175}
+  _startBtn: {fileID: 114053807844606502}
+  _contentText: {fileID: 114142334297213061}
 --- !u!224 &224049379094439885
 RectTransform:
   serializedVersion: 2
@@ -451,6 +454,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67f959505f17c0cc7ce38580a4d21f9b, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _coinText: {fileID: 114833182555216994}
 --- !u!222 &222139135113607712
 CanvasRenderer:
   m_ObjectHideFlags: 0

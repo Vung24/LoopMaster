@@ -13,9 +13,9 @@ public class LavaManager : BaseLavaManager
 		{
 			Duration = 86400,
 			LevelGoal = 7,
-			CoinRewardCount = 100,
-			PlayerCount = 5,
-			PromptInterval = 0
+			CoinRewardCount = 10000,
+			PlayerCount = 100,
+			PromptInterval = 5
 		};
 	}
 }
