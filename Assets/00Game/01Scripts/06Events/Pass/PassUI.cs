@@ -47,10 +47,17 @@ namespace Snui
             graphic.Initialize(false);
             if (graphic.SkeletonData != null && graphic.SkeletonData.FindAnimation(animation) != null)
             {
+                var current = graphic.AnimationState.GetCurrent(0);
+                if (current != null && current.Animation.Name == animation && current.Loop == loop) return;
                 graphic.AnimationState.SetAnimation(0, animation, loop);
                 graphic.Update(0f);
                 graphic.UpdateMesh();
             }
+        }
+        public static void NativeIcon(Image icon)
+        {
+            if (icon == null || icon.sprite == null) return;
+            icon.type = Image.Type.Simple; icon.preserveAspect = true; icon.SetNativeSize();
         }
         public static void Sound(AudioClip sound)
         {

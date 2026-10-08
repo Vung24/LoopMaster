@@ -68,7 +68,7 @@ namespace Snui
             {
                 _icon.sprite = PrefabLibrary.Current?.ResolveRewardIcon(item.Type.GetIconPath());
                 _icon.enabled = _icon.sprite != null;
-                if (_useNativeIconSize && _icon.sprite != null)
+                if ((_useNativeIconSize || isInRewardDialog) && _icon.sprite != null)
                 {
                     _icon.type = Image.Type.Simple;
                     _icon.preserveAspect = true;

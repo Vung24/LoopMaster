@@ -79,6 +79,11 @@ public abstract class BasePassManager : BaseEventManager
         }
         catch (Exception error) { _invalidState = true; Debug.LogError("Battle Pass: " + error.Message); }
         ComputeCurrentStage();
+        if (_state != null)
+        {
+            _state.LastPoints = Math.Max(0, Math.Min(_state.LastPoints, _state.TotalPoints));
+            _state.LastUnlockStage = StageAt(_state.LastPoints);
+        }
         _eventOwner = Managers.Event;
         _eventOwner?.RegisterEvent("OnGameWin", OnGameWin);
         CheckActive();
@@ -137,8 +142,9 @@ public abstract class BasePassManager : BaseEventManager
     {
         if (!GameWinArgs.TryGet(args, GameWinArgs.PassPoints, out int count) || count <= 0 || !CanCollectPoints()) return;
         int before = _state.TotalPoints;
-        AddPoint(count);
-        _state.PendingPoints = (int)Math.Min(int.MaxValue, (long)_state.PendingPoints + _state.TotalPoints - before); Save();
+        _state.TotalPoints = (int)Math.Min((long)NormalGoal + FinalTotalPointCount, (long)before + count);
+        _state.PendingPoints = (int)Math.Min(int.MaxValue, (long)_state.PendingPoints + _state.TotalPoints - before);
+        ComputeCurrentStage(); Save(); OnProgressChanged.Invoke();
     }
     public bool CanCollectPoints() => CheckActive() && !IsFinished() && !ShouldShowTutorial() && !IsFinalBundleFinished();
     public void AddPoint(int count)
@@ -163,14 +169,24 @@ public abstract class BasePassManager : BaseEventManager
     }
     public int GetCurrentStageProgress() => GetNextRequirePoints() > 0 ? GetCurrentPoints() * 100 / GetNextRequirePoints() : 0;
     public int GetCurrentStage() => _currentStage;
+    public int GetTotalPoints() => _state?.TotalPoints ?? 0;
+    public int GetLastTotalPoints() => _state?.LastPoints ?? 0;
+    public int GetStageAtPoints(int points) => StageAt(Math.Max(0, points));
+    public int GetPointsAtTotal(int points) => PointsAt(Math.Max(0, points), GetStageAtPoints(points));
     public int GetLastUnlockStage() => _state?.LastUnlockStage ?? 0;
     public int GetLastPoints() => PointsAt(_state?.LastPoints ?? 0, GetLastUnlockStage());
     public int GetLastFinalBundleCoin() => IsVip() && _state != null && !_state.IsFinalCoinClaimed ? Math.Min(FinalTotalCoinCount, Math.Max(0, GetLastUnlockStage() - GetNormalStageCount()) * FinalStageCoin) : 0;
     public int GetCurrentFinalBundleCoin() => IsVip() && _state != null && !_state.IsFinalCoinClaimed ? Math.Min(FinalTotalCoinCount, Math.Max(0, _currentStage - GetNormalStageCount()) * FinalStageCoin) : 0;
     public void UpdateLastStageAndPoints()
     {
-        if (_state == null) return;
-        _state.LastUnlockStage = _currentStage; _state.LastPoints = _state.TotalPoints; _state.PendingPoints = 0; Save();
+        AcknowledgePresentedPoints(GetTotalPoints());
+    }
+    public void AcknowledgePresentedPoints(int totalPoints)
+    {
+        if (_state == null || _invalidState) return;
+        int presented = Math.Max(_state.LastPoints, Math.Min(totalPoints, _state.TotalPoints));
+        _state.PendingPoints = Math.Max(0, _state.PendingPoints - (presented - _state.LastPoints));
+        _state.LastPoints = presented; _state.LastUnlockStage = StageAt(presented); Save();
     }
     public int GetNormalStageCount() => _stages?.Count ?? 0;
     public int GetTotalStageCount() => GetNormalStageCount() + FinalStageCount;

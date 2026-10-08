@@ -32,6 +32,11 @@ namespace Snui
             if (_level != null) _level.Init(row);
         }
         public void Refresh() { _normal?.Refresh(); _golden?.Refresh(); _purchase?.Refresh(); _level?.Init(Stage); }
+        public void SetDisplayStage(int stage)
+        {
+            _normal?.SetDisplayStage(stage); _golden?.SetDisplayStage(stage);
+            _purchase?.Refresh(); _level?.SetDisplayStage(stage);
+        }
         public void ChangeLevelToUnlockStyle() => _level?.ChangeToUnLockStyle();
         public void ChangeLevelToLockStyle() => _level?.ChangeToLockStyle();
         public void ChangeItemToUnlockStyle() => Refresh();
