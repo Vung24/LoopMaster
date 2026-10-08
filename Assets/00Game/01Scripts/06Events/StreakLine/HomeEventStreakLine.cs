@@ -56,9 +56,13 @@ namespace Snui.StreakLine
 
 		public override async UniTask ShowPopupDialog()
 		{
-			if (Managers.StreakLine != null && !Managers.StreakLine.IsLock && !Managers.StreakLine.HasPlayedEnterAnim())
+			if (Managers.StreakLine != null && Managers.StreakLine.IsOngoing && !Managers.StreakLine.IsExpired &&
+				(!Managers.StreakLine.HasPlayedEnterAnim() || Managers.StreakLine.GetTempViewLevel() > 0))
 			{
-				await ShowDialog();
+				var dialog = await StreakLineDialog.Show(transform.root);
+				if (dialog != null)
+					await UniTask.WaitUntil(() => dialog == null || !dialog.isActiveAndEnabled,
+						cancellationToken: this.GetCancellationTokenOnDestroy());
 			}
 		}
 
