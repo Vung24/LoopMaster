@@ -69,7 +69,7 @@ namespace Snui
 
 		private static TMP_FontAsset ResolveFallbackFont(int fontType = 0)
 		{
-			return RecoveredTextFonts.Resolve(fontType);
+			return TextFontCatalog.Resolve(fontType);
 		}
 
 

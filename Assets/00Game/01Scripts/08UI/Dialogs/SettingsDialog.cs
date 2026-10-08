@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class SettingsDialog : MonoBehaviour
 {
-	public const string PATH = "Settings/Prefab/SettingsDialog.prefab";
+	public const string PATH = "SettingsDialog";
 	[SerializeField] private Button _backBtn;
 	[SerializeField] private ScrollRect _scrollView;
 	private SettingButton[] _settingBtns;
@@ -14,20 +14,17 @@ public class SettingsDialog : MonoBehaviour
 	public event Action Closed;
 	public bool IsClosing => _closing;
 
-	public static UniTask<SettingsDialog> Show(Transform parent)
+	public static async UniTask<SettingsDialog> Show(Transform parent)
 	{
-		if (parent == null) return UniTask.FromResult<SettingsDialog>(null);
+		if (parent == null) return null;
 		foreach (var existing in parent.GetComponentsInChildren<SettingsDialog>(true))
 			if (existing.transform.parent == parent)
 			{
-				if (existing.gameObject.activeSelf) return UniTask.FromResult(existing);
+				if (existing.gameObject.activeSelf) return existing;
 				Destroy(existing.gameObject);
 			}
-		var prefab = RecoveryPrefabLibrary.Current?.Resolve(PATH);
-		if (prefab == null) { Debug.LogWarning("Offline Settings prefab is not registered."); return UniTask.FromResult<SettingsDialog>(null); }
-		var instance = Instantiate(prefab, parent, false);
-		var settings = instance.GetComponent<SettingsDialog>();
-		if (settings == null) { Destroy(instance); return UniTask.FromResult<SettingsDialog>(null); }
+		var settings = await PopupAssets.Instantiate<SettingsDialog>(PATH, parent, parent.GetCancellationTokenOnDestroy());
+		var instance = settings.gameObject;
 		instance.transform.SetAsLastSibling();
 		var canvas = instance.GetComponent<Canvas>();
 		if (canvas == null) canvas = instance.AddComponent<Canvas>();
@@ -38,7 +35,7 @@ public class SettingsDialog : MonoBehaviour
 		Snui_Text.EnsureFontAssets(instance.transform);
 		GameResultUI.EnsureEventSystem();
 		instance.GetComponent<Dialog>()?.PlayEnterAnimation();
-		return UniTask.FromResult(settings);
+		return settings;
 	}
 	private void Awake()
 	{

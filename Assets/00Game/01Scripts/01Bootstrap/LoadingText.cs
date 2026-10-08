@@ -32,7 +32,7 @@ public sealed class LoadingText : MonoBehaviour
     private void RefreshText()
     {
         if (_animText == null) return;
-        if (_animText.font == null) _animText.font = Snui.RecoveredTextFonts.Resolve();
+        if (_animText.font == null) _animText.font = Snui.TextFontCatalog.Resolve();
         _animText.SetText(AnimFrames[_animStage]);
     }
 }
