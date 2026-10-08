@@ -19,17 +19,21 @@ public class HomeController : MonoBehaviour
 	private Button _settingButton;
 	private Button _heartButton;
 	private MoreHeartDialogContent _heartDialog;
-	public bool HasHeartDialogOpen => _heartDialog != null;
+	private DailyCheckInHomeUI _dailyCheckIn;
+	public bool HasDailyCheckInOpen => _dailyCheckIn != null && _dailyCheckIn.IsDialogOpen;
+	private bool _heartLoading, _settingsLoading;
+	private int _uiLoadVersion;
+	public bool HasHeartDialogOpen => _heartLoading || _heartDialog != null;
 	private SettingsDialog _settings;
 	private LevelBoxMachine _levelBox;
 	private SpecialStreakProgress _specialStreak;
 	public bool HasSpecialStreakOpen => _specialStreak != null && (_specialStreak.HasDialogOpen || _specialStreak.IsAnimating);
-	public bool CanOpenSpecialStreak => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasHeartDialogOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
+	public bool CanOpenSpecialStreak => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasDailyCheckInOpen && !HasHeartDialogOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
 	public bool HasLevelBoxOpen => _levelBox != null && _levelBox.HasDialogOpen;
-	public bool CanOpenLevelBox(LevelBoxMachine machine) => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasHeartDialogOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
+	public bool CanOpenLevelBox(LevelBoxMachine machine) => CurrentPageIndex == HOME_PAGE_INDEX && !_openingGame && !HasSettingsOpen && !HasDailyCheckInOpen && !HasHeartDialogOpen && !HasLevelBoxOpen && !HasSpecialStreakOpen && isActiveAndEnabled;
 	private bool _ready, _openingGame;
 	public int CurrentPageIndex { get; private set; } = HOME_PAGE_INDEX;
-	public bool HasSettingsOpen => _settings != null && _settings.gameObject.activeSelf;
+	public bool HasSettingsOpen => _settingsLoading || (_settings != null && _settings.gameObject.activeSelf);
 
 	public static HomeController ForScene(Scene scene)
 	{
@@ -55,6 +59,7 @@ public class HomeController : MonoBehaviour
 	private void Start() => Initialize();
 	public void Initialize()
 	{
+		EventRuntime.EnsureInitialized();
 		LevelBoxManager.EnsureInitialized();
 		if (_ready) return;
 		if (HomePage == null) HomePage = GetComponentInScene<HomePage>();
@@ -82,11 +87,11 @@ public class HomeController : MonoBehaviour
 		if (_settingButton != null) _settingButton.onClick.AddListener(OpenSettings);
 		HomePage.RefreshProgress();
 		_levelBox = HomePage.GetComponentInChildren<LevelBoxMachine>(true);
-		if (_levelBox != null && !_levelBox.HasAuthoredLayout && DataPrefabLibrary.Current?.LevelBoxMachinePrefab != null)
+		if (_levelBox != null && !_levelBox.HasAuthoredLayout && PrefabLibrary.Current?.LevelBoxMachinePrefab != null)
 		{
 			// Restore legacy scenes that still contain a field-less LevelBox placeholder.
 			Transform slot = _levelBox.transform;
-			var restored = Instantiate(DataPrefabLibrary.Current.LevelBoxMachinePrefab, slot.parent, false);
+			var restored = Instantiate(PrefabLibrary.Current.LevelBoxMachinePrefab, slot.parent, false);
 			var target = restored.transform as RectTransform; var source = slot as RectTransform;
 			if (target != null && source != null)
 			{
@@ -98,14 +103,14 @@ public class HomeController : MonoBehaviour
 			slot.gameObject.SetActive(false); Destroy(slot.gameObject);
 			_levelBox = restored.GetComponent<LevelBoxMachine>();
 		}
-		if (_levelBox == null && DataPrefabLibrary.Current?.LevelBoxMachinePrefab != null)
-			_levelBox = Instantiate(DataPrefabLibrary.Current.LevelBoxMachinePrefab, HomePage.transform, false).GetComponent<LevelBoxMachine>();
+		if (_levelBox == null && PrefabLibrary.Current?.LevelBoxMachinePrefab != null)
+			_levelBox = Instantiate(PrefabLibrary.Current.LevelBoxMachinePrefab, HomePage.transform, false).GetComponent<LevelBoxMachine>();
 		if (_levelBox != null) { _levelBox.gameObject.SetActive(true); _levelBox.Bind(this); }
 		_specialStreak = HomePage.GetComponentInChildren<SpecialStreakProgress>(true);
-		if ((_specialStreak == null || !_specialStreak.HasAuthoredLayout) && DataPrefabLibrary.Current?.SpecialStreakProgressPrefab != null)
+		if ((_specialStreak == null || !_specialStreak.HasAuthoredLayout) && PrefabLibrary.Current?.SpecialStreakProgressPrefab != null)
 		{
 			Transform slot = _specialStreak == null ? HierarchyReferenceCache.Descendant(HomePage.transform, "SpecialStreakWidget") : _specialStreak.transform;
-			var restored = Instantiate(DataPrefabLibrary.Current.SpecialStreakProgressPrefab, slot == null ? HomePage.transform : slot.parent, false);
+			var restored = Instantiate(PrefabLibrary.Current.SpecialStreakProgressPrefab, slot == null ? HomePage.transform : slot.parent, false);
 			var target = restored.transform as RectTransform; var source = slot as RectTransform;
 			if (target != null && source != null)
 			{
@@ -117,6 +122,12 @@ public class HomeController : MonoBehaviour
 			_specialStreak = restored.GetComponent<SpecialStreakProgress>();
 		}
 		if (_specialStreak != null) { _specialStreak.gameObject.SetActive(true); _specialStreak.Bind(this); }
+		if (DailyCheckInManager.IsOpen)
+		{
+			_dailyCheckIn = HomePage.GetComponent<DailyCheckInHomeUI>();
+			if (_dailyCheckIn == null) _dailyCheckIn = HomePage.gameObject.AddComponent<DailyCheckInHomeUI>();
+			_dailyCheckIn.Bind(this);
+		}
 		HudContainer.Show(_canvas.transform).Forget();
 		var hud = HudContainer.Current;
 		if (hud != null)
@@ -171,7 +182,7 @@ public class HomeController : MonoBehaviour
 	private void SelectPage(int index, bool animate)
 	{
 		Initialize();
-		if (!_ready || _openingGame || HasSettingsOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled
+		if (!_ready || _openingGame || HasSettingsOpen || HasDailyCheckInOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled
 			|| _pages == null || index < 0 || index >= _pages.Length || _pages[index] == null) return;
 		if (animate && index == CurrentPageIndex) return;
 		_pageTween?.Kill();
@@ -209,33 +220,64 @@ public class HomeController : MonoBehaviour
 		SelectPage(index, false);
 	}
 	public void SetPageIndex(int index) => JumpToPage(index);
-	public void OpenHeartDialog()
+	public bool TryOpenPendingLevelBox()
+	{
+		if (!_ready || _levelBox == null || !_levelBox.isActiveAndEnabled || !CanOpenLevelBox(_levelBox)
+			|| EventPrefabUI.HasOpenDialogs || !_levelBox.IsGetRewards()) return false;
+		_levelBox.OnClickBtn();
+		return HasLevelBoxOpen;
+	}
+	public void OpenHeartDialog() => LoadHeartDialog().Forget();
+	private async UniTask LoadHeartDialog()
 	{
 		Initialize();
 		if (!_ready || !CanOpenLevelBox(_levelBox)) return;
-		_heartDialog = MoreHeartDialogContent.Show(_canvas.transform, JumpHeartDialogSourceScene.HudIn).GetAwaiter().GetResult();
-		if (_heartDialog != null) _heartDialog.Closed += OnHeartDialogClosed;
+		int version = _uiLoadVersion;
+		_heartLoading = true;
+		try
+		{
+			var content = await MoreHeartDialogContent.Show(_canvas.transform, JumpHeartDialogSourceScene.HudIn);
+			if (this == null || version != _uiLoadVersion || !isActiveAndEnabled)
+			{ if (content != null) content.CloseOverlay(); return; }
+			_heartDialog = content;
+			if (_heartDialog != null) _heartDialog.Closed += OnHeartDialogClosed;
+		}
+		finally { if (this != null && version == _uiLoadVersion) _heartLoading = false; }
 	}
 	private void OnHeartDialogClosed()
 	{
 		if (_heartDialog != null) _heartDialog.Closed -= OnHeartDialogClosed;
 		_heartDialog = null;
 	}
-	public void OpenSettings()
+	public void OpenSettings() => LoadSettings().Forget();
+	private async UniTask LoadSettings()
 	{
 		Initialize();
-		if (!_ready || CurrentPageIndex != HOME_PAGE_INDEX || _openingGame || HasSettingsOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return;
-		_settings = SettingsDialog.Show(_canvas.transform).GetAwaiter().GetResult();
-		if (_settings != null) _settings.Closed += OnSettingsClosed;
+		if (!_ready || CurrentPageIndex != HOME_PAGE_INDEX || _openingGame || HasSettingsOpen || HasDailyCheckInOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return;
+		int version = _uiLoadVersion;
+		_settingsLoading = true;
+		try
+		{
+			var settings = await SettingsDialog.Show(_canvas.transform);
+			if (this == null || version != _uiLoadVersion || !isActiveAndEnabled)
+			{ if (settings != null) Destroy(settings.gameObject); return; }
+			_settings = settings;
+			if (_settings != null) _settings.Closed += OnSettingsClosed;
+		}
+		finally { if (this != null && version == _uiLoadVersion) _settingsLoading = false; }
 	}
 	private void OnSettingsClosed() { if (_settings != null) _settings.Closed -= OnSettingsClosed; _settings = null; }
 	public bool TryEnterGame()
 	{
-		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
+		if (HomePage != null && HomePage.IsEntryBlocked) return false;
+		if (Managers.Heart != null && !Managers.Heart.IsHeartEnough()) return false;
+		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasDailyCheckInOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
 		if (GameProgressStore.IsCampaignComplete || !SpecialStreakManager.Ensure().SettlePending()) return false;
 		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
 		if (catalog == null || catalog.GetLevel(GameProgressStore.NextPlayableLevel) == null) { HomePage.RefreshProgress(); return false; }
+		if (HomePage != null && !HomePage.CommitProgressBeforeEnterGame()) return false;
 		_openingGame = true;
+		HomePage?.SetLeavingHome(true);
 		_specialStreak?.CommitProgressBeforeEnterGame();
 		GameData.ClearCurrent(); Time.timeScale = 1f;
 		EnterGameAsync().Forget();
@@ -249,11 +291,17 @@ public class HomeController : MonoBehaviour
 		}
 		finally
 		{
-			if (this != null) _openingGame = false;
+			if (this != null)
+			{
+				_openingGame = false;
+				HomePage?.SetLeavingHome(false);
+			}
 		}
 	}
 	private void OnDisable()
 	{
+		_uiLoadVersion++;
+		_heartLoading = _settingsLoading = false;
 		_pageTween?.Kill(); _pageTween = null;
 		if (_heartDialog != null) { _heartDialog.Closed -= OnHeartDialogClosed; _heartDialog.CloseOverlay(); }
 		_heartDialog = null;

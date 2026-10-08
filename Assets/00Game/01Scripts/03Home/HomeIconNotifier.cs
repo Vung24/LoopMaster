@@ -36,7 +36,7 @@ public class HomeIconNotifier : MonoBehaviour
 		}
 		if (prefab == null)
 		{
-			prefab = Snui.DataPrefabLibrary.Current?.HomeIconNotifierPrefab;
+			prefab = Snui.PrefabLibrary.Current?.HomeIconNotifierPrefab;
 		}
 		if (prefab != null)
 		{
