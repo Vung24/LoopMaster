@@ -9,10 +9,11 @@ namespace Snui
 	{
 		public static NavigationBar Current;
 		public UnityEvent<int> OnClickCell = new UnityEvent<int>();
-		public NavigationAnim NavigationAnim;
-		public float CursorExpand;
+		public NavigationAnim NavigationAnim = NavigationAnim.WidthChangesDynamically;
+		public float CursorExpand = 1.2f;
 		[SerializeField] private RectTransform _cursor;
 		[SerializeField] private Transform _cellsNode;
+		[SerializeField] private Transform _centerLine;
 		[SerializeField] private NavigationCell[] _cells;
 		private UnityAction[] _listeners;
 		private Tween _cursorTween;
@@ -34,6 +35,7 @@ namespace Snui
 			_rect = (RectTransform)transform; _authoredHeight = _rect.sizeDelta.y;
 			if (_cursor == null) _cursor = HierarchyReferenceCache.Child(transform, "Cursor") as RectTransform;
 			if (_cellsNode == null) _cellsNode = HierarchyReferenceCache.Child(transform, "Buttons");
+			if (_centerLine == null) _centerLine = HierarchyReferenceCache.Path(transform, "Bg", "Line");
 			if (_cells == null || _cells.Length == 0) _cells = _cellsNode == null ? new NavigationCell[0] : _cellsNode.GetComponentsInChildren<NavigationCell>(true);
 			_listeners = new UnityAction[_cells.Length];
 			for (int i = 0; i < _cells.Length; i++)
@@ -62,6 +64,12 @@ namespace Snui
 		{
 			float bottom = ScreenHelper.GetCanvasSafeBottom(GetComponentInParent<Canvas>());
 			_rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _authoredHeight + bottom);
+			// Keep the controls above the device inset; only the background fills it.
+			if (_cellsNode is RectTransform strip)
+			{
+				strip.offsetMin = new Vector2(strip.offsetMin.x, bottom);
+				strip.offsetMax = new Vector2(strip.offsetMax.x, 0f);
+			}
 			_lastSafeArea = Screen.safeArea;
 		}
 		private void LayoutCells(bool animate)
@@ -74,11 +82,12 @@ namespace Snui
 				UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(strip);
 			foreach (var layout in strip.GetComponents<UnityEngine.UI.LayoutGroup>()) layout.enabled = false;
 			var fitter = strip.GetComponent<UnityEngine.UI.ContentSizeFitter>(); if (fitter != null) fitter.enabled = false;
-			float width = _rect.rect.width / _cells.Length;
+			if (_centerLine != null) _centerLine.gameObject.SetActive(NavigationAnim == Snui.NavigationAnim.Default);
+			float width = strip.rect.width / _cells.Length;
 			float selectedWidth = NavigationAnim == Snui.NavigationAnim.Default ? width : width * Mathf.Max(1f, CursorExpand);
 			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && _cells.Length > 1
-				? (_rect.rect.width - selectedWidth) / (_cells.Length - 1) : width;
-			float left = _rect.rect.xMin;
+				? (strip.rect.width - selectedWidth) / (_cells.Length - 1) : width;
+			float left = strip.rect.xMin;
 			for (int i = 0; i < _cells.Length; i++)
 			{
 				if (_cells[i] == null) continue;
@@ -87,32 +96,39 @@ namespace Snui
 				bool selected = i == CurrIndex;
 				float cellWidth = selected && NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth;
 				cell.DOKill();
+				// The exported scene cells have zero height after the LayoutGroup is disabled.
+				cell.anchorMin = new Vector2(0.5f, 0f);
+				cell.anchorMax = new Vector2(0.5f, 1f);
+				cell.pivot = new Vector2(0.5f, 0.5f);
+				cell.sizeDelta = new Vector2(cell.sizeDelta.x, 0f);
+				cell.anchoredPosition = new Vector2(cell.anchoredPosition.x, 0f);
 				if (animate)
 				{
 					_cells[i].SetSelected(selected, NavigationAnim);
 					cell.DOSizeDelta(new Vector2(cellWidth, cell.sizeDelta.y), 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
-					cell.DOLocalMoveX(left + cellWidth * 0.5f, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
+					cell.DOAnchorPosX(left + cellWidth * 0.5f - strip.rect.center.x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
 				}
 				else
 				{
 					_cells[i].Init(selected, normalWidth, NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth);
-					Vector3 pos = cell.localPosition; pos.x = left + cellWidth * 0.5f; cell.localPosition = pos;
+					cell.anchoredPosition = new Vector2(left + cellWidth * 0.5f - strip.rect.center.x, 0f);
 				}
-				_cells[i].SetLineActive(NavigationAnim != Snui.NavigationAnim.Default);
-				if (NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically) _cells[i].SetIconPivot(new Vector2(0.5f, 0.5f));
+				_cells[i].SetLineActive(NavigationAnim != Snui.NavigationAnim.Default && i < _cells.Length - 1);
 				left += cellWidth;
 			}
 			if (_cursor != null) _cursor.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, selectedWidth);
 		}
 		private void MoveCursor(bool animate)
 		{
-			if (_cursor == null || !CanSelect(CurrIndex)) return;
+			if (_cursor == null || !CanSelect(CurrIndex) || !(_cellsNode is RectTransform)) return;
 			_cursorTween?.Kill();
-			float width = _rect.rect.width / _cells.Length;
-			float selectedWidth = width * Mathf.Max(1f, CursorExpand);
+			RectTransform strip = (RectTransform)_cellsNode;
+			float width = strip.rect.width / _cells.Length;
+			float selectedWidth = NavigationAnim == Snui.NavigationAnim.Default ? width : width * Mathf.Max(1f, CursorExpand);
 			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && _cells.Length > 1
-				? (_rect.rect.width - selectedWidth) / (_cells.Length - 1) : width;
-			float x = _rect.rect.xMin + normalWidth * CurrIndex + (NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : width) * 0.5f;
+				? (strip.rect.width - selectedWidth) / (_cells.Length - 1) : width;
+			float center = strip.rect.xMin + normalWidth * CurrIndex + (NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : width) * 0.5f;
+			float x = _cursor.parent.InverseTransformPoint(strip.TransformPoint(new Vector3(center, 0f, 0f))).x;
 			if (animate && NavigationAnim == Snui.NavigationAnim.PoppedUp)
 			{
 				Vector3 pos = _cursor.localPosition; pos.x = x; _cursor.localPosition = pos;
