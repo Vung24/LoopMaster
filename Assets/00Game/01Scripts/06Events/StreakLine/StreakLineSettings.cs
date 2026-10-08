@@ -43,13 +43,7 @@ namespace Snui.StreakLine
 		private static StreakLineSettings _instance;
 
 		[SerializeField]
-		private GameObject _dialogPrefab;
-		[SerializeField]
-		private GameObject _infoDialogPrefab;
-		[SerializeField]
 		private GameObject _bannerPrefab;
-		[SerializeField]
-		private GameObject _completeDialogPrefab;
 		[SerializeField]
 		private StreakLineConfig _config = new StreakLineConfig();
 
@@ -65,10 +59,7 @@ namespace Snui.StreakLine
 			}
 		}
 
-		public GameObject DialogPrefab => _dialogPrefab;
-		public GameObject InfoDialogPrefab => _infoDialogPrefab;
 		public GameObject BannerPrefab => _bannerPrefab;
-		public GameObject CompleteDialogPrefab => _completeDialogPrefab;
 		public StreakLineConfig Config => _config;
 	}
 }
