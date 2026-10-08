@@ -51,11 +51,11 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         }
         if(_chest!=null) _chest.gameObject.SetActive(false);
     }
-    // Keep recovery for older prefabs, using the package shader references instead
+    // Support older prefabs using the package shader references instead
     // of Shader.Find: exported placeholder shaders have the same shader names.
     private void RestoreSpineMaterials(SkeletonGraphic graphic)
     {
-        var library=RecoveryPrefabLibrary.Current;
+        var library=PrefabLibrary.Current;
         if(graphic==null || library==null) return;
         graphic.material=CopyMaterial(graphic.material,library.LevelBoxSpineShader);
         graphic.additiveMaterial=CopyMaterial(graphic.additiveMaterial,library.LevelBoxSpineAdditiveShader);
@@ -65,7 +65,7 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     private Material CopyMaterial(Material original,Shader shader)
     {
         if(original==null || shader==null) return original;
-        var copy=new Material(original) { shader=shader, name=original.name+" (LevelBox recovery)" };
+        var copy=new Material(original) { shader=shader, name=original.name+" (LevelBox shader fallback)" };
         if(copy.HasProperty("_StraightAlphaInput") && copy.GetFloat("_StraightAlphaInput")!=0) copy.EnableKeyword("_STRAIGHT_ALPHA_INPUT");
         if(copy.HasProperty("_CanvasGroupCompatible") && copy.GetFloat("_CanvasGroupCompatible")!=0) copy.EnableKeyword("_CANVAS_GROUP_COMPATIBLE");
         _ownedMaterials.Add(copy);
@@ -128,12 +128,10 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
             int milestone=manager.PendingMilestone;
             if(milestone>0)
             {
-                _rewards=RewardDialog.ShowLevelBox(milestone,parent,_chest,true).GetAwaiter().GetResult();
+                _rewards=RewardDialog.ShowLevelBox(milestone,parent,receiveImmediately:true).GetAwaiter().GetResult();
                 if(_rewards==null) { _busy=false; return; }
                 _rewards.Closed+=OnRewardClosed;
                 manager.OnViewed(); PlayMachine("last",false);
-                var last=_machineSpine?.SkeletonData?.FindAnimation("last");
-                StartCoroutine(ChestFallback(_rewards,last==null ? 0 : last.Duration));
                 PlaySound(_chestAudioClip);
             }
             else
@@ -164,11 +162,6 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         PlayMachine("first",false); manager.OnViewed();
         StartCoroutine(ProgressFallback());
         return UniTask.CompletedTask;
-    }
-    private IEnumerator ChestFallback(RewardDialog owner,float duration)
-    {
-        if(duration>0) yield return new WaitForSecondsRealtime(duration);
-        if(owner!=null && _rewards==owner && isActiveAndEnabled) owner.BeginChestAnimation();
     }
     private IEnumerator ProgressFallback()
     {

@@ -25,6 +25,11 @@ namespace Snui.Lava
 
 		private void Start()
 		{
+			if (Managers.Lava != null)
+			{
+				_record = Managers.Lava.GetRecord();
+			}
+
 			if (HintType == LavaHintType.Player)
 			{
 				// Position relative to player
@@ -62,7 +67,12 @@ namespace Snui.Lava
 
 		private async UniTask ShowLavaHint(bool flipY, string key, object[] arguments)
 		{
-			GameObject prefab = Resources.Load<GameObject>("Lava/Prefab/LavaHint");
+			GameObject prefab = LavaSettings.Instance != null ? LavaSettings.Instance.HintPrefab : null;
+			if (prefab == null)
+			{
+				prefab = Resources.Load<GameObject>("Lava/Prefab/LavaHint");
+			}
+
 			GameObject instance = null;
 			if (prefab != null)
 			{
