@@ -31,10 +31,10 @@ namespace Snui
             PassUI.Active(transform, "Coin", final);
             PassUI.Active(transform, "Level", !final);
             PassUI.Active(transform, "Finished", manager.IsFinalBundleFinished());
+            if (Bar != null) Bar.SetProgress(manager.IsFinalBundleFinished() ? manager.FinalStagePoint : manager.GetCurrentPoints(), final ? manager.FinalStagePoint : manager.GetNextRequirePoints());
             PassUI.Text(transform, "Value", manager.GetCurrentPoints() + "/" + manager.GetNextRequirePoints());
             PassUI.Text(transform, "Count", manager.GetCurrentFinalBundleCoin().ToString());
             if (StageText != null) StageText.text = manager.GetCurrentStage().ToString();
-            if (Bar != null) Bar.SetProgress(manager.IsFinalBundleFinished() ? 1 : Mathf.Clamp01((float)manager.GetCurrentPoints() / Mathf.Max(1, manager.GetNextRequirePoints())));
         }
         public void PlayCollectAnim() { PassUI.Animate(transform); PlaySpark(); Refresh(); }
         public void PlaySpark() { if (SparkEffect != null) SparkEffect.Play(); }

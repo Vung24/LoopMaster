@@ -1,11 +1,9 @@
-using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Snui;
-using Sugar.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PassDetailDialog : MonoBehaviour, ITableViewDataSource
+public class PassDetailDialog : MonoBehaviour
 {
     public static PassDetailDialog Current;
     public static bool ShouldShowUnlockVipAnim;
@@ -14,9 +12,9 @@ public class PassDetailDialog : MonoBehaviour, ITableViewDataSource
     public PassTicketCell TicketCellAsset;
     public PassRewardsCell RewardsCellAsset;
     public PassFinalBundleCell FinalBundleCellAsset;
-    private readonly List<PassRewardsCell> _cells = new List<PassRewardsCell>();
-    private TableView _table;
-    private PassFinalBundleCell _final;
+    [SerializeField] private PassScrollAdapter _adapter;
+    private ScrollRect _scroll;
+    public PassScrollAdapter ScrollAdapter => _adapter;
     private PassStarProgressBtn _star;
     private BasePassManager _manager;
     private bool _closed;
@@ -26,12 +24,9 @@ public class PassDetailDialog : MonoBehaviour, ITableViewDataSource
     {
         Current = this;
         _manager = Managers.Pass;
-        _table = GetComponentInChildren<TableView>(true);
-        if (_table == null)
-        {
-            var scroll = PassUI.Node<ScrollRect>(transform, "TableView");
-            if (scroll != null) _table = scroll.gameObject.AddComponent<TableView>();
-        }
+        _scroll = PassUI.Node<ScrollRect>(transform, "TableView");
+        if (_adapter == null) _adapter = GetComponentInChildren<PassScrollAdapter>(true);
+        if (_adapter == null && _scroll != null) _adapter = _scroll.gameObject.AddComponent<PassScrollAdapter>();
         _star = GetComponentInChildren<PassStarProgressBtn>(true);
         PassUI.Bind(transform, "CloseButton", Close);
         PassUI.Bind(transform, "InfoButton", () => PassInfoDialog.Show(transform.parent).Forget());
@@ -46,54 +41,34 @@ public class PassDetailDialog : MonoBehaviour, ITableViewDataSource
         _manager.OnVipChanged.AddListener(OnVipChanged);
         var timer = PassUI.Node<Snui.Timer>(transform, "Timer");
         if (timer != null) { timer.CountdownUntil(_manager.GetEndTime()); timer.OnStopped?.AddListener(Refresh); }
-        if (_table == null || TicketCellAsset == null || RewardsCellAsset == null || FinalBundleCellAsset == null)
+        if (_adapter == null || _scroll == null || TicketCellAsset == null || RewardsCellAsset == null || FinalBundleCellAsset == null)
             throw new System.InvalidOperationException("Battle Pass table prefab references are missing.");
-        _table.DataSource = this;
-        _table.ReloadData();
-        var content = _table.ScrollRect.content;
-        var bg = HierarchyReferenceCache.ChildComponent<RectTransform>(content, "RewardsBg");
-        if (bg != null) bg.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _manager.GetNormalStageCount() * PassRewardsCell.Height);
+        _adapter.Configure(_scroll, _manager, TicketCellAsset, RewardsCellAsset, FinalBundleCellAsset);
         Refresh();
-        // Scroll to the first unclaimed/free milestone, keeping the ticket visible for beginners.
-        int row = Mathf.Clamp(_manager.GetCurrentStage() - 1, 0, _manager.GetNormalStageCount() - 1);
-        float travel = Mathf.Max(1, content.rect.height - _table.ScrollRect.viewport.rect.height);
-        _table.ScrollRect.verticalNormalizedPosition = 1 - Mathf.Clamp01(row * PassRewardsCell.Height / travel);
+        _adapter.FocusCurrentReward();
         if (_manager.LastCollectPoints > 0) { _star?.PlayCollectAnim(); PassUI.Sound(ExpTargetSound); }
         _manager.UpdateLastStageAndPoints();
         PlayUnlockVipAnimIfNeed().Forget();
     }
     private void OnVipChanged() { Refresh(); PlayUnlockVipAnimIfNeed().Forget(); }
-    public async UniTask PlayUnlockVipAnimIfNeed()
+    public UniTask PlayUnlockVipAnimIfNeed()
     {
-        if (!ShouldShowUnlockVipAnim || !_manager.IsVip()) return;
+        if (!ShouldShowUnlockVipAnim || !_manager.IsVip()) return UniTask.CompletedTask;
         ShouldShowUnlockVipAnim = false;
-        foreach (var cell in _cells) if (cell != null) await cell.PlayUnlockVipAnim();
+        _adapter?.PlayVipUnlock();
         _manager.NotifyPurchaseSuccessAnimationEnded();
+        return UniTask.CompletedTask;
     }
     public void Refresh()
     {
         if (_manager == null) return;
-        foreach (var cell in _cells) if (cell != null) cell.Refresh();
-        _final?.Init(); _star?.Refresh();
+        _adapter?.RefreshRewards(); _star?.Refresh();
         PassUI.Active(transform, "NoVip", !_manager.IsVip());
         PassUI.Active(transform, "Vip", _manager.IsVip());
         var activate = PassUI.Node<Button>(transform, "ActivateBtn");
         if (activate != null) activate.interactable = _manager.CanPurchaseVIP();
         var lockLine = GetComponentInChildren<PassLockLine>(true);
         lockLine?.Refresh();
-        var barNode = HierarchyReferenceCache.Path(_table?.transform, "Viewport/Content/Progress/Bar");
-        var bar = barNode == null ? null : barNode.GetComponent<Image>();
-        if (bar != null) bar.fillAmount = Mathf.Clamp01((float)_manager.GetCurrentStage() / _manager.GetNormalStageCount());
-    }
-    public int GetNumOfSections(TableView tableView) => 3;
-    public int GetNumOfCellsInSection(TableView tableView, int section) => section == 1 ? _manager.GetNormalStageCount() : 1;
-    public float GetHeightOfCell(TableView tableView, int section, int row) => section == 0 ? PassTicketCell.Height : section == 1 ? PassRewardsCell.Height : PassFinalBundleCell.Height;
-    public TableViewCell GetTableViewCell(TableView tableView, int section, int row)
-    {
-        if (section == 0) return Instantiate(TicketCellAsset, tableView.ScrollRect.content, false);
-        if (section == 2) { _final = Instantiate(FinalBundleCellAsset, tableView.ScrollRect.content, false); _final.Init(); return _final; }
-        var cell = Instantiate(RewardsCellAsset, tableView.ScrollRect.content, false);
-        cell.Init(row); _cells.Add(cell); return cell;
     }
     private void Close() { if (_closed) return; _closed = true; _manager?.UpdateLastStageAndPoints(); gameObject.SetActive(false); Destroy(gameObject); }
     private void OnDestroy()
