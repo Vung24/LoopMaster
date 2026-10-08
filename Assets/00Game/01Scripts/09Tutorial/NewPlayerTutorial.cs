@@ -103,14 +103,40 @@ public class NewPlayerTutorial : MonoBehaviour
 		if (_textNode != null) _textNode.localPosition = new Vector3(
 			IsBlueSkin ? 0f : showPos.x, showPos.y - 180f, IsBlueSkin ? 0f : showPos.z);
 		SetDescription("Add extra capacity to continue playing.");
-		if (_finger != null) _finger.ShowFinger(showPos);
+		if (_finger != null) _finger.gameObject.SetActive(true);
 	}
 
-	public void ShowFail(Transform capacityNode)
+	public void ShowFail(Transform capacityNode) => ShowFail(capacityNode, null);
+
+	public void ShowFail(Transform capacityNode, Transform targetButton)
 	{
-		if (capacityNode == null) return;
-		Highlight(capacityNode);
-		ShowFail(capacityNode.localPosition);
+		_stage = TutorialStage.Fail;
+		gameObject.SetActive(true);
+		InitTextNode(0.2f);
+		if (capacityNode != null)
+		{
+			Highlight(capacityNode);
+			Vector3 textPos = transform.InverseTransformPoint(capacityNode.position);
+			if (_textNode != null)
+			{
+				_textNode.localPosition = new Vector3(
+					IsBlueSkin ? 0f : textPos.x, textPos.y - 180f, IsBlueSkin ? 0f : textPos.z);
+			}
+		}
+		SetDescription("Add extra capacity to continue playing.");
+		if (_finger != null)
+		{
+			if (targetButton != null)
+			{
+				Transform fingerParent = _finger.transform.parent != null ? _finger.transform.parent : transform;
+				Vector3 fingerPos = fingerParent.InverseTransformPoint(targetButton.position);
+				_finger.ShowFinger(fingerPos);
+			}
+			else
+			{
+				_finger.gameObject.SetActive(true);
+			}
+		}
 	}
 
 	private bool IsBlueSkin => gameObject.name.Contains("Blue");
