@@ -14,6 +14,7 @@ public class Cube : MonoBehaviour
 	[SerializeField] private SkinnedMeshRenderer _meshRenderer;
 	[SerializeField] private Animation _anim;
 	[SerializeField] private SpriteRenderer _square;
+	[SerializeField] private Transform _cubeRoot;
 	private MaterialPropertyBlock _outlinePropBlock;
 	[SerializeField] private GroupColorLockKey _groupKey;
 	[SerializeField] private CubeNumLock _numLock;
@@ -41,6 +42,32 @@ public class Cube : MonoBehaviour
 	private void Awake()
 	{
 		_token = destroyCancellationToken;
+		EnsureCubeRoot();
+	}
+
+	private Transform CubeRootTransform => EnsureCubeRoot();
+
+	private Transform EnsureCubeRoot()
+	{
+		if (_cubeRoot != null) return _cubeRoot;
+		if (_anim != null) return _cubeRoot = _anim.transform;
+		return _cubeRoot = HierarchyReferenceCache.Child(transform, "CubeRoot");
+	}
+
+	private void RefreshVisibility()
+	{
+		Transform root = CubeRootTransform;
+		bool shouldBeVisible = _info == null || VisibleSize > 0;
+		if (root != null)
+		{
+			if (root.gameObject.activeSelf != shouldBeVisible)
+				root.gameObject.SetActive(shouldBeVisible);
+		}
+		else if (_meshRenderer != null)
+		{
+			if (_meshRenderer.enabled != shouldBeVisible)
+				_meshRenderer.enabled = shouldBeVisible;
+		}
 	}
 
 	public void Init(CubeInfo info, Box box, GameLoader gameLoader, string anim = "")
@@ -293,15 +320,19 @@ public class Cube : MonoBehaviour
 	public void ReserveIncomingSlice(bool newCube)
 	{
 		_arrivals.Reserve();
-		if (!newCube) return;
-		// Reserve capacity at launch; keep the new renderer empty until landing.
-		transform.localScale = GetTargetScale();
-		RefreshPosition();
+		if (newCube)
+		{
+			// Reserve capacity at launch; keep the new renderer empty until landing.
+			transform.localScale = GetTargetScale();
+			RefreshPosition();
+		}
+		RefreshVisibility();
 	}
 
 	public void CompleteIncomingSlice()
 	{
 		if (_info == null || _isDismissing || !_arrivals.Arrive()) return;
+		RefreshVisibility();
 		// Exclude every slice still flying from the visual target.
 		AnimateSize(GetTargetScale(), _box == null ? transform.position :
 			_box.GetCubePos(_info, visibleSize: VisibleSize), 0f, 0.12f, false, false);
@@ -392,6 +423,7 @@ public class Cube : MonoBehaviour
 		if (_info == null) return;
 		transform.localScale = GetTargetScale();
 		RefreshPosition();
+		RefreshVisibility();
 	}
 
 	private Vector3 GetTargetScale()
