@@ -27,6 +27,11 @@ namespace Snui
 		{
 			_canvas = GetComponentInParent<Canvas>();
 			_canvasGroup = GetComponent<CanvasGroup>();
+			if (_closeBtn == null)
+			{
+				_closeBtn = HierarchyReferenceCache.DescendantComponent<Button>(transform, "CloseBtn")
+						 ?? HierarchyReferenceCache.DescendantComponent<Button>(transform, "CloseButton");
+			}
 			BindButton(_closeBtn, OnClickCloseButton);
 		}
 

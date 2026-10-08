@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
-/// <summary>Mirrors authored nodes once per change of writing direction.</summary>
 public class RectHorizontalMirror : MonoBehaviour
 {
     public List<Transform> MirrorNodeList = new List<Transform>();

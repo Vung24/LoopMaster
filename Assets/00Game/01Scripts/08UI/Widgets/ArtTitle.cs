@@ -2,7 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-
+using UnityEngine.UI;
 namespace Snui
 {
     public class ArtTitle : MonoBehaviour
@@ -13,7 +13,7 @@ namespace Snui
         {
             requestVersion++;
             foreach (TMP_Text label in GetComponentsInChildren<TMP_Text>(true)) label.text = title ?? string.Empty;
-            foreach (UnityEngine.UI.Text label in GetComponentsInChildren<UnityEngine.UI.Text>(true)) label.text = title ?? string.Empty;
+            foreach (Text label in GetComponentsInChildren<Text>(true)) label.text = title ?? string.Empty;
         }
 
         public async UniTaskVoid SetTitleAsync(UniTask<string> titleTask)
