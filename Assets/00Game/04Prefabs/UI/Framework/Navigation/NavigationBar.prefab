@@ -144,10 +144,10 @@ MonoBehaviour:
   OnClickCell:
     m_PersistentCalls:
       m_Calls: []
-  NavigationAnim: 0
-  CursorExpand: 0
-  _cursor: {fileID: 0}
-  _cellsNode: {fileID: 0}
+  NavigationAnim: 1
+  CursorExpand: 1.2
+  _cursor: {fileID: 224570836586991604}
+  _cellsNode: {fileID: 224992138728274290}
   _cells: []
 --- !u!224 &224938504607668325
 RectTransform:
@@ -192,14 +192,14 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_Material: {fileID: 0}
-  m_Color: {r: 0.30588236, g: 0.5294118, b: 0.8980392, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 4d3e837b563a2224e9ab725844f7ce35, type: 2}
+  m_Sprite: {fileID: 21300000, guid: f3ec6848c75ffd54a90a4aff5be3b05b, type: 2}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
