@@ -59,6 +59,8 @@ namespace Snui.StreakLine
 
 			_midProgress1 = HierarchyReferenceCache.DescendantComponent<ProgressBar>(transform, "MidProgress1");
 			_midProgress2 = HierarchyReferenceCache.DescendantComponent<ProgressBar>(transform, "MidProgress2");
+			if (_midProgress1 != null) _midProgress1.SetFillBounds(_midProgress1.GetComponent<RectTransform>());
+			if (_midProgress2 != null) _midProgress2.SetFillBounds(_midProgress2.GetComponent<RectTransform>());
 
 			_balloon = HierarchyReferenceCache.DescendantComponent<RectTransform>(transform, "Cursor");
 			_cursor = HierarchyReferenceCache.DescendantComponent<RectTransform>(transform, "Cursor");
@@ -121,15 +123,22 @@ namespace Snui.StreakLine
 		protected override void UpdateProgress(float level)
 		{
 			base.UpdateProgress(level);
-			if (_midProgress1 != null && _midProgress2 != null)
-			{
-				var range = GetActiveRange(level);
-				float middle = (range.start + range.end) * .5f;
-				float progress1 = Mathf.InverseLerp(range.start, middle, level);
-				float progress2 = Mathf.InverseLerp(middle, range.end, level);
-				_midProgress1.SetProgress(progress1);
-				_midProgress2.SetProgress(progress2);
-			}
+			var range = GetActiveRange(level);
+			float middle = (range.start + range.end) * .5f;
+			if (_midProgress1 != null) _midProgress1.SetProgress(Mathf.InverseLerp(range.start, middle, level));
+			if (_midProgress2 != null) _midProgress2.SetProgress(Mathf.InverseLerp(middle, range.end, level));
+		}
+
+		protected override Vector2 GetLevelLocalPosition(float level)
+		{
+			if (_startNode == null || _midNodeImage == null || _endNode == null || _balloon == null)
+				return base.GetLevelLocalPosition(level);
+			var range = GetActiveRange(level);
+			float middle = (range.start + range.end) * .5f;
+			Vector3 point = level <= middle
+				? Vector3.Lerp(_startNode.position, _midNodeImage.transform.position, Mathf.InverseLerp(range.start, middle, level))
+				: Vector3.Lerp(_midNodeImage.transform.position, _endNode.position, Mathf.InverseLerp(middle, range.end, level));
+			return _balloon.parent.InverseTransformPoint(point);
 		}
 	}
 }

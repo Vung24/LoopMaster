@@ -22,6 +22,7 @@ namespace Snui
             PassUI.Active(transform, "Heart", Managers.Pass.IsHeartEnable());
             PassUI.Active(transform, "Box", Managers.Pass.IsTeamEnable());
             PassUI.Text(transform, "Count", "8");
+            PassUI.NativeIcon(PassUI.Node<UnityEngine.UI.Image>(transform, "Heart"));
         }
         private void Purchase()
         {

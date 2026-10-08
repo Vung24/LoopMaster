@@ -17,6 +17,7 @@ namespace Snui.Lava
 		public int PlaneIndex;
 		private Button _btn;
 		private int _record;
+		private LavaDetailDialog _dialog;
 
 		private void Awake()
 		{
@@ -25,6 +26,7 @@ namespace Snui.Lava
 
 		private void Start()
 		{
+			_dialog = GetComponentInParent<LavaDetailDialog>();
 			if (Managers.Lava != null)
 			{
 				_record = Managers.Lava.GetRecord();
@@ -32,7 +34,9 @@ namespace Snui.Lava
 
 			if (HintType == LavaHintType.Player)
 			{
-				// Position relative to player
+				Transform plane = _dialog != null ? _dialog.GetCurrPlane()?.GetPlaneNode() : null;
+				if (plane != null && transform.parent != null)
+					transform.localPosition = transform.parent.InverseTransformPoint(plane.position);
 			}
 			else if (HintType == LavaHintType.Plane)
 			{
@@ -51,16 +55,17 @@ namespace Snui.Lava
 
 		private void OnClickButton()
 		{
+			if (_dialog != null && _dialog.IsPlayAnimation) return;
 			switch (HintType)
 			{
 				case LavaHintType.Reward:
-					ShowLavaHint(true, "LavaRewardHint", null).Forget();
+					ShowLavaHint(true, "Lava-TutorialDesc3", null).Forget();
 					break;
 				case LavaHintType.Plane:
-					ShowLavaHint(false, "LavaPlaneHint", null).Forget();
+					ShowLavaHint(false, "Lava-TutorialDesc2", null).Forget();
 					break;
 				case LavaHintType.Player:
-					ShowLavaHint(false, "LavaPlayerHint", null).Forget();
+					ShowLavaHint(false, "Lava-TutorialDesc1", new object[] { Managers.Lava != null ? Managers.Lava.GetRemainingPlayers() : 0 }).Forget();
 					break;
 			}
 		}

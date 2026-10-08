@@ -27,8 +27,8 @@ public class BouncyLavaDetailDialog : Snui.Lava.LavaDetailDialog
 
 					if (fallIndexes.Contains(i) || (_failed && i == 0))
 					{
-						bool isRightSide = GetFallPlayerSide(i);
-						float splashDelay = GetWaterSplashDelay(i);
+						bool isRightSide = avatarOffset.x >= 0f;
+						float splashDelay = GetWaterSplashDelay(nextIndex);
 						bouncyPlayer.DOJumpToFail(isRightSide, targetPos, 0.45f, 80f, 0.25f, splashDelay);
 					}
 					else
@@ -38,7 +38,9 @@ public class BouncyLavaDetailDialog : Snui.Lava.LavaDetailDialog
 				}
 			}
 
-			await UniTask.Delay(1100, cancellationToken: this.GetCancellationTokenOnDestroy());
+			// Let the jump, splash callback and avatar fade finish before hiding players.
+			int presentationMs = Mathf.CeilToInt((0.45f + GetWaterSplashDelay(nextIndex) + 0.25f) * 1000f) + 50;
+			await UniTask.Delay(presentationMs, cancellationToken: this.GetCancellationTokenOnDestroy());
 			foreach (int index in fallIndexes)
 				if (_players[index] != null) _players[index].gameObject.SetActive(false);
 			if (_failed && _userPlayer != null) _userPlayer.gameObject.SetActive(false);
@@ -51,25 +53,36 @@ public class BouncyLavaDetailDialog : Snui.Lava.LavaDetailDialog
 		if (_fallIndexesCreated) return _fallIndexes;
 		_fallIndexesCreated = true;
 		int count = _failed ? 2 : Mathf.Min(2, _losePlayers);
-		for (int i = 1; i < _players.Count && _fallIndexes.Count < count; i++)
+		for (int i = 1; i < _players.Count; i++)
 		{
 			if (_players[i] != null && _players[i].gameObject.activeSelf)
 			{
 				_fallIndexes.Add(i);
 			}
 		}
+		// Native sorts by horizontal position: side 0 takes the rightmost opponents,
+		// side 1 takes the leftmost. At the endpoint it uses their current positions.
+		int next = GetNextPlaneIndex();
+		bool endpoint = next == _planes.Count - 1;
+		bool leftmost = GetFallPlayerSide(next);
+		_fallIndexes.Sort((a, b) =>
+		{
+			float ax = endpoint ? _players[a].transform.localPosition.x : Managers.Lava.GetAvatarPosition(a - 1).x;
+			float bx = endpoint ? _players[b].transform.localPosition.x : Managers.Lava.GetAvatarPosition(b - 1).x;
+			return leftmost ? ax.CompareTo(bx) : bx.CompareTo(ax);
+		});
+		if (_fallIndexes.Count > count) _fallIndexes.RemoveRange(count, _fallIndexes.Count - count);
 		return _fallIndexes;
 	}
 
 	public bool GetFallPlayerSide(int index)
 	{
-		int plane = GetNextPlaneIndex();
-		return plane < _fallPlayerSides.Length ? _fallPlayerSides[plane] != 0 : index % 2 == 0;
+		return index >= 0 && index < _fallPlayerSides.Length && _fallPlayerSides[index] != 0;
 	}
 
 	public float GetWaterSplashDelay(int index)
 	{
-		return 0.3f;
+		return index < 5 ? 0.65f : 0.75f;
 	}
 
 	public override async UniTask PlayFallAnimation()

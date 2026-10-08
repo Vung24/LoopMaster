@@ -7,18 +7,29 @@ namespace Snui
 	{
         public AudioClip ShowSound, FullSound;
         public Transform CoinEndTf;
+        private int _lastCoins = -1;
         protected override void Awake()
         {
             base.Awake();
             if (_button != null) _button.onClick.AddListener(OnClicked);
         }
-        public void Refresh()
+        public void Refresh(int displayStage = int.MaxValue)
         {
             var manager = Managers.Pass;
+            displayStage = Mathf.Min(displayStage, manager.GetCurrentStage());
+            int coins = manager.GetCurrentFinalBundleCoin() > 0 ? Mathf.Clamp((displayStage - manager.GetNormalStageCount()) * manager.FinalStageCoin, 0, manager.FinalTotalCoinCount) : 0;
             var bar = GetComponentInChildren<ProgressBar>(true);
-            if (bar != null) bar.SetProgress((float)manager.GetCurrentFinalBundleCoin() / manager.FinalTotalCoinCount);
-            PassUI.Text(transform, "Snui_Text", manager.GetCurrentFinalBundleCoin().ToString());
-            PassUI.Active(transform, "Lock", !manager.IsVip() || !manager.IsFinalRewardUnlocked());
+            if (bar != null) bar.SetProgress(coins, manager.FinalTotalCoinCount);
+            PassUI.Text(transform, "Snui_Text", coins.ToString());
+            bool locked = !manager.IsVip() || displayStage < manager.GetNormalStageCount();
+            PassUI.Active(transform, "Lock", locked);
+            if (locked) PassUI.Spine(PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock"), "idle", true);
+            if (_lastCoins >= 0 && coins > _lastCoins)
+            {
+                if (coins == manager.FinalTotalCoinCount) PassUI.Sound(FullSound);
+                foreach (var particle in GetComponentsInChildren<ParticleSystem>()) particle.Play();
+            }
+            _lastCoins = coins;
             var desc = PassUI.Node<TMPro.TMP_Text>(transform, "Desc");
             if (desc != null) desc.text = manager.IsVip() ? "Collect stars for up to 500 bonus coins. Claim when full or when the season ends." : "Activate Golden Pass to unlock bonus coins.";
         }

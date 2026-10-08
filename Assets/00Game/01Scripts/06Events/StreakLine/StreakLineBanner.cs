@@ -59,6 +59,7 @@ namespace Snui.StreakLine
 			if (_endNode == null) _endNode = HierarchyReferenceCache.DescendantComponent<RectTransform>(transform, "EndNode");
 			if (_titleText == null) _titleText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Title");
 			_progressBar = HierarchyReferenceCache.DescendantComponent<ProgressBar>(transform, "MidProgress");
+			if (_progressBar != null) _progressBar.SetFillBounds(_progressBar.GetComponent<RectTransform>());
 			if (_startNode != null) _rangeStartText = _startNode.GetComponentInChildren<TMP_Text>(true);
 			if (_endNode != null) _rangeEndText = _endNode.GetComponentInChildren<TMP_Text>(true);
 			if (_titleText != null && string.IsNullOrEmpty(_titleText.text) && Managers.StreakLine != null)
@@ -163,7 +164,7 @@ namespace Snui.StreakLine
 
 		public Vector2 GetLevelLocalPosition(int level) => GetLevelLocalPosition((float)level);
 
-		private Vector2 GetLevelLocalPosition(float level)
+		protected virtual Vector2 GetLevelLocalPosition(float level)
 		{
 			if (_startNode != null && _endNode != null && _balloon != null)
 			{
