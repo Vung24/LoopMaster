@@ -1,27 +1,20 @@
 #if UNITY_EDITOR
+using System;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 /// <summary>Checks and forces Win/Lose results through the real gameplay flow.</summary>
-public sealed class DebugLevelWindow : EditorWindow
+public static class DebugLevelWindow
+{
+    public static void Open() => LoopMasterDebugWindow.Open(LoopMasterDebugWindow.Tab.Level);
+}
+
+[Serializable]
+public sealed class DebugLevelPanel
 {
     private string _status = "Ready. Enter Play Mode and open a level.";
     private Vector2 _scrollPosition;
-
-    [MenuItem("Tools/LoopMaster/Debug Level")]
-    public static void Open() => GetWindow<DebugLevelWindow>("Debug Level").Show();
-
-    private void OnEnable()
-    {
-        minSize = new Vector2(380f, 420f);
-        EditorApplication.playModeStateChanged += OnPlayModeChanged;
-    }
-
-    private void OnDisable()
-    {
-        EditorApplication.playModeStateChanged -= OnPlayModeChanged;
-    }
 
     private static GameController Controller
     {
@@ -37,7 +30,7 @@ public sealed class DebugLevelWindow : EditorWindow
         !EditorApplication.isPaused && !EditorApplication.isCompiling &&
         !EditorApplication.isUpdating && Time.timeScale > 0f;
 
-    private void OnGUI()
+    public void DrawGUI()
     {
         GameController controller = Controller;
         _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
@@ -126,9 +119,7 @@ public sealed class DebugLevelWindow : EditorWindow
         Debug.Log("[Debug Level] " + _status, controller);
     }
 
-    private void OnInspectorUpdate() => Repaint();
-
-    private void OnPlayModeChanged(PlayModeStateChange state)
+    public void ResetStatus()
     {
         _status = "Ready. Enter Play Mode and open a level.";
     }

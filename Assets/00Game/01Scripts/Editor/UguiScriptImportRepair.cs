@@ -9,7 +9,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-// ReferenceData projects can retain MonoScript imports from their old placeholder classes.
+// Legacy projects can retain MonoScript imports from their old placeholder classes.
 // Reimport the scripts against the real package assembly without changing prefab data.
 [InitializeOnLoad]
 public static class UguiScriptImportRepair
