@@ -77,6 +77,22 @@ namespace Snui
 			}
 		}
 
+		public void AddOnTimerStopListener(UnityEngine.Events.UnityAction action)
+		{
+			if (_countdownHelper != null && action != null)
+			{
+				_countdownHelper.OnTimerStoped.AddListener(action);
+			}
+		}
+
+		public void RemoveOnTimerStopListener(UnityEngine.Events.UnityAction action)
+		{
+			if (_countdownHelper != null && action != null)
+			{
+				_countdownHelper.OnTimerStoped.RemoveListener(action);
+			}
+		}
+
 		private void OnTimeTicked(long time)
 		{
 			if (_text != null)

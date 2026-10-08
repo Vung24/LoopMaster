@@ -25,7 +25,7 @@ namespace Snui
 			}
 			if (prefab == null)
 			{
-				prefab = RecoveryPrefabLibrary.Current?.HomeIconProgressPrefab;
+				prefab = PrefabLibrary.Current?.HomeIconProgressPrefab;
 			}
 			if (prefab != null)
 			{
