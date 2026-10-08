@@ -348,7 +348,8 @@ namespace Snui.StreakLine
 		{
 			if (chest != null)
 			{
-				await RewardDetailToast.Show(chest.Items(), GetComponentInParent<Canvas>()?.transform, transform.position);
+				var toast = await RewardDetailToast.Show(chest.Items(), _chestImage != null ? _chestImage.transform : transform, new Vector2(0, 90));
+				if (toast != null) toast.SetTopPadding(200);
 			}
 		}
 

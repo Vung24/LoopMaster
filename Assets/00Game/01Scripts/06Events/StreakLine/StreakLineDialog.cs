@@ -88,7 +88,7 @@ namespace Snui.StreakLine
 				OnEntryStarted(!Managers.StreakLine.HasPlayedEnterAnim());
 				if (!Managers.StreakLine.HasPlayedEnterAnim() && _scrollAdapter.GetItemsCount() > 0)
 				{
-					_scrollAdapter.ScrollTo(0);
+					_scrollAdapter.SetVirtualAbstractNormalizedScrollPosition(1, true, out _);
 					Managers.StreakLine.SetPlayedEnterAnim();
 					// Native DOScrollEnter: top to bottom in 3 seconds, InOutQuart.
 					var enterScroll = DOVirtual.Float(1, 0, 3f,
@@ -194,7 +194,7 @@ namespace Snui.StreakLine
 		{
 			if (_infoShowing || (Busy && !_tutorialWaiting)) return;
 			var settings = StreakLineSettings.Instance;
-			if (settings != null && settings.InfoDialogPrefab != null)
+			if (settings != null)
 			{
 				_infoShowing = true;
 				UpdateInteractions();
@@ -262,20 +262,20 @@ namespace Snui.StreakLine
 			OnRewardDialogVisibilityChanged(true);
 			try
 			{
-			var receipt = await RewardDialog.ShowWithChest(rewards, parent: parent);
-			if (receipt != null)
-			{
-				var receiptCanvas = receipt.GetComponent<Canvas>();
-				var eventCanvas = GetComponentInParent<Canvas>();
-				if (receiptCanvas != null && eventCanvas != null) receiptCanvas.sortingOrder = Mathf.Max(receiptCanvas.sortingOrder, eventCanvas.sortingOrder + 1);
-			}
-			bool completed = Managers.StreakLine.IsClaimedAllRewards();
-			if (receipt != null)
-				await UniTask.WaitUntil(() => receipt == null || !receipt.isActiveAndEnabled, cancellationToken: this.GetCancellationTokenOnDestroy());
-			if (this == null || !completed) return;
-			// Native PlayEndAnimation waits for the reward receipt, then opens completion.
-			await StreakLineCompleteContent.ShowWithDialog(parent);
-			if (this != null) Dismiss();
+				var receipt = await RewardDialog.ShowWithChest(rewards, parent: parent);
+				if (receipt != null)
+				{
+					var receiptCanvas = receipt.GetComponent<Canvas>();
+					var eventCanvas = GetComponentInParent<Canvas>();
+					if (receiptCanvas != null && eventCanvas != null) receiptCanvas.sortingOrder = Mathf.Max(receiptCanvas.sortingOrder, eventCanvas.sortingOrder + 1);
+				}
+				bool completed = Managers.StreakLine.IsClaimedAllRewards();
+				if (receipt != null)
+					await UniTask.WaitUntil(() => receipt == null || !receipt.isActiveAndEnabled, cancellationToken: this.GetCancellationTokenOnDestroy());
+				if (this == null || !completed) return;
+				// Native PlayEndAnimation waits for the reward receipt, then opens completion.
+				await StreakLineCompleteContent.ShowWithDialog(parent);
+				if (this != null) Dismiss();
 			}
 			finally
 			{
