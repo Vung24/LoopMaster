@@ -31,6 +31,16 @@ namespace ShopUI
 		private static bool Grant(string id, string route)
         {
             if (new ShopDelegate().IsLimitShowProduct(id)) return false;
+            if (id == ShopProductCatalog.GoldenPass)
+            {
+                if (Managers.Pass == null || !Managers.Pass.CanPurchaseVIP()) return false;
+                Managers.Pass.SetVip();
+                if (!Managers.Pass.HasActiveVip) return false;
+                PlayerPrefs.SetInt("offline_shop_purchase_" + id, PurchaseCount(id) + 1);
+                PlayerPrefs.SetInt("offline_shop_any_purchase", 1);
+                PlayerPrefs.Save();
+                return true;
+            }
             var rewards = ShopProductCatalog.GetRewards(id);
             if (rewards == null) return false;
             foreach (var reward in rewards)
