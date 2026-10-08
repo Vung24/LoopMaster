@@ -581,40 +581,12 @@ public class GameController : MonoBehaviour
 	}
 
 #if UNITY_EDITOR
-	public bool IsDebugGameplaySettled => IsGameplaySettled();
-	public CoreMoveResult DebugEndResult => Data == null || _engine == null ?
-		CoreMoveResult.None : _engine.EvaluateEndState();
-
-	public bool TryDebugCheckEndState()
-	{
-		if (!Application.isPlaying || !IsGameplayActive || _isTransitioningLevel || _engine == null) return false;
-		CheckGameOver();
-		return true;
-	}
-
 	public bool TryDebugForceEndState(GameEndState state)
 	{
 		if (!Application.isPlaying || !IsGameplayActive || _isTransitioningLevel ||
 			(state != GameEndState.Won && state != GameEndState.Failed)) return false;
 		CompleteGame(state);
 		return EndState == state;
-	}
-
-	public bool IsDebugAutoPlayReady => IsGameplayActive && IsGameplaySettled() &&
-		Data.Boxes.All(box => box != null && box.State == BoxState.Free);
-	public float DebugConveyorLoopDuration => Data == null ? 0f :
-		Data.PathPoints.Count * GetTickInterval(IsSpeedUpActive);
-
-	public bool TryDebugPlayBox(int boxIndex)
-	{
-		if (!IsDebugAutoPlayReady || boxIndex < 0 || boxIndex >= Data.Boxes.Count ||
-			!Data.CanCubeJumpToTransfer()) return false;
-		BoxInfo info = Data.Boxes[boxIndex];
-		Box box = GetBox(info);
-		if (box == null || info.IsFinished() || !box.CanPopupSlice() ||
-			info.GetTopCubes(false).Count == 0) return false;
-		OnClickBox(box);
-		return info.State == BoxState.OnPopup;
 	}
 #endif
 
