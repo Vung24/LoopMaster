@@ -28,7 +28,7 @@ namespace Snui.Lava
 			if (_canvasGroup != null)
 			{
 				_canvasGroup.alpha = 0f;
-				_canvasGroup.DOFade(1f, 0.2f);
+				_canvasGroup.DOFade(1f, 0.2f).SetLink(gameObject);
 			}
 			Invoke(nameof(Dismiss), 3f);
 			_enableTouch = true;
@@ -48,7 +48,7 @@ namespace Snui.Lava
 			_enableTouch = false;
 			if (_canvasGroup != null)
 			{
-				_canvasGroup.DOFade(0f, 0.2f).OnComplete(() =>
+				_canvasGroup.DOFade(0f, 0.2f).SetLink(gameObject).OnComplete(() =>
 				{
 					if (gameObject != null) Destroy(gameObject);
 				});
@@ -61,10 +61,18 @@ namespace Snui.Lava
 
 		public void SetLocalPosition(Vector3 localPos, bool flipY)
 		{
-			transform.localPosition = localPos;
+			// Native keeps the bubble centered and moves its arrow to the target X.
+			if (_arrow != null)
+			{
+				Vector3 arrowPos = _arrow.transform.localPosition;
+				arrowPos.x = localPos.x;
+				_arrow.transform.localPosition = arrowPos;
+			}
+			transform.localPosition = new Vector3(0f, localPos.y + (flipY ? -200f : 180f), localPos.z);
 			if (flipY)
 			{
 				FlipY(transform);
+				if (_text != null) FlipY(_text.transform);
 			}
 		}
 
@@ -79,14 +87,12 @@ namespace Snui.Lava
 		{
 			if (_text != null)
 			{
-				if (arguments != null && arguments.Length > 0)
-				{
-					_text.text = string.Format(key, arguments);
-				}
-				else
-				{
-					_text.text = key;
-				}
+				// The offline project has no EventLava string table; use readable fallbacks.
+				string format = key == "Lava-TutorialDesc1" ? "{0} players are still in the challenge."
+					: key == "Lava-TutorialDesc2" ? "Win a level to jump to the next platform. Losing ends your round."
+					: key == "Lava-TutorialDesc3" ? "Reach the final platform to share the prize with the surviving players."
+					: key;
+				_text.text = arguments != null && arguments.Length > 0 ? string.Format(format, arguments) : format;
 			}
 		}
 	}

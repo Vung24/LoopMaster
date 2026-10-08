@@ -21,6 +21,7 @@ namespace Snui
         }
         public void ChangeToUnLockStyle() => ApplyBackground(true);
         public void ChangeToLockStyle() => ApplyBackground(false);
+        public void SetDisplayStage(int stage) => ApplyBackground(_stage < stage);
         private void ApplyBackground(bool unlocked)
         {
             var image = GetComponent<Image>();

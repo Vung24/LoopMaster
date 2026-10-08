@@ -1,4 +1,5 @@
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 namespace Snui
 {
@@ -6,6 +7,8 @@ namespace Snui
 	{
         public AudioClip UnlockSound;
         protected override bool VipTrack => true;
+        private bool _unlocking;
+        private int _bindingVersion;
         protected override void Awake()
         {
             base.Awake();
@@ -13,12 +16,30 @@ namespace Snui
             if (effect != null)
                 foreach (var graphic in effect.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) graphic.raycastTarget = false;
         }
-        public Cysharp.Threading.Tasks.UniTask PlayUnlockAnim()
+        public override UniTask Init(int row)
         {
-            Refresh(); PassUI.Sound(UnlockSound); PassUI.Animate(transform);
+            _bindingVersion++; _unlocking = false;
+            return base.Init(row);
+        }
+        public override void Refresh()
+        {
+            base.Refresh();
+            if (_unlocking) PassUI.Active(transform, "Lock", true);
+        }
+        public async UniTask PlayUnlockAnim()
+        {
+            if (_unlocking || !Managers.Pass.IsVip()) return;
+            int version = _bindingVersion;
+            _unlocking = true; Refresh(); PassUI.Sound(UnlockSound);
+            var graphic = PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock");
+            PassUI.Spine(graphic, "unlock", false);
+            float duration = graphic?.SkeletonData?.FindAnimation("unlock")?.Duration ?? .4f;
+            await UniTask.Delay(System.TimeSpan.FromSeconds(duration), ignoreTimeScale: true, cancellationToken: this.GetCancellationTokenOnDestroy());
+            if (version != _bindingVersion || !isActiveAndEnabled) return;
+            _unlocking = false; Refresh();
             var particles = GetComponentsInChildren<ParticleSystem>();
             foreach (var particle in particles) particle.Play();
-            return Cysharp.Threading.Tasks.UniTask.CompletedTask;
         }
+        private void OnDisable() { _bindingVersion++; _unlocking = false; }
 	}
 }

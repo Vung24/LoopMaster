@@ -12,6 +12,13 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
     private BasePassManager _manager;
     private RectTransform _background;
     private PassLockLine _lockLine;
+    private Image _pathBar;
+    private RectTransform _rewardsBg;
+    private int _displayStage;
+    private float _pathStage;
+    public int DisplayStage => _displayStage;
+    public float PathStage => _pathStage;
+    public Vector3 PathEndPosition => _lockLine != null ? _lockLine.transform.position : transform.position;
     protected override void Start() { }
 
     public void Configure(ScrollRect scroll, BasePassManager manager, PassTicketCell ticket,
@@ -20,6 +27,7 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
         if (IsInitialized) return;
         scroll.StopMovement(); scroll.enabled = false;
         _manager = manager;
+        _displayStage = manager.GetStageAtPoints(manager.GetLastTotalPoints()); _pathStage = _displayStage;
         _Params = new PassScrollParams { Content = scroll.content, Viewport = scroll.viewport,
             Ticket = (RectTransform)ticket.transform, Reward = (RectTransform)reward.transform,
             Final = (RectTransform)final.transform, ScrollSensivity = Mathf.Max(100, scroll.scrollSensitivity) };
@@ -32,8 +40,15 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
         // OSA keeps Content at viewport size. Move the authored path to its own full-height plane.
         while (scroll.content.childCount > 0) scroll.content.GetChild(0).SetParent(_background, false);
         _lockLine = _background.GetComponentInChildren<PassLockLine>(true);
-        var rewardsBg = HierarchyReferenceCache.ChildComponent<RectTransform>(_background, "RewardsBg");
-        if (rewardsBg != null) rewardsBg.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, manager.GetNormalStageCount() * PassRewardsCell.Height);
+        _rewardsBg = HierarchyReferenceCache.ChildComponent<RectTransform>(_background, "RewardsBg");
+        _pathBar = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Path(_background, "Progress/Bar"));
+        var progress = HierarchyReferenceCache.ChildComponent<RectTransform>(_background, "Progress");
+        if (progress != null)
+        {
+            progress.anchorMin = progress.anchorMax = new Vector2(.5f, 1); progress.pivot = new Vector2(.5f, 1);
+            progress.anchoredPosition = Vector2.zero;
+            progress.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, PassTicketCell.Height + manager.GetNormalStageCount() * PassRewardsCell.Height);
+        }
         Canvas.ForceUpdateCanvases();
         Init(); ResetItems(manager.GetNormalStageCount() + 2);
         RefreshRewards();
@@ -45,9 +60,10 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
         for (int i = 0; i < VisibleItemsCount; i++)
         {
             var holder = GetItemViewsHolder(i);
-            holder.Reward?.Refresh(); holder.Final?.Init(); holder.Ticket?.Refresh();
+            holder.Reward?.Refresh(); holder.Final?.Init(_displayStage); holder.Ticket?.Refresh();
+            holder.Reward?.SetDisplayStage(_displayStage);
         }
-        _lockLine?.Refresh();
+        SetPathStage(_pathStage);
         UpdateBackground();
     }
 
@@ -55,18 +71,55 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
     public void FocusCurrentReward()
     {
         if (!IsInitialized) return;
-        if (_manager.GetCurrentStage() < 2) SetNormalizedPosition(1);
-        else if (_manager.IsFinalRewardUnlocked()) ScrollTo(GetItemsCount() - 1, 1, 1);
-        else ScrollTo(Mathf.Clamp(_manager.GetCurrentStage(), 1, GetItemsCount() - 2));
+        if (_displayStage < 2) SetNormalizedPosition(1);
+        else if (_displayStage >= _manager.GetNormalStageCount()) ScrollTo(GetItemsCount() - 1, 1, 1);
+        else ScrollTo(Mathf.Clamp(_displayStage, 1, GetItemsCount() - 2));
     }
 
-    public void PlayVipUnlock()
+    public async UniTask PlayVipUnlock()
     {
+        var tasks = new System.Collections.Generic.List<UniTask>();
         for (int i = 0; i < VisibleItemsCount; i++)
         {
             var cell = GetItemViewsHolder(i).Reward;
-            if (cell != null && cell.Stage > 0) cell.PlayUnlockVipAnim().Forget();
+            if (cell != null && cell.Stage > 0) tasks.Add(cell.PlayUnlockVipAnim());
         }
+        await UniTask.WhenAll(tasks);
+        RefreshRewards();
+    }
+    public void SetDisplayStage(int stage)
+    {
+        bool finalJustOpened = _displayStage < _manager.GetNormalStageCount() && stage >= _manager.GetNormalStageCount();
+        _displayStage = stage; RefreshRewards();
+        if (finalJustOpened)
+            for (int i = 0; i < VisibleItemsCount; i++) GetItemViewsHolder(i).Final?.FinalBundleItem?.PlayShowAnim().Forget();
+    }
+    public void SetPathStage(float stage)
+    {
+        _pathStage = stage;
+        float height = PassTicketCell.Height + Mathf.Clamp(stage, 1, _manager.GetNormalStageCount()) * PassRewardsCell.Height;
+        if (_rewardsBg != null)
+        {
+            _rewardsBg.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+            _rewardsBg.anchoredPosition = new Vector2(_rewardsBg.anchoredPosition.x, -height);
+        }
+        if (_pathBar != null) _pathBar.fillAmount = height / (PassTicketCell.Height + _manager.GetNormalStageCount() * PassRewardsCell.Height);
+        _lockLine?.SetDisplayStage(stage);
+        for (int i = 0; i < VisibleItemsCount; i++)
+        {
+            var row = GetItemViewsHolder(i).Reward;
+            if (row == null) continue;
+            var level = row.GetComponentInChildren<PassLevelBtn>(true);
+            level?.SetDisplayStage(Mathf.FloorToInt(stage));
+        }
+    }
+    public async UniTask AnimatePathTo(int stage)
+    {
+        if (_lockLine != null && _lockLine.gameObject.activeSelf) await _lockLine.PlayUnlockAnim();
+        var tween = DOVirtual.Float(_pathStage, stage, 1.5f, SetPathStage).SetEase(Ease.OutQuad).SetUpdate(true).SetLink(gameObject);
+        await tween.ToUniTask().AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
+        if (_lockLine != null) await _lockLine.PlayLockAnim();
+        SetDisplayStage(stage); SetPathStage(stage); FocusCurrentReward();
     }
 
     protected override void CollectItemsSizes(ItemCountChangeMode mode, int count, int index, ItemsDescriptor sizes)
@@ -94,7 +147,8 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
     {
         holder.root.localScale = Vector3.one;
         if (holder.Reward != null) holder.Reward.Init(holder.ItemIndex - 1);
-        holder.Final?.Init(); holder.Ticket?.Refresh();
+        holder.Reward?.SetDisplayStage(_displayStage);
+        holder.Final?.Init(_displayStage); holder.Ticket?.Refresh();
     }
     protected override void OnBeforeRecycleOrDisableViewsHolder(PassViewsHolder holder, int index)
     {

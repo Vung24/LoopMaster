@@ -22,6 +22,7 @@ public class ProgressBar : MonoBehaviour
     private Tweener tweener;
     private bool objectsEnsured;
     private Vector3 originalScale;
+    private RectTransform fillBounds;
 
     protected virtual void Awake() { EnsureObject(); }
     public int GetCurrentCount() { return currCount; }
@@ -49,6 +50,13 @@ public class ProgressBar : MonoBehaviour
     public void SetProgress(float progress) => SetPercent(progress);
     public void SetProgress(int count, int total) => SetPercent(count, total);
 
+    // A mask's authored width can represent partial progress rather than the full track.
+    public void SetFillBounds(RectTransform bounds)
+    {
+        fillBounds = bounds;
+        ApplyPercent(currPercent);
+    }
+
     public void SetPercent(float percent)
     {
         StopTween();
@@ -69,7 +77,11 @@ public class ProgressBar : MonoBehaviour
         currPercent = float.IsNaN(percent) ? 0f : Mathf.Clamp01(percent);
         if (totalCount > 0) currCount = Mathf.RoundToInt(currPercent * totalCount);
         if (barImage != null && barImage.type == Image.Type.Filled) barImage.fillAmount = currPercent;
-        else if (Mask != null) Mask.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width * currPercent);
+        else if (Mask != null)
+        {
+            float fullWidth = fillBounds != null ? fillBounds.rect.width : width;
+            Mask.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0f, fullWidth) * currPercent);
+        }
         else if (Bar != null) Bar.localScale = new Vector3(originalScale.x * currPercent, originalScale.y, originalScale.z);
         string label = Style == TextStyle.Number
             ? string.Format(string.IsNullOrEmpty(formatStr) ? "{0}/{1}" : formatStr, currCount, totalCount)
