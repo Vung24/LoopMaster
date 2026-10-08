@@ -17,7 +17,7 @@ public sealed class EventRuntime : MonoBehaviour
         }
         Managers.Event = Ensure(Managers.Event);
         Managers.Pass = Ensure<BasePassManager, PassManager>(Managers.Pass);
-        Managers.StreakLine = Ensure<Snui.StreakLine.BaseStreakLineManager, StreakLineManager>(Managers.StreakLine);
+        Managers.StreakLine = Ensure<BaseStreakLineManager, StreakLineManager>(Managers.StreakLine);
         Managers.Lava = Ensure<Snui.Lava.BaseLavaManager, LavaManager>(Managers.Lava);
     }
 
@@ -36,7 +36,6 @@ public sealed class EventRuntime : MonoBehaviour
         Managers.Pass.EventBeforeEnterHome();
         Managers.StreakLine.EventBeforeEnterHome();
 		Managers.StreakLine.SynchronizeTempLevel();
-		Managers.StreakLine.SynchronizeTempViewLevel();
         Managers.Lava.EventBeforeEnterHome();
     }
 }

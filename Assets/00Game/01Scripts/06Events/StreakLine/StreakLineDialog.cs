@@ -32,6 +32,8 @@ namespace Snui.StreakLine
 		private bool _claimShown;
 		private StreakLineInfoDialog _infoDialog;
 		private bool Busy => _animating || _claiming || _infoShowing || _showingRewards;
+		public bool CanPlayPendingProgress => _started && !Busy && isActiveAndEnabled &&
+			_scrollAdapter != null && _scrollAdapter.IsInitialized;
 
 		public static UniTask<StreakLineDialog> Show(Transform parent) => EventPrefabUI.Show<StreakLineDialog>(parent, "StreakLineDialog");
 
@@ -183,6 +185,25 @@ namespace Snui.StreakLine
 			await _scrollAdapter.IncreaseToLevel(targetLevel, RiseCurve);
 			if (this == null || !isActiveAndEnabled) return;
 			await PlayBalloonRiseCompleted();
+		}
+
+		public async UniTask PlayPendingProgress()
+		{
+			if (!CanPlayPendingProgress || Managers.StreakLine == null) return;
+			_animating = true;
+			UpdateInteractions();
+			try
+			{
+				Managers.StreakLine.SynchronizeTempLevel();
+				if (Managers.StreakLine.GetTempViewLevel() > 0) await PlayBalloonRise();
+				if (this == null || !isActiveAndEnabled) return;
+				Managers.StreakLine.OnDetailShown();
+				RefreshClaimButton();
+			}
+			finally
+			{
+				if (this != null) { _animating = false; UpdateInteractions(); }
+			}
 		}
 
 		protected virtual void OnClickInfoButton()

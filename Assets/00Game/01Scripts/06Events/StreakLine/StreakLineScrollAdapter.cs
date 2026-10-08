@@ -52,6 +52,7 @@ namespace Snui.StreakLine
             else RefreshVisibleItems();
             UpdateBackground();
             if (focusCurrentLevel) FocusLevel(_displayLevel);
+            UpdateVisibleItemSiblingIndices();
         }
 
         public async UniTask IncreaseToLevel(int targetLevel, AnimationCurve curve)
@@ -123,10 +124,24 @@ namespace Snui.StreakLine
             return -_Params.ContentPadding.top - (_manager.GetChests().Count - index) * _Params.DefaultItemSize + progress * _Params.DefaultItemSize;
         }
 
+        public void UpdateVisibleItemSiblingIndices()
+        {
+            if (!IsInitialized) return;
+            for (int i = 0; i < VisibleItemsCount; i++)
+            {
+                var vh = GetItemViewsHolder(i);
+                if (vh != null && vh.root != null && vh.root.GetSiblingIndex() != i)
+                {
+                    vh.root.SetSiblingIndex(i);
+                }
+            }
+        }
+
         private void RefreshVisibleItems()
         {
             for (int i = 0; i < VisibleItemsCount; i++) GetItemViewsHolder(i).Cell.SetDisplayLevel(_displayLevel);
             UpdateBalloon();
+            UpdateVisibleItemSiblingIndices();
         }
 
         private void FocusLevel(float level)
@@ -140,6 +155,7 @@ namespace Snui.StreakLine
             float viewportPivot = Mathf.Clamp01(1f - 400f / (float)GetViewportSize());
             ScrollTo(chests.Count - 1 - index, viewportPivot, 1f - progress);
             UpdateBalloon();
+            UpdateVisibleItemSiblingIndices();
         }
 
         protected override StreakLineViewsHolder CreateViewsHolder(int itemIndex)
@@ -157,6 +173,7 @@ namespace Snui.StreakLine
         protected override void UpdateViewsHolder(StreakLineViewsHolder holder)
         {
             holder.Cell.Bind(_manager, GetItemsCount() - 1 - holder.ItemIndex, _displayLevel);
+            UpdateVisibleItemSiblingIndices();
         }
 
         protected override void OnBeforeRecycleOrDisableViewsHolder(StreakLineViewsHolder holder, int newItemIndex)
@@ -170,6 +187,7 @@ namespace Snui.StreakLine
             base.OnScrollPositionChanged(normalizedPosition);
             UpdateBackground();
             UpdateBalloon();
+            UpdateVisibleItemSiblingIndices();
         }
 
         private void UpdateBalloon()
