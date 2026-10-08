@@ -6,21 +6,14 @@ namespace Snui.Lava
 	public class LavaSettings : SingletonScriptableObject<LavaSettings>
 	{
 		[SerializeField] private GameObject _iconPrefab;
-		[SerializeField] private GameObject _openDialogPrefab;
-		[SerializeField] private GameObject _startDialogPrefab;
-		[SerializeField] private GameObject _detailDialogPrefab;
-		[SerializeField] private GameObject _winDialogPrefab;
-		[SerializeField] private GameObject _tipDialogPrefab;
-		[SerializeField] private GameObject _cdDialogPrefab;
 		[SerializeField] private GameObject _hintPrefab;
+		[SerializeField] private Sprite[] _avatarSprites;
+		[SerializeField] private Sprite _avatarFrameSprite;
 
 		public GameObject IconPrefab => _iconPrefab;
-		public GameObject OpenDialogPrefab => _openDialogPrefab;
-		public GameObject StartDialogPrefab => _startDialogPrefab;
-		public GameObject DetailDialogPrefab => _detailDialogPrefab;
-		public GameObject WinDialogPrefab => _winDialogPrefab;
-		public GameObject TipDialogPrefab => _tipDialogPrefab;
-		public GameObject CdDialogPrefab => _cdDialogPrefab;
 		public GameObject HintPrefab => _hintPrefab;
+		public Sprite AvatarFrameSprite => _avatarFrameSprite;
+		public Sprite GetAvatarSprite(int index) => _avatarSprites != null && _avatarSprites.Length > 0
+			? _avatarSprites[Mathf.Abs(index) % _avatarSprites.Length] : null;
 	}
 }

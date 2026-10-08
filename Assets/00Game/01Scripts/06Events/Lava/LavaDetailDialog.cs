@@ -29,7 +29,13 @@ namespace Snui.Lava
 		[SerializeField] protected Transform _tutorialNode;
 		[SerializeField] protected TMP_Text _titleText;
 
-		protected UniTaskCompletionSource _closeTcs;
+		protected readonly UniTaskCompletionSource _closeTcs = new UniTaskCompletionSource();
+		protected int _record;
+		protected int _remainingPlayers;
+		protected int _losePlayers;
+		protected bool _jumpPending;
+		protected bool _failed;
+		protected bool _timedOut;
 
 		public static UniTask<LavaDetailDialog> Show(Transform parent) => EventPrefabUI.Show<LavaDetailDialog>(parent, "LavaDetailDialog");
 
@@ -37,8 +43,7 @@ namespace Snui.Lava
 
 		public async UniTask WaitForCloseAsync()
 		{
-			_closeTcs = new UniTaskCompletionSource();
-			await _closeTcs.Task;
+			await _closeTcs.Task.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
 		}
 
 		protected virtual void Awake()
@@ -96,9 +101,29 @@ namespace Snui.Lava
 
 		protected virtual void Start()
 		{
+			if (Managers.Lava == null) return;
+			Managers.Lava.CheckEventState();
+			_record = Managers.Lava.GetRecord();
+			_remainingPlayers = Managers.Lava.GetRemainingPlayers();
+			_losePlayers = Managers.Lava.GetTempLosePlayers();
+			_jumpPending = Managers.Lava.ShouldPlayJumpAnim();
+			_timedOut = !Managers.Lava.IsWin() && Managers.Lava.IsExpired();
+			_failed = Managers.Lava.IsFail() && !_timedOut;
+			IsEventDone = _failed || _timedOut;
+			if (IsEventDone)
+			{
+				var info = _topNode != null ? HierarchyReferenceCache.Child(_topNode, "InfoBg") : null;
+				if (info != null) info.gameObject.SetActive(false);
+				if (_timer != null) _timer.gameObject.SetActive(false);
+			}
+			if (_continueBtn != null) _continueBtn.gameObject.SetActive(false);
+			if (_failNode != null) _failNode.gameObject.SetActive(false);
 			UpdateInfo();
 			InitPlane();
 			CreatePlayers();
+			// Cache presentation values before acknowledging the terminal state.
+			if (_timedOut) Managers.Lava.OnTimeOutShown();
+			else if (_failed) Managers.Lava.OnFailedShown();
 			StartAsync().Forget();
 		}
 
@@ -108,15 +133,14 @@ namespace Snui.Lava
 
 			if (_titleText != null)
 			{
-				I18nString title = Managers.Lava.GetTitleI18n();
-				_titleText.text = "LAVA";
+				_titleText.text = Managers.Lava.GetTitleKey() == "Lava-BouncyTitle" ? "BOUNCY CHALLENGE" : "LAVA";
 			}
 
 			if (_playerCountText != null)
 			{
-				_playerCountText.text = Managers.Lava.GetRemainingPlayers().ToString();
+				_playerCountText.text = _remainingPlayers.ToString();
 			}
-			if (_levelCountText != null) _levelCountText.text = $"{Managers.Lava.GetRecord()}/{Managers.Lava.GetLevelGoal()}";
+			if (_levelCountText != null) _levelCountText.text = $"{(_jumpPending ? Mathf.Max(0, _record - 1) : _record)}/{Managers.Lava.GetLevelGoal()}";
 			if (_descriptionText != null) _descriptionText.text = $"Win {Managers.Lava.GetLevelGoal()} levels to complete the challenge!";
 
 			if (_timer != null)
@@ -127,14 +151,14 @@ namespace Snui.Lava
 
 		public void InitPlane()
 		{
-			int record = Managers.Lava != null ? Managers.Lava.GetRecord() : 0;
+			int record = GetCurrPlaneIndex();
 			for (int i = 0; i < _planes.Count; i++)
 			{
 				LavaPlane plane = _planes[i];
 				if (plane != null)
 				{
-					plane.gameObject.SetActive(i >= record);
-					plane.Idle(i * 0.15f);
+					plane.gameObject.SetActive(i == 0 || i == _planes.Count - 1 || i >= record);
+					if (plane.gameObject.activeSelf) plane.Idle(i * 0.5f);
 				}
 			}
 		}
@@ -142,16 +166,19 @@ namespace Snui.Lava
 		public void CreatePlayers()
 		{
 			if (Managers.Lava == null) return;
-			int record = Managers.Lava.GetRecord();
+			int record = GetCurrPlaneIndex();
 			if (_players.Count == 0 && _playerPrefab != null && _playerNode != null)
 			{
 				_playerNode.gameObject.SetActive(true);
 				// Native CreatePlayers uses the authored player prefab: self plus at most nine opponents.
-				int count = Mathf.Min(10, Managers.Lava.GetRemainingPlayers());
+				int count = Mathf.Min(10, _remainingPlayers);
 				for (int i = 0; i < count; i++)
 				{
 					var player = Instantiate(_playerPrefab, _playerNode, false).GetComponent<LavaPlayer>();
 					player.IsUser = i == 0;
+					LavaPlayer.SetDisplayAvatar(player.transform, i);
+					player.Avatar?.SetAvatar(i == 0 ? Snui.Profile.AccountManager.GetDisplayUserInfo()
+						: new Snui.Profile.PlayerInfo { Avatar = "avatar_" + (i + 1), AvatarFrame = "default" });
 					player.transform.localScale = Vector3.one * (i == 0 ? 1.1f : 0.9f);
 					if (i == 0) _userPlayer = player;
 					else player.transform.SetAsFirstSibling();
@@ -167,7 +194,7 @@ namespace Snui.Lava
 					Vector3 pos = i == 0 ? Vector3.zero : Managers.Lava.GetAvatarPosition(i - 1);
 					if (record < _planes.Count && _planes[record] != null)
 					{
-						Transform top = _planes[record].GetTopNode() ?? _planes[record].GetPlaneNode();
+						Transform top = _planes[record].GetPlaneNode() ?? _planes[record].transform;
 						if (top != null)
 						{
 							pos += player.transform.parent.InverseTransformPoint(top.position);
@@ -181,44 +208,58 @@ namespace Snui.Lava
 		public virtual async UniTaskVoid StartAsync()
 		{
 			IsPlayAnimation = true;
-
-			if (Managers.Lava != null)
+			SetButtonsInteractable(false);
+			try
 			{
-				if (Managers.Lava.ShouldPlayStartAnim())
+				if (!IsEventDone && Managers.Lava.ShouldPlayStartAnim())
 				{
-					await LavaStartDialogContent.Show(transform.parent);
+					await LavaStartDialogContent.ShowWithDialog(transform.parent)
+						.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
 				}
 
-				if (Managers.Lava.ShouldPlayJumpAnim())
+				if (_jumpPending || _failed)
 				{
 					await PlayPlayersJumpAnimation();
 					await PlayFallAnimation();
-					await ShowRecordAddAnim();
-					Managers.Lava.SynchronizeTempPlayer();
+					if (_jumpPending)
+					{
+						Managers.Lava.SynchronizeTempPlayer();
+						await ShowRecordAddAnim();
+					}
 				}
 
 				if (Managers.Lava.ShouldClaimRewards())
 				{
-					await LavaWinDialogContent.Show(transform.parent);
+					await LavaWinDialogContent.ShowWithDialog(transform.parent)
+						.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
 					IsEventDone = true;
 					ExitDialog();
 					return;
 				}
 
-				if (Managers.Lava.ShouldShowFailDialog())
+				if (IsEventDone)
 				{
 					await ShowFailNode();
-					Managers.Lava.OnFailedShown();
-					IsEventDone = true;
-					ExitDialog();
-					return;
 				}
-
-				await ShowTutorialIfNeeded();
+				else await ShowTutorialIfNeeded();
+				ShowContinue();
 			}
+			catch (System.OperationCanceledException) { }
+			finally
+			{
+				if (this != null)
+				{
+					IsPlayAnimation = false;
+					SetButtonsInteractable(true);
+				}
+			}
+		}
 
-			ShowContinue();
-			IsPlayAnimation = false;
+		private void SetButtonsInteractable(bool enabled)
+		{
+			if (_tipBtn != null) _tipBtn.interactable = enabled;
+			if (_closeBtn != null) _closeBtn.interactable = enabled;
+			if (_continueBtn != null) _continueBtn.interactable = enabled;
 		}
 
 		public void ShowContinue()
@@ -238,7 +279,7 @@ namespace Snui.Lava
 
 			if (nextIndex < _planes.Count && _planes[nextIndex] != null)
 			{
-				Transform topNode = _planes[nextIndex].GetTopNode() ?? _planes[nextIndex].GetPlaneNode() ?? _planes[nextIndex].transform;
+				Transform topNode = _planes[nextIndex].GetPlaneNode() ?? _planes[nextIndex].transform;
 				Vector3 targetBase = _playerNode != null ? _playerNode.InverseTransformPoint(topNode.position) : topNode.localPosition;
 
 				for (int i = 0; i < _players.Count; i++)
@@ -251,7 +292,7 @@ namespace Snui.Lava
 						player.DOJump(targetPos, 80f, 1, 0.45f).SetLink(player.gameObject);
 					}
 				}
-				await UniTask.Delay(500);
+				await UniTask.Delay(500, cancellationToken: this.GetCancellationTokenOnDestroy());
 				_planes[nextIndex].Hit();
 			}
 		}
@@ -267,6 +308,8 @@ namespace Snui.Lava
 			{
 				_playerCountText.text = Managers.Lava.GetRemainingPlayers().ToString();
 			}
+			if (_levelCountText != null && Managers.Lava != null)
+				_levelCountText.text = $"{_record}/{Managers.Lava.GetLevelGoal()}";
 			await UniTask.CompletedTask;
 		}
 
@@ -274,9 +317,22 @@ namespace Snui.Lava
 		{
 			if (_failNode != null)
 			{
+				var fail = HierarchyReferenceCache.Child(_failNode, "FailDesc");
+				var timeout = HierarchyReferenceCache.Child(_failNode, "TimeOutDesc");
+				if (fail != null) fail.gameObject.SetActive(_failed);
+				if (timeout != null) timeout.gameObject.SetActive(_timedOut);
 				_failNode.gameObject.SetActive(true);
-				_failNode.DOScale(1f, 0.3f).SetEase(Ease.OutBack).SetLink(_failNode.gameObject);
-				await UniTask.Delay(1500);
+				var group = _failNode.GetComponent<CanvasGroup>() ?? _failNode.gameObject.AddComponent<CanvasGroup>();
+				group.alpha = 0f;
+				group.DOFade(1f, 0.3f).SetLink(_failNode.gameObject);
+				await UniTask.Delay(300, cancellationToken: this.GetCancellationTokenOnDestroy());
+				Transform description = _timedOut ? timeout : fail;
+				if (description != null)
+				{
+					description.localScale = Vector3.zero;
+					description.DOScale(1f, 0.3f).SetEase(Ease.OutBack).SetLink(gameObject);
+					await UniTask.Delay(300, cancellationToken: this.GetCancellationTokenOnDestroy());
+				}
 			}
 		}
 
@@ -294,35 +350,44 @@ namespace Snui.Lava
 			if (_tutorialNode != null)
 			{
 				_tutorialNode.gameObject.SetActive(true);
-				await UniTask.Delay(1000);
+				await UniTask.Delay(1000, cancellationToken: this.GetCancellationTokenOnDestroy());
 				_tutorialNode.gameObject.SetActive(false);
 			}
 		}
 
-		public int GetCurrPlaneIndex() => Managers.Lava != null ? Managers.Lava.GetRecord() : 0;
-		public int GetNextPlaneIndex() => GetCurrPlaneIndex() + 1;
-		public LavaPlane GetCurrPlane() => GetCurrPlaneIndex() < _planes.Count ? _planes[GetCurrPlaneIndex()] : null;
-		public LavaPlane GetNextPlane() => GetNextPlaneIndex() < _planes.Count ? _planes[GetNextPlaneIndex()] : null;
+		public int GetCurrPlaneIndex() => Mathf.Clamp(_record - (_jumpPending && !_failed ? 1 : 0), 0, Mathf.Max(0, _planes.Count - 1));
+		public int GetNextPlaneIndex() => Mathf.Clamp(_record + (_failed ? 1 : 0), 0, Mathf.Max(0, _planes.Count - 1));
+		public LavaPlane GetCurrPlane() => _planes.Count > 0 ? _planes[GetCurrPlaneIndex()] : null;
+		public LavaPlane GetNextPlane() => _planes.Count > 0 ? _planes[GetNextPlaneIndex()] : null;
 
 		private void OnClickTipButton()
 		{
+			if (IsPlayAnimation) return;
 			LavaTipDialogContent.Show(transform.parent).Forget();
 		}
 
 		private void OnClickCloseButton()
 		{
+			if (IsPlayAnimation) return;
 			ExitDialog();
 		}
 
 		private void OnClickContinueButton()
 		{
+			if (IsPlayAnimation) return;
 			ExitDialog();
 		}
 
 		public void ExitDialog()
 		{
+			gameObject.SetActive(false);
 			_closeTcs?.TrySetResult();
 			Destroy(gameObject);
+		}
+
+		protected virtual void OnDestroy()
+		{
+			_closeTcs.TrySetResult();
 		}
 	}
 }
