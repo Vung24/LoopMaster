@@ -32,11 +32,11 @@ public class FailDialogContent : DialogContent
 	{
 		base.Awake();
 		if (_safeArea == null) _safeArea = HierarchyReferenceCache.Child(transform, "SafeArea");
-		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdButton");
-		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinButton");
-		_coinOnlyBtn = _coinOnlyBtn != null ? _coinOnlyBtn : RecoveryDialogUI.ResolveButton(transform, "CoinOnlyButton");
-		_freeBtn = _freeBtn != null ? _freeBtn : RecoveryDialogUI.ResolveButton(transform, "FreeButton");
-		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.ResolveButton(transform, "CloseButton");
+		_adBtn = _adBtn != null ? _adBtn : DialogUI.ResolveButton(transform, "AdButton");
+		_coinBtn = _coinBtn != null ? _coinBtn : DialogUI.ResolveButton(transform, "CoinButton");
+		_coinOnlyBtn = _coinOnlyBtn != null ? _coinOnlyBtn : DialogUI.ResolveButton(transform, "CoinOnlyButton");
+		_freeBtn = _freeBtn != null ? _freeBtn : DialogUI.ResolveButton(transform, "FreeButton");
+		_closeBtn = _closeBtn != null ? _closeBtn : DialogUI.ResolveButton(transform, "CloseButton");
 		if (_coinNumberTmpText == null && _coinNumberText == null && _coinBtn != null)
 		{
 			Transform numNode = HierarchyReferenceCache.Descendant(_coinBtn.transform, "Number");
@@ -70,10 +70,10 @@ public class FailDialogContent : DialogContent
 	}
 	public void BindFallbackOffers()
 	{
-		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdButton");
-		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinButton");
-		RecoveryDialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
-		RecoveryDialogUI.Bind(_coinBtn, OnClickCoinButton);
+		_adBtn = _adBtn != null ? _adBtn : DialogUI.ResolveButton(transform, "AdButton");
+		_coinBtn = _coinBtn != null ? _coinBtn : DialogUI.ResolveButton(transform, "CoinButton");
+		DialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
+		DialogUI.Bind(_coinBtn, OnClickCoinButton);
 	}
 	public override void Show()
 	{
@@ -120,16 +120,16 @@ public class FailDialogContent : DialogContent
 		if (_freeBtn != null)
 		{
 			_freeBtn.gameObject.SetActive(_isFreeRevive);
-			RecoveryDialogUI.HideNamed(_freeBtn.transform, "TipCoin");
-			RecoveryDialogUI.HideNamed(_freeBtn.transform, "TipAd");
+			DialogUI.HideNamed(_freeBtn.transform, "TipCoin");
+			DialogUI.HideNamed(_freeBtn.transform, "TipAd");
 			SetButtonLabel(_freeBtn, "FREE");
 		}
 		if (_adBtn != null)
 		{
 			_adBtn.gameObject.SetActive(!_isFreeRevive || _freeBtn == null);
-			RecoveryDialogUI.HideNamed(_adBtn.transform, "Ad");
-			RecoveryDialogUI.HideNamed(_adBtn.transform, "Image");
-			RecoveryDialogUI.HideNamed(_adBtn.transform, "TipAd");
+			DialogUI.HideNamed(_adBtn.transform, "Ad");
+			DialogUI.HideNamed(_adBtn.transform, "Image");
+			DialogUI.HideNamed(_adBtn.transform, "TipAd");
 			SetButtonLabel(_adBtn, "FREE");
 		}
 		if (_coinBtn != null)
@@ -137,7 +137,7 @@ public class FailDialogContent : DialogContent
 			_coinBtn.gameObject.SetActive(!_isFreeRevive || _freeBtn == null);
 			if (_coinNumberTmpText != null) _coinNumberTmpText.text = RevivePrice.ToString();
 			else if (_coinNumberText != null) _coinNumberText.text = RevivePrice.ToString();
-			else RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Number"), RevivePrice.ToString());
+			else DialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Number"), RevivePrice.ToString());
 		}
 		SetUnavailable(_coinOnlyBtn);
 		if (_addPathNode != null) _addPathNode.gameObject.SetActive(true);
@@ -194,7 +194,7 @@ public class FailDialogContent : DialogContent
 	{
 		if (button == null) return;
 		Transform content = HierarchyReferenceCache.Child(button.transform, "Content") ?? button.transform;
-		RecoveryDialogUI.Label(content, label);
+		DialogUI.Label(content, label);
 		foreach (TMP_Text text in content.GetComponentsInChildren<TMP_Text>(true))
 		{
 			text.enableAutoSizing = true;

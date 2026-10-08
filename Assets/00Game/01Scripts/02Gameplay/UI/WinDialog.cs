@@ -75,8 +75,9 @@ public class WinDialog : MonoBehaviour
 			if (_mask != null) _maskFade = _mask.DOFade(0.98f, 0.1f).SetUpdate(true);
 			_canSkip = true;
 			_logoDialogContent.PlayLogoAnimation();
-			while (_logoDialogContent != null && _logoDialogContent.gameObject.activeSelf &&
-				_logoDialogContent.Result == Snui.DialogContent.RESULT_UNKNOWN) yield return null;
+			// Dismiss releases the result when the mascot starts, while its animation
+			// continues. Keep rewards and claim input hidden until it finishes or skips.
+			while (_logoDialogContent != null && _logoDialogContent.gameObject.activeSelf) yield return null;
 		}
 		else
 		{

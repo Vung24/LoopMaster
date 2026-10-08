@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -30,9 +29,9 @@ public class GameController : MonoBehaviour
 	public GameData Data { get; private set; }
 	public GameObject UICanvasObjAsset;
 	public GameObject UICanvasLightObjAsset;
-	public GameObject WinDialogPrefab;
-	public GameObject FailDialogPrefab;
-	public GameObject FailDialogContentPrefab;
+	public string WinDialogAddress = "WinDialog";
+	public string FailDialogAddress = "FailDialog";
+	public string FailDialogContentAddress = "FailDialogContent";
 	public TMP_FontAsset FallbackUIFontAsset;
 	[HideInInspector] public bool IsGameOver;
 	[HideInInspector] public bool IsGameFailed;
@@ -43,8 +42,8 @@ public class GameController : MonoBehaviour
 	public int RoadMaxCapacity => Data == null ? 0 : Data.GetTransferMaxGroup();
 	public int RoadAvailableCapacity => Data == null ? 0 : Data.GetTransferAvailableGroup();
 	public int CurrentLevelNumber => Data == null ? -1 : Data.GetPuzzleActualLevel();
-	public bool IsGameplayActive => Time.timeScale > 0f && _buyToolDialog == null && _isGameStart && Data != null && EndState == GameEndState.Playing && !IsUsingBooster && !_isShowingLevelIntro;
-	public bool IsLevelIntroPlaying => _isShowingLevelIntro;
+	public bool IsGameplayActive => Time.timeScale > 0f && !IsBoosterShopOpen && _isGameStart && Data != null && EndState == GameEndState.Playing && !IsUsingBooster && !IsLevelIntroPlaying;
+	public bool IsLevelIntroPlaying => _presentation != null && _presentation.IsPlaying;
 	public bool IsSpeedUpActive => _conveyorFlow != null && _conveyorFlow.IsSpeedUpActive;
 	public bool IsFinishAnimationPlaying => Scene.Boxes.Any(box => box != null && box.IsFinishAnimationPlaying);
 	public float SliceJumpTimeScale => GameplayFeedbackRules.GetTransferTimeScale(IsSpeedUpActive);
@@ -53,12 +52,12 @@ public class GameController : MonoBehaviour
 	public bool CanUseUndoTool => Boosters.CanUseUndo;
 	public bool CanUseShuffleTool => Boosters.CanUseShuffle;
 	public bool CanUsePathTool => Boosters.CanUsePath;
-	public bool CanRequestUndoTool => _buyToolDialog == null && Boosters.CanRequestUndo;
-	public bool CanRequestShuffleTool => _buyToolDialog == null && Boosters.CanRequestShuffle;
-	public bool CanRequestPathTool => _buyToolDialog == null && Boosters.CanRequestPath;
+	public bool CanRequestUndoTool => !IsBoosterShopOpen && Boosters.CanRequestUndo;
+	public bool CanRequestShuffleTool => !IsBoosterShopOpen && Boosters.CanRequestShuffle;
+	public bool CanRequestPathTool => !IsBoosterShopOpen && Boosters.CanRequestPath;
 	public bool CanRevive => Data != null && Data.PathPoints.Count > 1 &&
 		EndState == GameEndState.Failed && !_isTransitioningLevel;
-	public bool IsFailTutorial() => PlayerPrefs.GetInt("offline_HasShowFailTutorial", 0) == 0;
+	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && PlayerPrefs.GetInt("offline_HasShowFailTutorial", 0) == 0;
 	public bool CanReplayLevel => Data != null && !_isTransitioningLevel && EndState != GameEndState.Won && !GameProgressStore.IsLevelCompleted(CurrentLevelNumber);
 	public bool CanLoadNextLevel => EndState == GameEndState.Won && !_isTransitioningLevel &&
 		_levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber);
@@ -80,7 +79,7 @@ public class GameController : MonoBehaviour
 	private float _comboTime;
 	private BoosterFlow _boosterFlow;
 	private BoosterFlow Boosters => _boosterFlow ?? (_boosterFlow = new BoosterFlow(
-		this, Scene.Boxes, GetBox, () => _buyToolDialog == null && _isGameStart && EndState == GameEndState.Playing && !_isShowingLevelIntro,
+		this, Scene.Boxes, GetBox, () => !IsBoosterShopOpen && _isGameStart && EndState == GameEndState.Playing && !IsLevelIntroPlaying,
 		IsGameplaySettled, RefreshPathState, RefreshGameplayAfterOperation, PlayBoosterAudio));
 	private bool IsUsingBooster => _boosterFlow != null && _boosterFlow.IsBusy;
 	private bool _isTransitioningLevel;
@@ -110,10 +109,15 @@ public class GameController : MonoBehaviour
 	}
 	private GameLevelFlow _levelFlow;
 	private ConveyorFlow _conveyorFlow;
+	private bool IsFailureConveyorActive => Time.timeScale > 0f && Data != null &&
+		EndState == GameEndState.Failed && IsGameFailed && !IsGameOver &&
+		Data != _abandonedStreakData && !_isTransitioningLevel;
+	private bool CanTickConveyor => (IsGameplayActive && !IsGameOver && !IsGameFailed) ||
+		IsFailureConveyorActive;
 	private ConveyorFlow Conveyor => _conveyorFlow ?? (_conveyorFlow = new ConveyorFlow(
 		Scene.Boxes, Scene.Roads, Scene.PathArrows,
-		() => _isGameStart && Data != null && !IsGameOver && !IsGameFailed && !IsUsingBooster && !_isShowingLevelIntro,
-		slice => Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight), CheckGameOver));
+		() => CanTickConveyor,
+		slice => IsGameplayActive && Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight), CheckGameOver));
 	private SliceTransferFlow _sliceTransferFlow;
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
 		this, Scene.Boxes, () => _isGameStart, () => Conveyor.LaunchTickCount,
@@ -138,17 +142,17 @@ public class GameController : MonoBehaviour
 	private bool _cameraLayoutReady;
 	private bool _cameraLayoutPending;
 	private GameObject _uiCanvasInstance;
-	private NewPlayerTutorial _newPlayerTutorial;
-	private FeatureUnlockDialog _featureUnlockDialog;
-	private LevelDifficultyPanel _difficultyPanel;
-	private Snui.Dialog _speedTutorialDialog;
-	private CancellationTokenSource _levelPresentation;
-	private bool _isShowingLevelIntro;
-	private BuyToolDialog _buyToolDialog;
+	private GameLevelPresentationFlow _presentation;
+	private GameLevelPresentationFlow Presentation => _presentation ?? (_presentation =
+		new GameLevelPresentationFlow(this, _gameLoader, () => _enableSpeedUpTutorial));
+	private GameBoosterUIFlow _boosterUI;
+	private GameBoosterUIFlow BoosterUI => _boosterUI ?? (_boosterUI = new GameBoosterUIFlow(this));
+	private bool IsBoosterShopOpen => _boosterUI != null && _boosterUI.IsOpen;
 	[SerializeField] private bool _enableSpeedUpTutorial = true;
 
 	private void Awake()
 	{
+		EventRuntime.EnsureInitialized();
 		SpecialStreakManager.Ensure();
 		LevelBoxManager.EnsureInitialized();
 		Current = this;
@@ -173,11 +177,14 @@ public class GameController : MonoBehaviour
 			UICanvas ui = _uiCanvasInstance.GetComponent<UICanvas>();
 			if (ui != null) ui.Bind(this);
 		}
-		GameResultUI.Ensure(this, WinDialogPrefab, FailDialogPrefab, FailDialogContentPrefab);
+		GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
 	}
 
 	private void Start()
 	{
+		int requestedCheatLevel = Snui.CheatManager.RequestedLevel;
+		Snui.CheatManager.RequestedLevel = 0;
+		if (requestedCheatLevel > 0 && TryCheatLoadLevel(requestedCheatLevel)) return;
 #if UNITY_EDITOR
 		GameData draft = EditorPlaytestSource?.Invoke();
 		if (draft != null) { InitializeEditorPlaytest(draft); return; }
@@ -205,8 +212,8 @@ public class GameController : MonoBehaviour
 		if (data == null) return;
 		if (!editorPlaytest && GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(Data); return; }
 		GameData.SetCurrent(data);
-		CancelBuyToolDialog();
-		CancelLevelPresentation();
+		_boosterUI?.Cancel();
+		_presentation?.Cancel();
 		StopAllCoroutines();
 		if (Data != data)
 		{
@@ -214,7 +221,9 @@ public class GameController : MonoBehaviour
 			_winRewardCoins = 0;
 			_winRewardClaimed = false;
 		}
+		bool enteringEventLevel = Data != data && !editorPlaytest;
 		Data = data;
+		if (enteringEventLevel) Managers.Event?.DispatchEvent("OnEnterGame");
 		Data.ConfigureRoadSpacing(_sliceSpacingScale);
 		Data.DifferentColorSliceSpacing = 1;
 		if (_levelFlow == null)
@@ -245,17 +254,20 @@ public class GameController : MonoBehaviour
 		EndState = GameEndState.Playing;
 		GameProgressStore.RecordStarted(CurrentLevelNumber);
 		LevelStarted?.Invoke(CurrentLevelNumber);
-		if (Data == data && EndState == GameEndState.Playing) ShowLevelPresentation(data).Forget();
+		if (Data == data && EndState == GameEndState.Playing) Presentation.Play(data, _uiCanvasInstance, Scene.Boxes).Forget();
 	}
 
 	private void Update()
 	{
-		if (!IsGameplayActive) return;
+		if (!IsGameplayActive && !IsFailureConveyorActive) return;
 		float delta = Time.deltaTime;
-		Data.Duration += delta;
-		GameplayFeedbackRules.AdvanceCombo(ref ComboInCount, ref _comboTime, delta);
+		if (IsGameplayActive)
+		{
+			Data.Duration += delta;
+			GameplayFeedbackRules.AdvanceCombo(ref ComboInCount, ref _comboTime, delta);
+		}
 		Conveyor.Tick(delta, GetTickInterval(false), GetTickInterval(true));
-		HandleTouchEvent();
+		if (IsGameplayActive) HandleTouchEvent();
 	}
 
 	private void ResolveGameplayCameras()
@@ -314,8 +326,8 @@ public class GameController : MonoBehaviour
 		if (!IsGameplayActive || box == null || box.Info == null ||
 			box.Info.State != BoxState.Free || !box.CanPopupSlice()) return;
 		Transfers.Launch(box, _sliceJumpDuration, _sliceJumpHeight);
-		if (_newPlayerTutorial != null && _uiCanvasInstance != null)
-			_newPlayerTutorial.OnClickBox(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvasInstance.GetComponent<UICanvas>()?.CapacityNode);
+		if (_presentation != null && _uiCanvasInstance != null)
+			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvasInstance.GetComponent<UICanvas>()?.CapacityNode);
 	}
 
 
@@ -439,7 +451,7 @@ public class GameController : MonoBehaviour
 
 	public void SetSpeedUp(bool speedUp)
 	{
-		bool next = speedUp && Data != null && EndState == GameEndState.Playing && !_isShowingLevelIntro;
+		bool next = speedUp && Data != null && EndState == GameEndState.Playing && !IsLevelIntroPlaying;
 		bool previous = IsSpeedUpActive;
 		Conveyor.SetSpeedUp(next);
 		if (previous != next)
@@ -514,6 +526,8 @@ public class GameController : MonoBehaviour
 
 	private float GetTickInterval(bool speedUp = false)
 	{
+		if (_conveyorFlow != null && _conveyorFlow.IsFailureSlowdownActive)
+			return _conveyorFlow.FailureTickInterval;
 		return GameplayFeedbackRules.GetConveyorInterval(_conveyorTickInterval, speedUp, _sliceSpacingScale);
 	}
 
@@ -541,6 +555,29 @@ public class GameController : MonoBehaviour
 	public void CheatWin()
 	{
 		GameOver();
+	}
+
+	public void CancelCheatTutorials() => _presentation?.Cancel();
+
+	public bool TryCheatLoadLevel(int level)
+	{
+		if (level < 1 || _isTransitioningLevel || IsUsingBooster) return false;
+		var asset = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName)?.GetLevel(level);
+		if (asset == null) return false;
+		GameData previous = GameData.Current;
+		try
+		{
+			var data = GameLevelDataConverter.FromJson(asset.text, level);
+			// Explicit cheat entry permits replaying completed levels without deleting progress.
+			Initialize(data, true);
+			return Data == data;
+		}
+		catch (System.Exception exception)
+		{
+			GameData.SetCurrent(previous);
+			Debug.LogException(exception);
+			return false;
+		}
 	}
 
 #if UNITY_EDITOR
@@ -654,6 +691,7 @@ public class GameController : MonoBehaviour
 		{
 			_abandonedStreakData = Data;
 			SpecialStreakManager.Ensure().OnGameFailed();
+			Managers.Event?.DispatchEvent("OnGameFail");
 		}
 	}
 	public bool TryReturnHome()
@@ -692,24 +730,7 @@ public class GameController : MonoBehaviour
 
 	private void RequestTool(string key, bool canRequest, System.Func<bool> use)
 	{
-		if (!canRequest) return;
-		if (InventoryManager.Ensure().GetAmount(key) > 0) { use(); return; }
-		GameData data = Data;
-		GameResultUI resultUI = GetComponent<GameResultUI>();
-		Transform parent = resultUI == null ? null : resultUI.DialogParent;
-		_buyToolDialog = BuyToolDialog.Open(key, parent, () => this != null && Data == data &&
-			EndState == GameEndState.Playing && !_isTransitioningLevel);
-		if (_buyToolDialog == null) return;
-		_buyToolDialog.Closed += result =>
-		{
-			_buyToolDialog = null;
-			// Native PrepareUsedTool returns false after opening the dialog. The next tap uses the new count.
-		};
-	}
-	private void CancelBuyToolDialog()
-	{
-		if (_buyToolDialog != null) _buyToolDialog.Cancel();
-		_buyToolDialog = null;
+		BoosterUI.Request(key, canRequest, use);
 	}
 
 	public bool TryRevive(string way = "free", string route = "pre_fail")
@@ -722,167 +743,27 @@ public class GameController : MonoBehaviour
 		IsGameOver = false;
 		EndState = GameEndState.Playing;
 		_isGameStart = true;
+		_conveyorFlow?.EndFailureSlowdown();
 		RefreshPathState();
 		GameRevived?.Invoke();
 		return true;
 	}
 	public void Revive(string way, string route) => TryRevive(way, route);
 
-	private async UniTask ShowLevelPresentation(GameData data)
-	{
-		if (_uiCanvasInstance == null || !_isGameStart) return;
-		var lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
-		_levelPresentation = lifetime;
-		try
-		{
-			await ShowFeatureTutorial(lifetime.Token);
-			lifetime.Token.ThrowIfCancellationRequested();
-			GameObject prefab = data.GetHardLevel() == HardLevel.Hard ? _gameLoader.LevelHardPanel :
-				data.GetHardLevel() == HardLevel.VeryHard ? _gameLoader.LevelExpertPanel : null;
-			if (prefab != null)
-			{
-				_isShowingLevelIntro = true;
-				GameObject instance = Instantiate(prefab, _uiCanvasInstance.transform, false);
-				_difficultyPanel = instance.GetComponent<LevelDifficultyPanel>();
-				if (_difficultyPanel != null)
-				{
-					Snui.Snui_Text.EnsureFontAssets(instance.transform);
-					await _difficultyPanel.Play(lifetime.Token);
-				}
-				else Destroy(instance);
-				_difficultyPanel = null;
-			}
-			lifetime.Token.ThrowIfCancellationRequested();
-			CheckNewPlayerTutorial();
-			await CheckSpeedUpTutorial(lifetime.Token);
-		}
-		catch (System.OperationCanceledException) when (lifetime.IsCancellationRequested) { }
-		finally
-		{
-			if (_levelPresentation == lifetime)
-			{
-				_levelPresentation = null;
-				_isShowingLevelIntro = false;
-			}
-			lifetime.Dispose();
-		}
-	}
-
-	public FeatureType IsFeatureTutorial() => FeatureUnlockDialog.GetUnseenFeature(Data,
-		(FeatureType)PlayerPrefs.GetInt("offline_FeatureTutorialState", 0));
-
-	private async UniTask ShowFeatureTutorial(CancellationToken token)
-	{
-		FeatureType feature = IsFeatureTutorial();
-		if (feature == FeatureType.None || _gameLoader.FeatureUnlockDialogPrefab == null) return;
-		GameObject instance = Instantiate(_gameLoader.FeatureUnlockDialogPrefab, _uiCanvasInstance.transform, false);
-		FeatureUnlockDialog dialog = instance.GetComponent<FeatureUnlockDialog>();
-		if (dialog == null) { Destroy(instance); return; }
-		_featureUnlockDialog = dialog;
-		_isShowingLevelIntro = true;
-		// Native CheckFeatureTutorial records the flag when the prompt is shown.
-		PlayerPrefs.SetInt("offline_FeatureTutorialState",
-			PlayerPrefs.GetInt("offline_FeatureTutorialState", 0) | (int)feature);
-		PlayerPrefs.Save();
-		dialog.Init(feature);
-		await UniTask.WaitUntil(() => dialog == null || !dialog.gameObject.activeInHierarchy, cancellationToken: token);
-		if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
-	}
-
-	private void CheckNewPlayerTutorial()
-	{
-		int stage = GameProgressStore.HighestUnlockedLevel;
-		if (stage < 1 || stage > 3 || _gameLoader.NewPlayerTutorialPrefab == null) return;
-		GameObject instance = Instantiate(_gameLoader.NewPlayerTutorialPrefab, _uiCanvasInstance.transform, false);
-		_newPlayerTutorial = instance.GetComponent<NewPlayerTutorial>();
-		if (_newPlayerTutorial == null) { Destroy(instance); return; }
-		_newPlayerTutorial.Initialize(stage);
-		if (stage == 1)
-		{
-			Vector2 position = Vector2.zero;
-			Box target = Scene.Boxes.Count > 1 ? Scene.Boxes[1] : Scene.Boxes.FirstOrDefault();
-			Canvas canvas = _uiCanvasInstance.GetComponent<Canvas>();
-			Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-			if (target != null && _mainCamera != null)
-				RectTransformUtility.ScreenPointToLocalPointInRectangle(instance.transform as RectTransform,
-					_mainCamera.WorldToScreenPoint(target.transform.position), uiCamera, out position);
-			_newPlayerTutorial.ShowLevel1(position);
-		}
-		else if (stage == 2) _newPlayerTutorial.ShowLevel2();
-	}
-
-	private bool ShouldShowSpeedUpTutorial()
-	{
-		// The offline game exposes the speed control that was gated by native test group B.
-		return _enableSpeedUpTutorial && GameProgressStore.HighestUnlockedLevel >= 5 &&
-			PlayerPrefs.GetInt("offline_HasShowSpeedUpTutorial", 0) == 0;
-	}
-
-	private async UniTask CheckSpeedUpTutorial(CancellationToken token)
-	{
-		Snui.RecoveryPrefabLibrary library = Snui.RecoveryPrefabLibrary.Current;
-		if (!ShouldShowSpeedUpTutorial() || library == null ||
-			library.DialogPrefab == null || library.SpeedUpTutorialPrefab == null) return;
-		_isShowingLevelIntro = true;
-		SpeedUpTutorialDialogContent content = await SpeedUpTutorialDialogContent.Show(_uiCanvasInstance.transform);
-		Snui.Dialog dialog = content.GetComponentInParent<Snui.Dialog>();
-		_speedTutorialDialog = dialog;
-		PlayerPrefs.SetInt("offline_HasShowSpeedUpTutorial", 1);
-		PlayerPrefs.Save();
-		try
-		{
-			await UniTask.WaitUntil(() => content == null || content.Result != Snui.DialogContent.RESULT_UNKNOWN ||
-				!content.gameObject.activeInHierarchy, cancellationToken: token);
-		}
-		finally
-		{
-			if (dialog != null)
-			{
-				dialog.gameObject.SetActive(false);
-				Destroy(dialog.gameObject);
-			}
-			if (_speedTutorialDialog == dialog) _speedTutorialDialog = null;
-		}
-	}
-
-	private void CancelLevelPresentation()
-	{
-		CancellationTokenSource lifetime = _levelPresentation;
-		_levelPresentation = null;
-		lifetime?.Cancel();
-		_isShowingLevelIntro = false;
-		if (_featureUnlockDialog != null)
-		{
-			_featureUnlockDialog.gameObject.SetActive(false);
-			Destroy(_featureUnlockDialog.gameObject);
-		}
-		_featureUnlockDialog = null;
-		if (_newPlayerTutorial != null) _newPlayerTutorial.CancelAndDismiss();
-		_newPlayerTutorial = null;
-		if (_difficultyPanel != null)
-		{
-			_difficultyPanel.gameObject.SetActive(false);
-			Destroy(_difficultyPanel.gameObject);
-		}
-		_difficultyPanel = null;
-		if (_speedTutorialDialog != null)
-		{
-			_speedTutorialDialog.gameObject.SetActive(false);
-			Destroy(_speedTutorialDialog.gameObject);
-		}
-		_speedTutorialDialog = null;
-	}
+	public FeatureType IsFeatureTutorial() => Presentation.IsFeatureTutorial();
 
 	private void CompleteGame(GameEndState state)
 	{
 		if (state == GameEndState.Playing || EndState != GameEndState.Playing) return;
-		CancelBuyToolDialog();
-		CancelLevelPresentation();
+		_boosterUI?.Cancel();
+		_presentation?.Cancel();
 		EndState = state;
 		IsGameOver = state == GameEndState.Won;
 		IsGameFailed = state == GameEndState.Failed;
 		_isGameStart = false;
-		_conveyorFlow?.SetSpeedUp(false);
+		SetSpeedUp(false);
+		if (state == GameEndState.Failed)
+			Conveyor.BeginFailureSlowdown(GetTickInterval(false));
 		ComboInCount = 0;
 		_comboTime = 0f;
 		_boosterFlow?.Cancel();
@@ -912,7 +793,14 @@ public class GameController : MonoBehaviour
 			}
 			LevelBoxManager.EnsureInitialized();
 			SpecialStreakManager.Ensure().OnGameWon(CurrentLevelNumber);
-			GameProgressStore.RecordWin(CurrentLevelNumber, _levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber));
+			// Offline events award one progress unit per newly completed campaign level.
+			if (!GameProgressStore.IsLevelCompleted(CurrentLevelNumber))
+				Managers.Event?.DispatchEvent("OnGameWin", new System.Collections.Generic.Dictionary<string, int>
+				{
+					{ GameWinArgs.PassPoints, 1 }
+				});
+			GameProgressStore.RecordWin(CurrentLevelNumber, _levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber),
+				Data == null ? HardLevel.Normal : Data.GetHardLevel());
 			GameWon?.Invoke();
 		}
 		else GameLost?.Invoke();
@@ -974,8 +862,8 @@ public class GameController : MonoBehaviour
 
 	private void OnDestroy()
 	{
-		CancelBuyToolDialog();
-		CancelLevelPresentation();
+		_boosterUI?.Cancel();
+		_presentation?.Cancel();
 		_boosterFlow?.Cancel();
 		_sliceTransferFlow?.Cancel();
 		foreach (GroupColorLockKey key in _groupUnlockKeys.ToArray())
@@ -987,5 +875,11 @@ public class GameController : MonoBehaviour
 			if (GameData.Current == Data) GameData.ClearCurrent();
 		}
 		if (_uiCanvasInstance != null) Destroy(_uiCanvasInstance);
+	}
+
+	private void OnDisable()
+	{
+		_boosterUI?.Cancel();
+		_presentation?.Cancel();
 	}
 }

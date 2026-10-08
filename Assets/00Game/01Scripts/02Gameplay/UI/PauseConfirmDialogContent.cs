@@ -14,9 +14,9 @@ public class PauseConfirmDialogContent : DialogContent
 	protected override void Awake()
 	{
 		base.Awake();
-		RecoveryDialogUI.Bind(_confirmButton, OnClickConfirmButton);
-		RecoveryDialogUI.Bind(_cancelButton, OnClickCloseButton);
-		RecoveryDialogUI.Bind(_closeButton, OnClickCloseButton);
+		DialogUI.Bind(_confirmButton, OnClickConfirmButton);
+		DialogUI.Bind(_cancelButton, OnClickCloseButton);
+		DialogUI.Bind(_closeButton, OnClickCloseButton);
 	}
 	public void OnClickConfirmButton() => Dismiss(RESULT_CONFIRM);
 	public override void Show()

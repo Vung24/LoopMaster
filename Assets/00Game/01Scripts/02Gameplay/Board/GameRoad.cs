@@ -5,7 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(MeshRenderer))]
 public class GameRoad : MonoBehaviour
 {
-	private const int SectionVertCount = RecoveredRoadGeometry.SectionVertexCount;
+	private const int SectionVertCount = RoadGeometry.SectionVertexCount;
 	[SerializeField] private Material _roadWallMat;
 	[SerializeField] private Material _roadMat;
 	[SerializeField] private Material _roadWallMatLight;
@@ -159,19 +159,19 @@ public class GameRoad : MonoBehaviour
 		if (right.sqrMagnitude < 0.001f) right = Vector3.left;
 		int index = section * SectionVertCount;
 		for (int i = 0; i < SectionVertCount; i++)
-			vertices[index + i] = RecoveredRoadGeometry.GetVertex(i, point, right);
+			vertices[index + i] = RoadGeometry.GetVertex(i, point, right);
 	}
 
 	private void AddRoadTris(int[] tris, int tIndex, int i)
 	{
 		int next = (i + 1) % _sampledPoints.Count;
-		RecoveredRoadGeometry.WriteRoadLink(tris, tIndex, i * SectionVertCount, next * SectionVertCount);
+		RoadGeometry.WriteRoadLink(tris, tIndex, i * SectionVertCount, next * SectionVertCount);
 	}
 
 	private void AddWallTris(int[] tris, int tIndex, int i)
 	{
 		int next = (i + 1) % _sampledPoints.Count;
-		RecoveredRoadGeometry.WriteWallLink(tris, tIndex, i * SectionVertCount, next * SectionVertCount);
+		RoadGeometry.WriteWallLink(tris, tIndex, i * SectionVertCount, next * SectionVertCount);
 	}
 
 	private void AddVertUv(Vector2[] uvs, int vertIndex)

@@ -15,7 +15,7 @@ public sealed class HudContainer : MonoBehaviour
 		if (Current == null && parent != null) Current = parent.GetComponentInChildren<HudContainer>(true);
 		if (Current == null)
 		{
-			GameObject prefab = RecoveryPrefabLibrary.Current == null ? null : RecoveryPrefabLibrary.Current.Resolve(PATH);
+			GameObject prefab = PrefabLibrary.Current == null ? null : PrefabLibrary.Current.Resolve(PATH);
 			if (prefab != null)
 			{
 				GameObject instance = Instantiate(prefab, parent, false);
@@ -29,7 +29,7 @@ public sealed class HudContainer : MonoBehaviour
 				Current.transform.SetParent(parent, false);
 				// Scene instances can override counter anchors for the Home header.
 				// Restore the prefab layout when that same HUD moves to another canvas.
-				GameObject prefab = RecoveryPrefabLibrary.Current == null ? null : RecoveryPrefabLibrary.Current.HudContainerPrefab;
+				GameObject prefab = PrefabLibrary.Current == null ? null : PrefabLibrary.Current.HudContainerPrefab;
 				if (prefab != null)
 				{
 					CopyLayout(Current.transform, prefab.transform);

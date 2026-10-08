@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -29,6 +30,8 @@ public sealed class PauseDialogContent : MonoBehaviour
 	private Snui.Dialog _confirmDialog;
 	private bool _isConfirming;
 	private SettingsDialog _settings;
+	private bool _settingsLoading;
+	private int _modalVersion;
 
 	private void Awake()
 	{
@@ -114,7 +117,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 
 	private void Resume()
 	{
-		if (_isClosing || _isConfirming || _settings != null) return;
+		if (_isClosing || _isConfirming || _settingsLoading || _settings != null) return;
 		if (ExitAnim && _canvasGroup != null)
 		{
 			_isClosing = true;
@@ -143,35 +146,38 @@ public sealed class PauseDialogContent : MonoBehaviour
 		OpenConfirmation(PauseConfirmType.Quit);
 	}
 
-	private void OpenConfirmation(PauseConfirmType type)
+	private void OpenConfirmation(PauseConfirmType type) => LoadConfirmation(type).Forget();
+	private async UniTask LoadConfirmation(PauseConfirmType type)
 	{
-		if (_isClosing || _isConfirming || _settings != null || !isActiveAndEnabled || _controller == null) return;
-		var library = Snui.RecoveryPrefabLibrary.Current;
-		GameObject prefab = library == null ? null :
-			(type == PauseConfirmType.Replay ? library.ReplayConfirmPrefab : library.QuitConfirmPrefab);
-		if (prefab == null || library.DialogPrefab == null) return;
+		if (_isClosing || _isConfirming || _settingsLoading || _settings != null || !isActiveAndEnabled || _controller == null) return;
 		GameData data = _controller.Data;
+		int version = _modalVersion;
 		_isConfirming = true;
 		if (_canvasGroup != null) _canvasGroup.interactable = false;
-		GameObject root = Instantiate(library.DialogPrefab, transform.parent, false);
-		_confirmDialog = root.GetComponent<Snui.Dialog>();
-		GameObject contentObject = Instantiate(prefab, root.transform, false);
-		PauseConfirmDialogContent content = contentObject.GetComponent<PauseConfirmDialogContent>();
-		if (_confirmDialog == null || content == null) { Destroy(root); CancelConfirmation(); return; }
-		_confirmDialog.AddDialogContent(content);
-		content.Dismissed += result =>
+		try
 		{
-			if (!_isConfirming || !isActiveAndEnabled || _controller == null || _controller.Data != data) return;
-			CancelConfirmation();
-			if (result != PauseConfirmDialogContent.RESULT_CONFIRM) return;
-			CompleteResume();
-			if (type == PauseConfirmType.Replay) _controller.TryReplayLevel();
-			else _controller.TryReturnHome();
-		};
+			var content = await Snui.Dialog.ShowContent<PauseConfirmDialogContent>(transform.parent,
+				type == PauseConfirmType.Replay ? "ReplayDialogContent" : "QuitLevelDialogContent");
+			var frame = content.GetComponentInParent<Snui.Dialog>();
+			if (this == null || version != _modalVersion || !isActiveAndEnabled || _controller == null || _controller.Data != data)
+			{ if (frame != null) Destroy(frame.gameObject); return; }
+			_confirmDialog = frame;
+			content.Dismissed += result =>
+			{
+				if (!_isConfirming || !isActiveAndEnabled || _controller == null || _controller.Data != data) return;
+				CancelConfirmation();
+				if (result != PauseConfirmDialogContent.RESULT_CONFIRM) return;
+				CompleteResume();
+				if (type == PauseConfirmType.Replay) _controller.TryReplayLevel();
+				else _controller.TryReturnHome();
+			};
+		}
+		catch { if (this != null && version == _modalVersion) CancelConfirmation(); throw; }
 	}
 
 	private void CancelConfirmation()
 	{
+		_modalVersion++;
 		_isConfirming = false;
 		if (_confirmDialog != null) { _confirmDialog.gameObject.SetActive(false); Destroy(_confirmDialog.gameObject); }
 		_confirmDialog = null;
@@ -179,13 +185,29 @@ public sealed class PauseDialogContent : MonoBehaviour
 	}
 	private void OnLevelStarted(int level) => CompleteResume();
 
-	private void ToggleSettings()
+	private void ToggleSettings() => LoadSettings().Forget();
+	private async UniTask LoadSettings()
 	{
-		if (_isClosing || _isConfirming || _settings != null || !isActiveAndEnabled) return;
-		_settings = SettingsDialog.Show(transform.parent).GetAwaiter().GetResult();
-		if (_settings == null) return;
-		_settings.Closed += OnSettingsClosed;
+		if (_isClosing || _isConfirming || _settingsLoading || _settings != null || !isActiveAndEnabled) return;
+		int version = _modalVersion;
+		_settingsLoading = true;
 		if (_canvasGroup != null) _canvasGroup.interactable = false;
+		try
+		{
+			var settings = await SettingsDialog.Show(transform.parent);
+			if (this == null || version != _modalVersion || !isActiveAndEnabled)
+			{ if (settings != null) Destroy(settings.gameObject); return; }
+			_settings = settings;
+			if (_settings != null) _settings.Closed += OnSettingsClosed;
+		}
+		finally
+		{
+			if (this != null && version == _modalVersion)
+			{
+				_settingsLoading = false;
+				if (_settings == null && _canvasGroup != null) _canvasGroup.interactable = !_isClosing && !_isConfirming;
+			}
+		}
 	}
 	private void OnSettingsClosed()
 	{
@@ -197,6 +219,8 @@ public sealed class PauseDialogContent : MonoBehaviour
 	}
 	private void CancelSettings()
 	{
+		_modalVersion++;
+		_settingsLoading = false;
 		if (_settings != null)
 		{
 			_settings.Closed -= OnSettingsClosed;
@@ -248,6 +272,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 	{
 		RestoreTimeScale();
 		gameObject.SetActive(false);
+		Destroy(gameObject);
 	}
 
 	private static void AddButtonListener(Button button, UnityEngine.Events.UnityAction callback)
