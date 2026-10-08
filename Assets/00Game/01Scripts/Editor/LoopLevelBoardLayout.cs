@@ -55,7 +55,7 @@ public static class LoopLevelBoardLayout
     public static void Arrange(JObject layout, LoopLevelGeneratorSettings settings, int seed)
     {
         JArray boxes = A.Array(layout, "Boxes");
-        if (boxes.Count == 0) throw new FormatException("Add boxes before arranging the board.");
+        if (boxes.Count == 0) throw new FormatException("Thêm hộp trước khi sắp xếp bàn chơi.");
         var order = Enumerable.Range(0, boxes.Count).ToList(); var random = new System.Random(seed);
         for (int i = order.Count - 1; i > 0; i--) { int j = random.Next(i + 1); int old = order[i]; order[i] = order[j]; order[j] = old; }
         if (settings.BoardLayout == 0)
@@ -159,7 +159,7 @@ public static class LoopLevelBoardLayout
             if (boxes.Cast<JObject>().All(box => Corners(box).All(point => ContainsWithClearance(samples, point, clearance + .5f)))) return road;
             width *= 1.025f; depth *= 1.025f;
         }
-        throw new FormatException("Could not fit a road around the box footprints.");
+        throw new FormatException("Không thể tạo đường bao quanh các hộp.");
     }
     public static Vector3[] SampleRoad(JObject road)
     {

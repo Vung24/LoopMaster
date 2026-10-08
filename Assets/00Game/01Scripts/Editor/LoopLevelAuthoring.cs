@@ -18,7 +18,7 @@ public static class LoopLevelAuthoring
     {
         var root = JObject.Parse(json);
         if (!(root["layout"] is JObject))
-            throw new FormatException("Expected a level object with a 'layout' object.");
+            throw new FormatException("Dữ liệu màn chơi phải có đối tượng \u0027layout\u0027.");
         return root;
     }
 
@@ -56,6 +56,29 @@ public static class LoopLevelAuthoring
         ["Cubes"] = new JArray(), ["LinkedCubes"] = new JArray(), ["LockColor"] = 0,
         ["IsEnterOnly"] = 0, ["NumLock"] = 0, ["LimitedColor"] = 0,
         ["IsAdjacentLocked"] = 0, ["MultiColorLock"] = JValue.CreateNull() };
+
+    public static JObject FromTemplate(JObject source, int levelNumber)
+    {
+        if (levelNumber < 1) throw new ArgumentOutOfRangeException(nameof(levelNumber));
+        JObject draft = (JObject)source.DeepClone();
+        draft["level_number"] = levelNumber; draft["puzzle_id"] = levelNumber;
+        // New authoring no longer uses Map/Decor. Keep every puzzle mechanic and unknown field.
+        Layout(draft).Remove("MapData");
+        if (draft["editor_generator"] is JObject proof)
+        { proof["verified"] = false; proof.Remove("solution_clicks"); }
+        return draft;
+    }
+
+    public static bool ApplyCubeBrush(JObject box, int index, int paletteColor, int mode, int groupId)
+    {
+        if (mode == 0) return PaintCube(box, index, paletteColor);
+        JArray cubes = Array(box, "Cubes");
+        if (index < 0 || index >= cubes.Count || (mode != 1 && mode != 2)) return false;
+        JObject cube = (JObject)cubes[index];
+        if (mode == 1) { cube["IsSecret"] = Int(cube, "IsSecret") > 0 ? 0 : 1; return true; }
+        if (groupId < 0 || Int(cube, "GroupKeyId") == groupId) return false;
+        cube["GroupKeyId"] = groupId; return true;
+    }
 
     public static JObject NewCube(int color) => new JObject { ["Type"] = color,
         ["IsSecret"] = 0, ["GroupKeyId"] = 0, ["NumLock"] = 0, ["IsFixed"] = 0 };
@@ -122,8 +145,8 @@ public static class LoopLevelAuthoring
         }
         if (closed && points.Count > 1 && (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f)
             points.RemoveAt(points.Count - 1);
-        if (points.Count < (closed ? 3 : 2)) throw new FormatException(closed ? "A loop needs at least three distinct points." : "A road needs at least two distinct points.");
-        if (points.Count > (closed ? 127 : 128)) throw new FormatException("A road may have at most 128 control points, including its closing point.");
+        if (points.Count < (closed ? 3 : 2)) throw new FormatException(closed ? "Vòng kín cần ít nhất ba điểm khác nhau." : "Đường cần ít nhất hai điểm khác nhau.");
+        if (points.Count > (closed ? 127 : 128)) throw new FormatException("Đường có tối đa 128 điểm điều khiển, gồm điểm khép kín.");
         var path = new JObject { ["IsCircle"] = closed ? 1 : 0, ["ControlPoints"] = points };
         SmoothRoad(path, smoothing);
         return path;
@@ -138,7 +161,7 @@ public static class LoopLevelAuthoring
         bool closed = Int(path, "IsCircle") > 0 || repeated;
         if (closed && !repeated)
         {
-            if (points.Count >= 128) throw new FormatException("Remove a point before closing this road (128 point limit).");
+            if (points.Count >= 128) throw new FormatException("Xóa một điểm trước khi khép kín đường (giới hạn 128 điểm).");
             points.Add(points[0].DeepClone());
         }
         int count = points.Count - (closed ? 1 : 0);
@@ -229,7 +252,7 @@ public static class LoopLevelAuthoring
     private static void CheckRoadSize(float width, float depth)
     {
         if (float.IsNaN(width) || float.IsInfinity(width) || float.IsNaN(depth) || float.IsInfinity(depth) || width <= 0 || depth <= 0)
-            throw new FormatException("Road width and depth must be positive, finite numbers.");
+            throw new FormatException("Chiều rộng và sâu của đường phải là số hữu hạn lớn hơn 0.");
     }
 
     public static void MovePoint(JArray points, int index, Vector3 position)
@@ -321,7 +344,7 @@ public static class LoopLevelAuthoring
             for (int i = 1; i < sampled.Count; i++) length += Vector3.Distance(sampled[i - 1], sampled[i]);
             double expected = length / (double)puzzle.PathSectionDistance;
             if (expected > MaximumSlots || result.Count + expected > MaximumSlots)
-                throw new FormatException("Path produces more than 50,000 conveyor slots. Increase section distance.");
+                throw new FormatException("Đường tạo hơn 50.000 ô. Tăng khoảng cách giữa các ô.");
             int count = (int)(length / puzzle.PathSectionDistance);
             if (count == 1 && sampled.Count > 0) result.Add(sampled[0]);
             else if (count > 1 && sampled.Count > 1)
@@ -355,91 +378,91 @@ public static class LoopLevelAuthoring
         var errors = new List<string>(); warnings = new List<string>();
         try
         {
-            if (Int(root, "level_number") < 1) errors.Add("level_number must be positive.");
-            if (Int(root, "puzzle_id") < 1) errors.Add("puzzle_id must be positive.");
+            if (Int(root, "level_number") < 1) errors.Add("level_number phải lớn hơn 0.");
+            if (Int(root, "puzzle_id") < 1) errors.Add("puzzle_id phải lớn hơn 0.");
             JObject layout = Layout(root);
-            if (layout == null) { errors.Add("Missing layout object."); return errors; }
+            if (layout == null) { errors.Add("Thiếu đối tượng layout."); return errors; }
             CheckFinite(root, errors, "level");
             foreach (string key in new[] { "Boxes", "Paths" })
-                if (!(layout[key] is JArray)) errors.Add("layout." + key + " must be an array.");
+                if (!(layout[key] is JArray)) errors.Add("layout." + key + " phải là mảng.");
             foreach (string key in new[] { "Groups", "Covers", "SurpriseDatas" })
                 if (layout[key] != null && layout[key].Type != JTokenType.Null && !(layout[key] is JArray))
-                    errors.Add("layout." + key + " must be an array or null.");
+                    errors.Add("layout." + key + " phải là mảng hoặc null.");
             if (errors.Count > 0) return errors;
-            if (Int(layout, "Version", Puzzle.LegacyVersion) < 0 || Int(layout, "Version", Puzzle.LegacyVersion) > 12) errors.Add("Version must be 0–12 (0 uses the legacy default).");
-            if (Int(layout, "HardLevel") < 0 || Int(layout, "HardLevel") > 2) errors.Add("HardLevel must be 0–2.");
-            if (Float(layout, "Size", 10f) <= 0f) errors.Add("Size must be positive.");
-            if (Int(layout, "PathLength") < 1) errors.Add("PathLength (capacity groups) must be positive.");
-            if (Float(layout, "PathSectionDistance", 0.2f) < 0f) errors.Add("PathSectionDistance cannot be negative.");
-            if (Float(layout, "PathSectionDistance", 0.2f) == 0f) warnings.Add("PathSectionDistance 0 uses the runtime default 0.2.");
+            if (Int(layout, "Version", Puzzle.LegacyVersion) < 0 || Int(layout, "Version", Puzzle.LegacyVersion) > 12) errors.Add("Version phải từ 0–12 (0 dùng giá trị mặc định cũ).");
+            if (Int(layout, "HardLevel") < 0 || Int(layout, "HardLevel") > 2) errors.Add("HardLevel phải từ 0–2.");
+            if (Float(layout, "Size", 10f) <= 0f) errors.Add("Size phải lớn hơn 0.");
+            if (Int(layout, "PathLength") < 1) errors.Add("PathLength (sức chứa theo nhóm) phải lớn hơn 0.");
+            if (Float(layout, "PathSectionDistance", 0.2f) < 0f) errors.Add("PathSectionDistance không được âm.");
+            if (Float(layout, "PathSectionDistance", 0.2f) == 0f) warnings.Add("PathSectionDistance bằng 0 dùng mặc định 0,2 khi chạy game.");
             JArray paths = Array(layout, "Paths"), boxes = Array(layout, "Boxes");
-            if (paths.Count == 0) errors.Add("Add at least one path.");
+            if (paths.Count == 0) errors.Add("Thêm ít nhất một đường.");
             foreach (JObject path in paths)
             {
                 var points = path["ControlPoints"] as JArray;
-                if (points == null || points.Count < 2) { errors.Add("Each path needs at least two points."); continue; }
-                if (points.Count > 128) errors.Add("A path may have at most 128 points in this editor.");
+                if (points == null || points.Count < 2) { errors.Add("Mỗi đường cần ít nhất hai điểm."); continue; }
+                if (points.Count > 128) errors.Add("Mỗi đường có tối đa 128 điểm trong trình sửa này.");
                 foreach (JObject point in points)
                     foreach (string key in new[] { "Position", "InTangent", "OutTangent" }) CheckVector(point, key, errors);
             }
             foreach (JObject box in boxes)
             {
                 int index = boxes.IndexOf(box), type = Int(box, "BoxType");
-                if (type < 0 || type > 2) errors.Add("Box " + index + ": invalid BoxType.");
+                if (type < 0 || type > 2) errors.Add("Hộp " + index + ": BoxType không hợp lệ.");
                 CheckVector(box, "Position", errors); CheckVector(box, "Rotation", errors);
                 var cubes = box["Cubes"] as JArray;
-                if (cubes == null) { errors.Add("Box " + index + ": Cubes must be an array."); continue; }
+                if (cubes == null) { errors.Add("Hộp " + index + ": Cubes phải là mảng."); continue; }
                 // Single boxes can contain several queued cubes; only one pops per click.
                 int capacity = type == 2 ? 6 : 4;
-                if (type != 1 && cubes.Count > capacity) errors.Add("Box " + index + ": exceeds capacity " + capacity + ".");
-                if (type == 1 && cubes.Count > 64) errors.Add("Box " + index + ": Single queue exceeds 64 entries.");
+                if (type != 1 && cubes.Count > capacity) errors.Add("Hộp " + index + ": vượt sức chứa " + capacity + ".");
+                if (type == 1 && cubes.Count > 64) errors.Add("Hộp " + index + ": hàng đợi hộp đơn vượt 64 khối.");
                 foreach (JObject cube in cubes)
                 {
-                    if (Int(cube, "Type") <= 0) errors.Add("Box " + index + ": cube Type must be positive.");
-                    if (Int(cube, "NumLock") < 0 || Int(cube, "GroupKeyId") < 0) errors.Add("Cube lock/key cannot be negative.");
+                    if (Int(cube, "Type") <= 0) errors.Add("Hộp " + index + ": Type của khối phải lớn hơn 0.");
+                    if (Int(cube, "NumLock") < 0 || Int(cube, "GroupKeyId") < 0) errors.Add("Khóa/chìa khóa của khối không được âm.");
                 }
                 foreach (string key in new[] { "PathIndexV2", "NumLock", "LockColor", "LimitedColor" })
-                    if (Int(box, key) < 0) errors.Add("Box " + index + ": " + key + " cannot be negative.");
+                    if (Int(box, key) < 0) errors.Add("Hộp " + index + ": " + key + " không được âm.");
                 if (box["LinkedCubes"] is JArray links)
                     foreach (JArray link in links)
                         foreach (JToken value in link)
-                            if (value.Value<int>() < 0 || value.Value<int>() >= cubes.Count) errors.Add("Box " + index + ": invalid LinkedCubes index.");
+                            if (value.Value<int>() < 0 || value.Value<int>() >= cubes.Count) errors.Add("Hộp " + index + ": chỉ số LinkedCubes không hợp lệ.");
             }
-            if (boxes.Count == 0) errors.Add("Add at least one box.");
+            if (boxes.Count == 0) errors.Add("Thêm ít nhất một hộp.");
             var groupIds = new HashSet<int>();
             foreach (JObject group in Array(layout, "Groups"))
-                if (Int(group, "Id") <= 0 || !groupIds.Add(Int(group, "Id"))) errors.Add("Group IDs must be positive and unique.");
+                if (Int(group, "Id") <= 0 || !groupIds.Add(Int(group, "Id"))) errors.Add("ID nhóm phải lớn hơn 0 và không trùng nhau.");
             foreach (string key in new[] { "Groups", "Covers" })
                 foreach (JObject entry in Array(layout, key))
                 {
                     var indices = entry["BoxIndexes"] as JArray;
-                    if (indices == null || indices.Count == 0) { errors.Add(key + ": empty BoxIndexes."); continue; }
+                    if (indices == null || indices.Count == 0) { errors.Add(key + ": BoxIndexes trống."); continue; }
                     var seen = new HashSet<int>();
                     foreach (JToken token in indices)
                     {
                         int i = token.Value<int>();
-                        if (i < 0 || i >= boxes.Count || !seen.Add(i)) errors.Add(key + ": invalid or repeated box index.");
+                        if (i < 0 || i >= boxes.Count || !seen.Add(i)) errors.Add(key + ": chỉ số hộp không hợp lệ hoặc bị trùng.");
                     }
                 }
             if (errors.Count == 0)
             {
                 var slots = Slots(root);
-                if (slots.Count == 0) errors.Add("Path has no conveyor slots.");
+                if (slots.Count == 0) errors.Add("Đường không có ô băng chuyền.");
                 foreach (JObject box in boxes)
-                    if (Int(box, "PathIndexV2") > slots.Count) errors.Add("Box " + boxes.IndexOf(box) + ": PathIndexV2 is outside conveyor slots.");
+                    if (Int(box, "PathIndexV2") > slots.Count) errors.Add("Hộp " + boxes.IndexOf(box) + ": PathIndexV2 nằm ngoài các ô băng chuyền.");
             }
-            if (boxes.All(box => ((JObject)box)["Cubes"] is JArray cubes && cubes.Count == 0)) warnings.Add("All boxes are empty.");
-            warnings.Add("Structural validation does not prove that the puzzle is solvable. Test the saved level in Play Mode.");
+            if (boxes.All(box => ((JObject)box)["Cubes"] is JArray cubes && cubes.Count == 0)) warnings.Add("Mọi hộp đều trống.");
+            warnings.Add("Kiểm tra cấu trúc không đảm bảo màn chơi có lời giải. Hãy chơi thử trong Play Mode.");
             ExportedPuzzleJsonDecoder.Decode(root.ToString(Formatting.None));
         }
-        catch (Exception exception) { errors.Add("Invalid data: " + exception.Message); }
+        catch (Exception exception) { errors.Add("Dữ liệu không hợp lệ: " + exception.Message); }
         return errors;
     }
     private static void CheckVector(JObject obj, string key, List<string> errors)
     {
         var value = obj[key] as JArray;
         if (value == null || value.Count != 3 || value.Any(v => v.Type != JTokenType.Float && v.Type != JTokenType.Integer))
-            errors.Add(key + " must contain three numbers.");
+            errors.Add(key + " phải chứa ba số.");
     }
     private static void CheckFinite(JToken token, List<string> errors, string path)
     {
@@ -447,7 +470,7 @@ public static class LoopLevelAuthoring
         {
             double value = token.Value<double>();
             if (double.IsNaN(value) || double.IsInfinity(value) || Math.Abs(value) > 1000000d)
-                errors.Add(path + ": non-finite or excessively large number.");
+                errors.Add(path + ": số không hữu hạn hoặc quá lớn.");
         }
         foreach (JToken child in token.Children()) CheckFinite(child, errors, path + "." + child.Path);
     }

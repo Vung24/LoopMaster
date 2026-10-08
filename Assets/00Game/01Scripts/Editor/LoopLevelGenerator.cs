@@ -37,18 +37,18 @@ public sealed class LoopLevelGeneratorSettings
     public List<string> Validate()
     {
         var errors = new List<string>();
-        if (Difficulty < 0 || Difficulty > 3 || RoadShape < 0 || RoadShape > 2) errors.Add("Choose a valid difficulty and road shape.");
-        if (BoxCount < 5 || BoxCount > 24) errors.Add("Total boxes must be 5–24.");
+        if (Difficulty < 0 || Difficulty > 3 || RoadShape < 0 || RoadShape > 2) errors.Add("Chọn độ khó và hình đường hợp lệ.");
+        if (BoxCount < 5 || BoxCount > 24) errors.Add("Tổng số hộp phải từ 5–24.");
         if (EmptyBoxes < 1 || EmptyBoxes > 4 || SingleBoxes < 0 || SingleBoxes > 3 || LongBoxes < 0 || LongBoxes > 6 || LongBoxes == 1)
-            errors.Add("Use 1–4 normal buffers, 0–3 Single boxes and either 0 or 2–6 Long boxes (one Long buffer is reserved).");
+            errors.Add("Dùng 1–4 hộp dự phòng thường, 0–3 hộp đơn và 0 hoặc 2–6 hộp dài (dành một hộp dài làm dự phòng).");
         int normalFilled = BoxCount - EmptyBoxes - SingleBoxes - LongBoxes;
-        if (ColorCount < 2 || ColorCount > 14 || normalFilled < ColorCount) errors.Add("There must be at least one filled normal box per normal color, plus the chosen buffers / Single / Long boxes.");
+        if (ColorCount < 2 || ColorCount > 14 || normalFilled < ColorCount) errors.Add("Mỗi màu thường cần ít nhất một hộp thường đầy, cộng các hộp dự phòng / đơn / dài đã chọn.");
         if (ColorLocks < 0 || ColorLocks > 3 || NumberLocks < 0 || NumberLocks > 3 || Groups < 0 || Groups > 3 || ColorLocks + NumberLocks + Groups > normalFilled - 1)
-            errors.Add("Use at most 3 of each lock and keep at least one filled box outside all locks.");
-        if (SecretPercent < 0 || SecretPercent > 70 || ScrambleMoves < 4 || ScrambleMoves > 160 || RoadCapacity < 2 || RoadCapacity > 16) errors.Add("Invalid hidden cube percentage, mixing count or road capacity.");
-        if (MaxStates < 100 || MaxStates > 20000 || Attempts < 1 || Attempts > 16) errors.Add("Search states must be 100–20000 and attempts 1–16.");
+            errors.Add("Mỗi loại khóa tối đa 3; giữ ít nhất một hộp đầy nằm ngoài mọi khóa.");
+        if (SecretPercent < 0 || SecretPercent > 70 || ScrambleMoves < 4 || ScrambleMoves > 160 || RoadCapacity < 2 || RoadCapacity > 16) errors.Add("Tỉ lệ khối ẩn, số bước trộn hoặc sức chứa đường không hợp lệ.");
+        if (MaxStates < 100 || MaxStates > 20000 || Attempts < 1 || Attempts > 16) errors.Add("Số trạng thái tìm phải từ 100–20000, số lần thử từ 1–16.");
         if (!FiniteRange(BoxGap, .35f, 2) || !FiniteRange(RoadClearance, .4f, 3) || !FiniteRange(BoardAspect, .5f, 1.5f) || BoardColumns < 0 || BoardColumns > 24 || BoardLayout < 0 || BoardLayout > 1)
-            errors.Add("Box gap must be .35–2, road clearance .4–3, width/depth ratio .5–1.5 and columns 0 (auto) or 1–24.");
+            errors.Add("Khoảng cách hộp: 0,35–2; khoảng hở đường: 0,4–3; tỉ lệ rộng/sâu: 0,5–1,5; số cột: 0 (tự động) hoặc 1–24.");
         return errors;
     }
     private static bool FiniteRange(float value, float min, float max) => !float.IsNaN(value) && !float.IsInfinity(value) && value >= min && value <= max;
@@ -71,7 +71,7 @@ public static class LoopLevelGenerator
     {
         List<string> errors = settings.Validate();
         if (errors.Count > 0) throw new FormatException(string.Join("\n", errors));
-        if (levelNumber < 1) throw new FormatException("Level number must be positive.");
+        if (levelNumber < 1) throw new FormatException("Số màn chơi phải lớn hơn 0.");
         var random = new System.Random(seed); var result = new LoopGeneratedLevel { Seed = seed, Json = A.NewLevel(levelNumber) };
         JObject layout = A.Layout(result.Json);
         layout["Version"] = 7; layout["HardLevel"] = Mathf.Max(0, settings.Difficulty - 1);
@@ -98,13 +98,13 @@ public static class LoopLevelGenerator
         foreach (JObject single in boxes.Cast<JObject>().Where(b => A.Int(b, "BoxType") == 1 && A.Array(b, "Cubes").Count == 0))
         {
             JObject source = boxes.Cast<JObject>().FirstOrDefault(b => A.Int(b, "BoxType") == 0 && A.Array(b, "Cubes").Count > 1);
-            if (source == null) throw new FormatException("Could not fill the selected Single queue; try another seed.");
+            if (source == null) throw new FormatException("Không thể lấp hàng đợi hộp đơn đã chọn; thử seed khác.");
             JArray cubes = A.Array(source, "Cubes"); JToken cube = cubes[cubes.Count - 1]; cubes.RemoveAt(cubes.Count - 1);
             A.Array(single, "Cubes").Add(cube); result.ReverseClicks.Add(boxes.IndexOf(single));
         }
         result.ReverseClicks.Reverse();
         result.MixedBoxes = boxes.Cast<JObject>().Count(IsMixed);
-        if (result.MixedBoxes < 2) throw new FormatException("Not enough color mixing; try another seed or increase mixing.");
+        if (result.MixedBoxes < 2) throw new FormatException("Màu chưa được trộn đủ; thử seed khác hoặc tăng số bước trộn.");
         AddMechanics(boxes, layout, settings, random);
         foreach (JObject box in boxes)
         {
@@ -162,17 +162,17 @@ public static class LoopLevelGenerator
         var eligible = Enumerable.Range(0, boxes.Count).Where(i => A.Array((JObject)boxes[i], "Cubes").Count > 0 && !IsFinished((JObject)boxes[i])).ToList();
         Shuffle(eligible, random);
         int keySource = eligible.Where(i => A.Int((JObject)boxes[i], "BoxType") != 2 && A.Array((JObject)boxes[i], "Cubes").Count >= Math.Max(1, settings.Groups)).DefaultIfEmpty(-1).First();
-        if (eligible.Count == 0) throw new FormatException("No playable source boxes.");
-        if (settings.Groups > 0 && keySource < 0) throw new FormatException("No reachable normal / Single source for group keys.");
+        if (eligible.Count == 0) throw new FormatException("Không có hộp nguồn có thể chơi.");
+        if (settings.Groups > 0 && keySource < 0) throw new FormatException("Không có hộp nguồn thường / đơn có thể dùng để đặt chìa khóa nhóm.");
         eligible.Remove(keySource);
         for (int n = 0; n < settings.Groups; n++)
         {
-            if (eligible.Count == 0) throw new FormatException("Not enough boxes for selected groups.");
+            if (eligible.Count == 0) throw new FormatException("Không đủ hộp cho số nhóm đã chọn.");
             int target = eligible[eligible.Count - 1]; eligible.RemoveAt(eligible.Count - 1);
             // Each group has its own reachable key outside every generated lock.
             JArray keyCubes = A.Array((JObject)boxes[keySource], "Cubes");
             int keyIndex = keyCubes.Count - 1 - n;
-            if (keyIndex < 0) throw new FormatException("Not enough reachable cubes for group keys; try another seed.");
+            if (keyIndex < 0) throw new FormatException("Không đủ khối có thể lấy để đặt chìa khóa nhóm; thử seed khác.");
             int id = n + 1; keyCubes[keyIndex]["GroupKeyId"] = id;
             A.Array(layout, "Groups").Add(new JObject { ["Id"] = id, ["BoxIndexes"] = new JArray(target), ["LockedByColor"] = keyCubes[keyIndex]["Type"].DeepClone() });
         }
@@ -187,12 +187,12 @@ public static class LoopLevelGenerator
                 if (outside.Count == 0) continue;
                 target = i; keyColor = outside[random.Next(outside.Count)]; break;
             }
-            if (target < 0) throw new FormatException("Cannot place requested color locks without hiding their unlock color. Try another seed or fewer locks.");
+            if (target < 0) throw new FormatException("Không thể đặt khóa màu mà vẫn để màu mở khóa có thể lấy được. Thử seed khác hoặc giảm khóa.");
             boxes[target]["LockColor"] = keyColor; eligible.Remove(target);
         }
         for (int n = 0; n < settings.NumberLocks; n++)
         {
-            if (eligible.Count == 0) throw new FormatException("Not enough boxes for selected number locks.");
+            if (eligible.Count == 0) throw new FormatException("Không đủ hộp cho số khóa số đã chọn.");
             int target = eligible[eligible.Count - 1]; eligible.RemoveAt(eligible.Count - 1); boxes[target]["NumLock"] = 1;
         }
     }
@@ -228,7 +228,7 @@ public sealed class LoopLevelGenerationJob : IDisposable
     public LoopLevelGenerationJob(LoopGeneratedLevel completed)
     {
         Candidate = Result = completed; Done = true;
-        Status = "Restored preview, seed " + completed.Seed + (completed.Verified ? "; solution found." : "; unchecked.");
+        Status = "Đã khôi phục bản xem trước, seed " + completed.Seed + (completed.Verified ? "; đã tìm thấy lời giải." : "; chưa kiểm tra lời giải.");
     }
     public void Tick(double milliseconds = 10)
     {
@@ -239,7 +239,7 @@ public sealed class LoopLevelGenerationJob : IDisposable
             do { if (!_runner.MoveNext()) { Done = true; DisposeRunner(); break; } }
             while (timer.Elapsed.TotalMilliseconds < milliseconds);
         }
-        catch (Exception exception) { Status = "Generation failed: " + exception.Message; Done = true; DisposeRunner(); }
+        catch (Exception exception) { Status = "Tạo tự động thất bại: " + exception.Message; Done = true; DisposeRunner(); }
     }
     private IEnumerator Run()
     {
@@ -250,13 +250,13 @@ public sealed class LoopLevelGenerationJob : IDisposable
             try { Candidate = LoopLevelGenerator.Generate(_settings, _level, seed); }
             catch (FormatException exception) { Status = exception.Message; }
             if (Candidate == null) { yield return null; continue; }
-            if (!_settings.VerifySolution) { Result = Candidate; Status = "Generated; solution has not been checked."; yield break; }
+            if (!_settings.VerifySolution) { Result = Candidate; Status = "Đã tạo; chưa kiểm tra lời giải."; yield break; }
             GameData data = LoopLevelGenerator.DecodeDetached(Candidate.Json);
             var plan = new List<int>(); var witness = data;
             // A reverse construction supplies a cheap first plan; replay it through real board rules.
             foreach (int index in Candidate.ReverseClicks)
             {
-                Status = "Checking construction plan (attempt " + Attempt + ").";
+                Status = "Đang kiểm tra phương án tạo (lần thử " + Attempt + ").";
                 if (!witness.Boxes[index].IsFinished() && !witness.Boxes[index].IsEmpty() && witness.Boxes[index].CanPopup())
                 {
                     GameData next = LoopLevelGenerator.InSimulation(witness, () => DebugLevelSolver.SimulateClick(witness, index));
@@ -273,25 +273,25 @@ public sealed class LoopLevelGenerationJob : IDisposable
             {
                 while (timer.Elapsed.TotalSeconds < 8 && LoopLevelGenerator.InSimulation(data, search.MoveNext))
                 {
-                    Explored = solver.Explored; Status = "Finding solution: attempt " + Attempt + "/" + _settings.Attempts + ", " + Explored + " states.";
+                    Explored = solver.Explored; Status = "Đang tìm lời giải: lần thử " + Attempt + "/" + _settings.Attempts + ", " + Explored + " trạng thái.";
                     yield return null;
                 }
             }
             finally { (search as IDisposable)?.Dispose(); }
             Explored = solver.Explored;
             if (solver.Solution != null) { Accept(solver.Solution.Select(s => s.BoxIndex).ToList()); yield break; }
-            Status = "No verified solution within the search budget; trying another seed.";
+            Status = "Chưa tìm thấy lời giải trong giới hạn tìm kiếm; đang thử seed khác.";
             yield return null;
         }
         Attempt = _settings.Attempts;
-        Status = "No verified level found. Try another seed, more buffers / road capacity, fewer locks or a larger search budget.";
+        Status = "Chưa tìm thấy màn có lời giải. Thử seed khác, thêm hộp dự phòng / sức chứa đường, giảm khóa hoặc tăng giới hạn tìm kiếm.";
     }
     private void Accept(List<int> plan)
     {
         Candidate.Solution = plan; Result = Candidate;
         var metadata = (JObject)Candidate.Json["editor_generator"];
         metadata["verified"] = true; metadata["solution_clicks"] = new JArray(plan);
-        Status = "Solution found: " + plan.Count + " clicks, seed " + Candidate.Seed + ".";
+        Status = "Đã tìm thấy lời giải: " + plan.Count + " lần bấm, seed " + Candidate.Seed + ".";
     }
     private void DisposeRunner() { (_runner as IDisposable)?.Dispose(); _runner = null; }
     public void Dispose() { DisposeRunner(); Done = true; }

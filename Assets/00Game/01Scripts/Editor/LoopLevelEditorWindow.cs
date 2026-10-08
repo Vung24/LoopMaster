@@ -19,6 +19,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     [SerializeField] private float _snap = 0.25f;
     [SerializeField] private Vector2 _scroll;
     [SerializeField] private int _boxTool, _brushColor = 1, _placementType;
+    [SerializeField] private int _cubeBrushMode, _keyBrush;
     [SerializeField] private float _placementHeight, _placementYaw;
     [SerializeField] private bool _showCubeDetails;
     [SerializeField] private int _roadPreviewMode;
@@ -41,19 +42,19 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     private List<string> _errors = new List<string>(), _warnings = new List<string>();
     private bool _hasValidation;
     private int _dragGroup = -1;
-    private static readonly string[] Tabs = { "Level", "Boxes", "Paths", "Groups / Covers", "JSON" };
+    private static readonly string[] Tabs = { "Màn chơi", "Hộp", "Đường", "Nhóm / Nắp", "JSON" };
 
-    [MenuItem("Tools/LoopMaster/Level Editor")]
-    public static void Open() => GetWindow<LoopLevelEditorWindow>("Level Editor").Show();
+    [MenuItem("Tools/LoopMaster/Trình sửa màn chơi")]
+    public static void Open() => GetWindow<LoopLevelEditorWindow>("Trình sửa màn chơi").Show();
 
-    [MenuItem("Assets/LoopMaster/Edit Level JSON", true)]
+    [MenuItem("Assets/LoopMaster/Sửa màn chơi JSON", true)]
     private static bool CanOpenSelected() => Selection.activeObject is TextAsset &&
         AssetDatabase.GetAssetPath(Selection.activeObject).EndsWith(".json", StringComparison.OrdinalIgnoreCase);
 
-    [MenuItem("Assets/LoopMaster/Edit Level JSON")]
+    [MenuItem("Assets/LoopMaster/Sửa màn chơi JSON")]
     private static void OpenSelected()
     {
-        var window = GetWindow<LoopLevelEditorWindow>("Level Editor"); window.Show();
+        var window = GetWindow<LoopLevelEditorWindow>("Trình sửa màn chơi"); window.Show();
         window.TryOpen(AssetDatabase.GetAssetPath(Selection.activeObject));
     }
 
@@ -86,6 +87,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         CancelRoadSketch();
         StopGeneration();
         _generatorPreview?.Dispose(); _generatorPreview = null; _generatedPreviewJson = null;
+        _templates = null; _templatePreviewRoot = null;
         Undo.undoRedoPerformed -= OnUndoRedo;
         SceneView.duringSceneGui -= DuringSceneGUI;
         EditorApplication.update -= UpdateGeneration;
@@ -115,8 +117,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     private void SyncDirty()
     {
         hasUnsavedChanges = _document != null && (_document.Json != _savedJson || HasRawChanges);
-        saveChangesMessage = "Save the level draft before closing Level Editor?";
-        titleContent = new GUIContent("Level Editor");
+        saveChangesMessage = "Lưu bản nháp trước khi đóng trình sửa màn chơi?";
+        titleContent = new GUIContent("Trình sửa màn chơi");
     }
     private JObject Root()
     {
@@ -134,11 +136,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         catch (Exception exception)
         {
             _roadPreview?.Dispose(); _roadPreview = null; _roadLines.Clear(); _slots.Clear();
-            _status = "Preview: " + exception.Message;
+            _status = "Xem trước: " + exception.Message;
         }
         return _root;
     }
-    private void Commit(JObject root, string action = "Edit level")
+    private void Commit(JObject root, string action = "Sửa màn chơi")
     {
         // A stored plan describes the generated layout. Manual geometry / puzzle edits invalidate it.
         if (root["editor_generator"] is JObject metadata && metadata.Value<bool?>("verified") == true)
@@ -160,13 +162,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         _document.Json = root.ToString(Formatting.Indented); _savedJson = _document.Json;
         _filePath = path; _diskText = diskText; _root = null; _cachedJson = null;
         _box = _point = -1; _path = 0; _rawText = _rawBase = null;
-        _hasValidation = false; _status = string.IsNullOrEmpty(path) ? "New level draft." : "Opened " + Path.GetFileName(path);
+        _hasValidation = false; _status = string.IsNullOrEmpty(path) ? "Bản nháp màn chơi mới." : "Đã mở " + Path.GetFileName(path);
         SyncDirty(); Repaint(); SceneView.RepaintAll();
     }
     private bool ConfirmReplace()
     {
         SyncDirty(); if (!hasUnsavedChanges) return true;
-        int choice = EditorUtility.DisplayDialogComplex("Unsaved level", "Save this draft before opening another level?", "Save", "Cancel", "Discard");
+        int choice = EditorUtility.DisplayDialogComplex("Màn chơi chưa lưu", "Lưu bản nháp này trước khi mở màn chơi khác?", "Lưu", "Hủy", "Bỏ thay đổi");
         return choice == 2 || (choice == 0 && TrySave(false));
     }
     public bool TryOpen(string path)
@@ -177,11 +179,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             // Check shape before handing data to the inspector. Do not reject drafts with semantic errors.
             ExportedPuzzleJsonDecoder.Decode(disk);
             foreach (string key in new[] { "Boxes", "Paths" })
-                if (!(A.Layout(root)[key] is JArray)) throw new FormatException("layout." + key + " must be an array.");
+                if (!(A.Layout(root)[key] is JArray)) throw new FormatException("layout." + key + " phải là mảng.");
             if (!ConfirmReplace()) return false;
             SetDocument(root, Path.GetFullPath(path), disk); return true;
         }
-        catch (Exception exception) { _status = "Cannot open level: " + exception.Message; Repaint(); return false; }
+        catch (Exception exception) { _status = "Không thể mở màn chơi: " + exception.Message; Repaint(); return false; }
     }
     private bool ApplyRaw()
     {
@@ -191,36 +193,36 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             JObject root = A.Parse(_rawText);
             var errors = A.Validate(root, out _);
             if (errors.Count > 0) throw new FormatException(string.Join("\n", errors));
-            Commit(root, "Apply level JSON"); _rawText = _rawBase = _document.Json;
-            _status = "JSON applied."; SyncDirty(); return true;
+            Commit(root, "Áp dụng JSON màn chơi"); _rawText = _rawBase = _document.Json;
+            _status = "Đã áp dụng JSON."; SyncDirty(); return true;
         }
-        catch (Exception exception) { _status = "JSON not applied: " + exception.Message; return false; }
+        catch (Exception exception) { _status = "Chưa áp dụng JSON: " + exception.Message; return false; }
     }
     public bool TrySave(bool saveAs)
     {
-        if (_drawingRoad) { _status = "Finish or cancel the road sketch before saving."; Repaint(); return false; }
+        if (_drawingRoad) { _status = "Hoàn tất hoặc hủy đường đang vẽ trước khi lưu."; Repaint(); return false; }
         try
         {
             if (!ApplyRaw()) return false;
             JObject root = Root(); _errors = A.Validate(root, out _warnings); _hasValidation = true;
-            if (_errors.Count > 0) { _status = "Fix validation errors before saving."; Repaint(); return false; }
+            if (_errors.Count > 0) { _status = "Sửa các lỗi kiểm tra dữ liệu trước khi lưu."; Repaint(); return false; }
             string path = _filePath;
             if (saveAs || string.IsNullOrEmpty(path))
             {
                 string folder = string.IsNullOrEmpty(path) ? Path.GetFullPath(A.LevelFolder) : Path.GetDirectoryName(path);
-                path = EditorUtility.SaveFilePanel("Save level JSON", folder, "Level " + A.Int(root, "level_number"), "json");
+                path = EditorUtility.SaveFilePanel("Lưu JSON màn chơi", folder, "Level " + A.Int(root, "level_number"), "json");
                 if (string.IsNullOrEmpty(path)) return false;
             }
             path = Path.GetFullPath(path);
             bool inLevelFolder = string.Equals(Path.GetDirectoryName(path), Path.GetFullPath(A.LevelFolder), StringComparison.OrdinalIgnoreCase);
             if (inLevelFolder && !string.Equals(Path.GetFileName(path), "Level " + A.Int(root, "level_number") + ".json", StringComparison.OrdinalIgnoreCase))
-                throw new FormatException("Use filename Level " + A.Int(root, "level_number") + ".json in the level folder. Choose Save As after changing the level number.");
+                throw new FormatException("Dùng tên file Level " + A.Int(root, "level_number") + ".json trong thư mục màn chơi. Chọn Lưu thành sau khi đổi số màn.");
             if (File.Exists(path))
             {
                 bool same = !string.IsNullOrEmpty(_filePath) && string.Equals(path, Path.GetFullPath(_filePath), StringComparison.OrdinalIgnoreCase);
                 bool changedOnDisk = same && File.ReadAllText(path) != _diskText;
-                if ((changedOnDisk || !same) && !EditorUtility.DisplayDialog("Replace level JSON?",
-                    changedOnDisk ? "The file changed outside this window. Replace it with your draft?" : "A level already exists at this path. Replace it?", "Replace", "Cancel")) return false;
+                if ((changedOnDisk || !same) && !EditorUtility.DisplayDialog("Ghi đè JSON màn chơi?",
+                    changedOnDisk ? "File đã được sửa bên ngoài cửa sổ này. Ghi đè bằng bản nháp của bạn?" : "Đã có màn chơi tại đường dẫn này. Ghi đè?", "Ghi đè", "Hủy")) return false;
             }
             A.WriteFile(path, _document.Json);
             _filePath = path; _savedJson = _document.Json; _diskText = File.ReadAllText(path);
@@ -233,16 +235,16 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 if (inLevelFolder)
                 {
                     try { BuiltinLevelCatalogBuild.RefreshCatalog(); }
-                    catch (Exception exception) { _status = "JSON saved, but catalog refresh failed: " + exception.Message; return true; }
+                    catch (Exception exception) { _status = "Đã lưu JSON nhưng không cập nhật được danh mục: " + exception.Message; return true; }
                 }
             }
-            _status = "Saved " + Path.GetFileName(path); return true;
+            _status = "Đã lưu " + Path.GetFileName(path); return true;
         }
-        catch (Exception exception) { _status = "Save failed: " + exception.Message; Repaint(); return false; }
+        catch (Exception exception) { _status = "Lưu thất bại: " + exception.Message; Repaint(); return false; }
     }
     public override void SaveChanges()
     {
-        if (!TrySave(false)) throw new OperationCanceledException("Level draft was not saved. Resolve errors or use Save As.");
+        if (!TrySave(false)) throw new OperationCanceledException("Chưa lưu bản nháp. Sửa lỗi hoặc dùng Lưu thành.");
         base.SaveChanges();
     }
     public override void DiscardChanges()
@@ -258,31 +260,32 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         HandleShortcuts();
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
-            if (GUILayout.Button("New", EditorStyles.toolbarButton) && ConfirmReplace()) SetDocument(A.NewLevel(NextLevelNumber()), null, null);
-            if (GUILayout.Button("Open…", EditorStyles.toolbarButton))
+            if (GUILayout.Button("Tạo mới", EditorStyles.toolbarButton) && ConfirmReplace()) SetDocument(A.NewLevel(NextLevelNumber()), null, null);
+            if (GUILayout.Button("Mở…", EditorStyles.toolbarButton))
             {
-                string file = EditorUtility.OpenFilePanel("Open level JSON", A.LevelFolder, "json");
+                string file = EditorUtility.OpenFilePanel("Mở JSON màn chơi", A.LevelFolder, "json");
                 if (!string.IsNullOrEmpty(file)) TryOpen(file);
             }
-            if (GUILayout.Button("Save", EditorStyles.toolbarButton)) TrySave(false);
-            if (GUILayout.Button("Save As…", EditorStyles.toolbarButton)) TrySave(true);
+            if (GUILayout.Button("Mẫu", EditorStyles.toolbarButton)) { _editorMode = 2; _scroll = Vector2.zero; }
+            if (GUILayout.Button("Lưu", EditorStyles.toolbarButton)) TrySave(false);
+            if (GUILayout.Button("Lưu thành…", EditorStyles.toolbarButton)) TrySave(true);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Undo", EditorStyles.toolbarButton)) Undo.PerformUndo();
-            if (GUILayout.Button("Redo", EditorStyles.toolbarButton)) Undo.PerformRedo();
+            if (GUILayout.Button("Hoàn tác", EditorStyles.toolbarButton)) Undo.PerformUndo();
+            if (GUILayout.Button("Làm lại", EditorStyles.toolbarButton)) Undo.PerformRedo();
         }
-        EditorGUILayout.LabelField(string.IsNullOrEmpty(_filePath) ? "Untitled — save as Level N.json" : _filePath, EditorStyles.miniLabel);
+        EditorGUILayout.LabelField(string.IsNullOrEmpty(_filePath) ? "Chưa có tên — lưu thành Level N.json" : _filePath, EditorStyles.miniLabel);
         using (new EditorGUILayout.HorizontalScope())
         {
-            _scenePreview = EditorGUILayout.ToggleLeft("Scene preview", _scenePreview, GUILayout.Width(110));
-            _showSlots = EditorGUILayout.ToggleLeft("Slot numbers", _showSlots, GUILayout.Width(100));
-            _showBindings = EditorGUILayout.ToggleLeft("Box bindings", _showBindings, GUILayout.Width(105));
-            if (GUILayout.Button("Frame / Top", GUILayout.Width(95))) Frame();
+            _scenePreview = EditorGUILayout.ToggleLeft("Xem ở Scene", _scenePreview, GUILayout.Width(110));
+            _showSlots = EditorGUILayout.ToggleLeft("Số ô đường", _showSlots, GUILayout.Width(100));
+            _showBindings = EditorGUILayout.ToggleLeft("Liên kết hộp", _showBindings, GUILayout.Width(105));
+            if (GUILayout.Button("Nhìn từ trên", GUILayout.Width(95))) Frame();
         }
-        _editorMode = GUILayout.Toolbar(_editorMode, new[] { "Manual editor", "Auto Generate" });
+        _editorMode = GUILayout.Toolbar(_editorMode, new[] { "Chỉnh thủ công", "Tạo tự động", "Mẫu màn chơi" });
         if (_editorMode == 0)
         {
             using (new EditorGUI.DisabledScope(HasRawChanges || _drawingRoad || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
-                if (GUILayout.Button("▶ Play draft in Game View")) PlayInGameView(Root());
+                if (GUILayout.Button("▶ Chơi thử bản nháp trong Game View")) PlayInGameView(Root());
             _tab = GUILayout.Toolbar(_tab, Tabs);
         }
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
@@ -290,9 +293,10 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         {
             JObject root = Root(), layout = A.Layout(root);
             if (_editorMode == 1) DrawAutoGenerator();
+            else if (_editorMode == 2) DrawTemplates();
             else if (_tab == 4) DrawJson();
             else if (HasRawChanges)
-                EditorGUILayout.HelpBox("There are unapplied JSON edits. Apply or reset them on the JSON tab before using the inspector.", MessageType.Warning);
+                EditorGUILayout.HelpBox("JSON có thay đổi chưa áp dụng. Áp dụng hoặc đặt lại ở tab JSON trước khi sửa bằng giao diện.", MessageType.Warning);
             else
             {
                 EditorGUI.BeginChangeCheck();
@@ -307,7 +311,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 Commit(root);
             }
         }
-        catch (Exception exception) { EditorGUILayout.HelpBox("Cannot inspect draft: " + exception.Message + "\nUse JSON to repair or reopen the file.", MessageType.Error); }
+        catch (ExitGUIException) { throw; }
+        catch (Exception exception) { EditorGUILayout.HelpBox("Không thể hiển thị bản nháp: " + exception.Message + "\nDùng tab JSON để sửa hoặc mở lại file.", MessageType.Error); }
         EditorGUILayout.Space();
         if (_hasValidation)
         {
@@ -332,68 +337,70 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void DrawLevel(JObject root, JObject layout)
     {
-        Header("Level settings");
-        Integer(root, "level_number", "Level number"); Integer(root, "puzzle_id", "Puzzle ID");
-        Integer(layout, "Version", "Data version", Puzzle.LegacyVersion);
-        int difficulty = EditorGUILayout.Popup("Difficulty", A.Int(layout, "HardLevel"), new[] { "Normal", "Hard", "Very Hard" });
+        using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || HasRawChanges || _drawingRoad))
+            if (GUILayout.Button("Tạo màn chơi mới từ bản nháp này"))
+            { BeginTemplateDraft(A.FromTemplate(root, NextLevelNumber())); GUIUtility.ExitGUI(); }
+        Header("Thiết lập màn chơi");
+        Integer(root, "level_number", "Số màn chơi"); Integer(root, "puzzle_id", "ID màn chơi");
+        Integer(layout, "Version", "Phiên bản dữ liệu", Puzzle.LegacyVersion);
+        int difficulty = EditorGUILayout.Popup("Độ khó", A.Int(layout, "HardLevel"), new[] { "Thường", "Khó", "Rất khó" });
         if (difficulty != A.Int(layout, "HardLevel")) layout["HardLevel"] = difficulty;
-        Number(layout, "Size", "Board size", 10f); Integer(layout, "PathLength", "Road capacity (groups)");
-        Number(layout, "PathSectionDistance", "Conveyor slot distance", 0.2f);
-        EditorGUILayout.HelpBox("PathLength is road capacity in groups, not the Bézier length. Color IDs and box indices follow the game's JSON format.", MessageType.None);
-        EditorGUILayout.LabelField("Content", A.Array(layout, "Boxes").Count + " boxes · " + A.Array(layout, "Paths").Count + " paths · " + _slots.Count + " conveyor slots");
-        if (GUILayout.Button("Validate draft")) { _errors = A.Validate(root, out _warnings); _hasValidation = true; _status = _errors.Count == 0 ? "Structural validation passed." : _errors.Count + " error(s)."; }
+        Number(layout, "Size", "Kích thước bàn chơi", 10f); Integer(layout, "PathLength", "Sức chứa đường (nhóm)");
+        Number(layout, "PathSectionDistance", "Khoảng cách ô trên đường", 0.2f);
+        EditorGUILayout.HelpBox("PathLength là sức chứa đường theo nhóm. ID màu và chỉ số hộp theo định dạng JSON của game.", MessageType.None);
+        EditorGUILayout.LabelField("Nội dung", A.Array(layout, "Boxes").Count + " hộp · " + A.Array(layout, "Paths").Count + " đường · " + _slots.Count + " ô trên đường");
+        if (GUILayout.Button("Kiểm tra bản nháp")) { _errors = A.Validate(root, out _warnings); _hasValidation = true; _status = _errors.Count == 0 ? "Cấu trúc dữ liệu hợp lệ." : _errors.Count + " lỗi."; }
         using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || _drawingRoad || A.Array(layout, "Boxes").Count == 0))
-            if (GUILayout.Button("Arrange boxes and fit road"))
+            if (GUILayout.Button("Xếp hộp và chỉnh đường bao quanh"))
             {
                 LoopLevelBoardLayout.Arrange(layout, _generatorSettings ?? new LoopLevelGeneratorSettings(), A.Int(root, "puzzle_id"));
-                _status = "Boxes arranged with full footprints; road and bindings fitted. Cube contents and box indices are preserved. Undo restores the previous board.";
+                _status = "Đã xếp hộp, chỉnh đường và liên kết. Giữ nguyên các khối và chỉ số hộp. Hoàn tác để khôi phục bàn chơi cũ.";
             }
-        if (GUILayout.Button("Rebind all boxes to nearest slots"))
+        if (GUILayout.Button("Liên kết mọi hộp với ô đường gần nhất"))
             foreach (JObject box in A.Array(layout, "Boxes")) box["PathIndexV2"] = A.NearestSlot(box, _slots);
-        EditorGUILayout.Space(); Header("Playtest");
-        EditorGUILayout.HelpBox("Play draft in Game View starts gameplay with this unsaved draft. Stop Play Mode to return to editing. Winning records normal progress; use a test level number when needed.", MessageType.None);
+        EditorGUILayout.Space(); Header("Chơi thử");
+        EditorGUILayout.HelpBox("Chơi thử trong Game View dùng bản nháp chưa lưu. Dừng Play Mode để quay lại chỉnh sửa. Thắng màn vẫn ghi tiến trình game; chọn số màn phù hợp để thử.", MessageType.None);
     }
     private void DrawBoxes(JObject root, JObject layout)
     {
         DrawBoxTools(layout);
-        JArray boxes = A.Array(layout, "Boxes"); Header("Boxes — select here or click a box in Scene View");
-        for (int first = 0; first < boxes.Count; first += 4)
-            using (new EditorGUILayout.HorizontalScope())
-                for (int i = first; i < Math.Min(first + 4, boxes.Count); i++)
-                {
-                    var item = (JObject)boxes[i];
-                    string label = i + ": " + (BoxType)A.Int(item, "BoxType") + " (" + A.Array(item, "Cubes").Count + ")";
-                    if (GUILayout.Toggle(_box == i, label, "Button")) _box = i;
-                }
+        JArray boxes = A.Array(layout, "Boxes"); Header("Hộp — chọn trong bảng hoặc bấm hộp ở Scene View");
+        DrawBoardTable(layout);
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Add box")) { boxes.Add(A.NewBox(Vector3.zero)); _box = boxes.Count - 1; }
+            if (GUILayout.Button("Thêm hộp")) { boxes.Add(A.NewBox(Vector3.zero)); _box = boxes.Count - 1; }
             using (new EditorGUI.DisabledScope(_box < 0 || _box >= boxes.Count))
             {
-                if (GUILayout.Button("Duplicate")) { var copy = (JObject)boxes[_box].DeepClone(); copy["Position"] = A.Vector(A.Vector(copy, "Position") + Vector3.right * 2); copy["PathIndexV2"] = 0; boxes.Add(copy); _box = boxes.Count - 1; }
-                if (GUILayout.Button("Delete")) { A.RemoveBox(root, _box); _box = Math.Min(_box, boxes.Count - 1); }
+                if (GUILayout.Button("Nhân bản")) { var copy = (JObject)boxes[_box].DeepClone(); copy["Position"] = A.Vector(A.Vector(copy, "Position") + Vector3.right * 2); copy["PathIndexV2"] = 0; boxes.Add(copy); _box = boxes.Count - 1; }
+                if (GUILayout.Button("Xóa")) { A.RemoveBox(root, _box); _box = Math.Min(_box, boxes.Count - 1); }
             }
         }
         if (_box < 0 || _box >= boxes.Count) return;
-        JObject box = (JObject)boxes[_box]; Header("Box " + _box);
-        Vector3 previous = A.Vector(box, "Position"), previousRotation = A.Vector(box, "Rotation");
-        box["BoxType"] = (int)(BoxType)EditorGUILayout.EnumPopup("Box type", (BoxType)A.Int(box, "BoxType"));
-        VectorField(box, "Position"); VectorField(box, "Rotation");
-        _autoBind = EditorGUILayout.Toggle("Auto-bind moved boxes", _autoBind);
-        _snap = Mathf.Max(0, EditorGUILayout.FloatField("Scene grid snap", _snap));
-        if (_autoBind && (previous != A.Vector(box, "Position") || previousRotation != A.Vector(box, "Rotation"))) box["PathIndexV2"] = A.NearestSlot(box, _slots);
-        Integer(box, "PathIndexV2", "Conveyor binding (1-based)");
-        EditorGUILayout.HelpBox("Binding 0 finds the nearest slot at runtime. Moving a path does not change explicit bindings; use Rebind all boxes when needed.", MessageType.None);
-        Integer(box, "PathIndex", "Legacy path index");
-        Header("Locks / special rules");
-        Integer(box, "LockColor", "Color lock"); Integer(box, "NumLock", "Number lock");
-        Integer(box, "LimitedColor", "Limited color"); Flag(box, "IsEnterOnly", "Enter only"); Flag(box, "IsAdjacentLocked", "Adjacent locked");
-        Indices(box, "MultiColorLock", "Multi-color lock IDs", true);
-        Header("Cubes — bottom to top");
+        JObject box = (JObject)boxes[_box]; Header("Hộp " + _box);
+        Header("Khóa / quy tắc đặc biệt");
+        Integer(box, "LockColor", "Khóa màu"); Integer(box, "NumLock", "Khóa số");
+        Integer(box, "LimitedColor", "Chỉ nhận màu"); Flag(box, "IsEnterOnly", "Chỉ nhận vào"); Flag(box, "IsAdjacentLocked", "Khóa liền kề");
+        _showBoxDetails = EditorGUILayout.Foldout(_showBoxDetails, "Nâng cao: loại hộp, vị trí và liên kết", true);
+        if (_showBoxDetails)
+        {
+            Vector3 previous = A.Vector(box, "Position"), previousRotation = A.Vector(box, "Rotation");
+            int previousType = A.Int(box, "BoxType");
+            int nextType = EditorGUILayout.Popup("Loại hộp", previousType, new[] { "Thường", "Đơn (hàng đợi)", "Dài" });
+            if (nextType != previousType) box["BoxType"] = nextType;
+            VectorField(box, "Position"); VectorField(box, "Rotation");
+            _autoBind = EditorGUILayout.Toggle("Tự liên kết khi di chuyển hộp", _autoBind);
+            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Bám lưới trong Scene", _snap));
+            if (_autoBind && (previous != A.Vector(box, "Position") || previousRotation != A.Vector(box, "Rotation"))) box["PathIndexV2"] = A.NearestSlot(box, _slots);
+            Integer(box, "PathIndexV2", "Liên kết ô đường (từ 1)");
+            EditorGUILayout.HelpBox("Giá trị 0 tự tìm ô gần nhất khi chạy game. Di chuyển đường không đổi liên kết đã gán; dùng Liên kết mọi hộp khi cần.", MessageType.None);
+            Integer(box, "PathIndex", "Chỉ số đường kiểu cũ");
+            Indices(box, "MultiColorLock", "ID màu khóa nhiều màu", true);
+        }
+        Header("Khối — từ dưới lên trên");
         DrawCubeStrip(box);
-        _showCubeDetails = EditorGUILayout.Foldout(_showCubeDetails, "Advanced cube fields: color ID, secrets, keys, locks", true);
+        _showCubeDetails = EditorGUILayout.Foldout(_showCubeDetails, "Nâng cao: ID màu, khối ẩn, chìa khóa và khóa", true);
         JArray cubes = A.Array(box, "Cubes"); int capacity = A.Int(box, "BoxType") == 2 ? 6 : A.Int(box, "BoxType") == 1 ? 64 : 4;
-        if (A.Int(box, "BoxType") == 1) EditorGUILayout.HelpBox("Single boxes hold a queue and release one cube per click. The editor limits this queue to 64 entries.", MessageType.None);
+        if (A.Int(box, "BoxType") == 1) EditorGUILayout.HelpBox("Hộp đơn chứa hàng đợi, mỗi lần bấm thả một khối. Trình sửa giới hạn hàng đợi 64 khối.", MessageType.None);
         for (int i = 0; _showCubeDetails && i < cubes.Count; i++)
         {
             var cube = (JObject)cubes[i];
@@ -401,37 +408,45 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField("Cube " + i, GUILayout.Width(55));
-                    cube["Type"] = EditorGUILayout.IntField("Color ID", A.Int(cube, "Type"));
+                    EditorGUILayout.LabelField("Khối " + i, GUILayout.Width(55));
+                    cube["Type"] = EditorGUILayout.IntField("ID màu", A.Int(cube, "Type"));
                     EditorGUI.DrawRect(GUILayoutUtility.GetRect(20, 18, GUILayout.Width(20)), A.ColorFor(A.Int(cube, "Type")));
                     if (GUILayout.Button("↑", GUILayout.Width(25)) && i + 1 < cubes.Count) { A.SwapCubes(box, i, i + 1); break; }
                     if (GUILayout.Button("×", GUILayout.Width(25))) { A.RemoveCube(box, i); break; }
                 }
-                Flag(cube, "IsSecret", "Secret"); Flag(cube, "IsFixed", "Fixed");
-                Integer(cube, "GroupKeyId", "Group key ID"); Integer(cube, "NumLock", "Number lock");
+                Flag(cube, "IsSecret", "Ẩn"); Flag(cube, "IsFixed", "Cố định");
+                Integer(cube, "GroupKeyId", "ID chìa khóa nhóm"); Integer(cube, "NumLock", "Khóa số");
             }
         }
         using (new EditorGUI.DisabledScope(cubes.Count >= capacity))
-            if (GUILayout.Button("Add cube (" + cubes.Count + " / " + capacity + ")")) A.PaintCube(box, cubes.Count, _brushColor);
-        EditorGUILayout.HelpBox("Normal colors: 1–14. Long colors: 101–105. Surprise colors: 201+; define replacements in layout.SurpriseDatas on the JSON tab. LinkedCubes is preserved and editable there.", MessageType.None);
+            if (GUILayout.Button("Thêm khối (" + cubes.Count + " / " + capacity + ")")) A.PaintCube(box, cubes.Count, _brushColor);
+        EditorGUILayout.HelpBox("Màu thường: 1–14. Màu hộp dài: 101–105. Màu bất ngờ: 201+; khai báo thay thế trong layout.SurpriseDatas ở tab JSON. Có thể sửa LinkedCubes tại đó.", MessageType.None);
     }
 
     private void DrawBoxTools(JObject layout)
     {
-        Header("Quick box tools");
-        _boxTool = GUILayout.Toolbar(_boxTool, new[] { "Select / Move", "Place box", "Paint cubes", "Erase cubes" });
+        Header("Công cụ sửa hộp nhanh");
+        _boxTool = GUILayout.Toolbar(_boxTool, new[] { "Chọn / Di chuyển", "Đặt hộp", "Tô khối", "Xóa khối" });
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Edit in Scene / Top")) { _scenePreview = true; Frame(); SceneView.lastActiveSceneView?.Focus(); }
-            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Grid snap", _snap));
+            if (GUILayout.Button("Sửa ở Scene / Nhìn từ trên")) { _scenePreview = true; Frame(); SceneView.lastActiveSceneView?.Focus(); }
+            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Bám lưới", _snap));
         }
         if (_boxTool == 1)
         {
-            _placementType = EditorGUILayout.Popup("New box type", _placementType, new[] { "Normal", "Single", "Long" });
-            _placementHeight = EditorGUILayout.FloatField("Placement height", _placementHeight);
-            _placementYaw = EditorGUILayout.FloatField("Rotation Y", _placementYaw);
+            _placementType = EditorGUILayout.Popup("Loại hộp mới", _placementType, new[] { "Thường", "Đơn", "Dài" });
+            _placementHeight = EditorGUILayout.FloatField("Độ cao đặt hộp", _placementHeight);
+            _placementYaw = EditorGUILayout.FloatField("Góc xoay Y", _placementYaw);
         }
-        Header("Color brush");
+        _cubeBrushMode = GUILayout.Toolbar(_cubeBrushMode, new[] { "Màu", "Ẩn / Hiện", "Chìa khóa nhóm" });
+        if (_cubeBrushMode == 2)
+        {
+            int[] ids = new[] { 0 }.Concat(A.Array(layout, "Groups").OfType<JObject>().Select(g => A.Int(g, "Id")).Where(id => id > 0)).Distinct().ToArray();
+            int selected = Math.Max(0, System.Array.IndexOf(ids, _keyBrush));
+            _keyBrush = ids[EditorGUILayout.Popup("Chìa khóa cho nhóm", selected, ids.Select(id => id == 0 ? "Không có chìa khóa" : "Nhóm " + id).ToArray())];
+            if (ids.Length == 1) EditorGUILayout.HelpBox("Tạo nhóm ở tab Nhóm / Nắp trước, sau đó chọn chìa khóa tại đây.", MessageType.Info);
+        }
+        Header("Màu để tô");
         JArray boxes = A.Array(layout, "Boxes");
         bool longBrush = _boxTool == 1 ? _placementType == 2 : _box >= 0 && _box < boxes.Count && A.Int((JObject)boxes[_box], "BoxType") == 2;
         if (longBrush) _brushColor = Mathf.Clamp(_brushColor, 1, 5);
@@ -445,13 +460,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                         if (GUILayout.Toggle(_brushColor == color, (longBrush ? 100 + color : color).ToString(), "Button", GUILayout.Height(28))) _brushColor = color;
                     GUI.backgroundColor = previous;
                 }
-        EditorGUILayout.HelpBox("Click a colored cube to paint; click + to append. Right-click a cube to remove it. Scene tools work on the preview; Alt keeps camera controls. Esc returns to Select / Move. Long uses colors 101–105 (brush 1–5).", MessageType.None);
+        EditorGUILayout.HelpBox("Chọn Màu, Ẩn / Hiện hoặc Chìa khóa nhóm rồi bấm khối trong bảng hoặc chế độ Tô ở Scene. + thêm khối khi tô màu; chuột phải xóa. Đọc từ trái sang phải, theo thứ tự dưới lên trên. Alt điều khiển camera; Esc về chế độ chọn. Hộp dài dùng màu 101–105.", MessageType.None);
     }
 
     private void DrawCubeStrip(JObject box)
     {
         JArray cubes = A.Array(box, "Cubes");
-        int count = cubes.Count + (cubes.Count < A.CubeCapacity(box) ? 1 : 0);
+        int count = cubes.Count + (cubes.Count < A.CubeCapacity(box) && _cubeBrushMode == 0 ? 1 : 0);
         for (int first = 0; first < count; first += 8)
             using (new EditorGUILayout.HorizontalScope())
                 for (int i = first; i < Math.Min(first + 8, count); i++)
@@ -459,22 +474,23 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     bool occupied = i < cubes.Count;
                     string label = occupied ? A.Int((JObject)cubes[i], "Type").ToString() : "+";
                     if (occupied && A.Int((JObject)cubes[i], "IsSecret") > 0) label += " ?";
+                    if (occupied && A.Int((JObject)cubes[i], "GroupKeyId") > 0) label += " K" + A.Int((JObject)cubes[i], "GroupKeyId");
                     Rect rect = GUILayoutUtility.GetRect(42, 34, GUILayout.MaxWidth(65));
                     Event e = Event.current;
                     bool erase = occupied && e.type == EventType.MouseDown && e.button == 1 && rect.Contains(e.mousePosition);
                     Color previous = GUI.backgroundColor;
                     GUI.backgroundColor = occupied ? A.ColorFor(A.Int((JObject)cubes[i], "Type")) : Color.white;
-                    bool click = GUI.Button(rect, new GUIContent(label, "Cube " + i + " (bottom to top). Click: paint/add. Right-click: remove."));
+                    bool click = GUI.Button(rect, new GUIContent(label, "Khối " + i + " (từ dưới lên trên). Bấm để áp dụng công cụ; chuột phải để xóa."));
                     GUI.backgroundColor = previous;
                     if (erase)
                     { A.RemoveCube(box, i); e.Use(); return; }
-                    if (click) { A.PaintCube(box, i, _brushColor); return; }
+                    if (click) { A.ApplyCubeBrush(box, i, _brushColor, _cubeBrushMode, _keyBrush); return; }
                 }
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Fill with brush")) A.FillBox(box, _brushColor);
+            if (GUILayout.Button("Lấp đầy bằng màu đã chọn")) A.FillBox(box, _brushColor);
             using (new EditorGUI.DisabledScope(cubes.Count == 0))
-                if (GUILayout.Button("Remove top cube")) A.RemoveCube(box, cubes.Count - 1);
+                if (GUILayout.Button("Xóa khối trên cùng")) A.RemoveCube(box, cubes.Count - 1);
         }
     }
     private void DrawPaths(JObject layout)
@@ -484,24 +500,24 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         if (_drawingRoad) return;
         if (paths.Count == 0) return;
         _path = Mathf.Clamp(_path, 0, paths.Count - 1);
-        _path = EditorGUILayout.Popup("Selected path", _path, Enumerable.Range(0, paths.Count).Select(i => "Path " + i).ToArray());
+        _path = EditorGUILayout.Popup("Đường đang chọn", _path, Enumerable.Range(0, paths.Count).Select(i => "Đường " + i).ToArray());
         DrawPathInspectorPreview();
-        JObject path = (JObject)paths[_path]; Flag(path, "IsCircle", "Loop");
-        _autoSmoothPoints = EditorGUILayout.Toggle(new GUIContent("Auto-smooth moved points", "Recalculate tangents after moving, adding or deleting a point."), _autoSmoothPoints);
+        JObject path = (JObject)paths[_path]; Flag(path, "IsCircle", "Vòng kín");
+        _autoSmoothPoints = EditorGUILayout.Toggle(new GUIContent("Tự làm mượt khi di chuyển điểm", "Tính lại tiếp tuyến sau khi di chuyển, thêm hoặc xóa điểm."), _autoSmoothPoints);
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Smooth road")) A.SmoothRoad(path, _roadSmoothing);
-            if (GUILayout.Button("Straight road")) A.SmoothRoad(path, 0);
+            if (GUILayout.Button("Làm mượt đường")) A.SmoothRoad(path, _roadSmoothing);
+            if (GUILayout.Button("Làm thẳng đường")) A.SmoothRoad(path, 0);
         }
-        if (GUILayout.Button("Delete selected path")) { paths.RemoveAt(_path); _point = -1; return; }
+        if (GUILayout.Button("Xóa đường đang chọn")) { paths.RemoveAt(_path); _point = -1; return; }
         JArray points = A.Array(path, "ControlPoints");
         bool repeatedEnd = points.Count > 1 && (A.Vector((JObject)points[0], "Position") - A.Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
         for (int i = 0; i < points.Count; i++)
-            if (GUILayout.Toggle(_point == i, "Point " + i + "    " + A.Vector((JObject)points[i], "Position").ToString("F2"), "Button")) _point = i;
+            if (GUILayout.Toggle(_point == i, "Điểm " + i + "    " + A.Vector((JObject)points[i], "Position").ToString("F2"), "Button")) _point = i;
         using (new EditorGUILayout.HorizontalScope())
         {
             using (new EditorGUI.DisabledScope(points.Count >= (A.Int(path, "IsCircle") > 0 && !repeatedEnd ? 127 : 128)))
-                if (GUILayout.Button("Append point"))
+                if (GUILayout.Button("Thêm điểm cuối"))
                 {
                     int lastAnchor = points.Count - (repeatedEnd ? 2 : 1);
                     Vector3 position = lastAnchor < 0 ? Vector3.zero : A.Vector((JObject)points[lastAnchor], "Position") + Vector3.right * 2;
@@ -510,76 +526,76 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
                 }
             using (new EditorGUI.DisabledScope(_point < 0 || _point >= points.Count - 1 || points.Count >= 128))
-                if (GUILayout.Button("Split segment after point")) _point = A.SplitSegment(points, _point);
+                if (GUILayout.Button("Chia đoạn sau điểm này")) _point = A.SplitSegment(points, _point);
         }
         if (_point < 0 || _point >= points.Count) return;
-        JObject point = (JObject)points[_point]; Header("Point " + _point + " — drag in Scene View");
+        JObject point = (JObject)points[_point]; Header("Điểm " + _point + " — kéo trong Scene View");
         Vector3 positionBefore = A.Vector(point, "Position");
-        Vector3 positionAfter = EditorGUILayout.Vector3Field("Position", positionBefore);
+        Vector3 positionAfter = EditorGUILayout.Vector3Field("Vị trí", positionBefore);
         if (positionAfter != positionBefore)
         {
             A.MovePoint(points, _point, positionAfter);
             if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
         }
-        _showTangents = EditorGUILayout.Foldout(_showTangents, "Advanced: edit tangents", true);
+        _showTangents = EditorGUILayout.Foldout(_showTangents, "Nâng cao: sửa tiếp tuyến", true);
         if (_showTangents) { VectorField(point, "InTangent"); VectorField(point, "OutTangent"); }
         using (new EditorGUILayout.HorizontalScope())
         {
             if (_showTangents)
             {
-                if (GUILayout.Button("Straight tangents")) point["InTangent"] = point["OutTangent"] = A.Vector(A.Vector(point, "Position"));
-                if (GUILayout.Button("Mirror outgoing → incoming")) point["InTangent"] = A.Vector(A.Vector(point, "Position") * 2 - A.Vector(point, "OutTangent"));
+                if (GUILayout.Button("Tiếp tuyến thẳng")) point["InTangent"] = point["OutTangent"] = A.Vector(A.Vector(point, "Position"));
+                if (GUILayout.Button("Đối xứng tiếp tuyến ra → vào")) point["InTangent"] = A.Vector(A.Vector(point, "Position") * 2 - A.Vector(point, "OutTangent"));
             }
             bool seam = points.Count > 1 && (A.Vector((JObject)points[0], "Position") - A.Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
             int anchors = points.Count - (seam ? 1 : 0);
             using (new EditorGUI.DisabledScope(anchors <= (A.Int(path, "IsCircle") > 0 || seam ? 3 : 2)))
-                if (GUILayout.Button("Delete point"))
+                if (GUILayout.Button("Xóa điểm"))
                 {
                     A.RemoveRoadPoint(path, _point); _point = Math.Min(_point, points.Count - 1);
                     if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
                 }
         }
-        EditorGUILayout.HelpBox(_showTangents ? "Tangents are absolute positions. Moving a point moves its tangents with it. Split inserts a midpoint without changing the curve." :
-            "Drag points to shape the road. Auto-smooth moved points keeps bends smooth. Use Advanced only when you need to adjust an individual bend.", MessageType.None);
+        EditorGUILayout.HelpBox(_showTangents ? "Tiếp tuyến dùng vị trí tuyệt đối và di chuyển cùng điểm. Chia đoạn thêm điểm giữa, giữ nguyên đường cong." :
+            "Kéo các điểm để chỉnh hình đường. Bật tự làm mượt để giữ các khúc cong mềm. Mở Nâng cao để chỉnh tiếp tuyến riêng.", MessageType.None);
     }
     private void DrawQuickRoadTools(JArray paths)
     {
-        Header("Build road — click points or use a shape");
+        Header("Dựng đường — bấm đặt điểm hoặc dùng hình mẫu");
         using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
         {
-            _sketchClosed = EditorGUILayout.Toggle("Closed loop", _sketchClosed);
-            _sketchSmooth = EditorGUILayout.Toggle("Smooth bends", _sketchSmooth);
-            if (_sketchSmooth) _roadSmoothing = EditorGUILayout.Slider("Smoothing", _roadSmoothing, 0, 1);
-            _roadCenter.y = EditorGUILayout.FloatField("Road height (Y)", _roadCenter.y);
-            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Grid snap (0 = off)", _snap));
+            _sketchClosed = EditorGUILayout.Toggle("Vòng kín", _sketchClosed);
+            _sketchSmooth = EditorGUILayout.Toggle("Bo cong các góc", _sketchSmooth);
+            if (_sketchSmooth) _roadSmoothing = EditorGUILayout.Slider("Độ mượt", _roadSmoothing, 0, 1);
+            _roadCenter.y = EditorGUILayout.FloatField("Độ cao đường (Y)", _roadCenter.y);
+            _snap = Mathf.Max(0, EditorGUILayout.FloatField("Bám lưới (0 = tắt)", _snap));
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
-                if (!_drawingRoad && GUILayout.Button("Draw road in Scene View")) StartRoadSketch();
+                if (!_drawingRoad && GUILayout.Button("Vẽ đường trong Scene View")) StartRoadSketch();
             if (_drawingRoad)
             {
-                EditorGUILayout.HelpBox("Click to place points. Enter / Finish creates the road; Backspace removes the last point; Esc cancels. A closed loop needs 3 points, an open road needs 2.", MessageType.Info);
-                EditorGUILayout.LabelField("Placed points", _sketchPoints.Count.ToString());
+                EditorGUILayout.HelpBox("Bấm để đặt điểm. Enter / Hoàn tất để tạo đường; Backspace xóa điểm cuối; Esc hủy. Vòng kín cần 3 điểm, đường mở cần 2 điểm.", MessageType.Info);
+                EditorGUILayout.LabelField("Số điểm đã đặt", _sketchPoints.Count.ToString());
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     using (new EditorGUI.DisabledScope(!CanFinishSketch))
-                        if (GUILayout.Button("Finish road")) FinishRoadSketch();
-                    if (GUILayout.Button("Undo point")) RemoveSketchPoint();
-                    if (GUILayout.Button("Cancel")) CancelRoadSketch();
+                        if (GUILayout.Button("Hoàn tất đường")) FinishRoadSketch();
+                    if (GUILayout.Button("Bỏ điểm cuối")) RemoveSketchPoint();
+                    if (GUILayout.Button("Hủy")) CancelRoadSketch();
                 }
                 UpdateSketchPreview(false);
                 Rect rect = GUILayoutUtility.GetRect(100, 200, GUILayout.ExpandWidth(true));
                 if (Event.current.type == EventType.Repaint && _sketchPoints.Count >= 2)
                     _sketchPreview?.DrawInspector(rect, 0, true, _roadPreviewMode, new Vector2(0, 90), 1, -1);
             }
-            _showRoadPresets = EditorGUILayout.Foldout(_showRoadPresets, "Or create a shape road", true);
+            _showRoadPresets = EditorGUILayout.Foldout(_showRoadPresets, "Hoặc tạo đường từ hình mẫu", true);
             if (_showRoadPresets)
             {
-                _roadPreset = EditorGUILayout.Popup("Shape", _roadPreset, new[] { "Rounded rectangle", "Oval / circle" });
-                _roadCenter = EditorGUILayout.Vector3Field("Center", _roadCenter);
-                _roadWidth = Mathf.Max(.5f, EditorGUILayout.FloatField("Width (X)", _roadWidth));
-                _roadDepth = Mathf.Max(.5f, EditorGUILayout.FloatField("Depth (Z)", _roadDepth));
-                if (_roadPreset == 0) _cornerRadius = EditorGUILayout.Slider("Corner radius", _cornerRadius, 0, Mathf.Min(_roadWidth, _roadDepth) * .5f);
+                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] { "Chữ nhật bo góc", "Bầu dục / tròn" });
+                _roadCenter = EditorGUILayout.Vector3Field("Tâm", _roadCenter);
+                _roadWidth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều rộng (X)", _roadWidth));
+                _roadDepth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều sâu (Z)", _roadDepth));
+                if (_roadPreset == 0) _cornerRadius = EditorGUILayout.Slider("Bán kính góc", _cornerRadius, 0, Mathf.Min(_roadWidth, _roadDepth) * .5f);
                 using (new EditorGUI.DisabledScope(_drawingRoad))
-                    if (GUILayout.Button("Create shape road"))
+                    if (GUILayout.Button("Tạo đường theo hình mẫu"))
                     {
                         paths.Add(_roadPreset == 0 ? A.RoundedRectangleRoad(_roadCenter, _roadWidth, _roadDepth, _cornerRadius) : A.OvalRoad(_roadCenter, _roadWidth, _roadDepth));
                         _path = paths.Count - 1; _point = 0; _scenePreview = true;
@@ -594,7 +610,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         CancelRoadSketch(); _drawingRoad = true; _scenePreview = true; _tab = 2;
         Frame();
         var view = SceneView.lastActiveSceneView ?? GetWindow<SceneView>(); view.wantsMouseMove = true; view.Focus();
-        _status = "Drawing road: click in Scene View, then press Enter to finish.";
+        _status = "Đang vẽ đường: bấm trong Scene View, nhấn Enter để hoàn tất.";
         Repaint(); SceneView.RepaintAll();
     }
     private void CancelRoadSketch()
@@ -605,7 +621,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void AddSketchPoint(Vector3 position)
     {
-        if (_sketchPoints.Count >= (_sketchClosed ? 127 : 128)) { _status = "Point limit reached; finish the road."; return; }
+        if (_sketchPoints.Count >= (_sketchClosed ? 127 : 128)) { _status = "Đã đạt giới hạn số điểm; hãy hoàn tất đường."; return; }
         if (_sketchPoints.Count > 0 && (_sketchPoints[_sketchPoints.Count - 1] - position).sqrMagnitude < .000001f) return;
         if (_sketchClosed && _sketchPoints.Count > 0 && (_sketchPoints[0] - position).sqrMagnitude < .000001f) return;
         _sketchPoints.Add(position); Repaint(); SceneView.RepaintAll();
@@ -617,14 +633,14 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void FinishRoadSketch()
     {
-        if (!CanFinishSketch) { _status = "Place more points before finishing."; return; }
+        if (!CanFinishSketch) { _status = "Đặt thêm điểm trước khi hoàn tất."; return; }
         JObject path = A.RoadFromPositions(_sketchPoints, _sketchClosed, _sketchSmooth ? _roadSmoothing : 0);
         JObject root = Root(); JArray paths = A.Array(A.Layout(root), "Paths");
         paths.Add(path); _path = paths.Count - 1; _point = 0;
         // One finished road is one Undo step; cancelled sketches never change the document.
         Undo.IncrementCurrentGroup(); Commit(root, "Draw road"); Undo.IncrementCurrentGroup();
         _autoSmoothPoints = _sketchSmooth;
-        CancelRoadSketch(); _status = "Road created. Drag its points to adjust the shape.";
+        CancelRoadSketch(); _status = "Đã tạo đường. Kéo các điểm để chỉnh hình dạng.";
     }
     private void UpdateSketchPreview(bool includeCursor)
     {
@@ -676,23 +692,23 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         {
             Handles.color = i == 0 && _sketchClosed ? Color.green : Color.yellow;
             Handles.SphereHandleCap(0, _sketchPoints[i], Quaternion.identity, .18f, EventType.Repaint);
-            Handles.Label(_sketchPoints[i] + Vector3.up * .25f, i == 0 && _sketchClosed ? "Start / click to close" : i.ToString());
+            Handles.Label(_sketchPoints[i] + Vector3.up * .25f, i == 0 && _sketchClosed ? "Điểm đầu / bấm để khép kín" : i.ToString());
         }
         if (_sketchCursorValid && canvas)
         {
             Handles.color = Color.white; Handles.DrawWireDisc(_sketchCursor, Vector3.up, .18f);
-            Handles.Label(_sketchCursor + Vector3.up * .3f, "Click to place point");
+            Handles.Label(_sketchCursor + Vector3.up * .3f, "Bấm để đặt điểm");
         }
         Handles.BeginGUI();
         GUILayout.BeginArea(panel, EditorStyles.helpBox);
-        GUILayout.Label("DRAW ROAD — " + _sketchPoints.Count + " points", EditorStyles.boldLabel);
-        GUILayout.Label("Click to place • Backspace to remove • Enter to finish • Esc to cancel");
-        GUILayout.Label(_sketchClosed ? "Click the green start point to close the loop." : "Open road: place at least two points.");
+        GUILayout.Label("VẼ ĐƯỜNG — " + _sketchPoints.Count + " điểm", EditorStyles.boldLabel);
+        GUILayout.Label("Bấm để đặt • Backspace xóa • Enter hoàn tất • Esc hủy");
+        GUILayout.Label(_sketchClosed ? "Bấm điểm đầu màu xanh để khép kín vòng." : "Đường mở: đặt ít nhất hai điểm.");
         using (new EditorGUILayout.HorizontalScope())
         {
-            using (new EditorGUI.DisabledScope(!CanFinishSketch)) if (GUILayout.Button("Finish road")) FinishRoadSketch();
-            if (GUILayout.Button("Undo point")) RemoveSketchPoint();
-            if (GUILayout.Button("Cancel")) CancelRoadSketch();
+            using (new EditorGUI.DisabledScope(!CanFinishSketch)) if (GUILayout.Button("Hoàn tất đường")) FinishRoadSketch();
+            if (GUILayout.Button("Bỏ điểm cuối")) RemoveSketchPoint();
+            if (GUILayout.Button("Hủy")) CancelRoadSketch();
         }
         GUILayout.EndArea(); Handles.EndGUI();
     }
@@ -700,13 +716,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     {
         using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
         {
-            _roadPreviewMode = EditorGUILayout.Popup("Preview", _roadPreviewMode, new[] { "Road + path", "Road", "Path" });
+            _roadPreviewMode = EditorGUILayout.Popup("Xem trước", _roadPreviewMode, new[] { "Mặt đường + tuyến", "Mặt đường", "Tuyến đường" });
             using (new EditorGUILayout.HorizontalScope())
             {
-                _previewAllPaths = GUILayout.Toggle(_previewAllPaths, "All paths", GUILayout.Width(80));
-                if (GUILayout.Button("Top")) { _previewOrbit = new Vector2(0, 90); _previewZoom = 1f; }
+                _previewAllPaths = GUILayout.Toggle(_previewAllPaths, "Mọi đường", GUILayout.Width(80));
+                if (GUILayout.Button("Từ trên")) { _previewOrbit = new Vector2(0, 90); _previewZoom = 1f; }
                 if (GUILayout.Button("3D")) { _previewOrbit = new Vector2(35, 45); _previewZoom = 1f; }
-                if (GUILayout.Button("Edit in Scene")) { _scenePreview = true; Frame(); }
+                if (GUILayout.Button("Sửa ở Scene")) { _scenePreview = true; Frame(); }
             }
             Rect rect = GUILayoutUtility.GetRect(100, 240, GUILayout.ExpandWidth(true));
             int id = GUIUtility.GetControlID("RoadPreviewOrbit".GetHashCode(), FocusType.Passive, rect);
@@ -724,41 +740,41 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             { _previewZoom = Mathf.Clamp(_previewZoom * Mathf.Exp(e.delta.y * .06f), .35f, 3f); e.Use(); Repaint(); }
             if (e.type == EventType.Repaint)
                 _roadPreview?.DrawInspector(rect, _path, _previewAllPaths, _roadPreviewMode, _previewOrbit, _previewZoom, _point);
-            EditorGUILayout.LabelField("Drag to orbit / scroll to zoom. Edit points and tangents in Scene View.", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Kéo để xoay / cuộn để thu phóng. Sửa điểm và tiếp tuyến trong Scene View.", EditorStyles.miniLabel);
         }
     }
     private void DrawGroups(JObject layout)
     {
-        Header("Groups — zero-based box indices"); JArray groups = A.Array(layout, "Groups");
+        Header("Nhóm — chỉ số hộp bắt đầu từ 0"); JArray groups = A.Array(layout, "Groups");
         for (int i = 0; i < groups.Count; i++)
         {
             JObject group = (JObject)groups[i];
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                Integer(group, "Id", "Group ID"); Integer(group, "LockedByColor", "Lock color");
-                Indices(group, "BoxIndexes", "Box indices");
-                if (GUILayout.Button("Delete group")) { groups.RemoveAt(i); break; }
+                Integer(group, "Id", "ID nhóm"); Integer(group, "LockedByColor", "Màu khóa");
+                DrawBoxMembership(layout, group);
+                if (GUILayout.Button("Xóa nhóm")) { groups.RemoveAt(i); break; }
             }
         }
-        if (GUILayout.Button("Add group")) { groups.Add(new JObject { ["Id"] = groups.OfType<JObject>().Select(g => A.Int(g, "Id")).DefaultIfEmpty().Max() + 1, ["BoxIndexes"] = new JArray(_box >= 0 ? _box : 0), ["LockedByColor"] = 0 }); layout["Groups"] = groups; }
-        Header("Rolling covers"); JArray covers = A.Array(layout, "Covers");
+        if (GUILayout.Button("Thêm nhóm")) { groups.Add(new JObject { ["Id"] = groups.OfType<JObject>().Select(g => A.Int(g, "Id")).DefaultIfEmpty().Max() + 1, ["BoxIndexes"] = new JArray(_box >= 0 ? _box : 0), ["LockedByColor"] = 0 }); layout["Groups"] = groups; }
+        Header("Nắp che cuốn"); JArray covers = A.Array(layout, "Covers");
         for (int i = 0; i < covers.Count; i++)
         {
-            JObject cover = (JObject)covers[i]; Indices(cover, "BoxIndexes", "Cover " + i + " boxes");
-            if (GUILayout.Button("Delete cover " + i)) { covers.RemoveAt(i); break; }
+            JObject cover = (JObject)covers[i]; EditorGUILayout.LabelField("Nắp " + i); DrawBoxMembership(layout, cover);
+            if (GUILayout.Button("Xóa nắp " + i)) { covers.RemoveAt(i); break; }
         }
-        if (GUILayout.Button("Add cover")) { covers.Add(new JObject { ["BoxIndexes"] = new JArray(_box >= 0 ? _box : 0) }); layout["Covers"] = covers; }
-        EditorGUILayout.HelpBox("Deleting a box removes it from groups/covers and shifts higher indices. Unknown JSON fields and surprise replacements stay in the document.", MessageType.None);
+        if (GUILayout.Button("Thêm nắp")) { covers.Add(new JObject { ["BoxIndexes"] = new JArray(_box >= 0 ? _box : 0) }); layout["Covers"] = covers; }
+        EditorGUILayout.HelpBox("Xóa hộp tự cập nhật chỉ số trong nhóm/nắp. Các trường JSON khác và dữ liệu thay thế màu bất ngờ được giữ nguyên.", MessageType.None);
     }
     private void DrawJson()
     {
         if (_rawText == null || (!HasRawChanges && _rawBase != _document.Json)) _rawText = _rawBase = _document.Json;
-        EditorGUILayout.HelpBox("Advanced fields: LinkedCubes, SurpriseDatas and custom metadata. Apply JSON validates and creates one Undo step. Unapplied edits are included in the unsaved-changes prompt.", MessageType.None);
+        EditorGUILayout.HelpBox("Trường nâng cao: LinkedCubes, SurpriseDatas và dữ liệu tùy chỉnh. Áp dụng JSON kiểm tra dữ liệu và tạo một bước hoàn tác. Thay đổi chưa áp dụng vẫn được báo khi đóng.", MessageType.None);
         _rawText = EditorGUILayout.TextArea(_rawText, GUILayout.MinHeight(350), GUILayout.ExpandHeight(true));
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Apply JSON")) ApplyRaw();
-            if (GUILayout.Button("Reset text to draft")) { _rawText = _rawBase = _document.Json; SyncDirty(); }
+            if (GUILayout.Button("Áp dụng JSON")) ApplyRaw();
+            if (GUILayout.Button("Đặt lại theo bản nháp")) { _rawText = _rawBase = _document.Json; SyncDirty(); }
         }
     }
     private static void Header(string title) { EditorGUILayout.Space(); EditorGUILayout.LabelField(title, EditorStyles.boldLabel); }
@@ -774,9 +790,12 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private static void VectorField(JObject obj, string key)
     {
-        Vector3 previous = A.Vector(obj, key), next = EditorGUILayout.Vector3Field(key, previous);
+        string label = key == "Position" ? "Vị trí" : key == "Rotation" ? "Góc xoay" :
+            key == "InTangent" ? "Tiếp tuyến vào" : key == "OutTangent" ? "Tiếp tuyến ra" : key;
+        Vector3 previous = A.Vector(obj, key), next = EditorGUILayout.Vector3Field(label, previous);
         if (previous != next) obj[key] = A.Vector(next);
     }
+    private static string BoxTypeLabel(int type) => type == 0 ? "Thường" : type == 1 ? "Đơn" : type == 2 ? "Dài" : "Không rõ (" + type + ")";
     private static void Flag(JObject obj, string key, string label)
     {
         bool previous = A.Int(obj, key) != 0;
@@ -793,7 +812,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             int[] values = next.Split(new[] { ',', ' ', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray();
             obj[key] = nullable && values.Length == 0 ? (JToken)JValue.CreateNull() : new JArray(values);
         }
-        catch { _status = label + ": use integer IDs separated by commas."; }
+        catch { _status = label + ": nhập ID số nguyên, ngăn cách bằng dấu phẩy."; }
     }
 
     private void Frame()
@@ -819,6 +838,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         try
         {
             if (_editorMode == 1) { DrawGeneratedScene(); return; }
+            if (_editorMode == 2) return;
             JObject root = Root(), layout = A.Layout(root);
             Event e = Event.current;
             if (_drawingRoad && _tab == 2)
@@ -852,16 +872,16 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             Commit(root, _tab == 1 && _boxTool != 0 ? "Edit boxes in Scene" : "Move level element");
             if (e.rawType == EventType.MouseUp && _dragGroup >= 0) { Undo.CollapseUndoOperations(_dragGroup); _dragGroup = -1; }
         }
-        catch (Exception exception) { _status = "Scene edit: " + exception.Message; /* Keep invalid drafts repairable without logging on every repaint. */ }
+        catch (Exception exception) { _status = "Sửa ở Scene: " + exception.Message; /* Keep invalid drafts repairable without logging on every repaint. */ }
     }
 
     private void DrawSceneBoxToolbar()
     {
         Handles.BeginGUI();
         GUILayout.BeginArea(new Rect(12, 12, 400, 60), EditorStyles.helpBox);
-        int next = GUILayout.Toolbar(_boxTool, new[] { "Select", "Place", "Paint", "Erase" });
+        int next = GUILayout.Toolbar(_boxTool, new[] { "Chọn", "Đặt", "Tô", "Xóa" });
         if (next != _boxTool) { _boxTool = next; Repaint(); }
-        GUILayout.Label("Brush " + _brushColor + "  |  Alt: camera  |  Esc: select", EditorStyles.miniLabel);
+        GUILayout.Label("Màu tô " + _brushColor + "  |  Alt: camera  |  Esc: chọn", EditorStyles.miniLabel);
         GUILayout.EndArea();
         Handles.EndGUI();
     }
@@ -879,7 +899,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         Quaternion rotation = Quaternion.Euler(0, _placementYaw, 0);
         using (new Handles.DrawingScope(Matrix4x4.TRS(position, rotation, Vector3.one)))
         { Handles.color = Color.green; Handles.DrawWireCube(footprint.center, footprint.size); }
-        Handles.Label(position + Vector3.up, "Click: place " + (BoxType)_placementType);
+        Handles.Label(position + Vector3.up, "Bấm để đặt hộp " + BoxTypeLabel(_placementType));
         if (e.type == EventType.MouseDown && e.button == 0 && HandleUtility.nearestControl == control && GUIUtility.hotControl == 0)
         {
             JObject box = A.NewBox(position); box["BoxType"] = _placementType;
@@ -920,7 +940,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     if (new Bounds(position, Vector3.one * .8f).IntersectRay(localRay, out float distance) && distance < nearest)
                     { nearest = distance; hitBox = b; hitCube = index; }
                 }
-                if (_boxTool != 2 || cubes.Count >= A.CubeCapacity(box)) continue;
+                if (_boxTool != 2 || _cubeBrushMode != 0 || cubes.Count >= A.CubeCapacity(box)) continue;
                 Vector3 append = type == 1 ? new Vector3(0, 1.7f, 0) :
                     new Vector3(0, .8f, (type == 2 ? -2.8f : -1.2f) + cubes.Count * .8f);
                 Handles.color = Color.green; Handles.Label(append + Vector3.up * .4f, "+");
@@ -933,7 +953,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         if (hitBox >= 0 && e.type == EventType.MouseDown && e.button == 0 && GUIUtility.hotControl == 0)
         {
             JObject box = (JObject)boxes[hitBox]; _box = hitBox;
-            if (_boxTool == 3) A.RemoveCube(box, hitCube); else A.PaintCube(box, hitCube, _brushColor);
+            if (_boxTool == 3) A.RemoveCube(box, hitCube); else A.ApplyCubeBrush(box, hitCube, _brushColor, _cubeBrushMode, _keyBrush);
             e.Use(); Repaint();
         }
     }
@@ -974,14 +994,14 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     Handles.color = hidden ? Color.gray : A.ColorFor(A.Int(cube, "Type"));
                     Handles.CubeHandleCap(0, cubePos, Quaternion.identity, .72f, EventType.Repaint);
                     if (hidden) Handles.Label(cubePos + Vector3.up * .35f, "?");
-                    if (A.Int(cube, "GroupKeyId") > 0) Handles.Label(cubePos + Vector3.up * .35f, "Key " + A.Int(cube, "GroupKeyId"));
+                    if (A.Int(cube, "GroupKeyId") > 0) Handles.Label(cubePos + Vector3.up * .35f, "Chìa khóa " + A.Int(cube, "GroupKeyId"));
                 }
-                if (type == 1) Handles.Label(Vector3.up * 1.6f, "Queue: " + cubes.Count);
+                if (type == 1) Handles.Label(Vector3.up * 1.6f, "Hàng đợi: " + cubes.Count);
                 else { Handles.color = Color.cyan; Handles.DrawAAPolyLine(2, new Vector3(0,.35f,1.8f), new Vector3(0,.35f,2.5f)); }
             }
             Handles.color = interactive && _box == i && _tab == 1 ? Color.yellow : Color.white;
             if (interactive && Handles.Button(position + Vector3.up * .75f, rotation, .16f, .2f, Handles.SphereHandleCap)) { _box = i; _tab = 1; Repaint(); }
-            string label = "Box " + i;
+            string label = "Hộp " + i;
             if (A.Int(box, "LockColor") > 0) label += " · color lock " + A.Int(box, "LockColor");
             if (A.Int(box, "NumLock") > 0) label += " · number lock " + A.Int(box, "NumLock");
             Handles.Label(position + Vector3.up * 1.1f, label);
@@ -992,7 +1012,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 if (slot <= slots.Count && slot > 0)
                 {
                     Handles.color = new Color(1,.8f,.2f,.7f); Handles.DrawDottedLine(position, slots[slot - 1], 4);
-                    if (interactive && _tab == 1 && _box == i) Handles.Label(slots[slot - 1], "Binding " + slot);
+                    if (interactive && _tab == 1 && _box == i) Handles.Label(slots[slot - 1], "Liên kết " + slot);
                 }
             }
         }

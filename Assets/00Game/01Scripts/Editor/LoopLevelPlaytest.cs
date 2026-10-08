@@ -33,14 +33,14 @@ internal static class LoopLevelPlaytest
         error = null;
         if (Busy || EditorApplication.isCompiling || EditorApplication.isUpdating ||
             EditorApplication.isPlayingOrWillChangePlaymode != EditorApplication.isPlaying)
-        { error = "Unity is busy. Wait for the current Play Mode transition."; return false; }
+        { error = "Unity đang bận. Chờ hoàn tất chuyển đổi Play Mode."; return false; }
         var errors = LoopLevelAuthoring.Validate(root, out _);
         if (errors.Count > 0) { error = string.Join("\n", errors); return false; }
         SceneAsset scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
-        if (scene == null) { error = "Gameplay scene not found: " + ScenePath; return false; }
+        if (scene == null) { error = "Không tìm thấy scene chơi game: " + ScenePath; return false; }
         // SessionState survives assembly reloads; neither the draft nor its file is replaced.
         SessionState.SetString(PendingKey, root.ToString(Formatting.None));
-        SetStatus("Opening Game View with the preview level…");
+        SetStatus("Đang mở Game View với màn chơi xem trước…");
         BeginWaiting();
         try
         {
@@ -86,19 +86,19 @@ internal static class LoopLevelPlaytest
             GameController.Current.UpdateCamera();
             _waiting = false; _requestedData = null;
             Time.timeScale = 1;
-            SetStatus("Preview level is running in Game View. Stop Play Mode to return to editing.");
+            SetStatus("Màn chơi xem trước đang chạy trong Game View. Dừng Play Mode để quay lại chỉnh sửa.");
             FocusGameView();
         }
         else if (EditorApplication.timeSinceStartup > _deadline)
-            Fail("The gameplay controller did not load the preview. Check the Unity Console.");
+            Fail("Bộ điều khiển game chưa nạp bản xem trước. Kiểm tra Unity Console.");
     }
     private static void OnPlayModeChanged(PlayModeStateChange state)
     {
         if (state == PlayModeStateChange.ExitingPlayMode || state == PlayModeStateChange.EnteredEditMode)
         {
-            if (_waiting) SetStatus("Playtest cancelled.");
-            else if (state == PlayModeStateChange.EnteredEditMode && Status.StartsWith("Preview level is running", StringComparison.Ordinal))
-                SetStatus("Playtest stopped. The editor draft and generated preview are ready.");
+            if (_waiting) SetStatus("Đã hủy chơi thử.");
+            else if (state == PlayModeStateChange.EnteredEditMode && Status.StartsWith("Màn chơi xem trước đang chạy", StringComparison.Ordinal))
+                SetStatus("Đã dừng chơi thử. Bản nháp và bản xem trước đã sẵn sàng.");
             _waiting = false; _requestedData = null; SessionState.EraseString(PendingKey);
             RestoreStartScene();
         }
@@ -115,7 +115,7 @@ internal static class LoopLevelPlaytest
     private static void Fail(string error)
     {
         _waiting = false; _requestedData = null; SessionState.EraseString(PendingKey);
-        SetStatus("Playtest failed: " + error);
+        SetStatus("Chơi thử thất bại: " + error);
         Debug.LogError(Status);
     }
     private static void SetStatus(string status)
