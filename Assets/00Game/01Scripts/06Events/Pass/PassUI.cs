@@ -20,7 +20,12 @@ namespace Snui
         public static void Text(Transform root, string name, string value)
         {
             var text = Node<TMP_Text>(root, name);
-            if (text != null) text.text = value;
+            if (text != null)
+            {
+                var label = text.GetComponent<Snui_Text>();
+                if (label != null) label.SetText(value);
+                else text.text = value;
+            }
         }
         public static Button Bind(Transform root, string name, UnityEngine.Events.UnityAction action)
         {
