@@ -136,7 +136,7 @@ namespace ShopUI
 		{
 			if (_rewardsRoot == null) return;
 
-			var lib = RecoveryPrefabLibrary.Current;
+			var lib = PrefabLibrary.Current;
 			if (lib == null || lib.ShopRewardItemPrefab == null) return;
 
 			// Ensure layout group exists so items are aligned nicely

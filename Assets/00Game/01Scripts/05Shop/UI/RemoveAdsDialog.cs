@@ -12,7 +12,7 @@ namespace ShopUI
 		{
 			var prefab = Resources.Load<GameObject>("ShopUI/Prefabs/RemoveAdsDialog")
 				?? Resources.Load<GameObject>("Shop/Prefab/RemoveAdsDialog")
-				?? Snui.RecoveryPrefabLibrary.Current?.Resolve(PATH);
+				?? Snui.PrefabLibrary.Current?.Resolve(PATH);
 
 			RemoveAdsDialog dialog = null;
 			if (prefab != null)
