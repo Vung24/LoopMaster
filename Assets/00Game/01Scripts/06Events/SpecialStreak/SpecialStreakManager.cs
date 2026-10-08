@@ -147,7 +147,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
         _data.LastWonLevel = level;
         SaveData(); Changed?.Invoke();
     }
-    // Native OnGameFail is dispatched on decline/Retry/Quit, not on the recoverable road-full state.
+    // Native OnGameFail is dispatched on decline/Retry/Quit, not while a road-full state still allows revival.
     public void OnGameFailed()
     {
         if (!IsOngoing || _settling) return;
@@ -171,7 +171,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
                 SaveData(); // durable intent before granting a milestone
             }
             var inventory = InventoryManager.Ensure();
-            if (!inventory.RecoverRewardJournal()) return false;
+            if (!inventory.ReplayPendingRewardJournal()) return false;
             SpecialStreakRewardInfo stage;
             while ((stage = GetCurrRewardInfo()) != null && _data.TargetCount >= stage.Goal)
             {

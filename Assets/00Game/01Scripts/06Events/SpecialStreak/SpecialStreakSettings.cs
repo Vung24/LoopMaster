@@ -12,7 +12,7 @@ internal static class SpecialStreakPresentation
     internal static void Prepare(Transform root, List<Material> materials)
     {
         Snui.Snui_Text.EnsureFontAssets(root);
-        var library = Snui.DataPrefabLibrary.Current;
+        var library = Snui.PrefabLibrary.Current;
         foreach (var graphic in root.GetComponentsInChildren<SkeletonGraphic>(true))
         {
             if (library?.LevelBoxSpineShader != null && graphic.material != null)
