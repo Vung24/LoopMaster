@@ -22,21 +22,20 @@ public class SpecialStreakDialog : MonoBehaviour
     private Image _tutorialMask;
     private Transform _infoBtnOriginParent;
     private GameObject _info;
+    private bool _infoLoading;
     private bool _closed;
     private bool _started;
 
     public event Action Closed;
 
-    public static UniTask<SpecialStreakDialog> Show(Transform parent)
+    public static async UniTask<SpecialStreakDialog> Show(Transform parent)
     {
-        var prefab = PrefabLibrary.Current?.SpecialStreakDialogPrefab;
-        if (parent == null || prefab == null) return UniTask.FromResult<SpecialStreakDialog>(null);
-        var instance = Instantiate(prefab, parent, false);
+        if (parent == null) return null;
+        var dialog = await PopupAssets.Instantiate<SpecialStreakDialog>("SpecialStreakDialog", parent, parent.GetCancellationTokenOnDestroy());
+        var instance = dialog.gameObject;
         RewardDialog.PrepareOverlay(instance, 1350);
-        var dialog = instance.GetComponent<SpecialStreakDialog>();
-        if (dialog == null) { Destroy(instance); return UniTask.FromResult<SpecialStreakDialog>(null); }
         dialog.Refresh();
-        return UniTask.FromResult(dialog);
+        return dialog;
     }
 
     private void Awake()
@@ -239,12 +238,18 @@ public class SpecialStreakDialog : MonoBehaviour
 
     public async UniTaskVoid OnClickInfoBtn()
     {
-        var prefab = PrefabLibrary.Current?.SpecialStreakInfoDialogPrefab;
-        if (_info != null || prefab == null || _closed) return;
+        if (_info != null || _infoLoading || _closed) return;
 
         CheckTutorialMaskDismiss();
 
-        _info = Instantiate(prefab, transform.parent, false);
+        _infoLoading = true;
+        try
+        {
+            var instance = await PopupAssets.Instantiate("SpecialStreakInfoDialog", transform.parent, this.GetCancellationTokenOnDestroy());
+            if (this == null || _closed || !isActiveAndEnabled) { Destroy(instance); return; }
+            _info = instance;
+        }
+        finally { if (this != null) _infoLoading = false; }
         RewardDialog.PrepareOverlay(_info, 1400);
         SpecialStreakPresentation.Prepare(_info.transform, _materials);
 
