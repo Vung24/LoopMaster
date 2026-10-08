@@ -1,4 +1,8 @@
 #if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,6 +16,9 @@ public sealed class LoopMasterDebugWindow : EditorWindow
     [SerializeField] private DebugLevelPanel _level = new DebugLevelPanel();
     [SerializeField] private DebugSpecialStreakPanel _specialStreak = new DebugSpecialStreakPanel();
     private Vector2 _eventScroll;
+    private bool _streakRewardsExpanded;
+    private bool _streakPresenting;
+    private string _streakStatus;
 
     [MenuItem("Tools/LoopMaster/Debug")]
     public static void Open() => GetWindow<LoopMasterDebugWindow>("LoopMaster Debug").Show();
@@ -46,7 +53,7 @@ public sealed class LoopMasterDebugWindow : EditorWindow
             case Tab.SpecialStreak: _specialStreak.DrawGUI(); break;
             default:
                 _eventScroll = EditorGUILayout.BeginScrollView(_eventScroll);
-                EditorGUILayout.HelpBox("Event actions use the current save and persist progress. Use Level to test wins and losses through the gameplay flow.", MessageType.Info);
+                EditorGUILayout.HelpBox("Event actions use the current save and persist progress.", MessageType.Info);
                 if (_tab == Tab.StreakLine) DrawStreakLine();
                 else DrawLava();
                 EditorGUILayout.EndScrollView();
@@ -54,7 +61,7 @@ public sealed class LoopMasterDebugWindow : EditorWindow
         }
     }
 
-    private static void DrawStreakLine()
+    private void DrawStreakLine()
     {
         var manager = EditorApplication.isPlaying ? Managers.StreakLine : null;
         if (manager == null)
@@ -69,14 +76,77 @@ public sealed class LoopMasterDebugWindow : EditorWindow
         EditorGUILayout.LabelField("Highest level", manager.GetMaxReachLevel().ToString());
         EditorGUILayout.LabelField("Claimable chests", manager.GetClaimableChestCount().ToString());
         EditorGUILayout.LabelField("Remaining seconds", manager.GetRemainingTime().ToString());
-        using (new EditorGUI.DisabledScope(!Running))
+        var parent = Snui.Dialog.DefaultParent ?? SnuiManager.GetCurrentUiCanvas()?.transform;
+        var dialog = parent == null ? null : parent.GetComponentInChildren<Snui.StreakLine.StreakLineDialog>();
+        bool busy = _streakPresenting || (dialog != null && !dialog.CanPlayPendingProgress);
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Test progress", EditorStyles.boldLabel);
+        using (new EditorGUI.DisabledScope(!Running || busy))
         {
+            using (new EditorGUI.DisabledScope(manager.IsOngoing && !manager.IsExpired))
+                if (GUILayout.Button("Activate For Debug (24 hours)"))
+                {
+                    manager.Data.State = Snui.EventState.Ongoing;
+                    manager.Data.EndTime = TimeUtils.GetUnixTimestamp() + 86400;
+                    manager.SaveData();
+                    _streakStatus = "Event activated; existing progress and claimed chests kept.";
+                }
+            using (new EditorGUI.DisabledScope(!manager.IsOngoing || manager.IsExpired ||
+                manager.GetCurrLevel() + manager.GetTempLevel() >= manager.GetFinalGoal()))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("+1 Level")) AdvanceStreakLine(manager, 1, parent, dialog);
+                    if (GUILayout.Button("+5 Levels")) AdvanceStreakLine(manager, 5, parent, dialog);
+                }
+                if (GUILayout.Button("Advance To Next Chest"))
+                {
+                    int current = manager.GetCurrLevel() + manager.GetTempLevel();
+                    foreach (var chest in manager.GetChests())
+                        if (chest != null && chest.Level > current)
+                        {
+                            AdvanceStreakLine(manager, chest.Level - current, parent, dialog);
+                            break;
+                        }
+                }
+            }
+            using (new EditorGUI.DisabledScope(parent == null || !manager.IsOngoing || manager.IsExpired))
+                if (GUILayout.Button("Open StreakLine / Play Pending Rise"))
+                    PresentStreakLine(parent, dialog).Forget();
             if (GUILayout.Button("Check Event State")) manager.CheckEventState();
             using (new EditorGUI.DisabledScope(manager.IsLock || !manager.CanStartEvent()))
                 if (GUILayout.Button("Start Event")) manager.StartEvent();
         }
-        EditorGUILayout.HelpBox("Start follows the event's weekly schedule. Pending progress settles through the normal Home/Game flow.", MessageType.None);
+        EditorGUILayout.HelpBox("Increase uses StreakLine's win logic, settles pending levels and plays the rise in its popup. Activate bypasses the weekly schedule for debugging.", MessageType.None);
+        if (!string.IsNullOrEmpty(_streakStatus)) EditorGUILayout.HelpBox(_streakStatus, MessageType.None);
         if (GUILayout.Button("Test Win / Lose")) Open(Tab.Level);
+        _streakRewardsExpanded = EditorGUILayout.Foldout(_streakRewardsExpanded, "Reward milestones", true);
+        if (_streakRewardsExpanded) DebugEventRewards.DrawStreakLine(manager);
+    }
+
+    private void AdvanceStreakLine(Snui.StreakLine.BaseStreakLineManager manager, int levels,
+        Transform parent, Snui.StreakLine.StreakLineDialog dialog)
+    {
+        int before = manager.GetCurrLevel() + manager.GetTempLevel();
+        int count = Mathf.Min(levels, manager.GetFinalGoal() - before);
+        for (int i = 0; i < count; i++) manager.OnGameWon();
+        manager.SynchronizeTempLevel();
+        _streakStatus = "Progress: " + before + " -> " + manager.GetCurrLevel() + ".";
+        if (parent != null) PresentStreakLine(parent, dialog).Forget();
+    }
+
+    private async UniTask PresentStreakLine(Transform parent, Snui.StreakLine.StreakLineDialog dialog)
+    {
+        _streakPresenting = true;
+        try
+        {
+            Managers.StreakLine.SynchronizeTempLevel();
+            if (dialog != null) await dialog.PlayPendingProgress();
+            else await Snui.StreakLine.StreakLineDialog.Show(parent);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception) { _streakStatus = exception.Message; Debug.LogException(exception); }
+        finally { _streakPresenting = false; }
     }
 
     private static void DrawLava()
@@ -98,6 +168,7 @@ public sealed class LoopMasterDebugWindow : EditorWindow
         EditorGUILayout.LabelField("Pending reward", manager.ShouldClaimRewards() ? "Yes" : "No");
         EditorGUILayout.LabelField("Remaining seconds", manager.GetRemainTime().ToString());
         EditorGUILayout.LabelField("Retry seconds", manager.GetRemainRetryTime().ToString());
+        DebugEventRewards.DrawLava(manager);
         using (new EditorGUI.DisabledScope(!Running))
         {
             if (GUILayout.Button("Check Event State")) manager.CheckEventState();
@@ -105,6 +176,102 @@ public sealed class LoopMasterDebugWindow : EditorWindow
                 if (GUILayout.Button("Start Event")) manager.StartEvent();
         }
         if (GUILayout.Button("Test Win / Lose")) Open(Tab.Level);
+    }
+}
+
+/// <summary>Read-only milestone inspection; receipt checks never initialize or mutate inventory.</summary>
+internal static class DebugEventRewards
+{
+    private static HashSet<string> _receipts;
+
+    private static void Header(string note)
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Reward milestones", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(note + " Receipt = reward transaction saved to inventory. Updates automatically.", MessageType.None);
+        if (!InventoryManager.TryDebugReadRewardReceipts(out _receipts, out string error))
+            EditorGUILayout.HelpBox("Cannot verify inventory receipts: " + error, MessageType.Error);
+    }
+
+    internal static void DrawSpecialStreak(SpecialStreakManager manager)
+    {
+        Header("Goals are per stage. Pending collection is counted separately from claimed rewards.");
+        var stages = manager.GetRewardInfosConfig();
+        if (stages == null) return;
+        long pending = manager.DebugPendingCollectionCount;
+        for (int i = 0; i < stages.Count; i++)
+        {
+            var stage = stages[i];
+            if (stage == null) continue;
+            bool claimed = i < manager.ClaimedIndex;
+            string status = claimed ? "Claimed" : !string.IsNullOrEmpty(manager.LastError) ? "Check event error" : manager.IsLocked ? "Locked" :
+                pending >= stage.Goal ? "Pending collection / reward" : "Not reached";
+            var rewards = new List<RewardItem>();
+            if (stage.Rewards != null)
+                foreach (var reward in stage.Rewards)
+                    if (reward != null) rewards.Add(new RewardItem(RewardType.FromString(reward.type), reward.count));
+            DrawRow(i + 1, stage.Goal, rewards, status, claimed, SpecialStreakManager.ClaimId(i));
+            if (!claimed) pending -= stage.Goal;
+        }
+    }
+
+    internal static void DrawStreakLine(Snui.StreakLine.BaseStreakLineManager manager)
+    {
+        Header("Claimed chests belong to this event cycle. Pending wins must settle before claiming.");
+        EditorGUILayout.LabelField("Cycle end", manager.EndTime.ToString());
+        var chests = manager.GetChests();
+        if (chests == null) return;
+        for (int i = 0; i < chests.Count; i++)
+        {
+            var chest = chests[i];
+            if (chest == null) continue;
+            bool claimed = manager.IsChestClaimed(chest.Level);
+            string status = claimed ? "Claimed" : manager.CanClaimChest(chest.Level) ? "Ready to claim" :
+                manager.IsLock ? "Locked" : manager.IsExpired || !manager.IsOngoing ? "Unavailable" :
+                (long)manager.GetCurrLevel() + manager.GetTempLevel() >= chest.Level ? "Pending wins" : "Not reached";
+            DrawRow(i + 1, chest.Level, chest.Items(), status, claimed,
+                "StreakLine/" + manager.EndTime + "/" + chest.Level);
+        }
+    }
+
+    internal static void DrawLava(Snui.Lava.BaseLavaManager manager)
+    {
+        Header("Lava has one final reward per run. Coins are shared between the surviving players.");
+        bool claimed = manager.DebugHasClaimedRewards;
+        string status = claimed ? "Claimed" : manager.ShouldClaimRewards() ? "Ready to claim" :
+            !manager.IsUnlocked() ? "Locked" : manager.IsFail() || manager.IsExpired() ? "Unavailable" : "Not reached";
+        string id = manager.DebugRewardClaimId;
+        DrawRow(1, manager.GetLevelGoal(), new[] { RewardItem.Coin(manager.GetSharedCoinRewardCount()) },
+            status, claimed, string.IsNullOrEmpty(id) ? null : "lava:" + id);
+        EditorGUILayout.HelpBox("Coin amount is the current run's calculated share. A new run resets its milestone status.", MessageType.None);
+    }
+
+    private static void DrawRow(int number, int goal, IReadOnlyList<RewardItem> rewards,
+        string status, bool claimed, string claimId)
+    {
+        bool? receipt = _receipts == null ? (bool?)null :
+            !string.IsNullOrEmpty(claimId) && _receipts.Contains(claimId);
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+            EditorGUILayout.LabelField("Milestone " + number + " | Goal " + goal, status, EditorStyles.boldLabel);
+            var description = new StringBuilder();
+            if (rewards != null)
+                foreach (var item in rewards)
+                {
+                    if (item == null) continue;
+                    if (description.Length > 0) description.Append(", ");
+                    description.Append(item.Type?.Key ?? "unknown").Append(" x").Append(item.Count);
+                    if (item.Type == RewardType.InfinityHeart) description.Append(" seconds");
+                }
+            EditorGUILayout.LabelField(description.Length == 0 ? "No rewards configured" : description.ToString(), EditorStyles.wordWrappedLabel);
+            EditorGUILayout.LabelField("Inventory receipt", receipt == null ? "Cannot verify" : receipt.Value ? "Saved" : "Not saved");
+            if (!string.IsNullOrEmpty(claimId))
+                EditorGUILayout.SelectableLabel(claimId, EditorStyles.miniLabel, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+            if (receipt == true && !claimed)
+                EditorGUILayout.HelpBox("Reward granted; event claim state has not synchronized yet.", MessageType.Warning);
+            else if (receipt == false && claimed)
+                EditorGUILayout.HelpBox("Event marks this reward claimed, but its inventory receipt is missing.", MessageType.Warning);
+        }
     }
 }
 #endif

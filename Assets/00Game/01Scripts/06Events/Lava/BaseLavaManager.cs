@@ -49,6 +49,11 @@ namespace Snui.Lava
 		protected LavaData _data;
 		protected LavaConfig _config;
 
+#if UNITY_EDITOR
+		public bool DebugHasClaimedRewards => _data != null && _data.HasClaimedRewards;
+		public string DebugRewardClaimId => _data != null && _data.StartTime > 0 ? _data.RewardClaimId : null;
+#endif
+
 		private readonly List<(int min, int max)> _loseRangeList = new List<(int, int)>
 		{
 			(2, 5),
