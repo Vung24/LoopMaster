@@ -7,10 +7,9 @@ using Snui;
 using TMPro;
 using UnityEngine.UI;
 
-public class SpecialStreakDialog : MonoBehaviour
+public class SpecialStreakDialog : BasePopup
 {
     [SerializeField] private Button _infoBtn;
-    [SerializeField] private Button _closeBtn;
     [SerializeField] private SpecialStreakMultiplierSlider _multiplierSlider;
     [SerializeField] private ProgressBar _progressBar;
     [SerializeField] private RewardCell _rewardCell;
@@ -23,10 +22,7 @@ public class SpecialStreakDialog : MonoBehaviour
     private Transform _infoBtnOriginParent;
     private GameObject _info;
     private bool _infoLoading;
-    private bool _closed;
     private bool _started;
-
-    public event Action Closed;
 
     public static async UniTask<SpecialStreakDialog> Show(Transform parent)
     {
@@ -38,14 +34,16 @@ public class SpecialStreakDialog : MonoBehaviour
         return dialog;
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         SpecialStreakPresentation.Prepare(transform, _materials);
         ResolveHierarchyReferences();
     }
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         SetSafeBottom();
         Canvas.ForceUpdateCanvases();
         _started = true;
@@ -56,7 +54,6 @@ public class SpecialStreakDialog : MonoBehaviour
         CheckTutorialShow().Forget();
 
         if (_infoBtn != null) _infoBtn.onClick.AddListener(() => OnClickInfoBtn().Forget());
-        if (_closeBtn != null) _closeBtn.onClick.AddListener(OnClickCloseBtn);
 
         SpecialStreakManager.Ensure().Changed += Refresh;
     }
@@ -68,9 +65,7 @@ public class SpecialStreakDialog : MonoBehaviour
         if (_infoBtn == null)
             _infoBtn = HierarchyReferenceCache.DescendantComponent<Button>(transform, "InfoBtn") ??
                        HierarchyReferenceCache.DescendantComponent<Button>(transform, "InfoButton");
-        if (_closeBtn == null)
-            _closeBtn = HierarchyReferenceCache.DescendantComponent<Button>(transform, "CloseBtn") ??
-                        HierarchyReferenceCache.DescendantComponent<Button>(transform, "CloseButton");
+
         if (_multiplierSlider == null)
             _multiplierSlider = HierarchyReferenceCache.DescendantComponent<SpecialStreakMultiplierSlider>(transform, "MultiplierSlider");
         if (_progressBar == null)
@@ -238,7 +233,7 @@ public class SpecialStreakDialog : MonoBehaviour
 
     public async UniTaskVoid OnClickInfoBtn()
     {
-        if (_info != null || _infoLoading || _closed) return;
+        if (_info != null || _infoLoading) return;
 
         CheckTutorialMaskDismiss();
 
@@ -246,7 +241,7 @@ public class SpecialStreakDialog : MonoBehaviour
         try
         {
             var instance = await PopupAssets.Instantiate("SpecialStreakInfoDialog", transform.parent, this.GetCancellationTokenOnDestroy());
-            if (this == null || _closed || !isActiveAndEnabled) { Destroy(instance); return; }
+            if (this == null || !isActiveAndEnabled) { Destroy(instance); return; }
             _info = instance;
         }
         finally { if (this != null) _infoLoading = false; }
@@ -289,46 +284,31 @@ public class SpecialStreakDialog : MonoBehaviour
 
     private void OnInfoDismissed(int result) => CloseInfo();
 
-    private void OnClickCloseBtn()
+    protected override void OnEscapeKeyPressed()
     {
-        Close();
+        if (_info != null) CloseInfo();
+        else base.OnEscapeKeyPressed();
     }
 
-    private void Update()
+    protected override void OnClosing()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            if (_info != null) CloseInfo();
-            else Close();
-        }
-    }
-
-    public void Close()
-    {
-        if (_closed) return;
-        _closed = true;
         SpecialStreakManager.Ensure().IsTutorialFinished = true;
         CheckTutorialMaskDismiss();
-        Closed?.Invoke();
-        gameObject.SetActive(false);
-        Destroy(gameObject);
+        CloseInfo();
+        base.OnClosing();
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
         if (SpecialStreakManager.Current != null) SpecialStreakManager.Current.Changed -= Refresh;
         CloseInfo();
-        if (!_closed)
-        {
-            _closed = true;
-            Closed?.Invoke();
-        }
+        base.OnDisable();
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         if (SpecialStreakManager.Current != null) SpecialStreakManager.Current.Changed -= Refresh;
-        if (_closeBtn != null) _closeBtn.onClick.RemoveListener(OnClickCloseBtn);
         SpecialStreakPresentation.Cleanup(_materials);
+        base.OnDestroy();
     }
 }
