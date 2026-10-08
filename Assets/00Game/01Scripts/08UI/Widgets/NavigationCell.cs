@@ -9,9 +9,9 @@ namespace Snui
 {
 	public class NavigationCell : MonoBehaviour
 	{
-		public float IconNormalPosition = -120f, IconSelectPosition = -77f;
-		[FormerlySerializedAs("IconScale")] public float SelectedScale = 1f;
-		public float UnselectedScale = 0.9f;
+		public float IconNormalPosition = -86f, IconSelectPosition = -30f;
+		[FormerlySerializedAs("IconScale")] public float SelectedScale = 0.9f;
+		public float UnselectedScale = 0.8f;
 		[SerializeField] private Sprite _normalSprite, _selectedSprite;
 		[SerializeField] private Image _icon;
 		[SerializeField] private TMP_Text _text;
@@ -30,6 +30,7 @@ namespace Snui
 			if (_line == null) _line = HierarchyReferenceCache.Child(transform, "Line");
 			if (_icon != null)
 			{
+				_icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
 				if (_normalSprite == null) _normalSprite = _icon.sprite;
 				if (_selectedSprite == null) _selectedSprite = _icon.sprite;
 			}
@@ -59,6 +60,7 @@ namespace Snui
 			StopAnimation(); IsSelected = select;
 			if (_icon == null) return;
 			_icon.sprite = select ? _selectedSprite : _normalSprite;
+			_icon.SetNativeSize();
 			float scale = select ? SelectedScale : UnselectedScale;
 			if (!select && navigationAnim != NavigationAnim.Default)
 			{
