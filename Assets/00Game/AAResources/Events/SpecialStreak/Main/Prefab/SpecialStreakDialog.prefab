@@ -1222,11 +1222,10 @@ MonoBehaviour:
   _multiplierSlider: {fileID: 114924333262772435}
   _progressBar: {fileID: 114495765800120777}
   _rewardCell: {fileID: 114444259923885514}
-  _tableView: {fileID: 0}
+  _scrollAdapter: {fileID: 114466270144110908}
   _completedTickNode: {fileID: 224506130958629316}
   _timer: {fileID: 114544238866628196}
   _timerText: {fileID: 114344356310872513}
-  _specialStreakCellPrefab: {fileID: 0}
 --- !u!225 &225914764266978687
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -1819,27 +1818,28 @@ MonoBehaviour:
   m_GameObject: {fileID: 1095535157799666}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1aa08ab6e0800fa44ae55d278d1423e3, type: 3}
+  m_Script: {fileID: 11500000, guid: c82c5893d6c14c85b7ef3b3c12a1482d, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  m_Content: {fileID: 224584586380843241}
-  m_Horizontal: 0
-  m_Vertical: 1
-  m_MovementType: 1
-  m_Elasticity: 0.1
-  m_Inertia: 1
-  m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 1
-  m_Viewport: {fileID: 224574660324328817}
-  m_HorizontalScrollbar: {fileID: 0}
-  m_VerticalScrollbar: {fileID: 0}
-  m_HorizontalScrollbarVisibility: 2
-  m_VerticalScrollbarVisibility: 2
-  m_HorizontalScrollbarSpacing: -3
-  m_VerticalScrollbarSpacing: -3
-  m_OnValueChanged:
-    m_PersistentCalls:
-      m_Calls: []
+  _Params:
+    _Content: {fileID: 224584586380843241}
+    _Viewport: {fileID: 224574660324328817}
+    _Orientation: 0
+    _Scrollbar: {fileID: 0}
+    _ScrollSensivity: 1
+    _ContentPadding:
+      m_Left: 0
+      m_Right: 0
+      m_Top: 0
+      m_Bottom: 0
+    _Gravity: 1
+    _ContentSpacing: 0
+    _DefaultItemSize: 220
+    _ItemTransversalSize: 0
+    _UseUnscaledTime: 1
+    _ItemPrefab: {fileID: 224811238163672866, guid: e0daaf249eb05c147a15f19f19b01840, type: 3}
+    _PrefabControlsDefaultItemSize: 0
+    _AlsoControlItemTransversalSize: 0
 --- !u!224 &224574660324328817
 RectTransform:
   serializedVersion: 2
@@ -4942,6 +4942,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b01c7f72954c88957df8f00be4b3e5c3, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _useNativeIconSize: 1
   RewardItem:
     Count: 0
   CollectSound: {fileID: 8300000, guid: 69579d7e4ee6076498fc2534dfc5bc17, type: 3}
