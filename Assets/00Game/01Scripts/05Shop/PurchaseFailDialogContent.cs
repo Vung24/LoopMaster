@@ -11,23 +11,8 @@ namespace ShopUI
 
 		public static async UniTask<PurchaseFailDialogContent> Show(Transform parent)
 		{
-			var settings = ShopUISettings_SO.Instance;
-			if (settings != null && settings.PurchaseFailDialogContent != null && settings.PurchaseFailDialogContent.RuntimeKeyIsValid())
-			{
-				return await Dialog.ShowContent<PurchaseFailDialogContent>(parent, settings.PurchaseFailDialogContent, 0.03f);
-			}
-
-			var prefab = DataPrefabLibrary.Current?.PurchaseFailDialogContentPrefab
-				?? DataPrefabLibrary.Current?.Resolve("PurchaseFailDialogContent")
-				?? Resources.Load<GameObject>("Shop/Prefab/PurchaseFailDialogContent");
-			if (prefab != null)
-			{
-				var go = Instantiate(prefab, parent, false);
-				var content = go.GetComponent<PurchaseFailDialogContent>();
-				return content;
-			}
-
-			return null;
+			if (parent == null) return null;
+			return await Dialog.ShowContent<PurchaseFailDialogContent>(parent, "PurchaseFailDialogContent");
 		}
 
 		protected override void Awake()
@@ -54,7 +39,7 @@ namespace ShopUI
 			base.Start();
 			if (_closeBtn != null)
 			{
-				_closeBtn.onClick.AddListener(Hide);
+				_closeBtn.onClick.AddListener(OnContinueClicked);
 			}
 			if (_continueBtn != null)
 			{
@@ -64,7 +49,7 @@ namespace ShopUI
 
 		private void OnContinueClicked()
 		{
-			Hide();
+			Dismiss();
 		}
 	}
 }

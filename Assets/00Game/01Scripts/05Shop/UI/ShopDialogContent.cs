@@ -30,40 +30,8 @@ namespace ShopUI
 		public static async UniTask<ShopDialogContent> Show(Transform parent, IShopDelegate shopDelegate, string route)
 		{
 			HeartManager.EnsureInitialized();
-			var settings = ShopUISettings_SO.Instance;
-			ShopDialogContent content = null;
-			if (settings != null && settings.ShopDialogContentPrefab != null && settings.ShopDialogContentPrefab.RuntimeKeyIsValid())
-			{
-				// Native Show instantiates content under the supplied parent, without a modal wrapper.
-				var go = await AddressableUtils.AsyncLoadAsGameObject(settings.ShopDialogContentPrefab, parent).Task;
-				if (parent == null) { if (go != null) Destroy(go); return null; }
-				content = go == null ? null : go.GetComponent<ShopDialogContent>();
-				if (go != null && content == null) Destroy(go);
-			}
-
-			if (content == null)
-			{
-				var prefab = DataPrefabLibrary.Current?.ShopDialogContentPrefab
-					?? DataPrefabLibrary.Current?.Resolve("ShopDialogContent")
-					?? Resources.Load<GameObject>("Shop/Prefab/ShopDialogContent")
-					?? Resources.Load<GameObject>("04Prefabs/Shop/ShopDialogContent")
-					?? Resources.Load<GameObject>("ShopUI/Prefab/ShopDialogContent");
-
-				if (prefab != null)
-				{
-					var go = Instantiate(prefab, parent, false);
-					var rt = go.GetComponent<RectTransform>();
-					if (rt != null)
-					{
-						rt.anchorMin = Vector2.zero;
-						rt.anchorMax = Vector2.one;
-						rt.offsetMin = Vector2.zero;
-						rt.offsetMax = Vector2.zero;
-						rt.localScale = Vector3.one;
-					}
-					content = go.GetComponent<ShopDialogContent>();
-				}
-			}
+			if (parent == null) return null;
+			var content = await PopupAssets.Instantiate<ShopDialogContent>("ShopDialogContent", parent, parent.GetCancellationTokenOnDestroy());
 
 			if (content != null)
 			{
@@ -281,9 +249,9 @@ namespace ShopUI
 			string resPath = _delegate != null ? _delegate.GetProductResPath(type) : type;
 			GameObject prefab = null;
 
-			if (DataPrefabLibrary.Current != null && !string.IsNullOrEmpty(resPath))
+			if (PrefabLibrary.Current != null && !string.IsNullOrEmpty(resPath))
 			{
-				prefab = DataPrefabLibrary.Current.Resolve(resPath);
+				prefab = PrefabLibrary.Current.Resolve(resPath);
 			}
 
 			if (prefab == null && !string.IsNullOrEmpty(resPath))
@@ -293,14 +261,14 @@ namespace ShopUI
 					?? Resources.Load<GameObject>("04Prefabs/Shop/" + System.IO.Path.GetFileNameWithoutExtension(resPath));
 			}
 
-			if (prefab == null && DataPrefabLibrary.Current != null)
+			if (prefab == null && PrefabLibrary.Current != null)
 			{
 				if (type.IndexOf("more", StringComparison.OrdinalIgnoreCase) >= 0)
-					prefab = DataPrefabLibrary.Current.ShopMoreOffersItemPrefab;
+					prefab = PrefabLibrary.Current.ShopMoreOffersItemPrefab;
 				else if (type.IndexOf("coin", StringComparison.OrdinalIgnoreCase) >= 0)
-					prefab = DataPrefabLibrary.Current.ShopCoinItemPrefab;
+					prefab = PrefabLibrary.Current.ShopCoinItemPrefab;
 				else
-					prefab = DataPrefabLibrary.Current.ShopBundleItemPrefab;
+					prefab = PrefabLibrary.Current.ShopBundleItemPrefab;
 			}
 
 			if (prefab == null)

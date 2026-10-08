@@ -37,8 +37,7 @@ namespace ShopUI
 		public virtual bool IsLimitShowProduct(string type)
 		{
 			type = ShopProductCatalog.CanonicalId(type);
-			// The pass system is still a placeholder in this offline project.
-			if (type == ShopProductCatalog.GoldenPass) return true;
+			if (type == ShopProductCatalog.GoldenPass) return Managers.Pass == null || !Managers.Pass.CanPurchaseVIP();
 			if (type == ShopProductCatalog.Beginner) return OfflineShopPurchases.PurchaseCount(type) > 0;
 			if (type == ShopProductCatalog.NoAds || type == ShopProductCatalog.NoAdsPlus)
 			{
@@ -57,6 +56,8 @@ namespace ShopUI
 			if (string.IsNullOrEmpty(id)) return "";
 			switch (ShopProductCatalog.CanonicalId(id))
 			{
+				case ShopProductCatalog.GoldenPass:
+					return "Events/PassBundleItem";
 				case ShopProductCatalog.Beginner:
 					return "ShopUI/Prefab/BeginBundleItem.prefab";
 				case ShopProductCatalog.NoAds:
