@@ -26,14 +26,12 @@ public sealed class PassPurchaseDialogContent : DialogContent
     {
         base.Start();
         PassUI.Node<Snui.Timer>(transform, "Timer")?.CountdownUntil(Managers.Pass.GetEndTime());
-        PassUI.Text(transform, "Snui_Price", "ACTIVATE (OFFLINE)");
+        PassUI.Text(transform, "Snui_Price", "ACTIVATE");
         PassUI.Text(transform, "Name", "You");
-        var content2 = HierarchyReferenceCache.Descendant(transform, "Content2");
-        if (content2 != null)
-        {
-            PassUI.Active(content2, "Item1", Managers.Pass.IsTeamEnable());
-            PassUI.Active(content2, "Item3", Managers.Pass.IsHeartEnable());
-        }
+        PassUI.Active(transform, "Item1", Managers.Pass.IsHeartEnable());
+        PassUI.Active(transform, "Item3", Managers.Pass.IsTeamEnable());
+        var special = HierarchyReferenceCache.Descendant(transform, "Special");
+        PassUI.Text(special, "Snui_Text", "Offline - no payment");
         PassUI.Animate(transform);
         Refresh();
     }

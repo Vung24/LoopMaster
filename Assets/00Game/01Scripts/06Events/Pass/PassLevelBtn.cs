@@ -16,9 +16,15 @@ namespace Snui
         public void Init(int row)
         {
             _stage = row; PassUI.Text(transform, "Level", row.ToString());
-            if (Managers.Pass.IsStageUnlocked(row)) ChangeToUnLockStyle(); else ChangeToLockStyle();
+            PassUI.Active(transform, "Level", row > 0);
+            ApplyBackground(Managers.Pass.IsStageUnlocked(row));
         }
-        public void ChangeToUnLockStyle() { var image = GetComponent<Image>(); if (image != null && ClaimedBg != null) image.sprite = ClaimedBg; }
-        public void ChangeToLockStyle() { var image = GetComponent<Image>(); if (image != null && PassBg != null) image.sprite = PassBg; }
+        public void ChangeToUnLockStyle() => ApplyBackground(true);
+        public void ChangeToLockStyle() => ApplyBackground(false);
+        private void ApplyBackground(bool unlocked)
+        {
+            var image = GetComponent<Image>();
+            if (image != null) image.overrideSprite = _stage == 0 ? PassBg : unlocked ? ClaimedBg : null;
+        }
 	}
 }

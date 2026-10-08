@@ -13,7 +13,11 @@ public class PassFinalBundleRewardDialog : MonoBehaviour
         PassUI.Text(transform, "Count", (Managers.Pass?.GetCurrentFinalBundleCoin() ?? 0).ToString());
         Snui_Text.EnsureFontAssets(transform);
     }
-    private void Start() { PassUI.Sound(ChestJumpSound); PassUI.Animate(transform); }
+    private void Start()
+    {
+        PassUI.Sound(ChestJumpSound); PassUI.Animate(transform);
+        PassUI.Spine(PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "CoinSpine"), "animation", false);
+    }
     private async UniTask Claim()
     {
         if (_busy) return;

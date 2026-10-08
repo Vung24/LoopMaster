@@ -7,6 +7,11 @@ namespace Snui
 	public class PassTicketCell : TableViewCell
 	{
         public static int Height = 140;
+        public void Refresh()
+        {
+            var button = GetComponentInChildren<UnityEngine.UI.Button>(true);
+            if (button != null) button.interactable = Managers.Pass != null && Managers.Pass.CanPurchaseVIP();
+        }
         protected override void Awake()
         {
             base.Awake();
