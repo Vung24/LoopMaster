@@ -42,9 +42,15 @@ namespace Snui
         public static void Spine(SkeletonGraphic graphic, string animation, bool loop)
         {
             if (graphic == null) return;
+            graphic.freeze = false;
+            graphic.UnscaledTime = true;
             graphic.Initialize(false);
             if (graphic.SkeletonData != null && graphic.SkeletonData.FindAnimation(animation) != null)
+            {
                 graphic.AnimationState.SetAnimation(0, animation, loop);
+                graphic.Update(0f);
+                graphic.UpdateMesh();
+            }
         }
         public static void Sound(AudioClip sound)
         {
@@ -54,7 +60,14 @@ namespace Snui
         {
             if (rewards == null || rewards.Count == 0 || owner == null) return;
             var parent = owner.GetComponentInParent<Canvas>()?.rootCanvas.transform ?? owner;
-            await RewardDialog.ShowSpecialStreakRewards(rewards, parent);
+            var merged = new List<RewardItem>();
+            var totals = new Dictionary<RewardType, RewardItem>();
+            foreach (var reward in rewards)
+            {
+                if (totals.TryGetValue(reward.Type, out var total)) total.Count = checked(total.Count + reward.Count);
+                else { total = new RewardItem(reward.Type, reward.Count); totals.Add(reward.Type, total); merged.Add(total); }
+            }
+            await RewardDialog.ShowSpecialStreakRewards(merged, parent);
         }
         public static UniTask WaitForClose(Component owner)
             => UniTask.WaitUntil(() => owner == null || !owner.gameObject.activeInHierarchy);

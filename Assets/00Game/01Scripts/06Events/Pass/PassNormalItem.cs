@@ -25,6 +25,7 @@ namespace Snui
         }
         public UniTask Init(int row)
         {
+            transform.localScale = Vector3.one;
             Stage = row;
             var config = Managers.Pass.GetStageConfigByIndex(row);
             _rewards = VipTrack ? config.VipRewards : config.FreeRewards;
@@ -49,8 +50,9 @@ namespace Snui
             bool unlocked = manager.IsStageUnlocked(Stage) && (!VipTrack || manager.IsVip());
             PassUI.Active(transform, "Get", claimed);
             PassUI.Active(transform, "Lock", !unlocked && !claimed);
+            if (!unlocked && !claimed) PassUI.Spine(PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock"), "lock", true);
             if (_claimBtn != null) { _claimBtn.gameObject.SetActive(unlocked && !claimed); _claimBtn.interactable = !_busy; }
-            if (_rewardCell != null) _rewardCell.gameObject.SetActive(!claimed);
+            if (_rewardCell != null) _rewardCell.gameObject.SetActive(_rewards != null && _rewards.Count > 0);
         }
         private void OnClicked()
         {
