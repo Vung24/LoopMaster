@@ -39,8 +39,6 @@ public sealed class UICanvas : MonoBehaviour
 	private bool _visibilityInitialized;
 	private bool _inputInitialized;
 	private bool _referencesCached;
-	private Image _speedIcon;
-	private TMP_Text _speedLabel;
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
@@ -248,6 +246,9 @@ public sealed class UICanvas : MonoBehaviour
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");
 		if (_pathButton == null) _pathButton = ResolveButton(_top, _bottom, "Path");
+		Transform speedNode = HierarchyReferenceCache.Descendant(_top, "Speed")
+			?? HierarchyReferenceCache.Descendant(_bottom, "Speed");
+		if (speedNode != null) speedNode.gameObject.SetActive(false);
 	}
 
 	private static Button ResolveButton(Transform top, Transform bottom, string name)
@@ -368,10 +369,6 @@ public sealed class UICanvas : MonoBehaviour
 		if (_undoTool != null) _undoTool.UpdateCanUseState(_controller.CanRequestUndoTool);
 		if (_shuffleTool != null) _shuffleTool.UpdateCanUseState(_controller.CanRequestShuffleTool);
 		if (_pathTool != null) _pathTool.UpdateCanUseState(_controller.CanRequestPathTool);
-		if (_speedLabel != null) _speedLabel.text = _controller.IsSpeedUpActive ? "x4" : "x2";
-		Sprite speedSprite = _controller.SpeedButtonSprite;
-		if (_speedIcon != null && speedSprite != null && _speedIcon.sprite != speedSprite)
-			_speedIcon.sprite = speedSprite;
 	}
 
 	private void ShowPauseDialog() => LoadPauseDialog().Forget();

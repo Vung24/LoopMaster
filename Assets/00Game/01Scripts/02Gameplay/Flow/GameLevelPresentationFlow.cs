@@ -124,8 +124,8 @@ public sealed class GameLevelPresentationFlow
 
 	private bool ShouldShowSpeedUpTutorial()
 	{
-		// The offline game exposes the speed control that was gated by native test group B.
-		return !Snui.CheatManager.SkipTutorial && _speedTutorialEnabled() && GameProgressStore.HighestUnlockedLevel >= 5 &&
+		if (_speedTutorialEnabled == null || !_speedTutorialEnabled()) return false;
+		return !Snui.CheatManager.SkipTutorial && GameProgressStore.HighestUnlockedLevel >= 5 &&
 			PlayerPrefs.GetInt("offline_HasShowSpeedUpTutorial", 0) == 0;
 	}
 
