@@ -136,12 +136,15 @@ public class HomePage : MonoBehaviour
 		{
 			EventRuntime.BeforeEnterHome();
 			var controller = Controller();
-			if (LevelBoxManager.Ensure().PendingMilestone > 0)
+			while (LevelBoxManager.Ensure().PendingMilestone > 0)
 			{
+				int milestone = LevelBoxManager.Ensure().PendingMilestone;
 				await UniTask.WaitUntil(() => controller.CanOpenLevelBox(_levelBoxMachine) && !EventPrefabUI.HasOpenDialogs,
 					cancellationToken: token);
-				if (controller.TryOpenPendingLevelBox())
-					await UniTask.WaitUntil(() => !controller.HasLevelBoxOpen, cancellationToken: token);
+				if (!controller.TryOpenPendingLevelBox()) break;
+				await UniTask.WaitUntil(() => !controller.HasLevelBoxOpen, cancellationToken: token);
+				// A failed save or asset load must leave a retry, not reopen forever.
+				if (LevelBoxManager.Ensure().PendingMilestone == milestone) break;
 			}
 			await SetupEvents(token);
 			token.ThrowIfCancellationRequested();
