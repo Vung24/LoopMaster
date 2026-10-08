@@ -25,7 +25,7 @@ namespace Snui
 		public static async UniTask<PreviewRewardItem> Show(RewardItem item, Transform parent)
 		{
 			if (parent == null || item == null) return null;
-			var prefab = RecoveryPrefabLibrary.Current?.Resolve(PATH);
+			var prefab = PrefabLibrary.Current?.Resolve(PATH);
 			if (prefab == null) return null;
 			var go = Instantiate(prefab, parent, false);
 			var preview = go.GetComponent<PreviewRewardItem>() ?? go.AddComponent<PreviewRewardItem>();
@@ -43,7 +43,7 @@ namespace Snui
 		private void UpdateIcon()
 		{
 			if (_icon == null || RewardItem?.Type == null) return;
-			_icon.sprite = RecoveryPrefabLibrary.Current?.ResolveRewardIcon(RewardItem.Type.GetIconPath());
+			_icon.sprite = PrefabLibrary.Current?.ResolveRewardIcon(RewardItem.Type.GetIconPath());
 			_icon.enabled = _icon.sprite != null;
 		}
 

@@ -17,7 +17,7 @@ namespace Snui
 		public IEnumerator Play(int count, Transform parent, Vector3 startWorld, Snui_CoinHud hud, GameObject prefab = null, int sortingOrder = 1101)
 		{
 			Cancel();
-			if (prefab == null && RecoveryPrefabLibrary.Current != null) prefab = RecoveryPrefabLibrary.Current.FlyCoinPrefab;
+			if (prefab == null && PrefabLibrary.Current != null) prefab = PrefabLibrary.Current.FlyCoinPrefab;
 			if (parent == null || hud == null || prefab == null || count <= 0) yield break;
 			_flightRoot = new GameObject("WinCoinFlights", typeof(RectTransform), typeof(Canvas));
 			_flightRoot.transform.SetParent(parent, false);

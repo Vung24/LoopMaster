@@ -4,7 +4,7 @@ using UnityEngine;
 
 public sealed class LevelBoxManager : MonoBehaviour, IGameManager
 {
-    public const string PATH = "Home/LevelBox/Prefab/LevelBoxDialogContent.prefab";
+    public const string PATH = "LevelBoxDialogContent";
     private const string BaselineKey = "offline_LevelBoxBaseline_v1";
     private const string ViewedKey = "LevelBoxLastViewedLevel";
     public static LevelBoxManager Current { get; private set; }

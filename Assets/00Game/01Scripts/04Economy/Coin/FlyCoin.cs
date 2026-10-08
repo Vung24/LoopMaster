@@ -16,9 +16,9 @@ namespace Snui
 
         public static UniTask<GameObject> LoadPrefab(Transform parent)
         {
-            RecoveryPrefabLibrary library = RecoveryPrefabLibrary.Current;
+            PrefabLibrary library = PrefabLibrary.Current;
             if (library == null || library.FlyCoinPrefab == null)
-                throw new System.InvalidOperationException("The recovered FlyCoin prefab is not assigned.");
+                throw new System.InvalidOperationException("The FlyCoin prefab is not assigned.");
             return UniTask.FromResult(Instantiate(library.FlyCoinPrefab, parent, false));
         }
 
@@ -26,8 +26,8 @@ namespace Snui
         {
             FlyCoin coin = refPrefab == null ? null : refPrefab.GetComponent<FlyCoin>();
             Sprite[] sprites = coin != null ? coin._sprites : null;
-            if ((sprites == null || sprites.Length == 0) && RecoveryPrefabLibrary.Current != null)
-                sprites = RecoveryPrefabLibrary.Current.CoinSprites;
+            if ((sprites == null || sprites.Length == 0) && PrefabLibrary.Current != null)
+                sprites = PrefabLibrary.Current.CoinSprites;
             return UniTask.FromResult(sprites == null ? new Sprite[0] : (Sprite[])sprites.Clone());
         }
 
@@ -35,8 +35,8 @@ namespace Snui
         {
             _spritesImg = GetComponent<Image>();
             if (_spritesImg != null) _spritesImg.raycastTarget = false;
-            if ((_sprites == null || _sprites.Length == 0) && RecoveryPrefabLibrary.Current != null)
-                SetSprites(RecoveryPrefabLibrary.Current.CoinSprites);
+            if ((_sprites == null || _sprites.Length == 0) && PrefabLibrary.Current != null)
+                SetSprites(PrefabLibrary.Current.CoinSprites);
             else SetSprites(_sprites);
         }
 

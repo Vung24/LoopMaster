@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Spine.Unity;
 using TMPro;
@@ -11,7 +12,7 @@ namespace Snui
 {
 	public class RewardDialog : MonoBehaviour
 	{
-        public const string PATH="Snui/Common/Prefabs/RewardDialog.prefab";
+        public const string PATH="RewardDialog";
         public GameObject RewardCellPrefab, SpecialSparksPrefab, Fireworks;
         public AudioClip RewardSound, ChestSound, FireworksClip, RewardsPopAfterCardsClip;
         private readonly List<RewardCell> _cells=new List<RewardCell>();
@@ -27,14 +28,13 @@ namespace Snui
         public event Action Closed;
         public bool RewardSaved => _saved;
         // Presentation receipt only: SpecialStreak has already journaled these rewards.
-        public static UniTask<RewardDialog> ShowSpecialStreakRewards(List<RewardItem> items, Transform parent)
+        public static async UniTask<RewardDialog> ShowSpecialStreakRewards(List<RewardItem> items, Transform parent)
         {
-            var prefab = RecoveryPrefabLibrary.Current?.Resolve(PATH);
-            if (parent == null || prefab == null || items == null || items.Count == 0)
-                return UniTask.FromResult<RewardDialog>(null);
-            var instance = Instantiate(prefab, parent, false);
+            if (parent == null || items == null || items.Count == 0)
+                return null;
+            var instance = await PopupAssets.Instantiate(PATH, parent, parent.GetCancellationTokenOnDestroy());
             var dialog = instance.GetComponent<RewardDialog>();
-            if (dialog == null) { Destroy(instance); return UniTask.FromResult<RewardDialog>(null); }
+            if (dialog == null) { Destroy(instance); return null; }
             PrepareOverlay(instance, 1350);
             dialog._saved = true;
             var layout = RewardLayoutHelper.GetRewardsLayoutPos(items.Count);
@@ -49,24 +49,73 @@ namespace Snui
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
             Snui_HeartHud.TrySetAutoUpdate(true);
             dialog.Reveal();
-            return UniTask.FromResult(dialog);
+            return dialog;
         }
-        public static UniTask<RewardDialog> ShowLevelBox(int milestone, Transform parent, SkeletonGraphic chest=null, bool waitForMachine=false)
+        public static async UniTask<RewardDialog> ShowLevelBox(int milestone, Transform parent, SkeletonGraphic chest=null, bool waitForMachine=false, bool receiveImmediately=false, CancellationToken cancellationToken=default)
         {
-            if(parent==null) return UniTask.FromResult<RewardDialog>(null);
+            if(parent==null) return null;
             foreach(var existing in parent.GetComponentsInChildren<RewardDialog>(true))
-                if(existing.isActiveAndEnabled) return UniTask.FromResult(existing);
-            var prefab=RecoveryPrefabLibrary.Current?.Resolve(PATH);
-            if(prefab==null) { Debug.LogWarning("Recovered RewardDialog prefab missing; box remains pending."); return UniTask.FromResult<RewardDialog>(null); }
-            // Native ShowWithChest commits BEFORE instantiation/animation.
+                if(existing.isActiveAndEnabled) return existing;
+            // Load successfully before committing the pending reward.
+            var instance=await PopupAssets.Instantiate(PATH,parent,cancellationToken);
             bool saved=LevelBoxManager.Ensure().TryOpen(milestone,out var result);
-            var instance=Instantiate(prefab,parent,false);
             var dialog=instance.GetComponent<RewardDialog>();
-            if(dialog==null) { Destroy(instance); return UniTask.FromResult<RewardDialog>(null); }
+            if(dialog==null) { Destroy(instance); return null; }
             PrepareOverlay(instance,1300);
-            dialog.Initialize(milestone,saved,chest,waitForMachine);
-            return UniTask.FromResult(dialog);
+            dialog.Initialize(milestone,saved,chest,waitForMachine,receiveImmediately);
+            return dialog;
         }
+
+        public static async UniTask<RewardDialog> ShowWithChest(List<RewardItem> items, string eventKey = null, string title = null, Transform parent = null, SkeletonGraphic chest = null, bool waitForMachine = false)
+        {
+            var p = parent ?? Utils.GetCurrentUiCanvas()?.transform;
+            if (p == null) return null;
+            var instance = await PopupAssets.Instantiate(PATH, p, p.GetCancellationTokenOnDestroy());
+            var dialog = instance.GetComponent<RewardDialog>();
+            if (dialog == null) { Destroy(instance); return null; }
+            PrepareOverlay(instance, 1300);
+            dialog._saved = true;
+            if (!string.IsNullOrEmpty(title) && dialog._desc != null)
+            {
+                dialog._desc.text = title;
+            }
+            if (items != null)
+            {
+                var layout = RewardLayoutHelper.GetRewardsLayoutPos(items.Count);
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var cell = await RewardCell.Show(items[i], dialog._safeArea, true, true);
+                    if (cell != null)
+                    {
+                        cell.transform.localPosition = new Vector3(layout.Item2[i].x, layout.Item2[i].y, 0f);
+                        cell.transform.localScale = Vector3.one * layout.Item1;
+                        dialog._cells.Add(cell);
+                    }
+                }
+            }
+            if (chest != null)
+            {
+                dialog._chest = Instantiate(chest, dialog._safeArea, false);
+                dialog._chest.gameObject.SetActive(true);
+                dialog._chest.transform.localPosition = new Vector3(0, -80, 0);
+                dialog._chest.UnscaledTime = true;
+            }
+            dialog._showing = true;
+            foreach (var cell in dialog._cells) cell.gameObject.SetActive(false);
+            if (!waitForMachine) dialog.BeginChestAnimation();
+            return dialog;
+        }
+
+        public async UniTask PlayChestAnim(SkeletonGraphic chest, string animName, float duration = 1f, float delay = 0f, float fade = 0f)
+        {
+            if (chest != null && chest.AnimationState != null)
+            {
+                chest.AnimationState.SetAnimation(0, animName, false);
+            }
+            await UniTask.WaitForSeconds(duration);
+            Reveal();
+        }
+
         public static void PrepareOverlay(GameObject root,int order)
         {
             var canvas=root.GetComponent<Canvas>(); if(canvas==null) canvas=root.AddComponent<Canvas>(); canvas.overrideSorting=true; canvas.sortingOrder=order;
@@ -82,7 +131,7 @@ namespace Snui
             if (_desc == null) _desc = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Text"));
             if (_mask == null) _mask = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Mask"));
         }
-        private void Initialize(int milestone,bool saved,SkeletonGraphic sourceChest,bool waitForMachine)
+        private void Initialize(int milestone,bool saved,SkeletonGraphic sourceChest,bool waitForMachine,bool receiveImmediately)
         {
             _milestone=milestone; _saved=saved;
             var layout=RewardLayoutHelper.GetRewardsLayoutPos(LevelBoxManager.Ensure().GetMilestoneRewards(milestone).Count);
@@ -95,7 +144,9 @@ namespace Snui
                 cell.transform.localScale=Vector3.one*layout.Item1; _cells.Add(cell); index++;
             }
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
+            Snui_HeartHud.TrySetAutoUpdate(true);
             if(!saved) { SetDescription("REWARD NOT SAVED — TAP TO RETRY"); return; }
+            if(receiveImmediately) { Reveal(); return; }
             if(sourceChest!=null)
             {
                 _chest=Instantiate(sourceChest,_safeArea,false); _chest.gameObject.SetActive(true);
@@ -173,7 +224,7 @@ namespace Snui
             if(_chest!=null && _chest.AnimationState!=null) _chest.AnimationState.Event-=OnChestEvent;
             // Back may close a failed attempt whose receipt was saved but whose
             // final journal cleanup failed. Resolve it before returning to Home.
-            InventoryManager.Current?.RecoverRewardJournal();
+            InventoryManager.Current?.ReplayPendingRewardJournal();
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.TryRevertToOriginLayer();
             Closed?.Invoke(); Closed=null;
         }
