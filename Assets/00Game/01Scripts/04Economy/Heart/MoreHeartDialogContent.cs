@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public class MoreHeartDialogContent : DialogContent
 {
-	public const string PATH = "Common/Prefab/MoreHeartDialogContent.prefab";
+	public const string PATH = "MoreHeartDialogContent";
 	public static readonly int RESULT_JUMP_HEART_BANK = 1;
 	public static readonly int RESULT_ENTER_GAME = 2;
 	[SerializeField] private TMP_Text _timeLabel, _heartNum, _coinCount;
@@ -22,14 +22,14 @@ public class MoreHeartDialogContent : DialogContent
 	protected override void Awake()
 	{
 		base.Awake();
-		if (_closeBtn == null) _closeBtn = RecoveryDialogUI.ResolveButton(transform, "CloseButton");
-		if (_refillBtn == null) _refillBtn = RecoveryDialogUI.ResolveButton(transform, "RefillButton");
-		RecoveryDialogUI.Bind(_closeBtn, OnClickCloseButton);
-		RecoveryDialogUI.Bind(_refillBtn, OnConfirmClicked);
+		if (_closeBtn == null) _closeBtn = DialogUI.ResolveButton(transform, "CloseButton");
+		if (_refillBtn == null) _refillBtn = DialogUI.ResolveButton(transform, "RefillButton");
+		DialogUI.Bind(_closeBtn, OnClickCloseButton);
+		DialogUI.Bind(_refillBtn, OnConfirmClicked);
 	}
 	public static async UniTask<MoreHeartDialogContent> Show(Transform parent, JumpHeartDialogSourceScene sourceScene)
 	{
-		if (parent == null || DataPrefabLibrary.Current?.MoreHeartDialogPrefab == null) return null;
+		if (parent == null) return null;
 		foreach (var existing in parent.GetComponentsInChildren<MoreHeartDialogContent>(true))
 			if (existing.isActiveAndEnabled) return existing;
 		var content = await Dialog.ShowContent<MoreHeartDialogContent>(parent, PATH);
@@ -49,7 +49,7 @@ public class MoreHeartDialogContent : DialogContent
 	{
 		var heartMgr = Managers.Heart;
 		bool isInfinite = heartMgr != null && heartMgr.IsInfinite();
-		RecoveryDialogUI.Label(HierarchyReferenceCache.Child(transform, "Title"), "LIVES");
+		DialogUI.Label(HierarchyReferenceCache.Child(transform, "Title"), "LIVES");
 		if (_heartNum != null)
 		{
 			_heartNum.text = isInfinite ? "∞" : (heartMgr != null ? heartMgr.GetHeartCount().ToString() : "5");
@@ -63,7 +63,7 @@ public class MoreHeartDialogContent : DialogContent
 			}
 			else if (heartMgr != null && !heartMgr.IsHeartFull())
 			{
-				_timeLabel.text = TimeFormatter.FormatSeconds(heartMgr.GetRecoverTime());
+				_timeLabel.text = TimeFormatter.FormatSeconds(heartMgr.GetHeartRefillTime());
 			}
 			else
 			{
@@ -77,7 +77,7 @@ public class MoreHeartDialogContent : DialogContent
 		if (_coinCount != null) _coinCount.gameObject.SetActive(false);
 		if (_refillBtn != null)
 		{
-			RecoveryDialogUI.HideNamed(_refillBtn.transform, "Coin");
+			DialogUI.HideNamed(_refillBtn.transform, "Coin");
 			var label = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_refillBtn.transform, "Snui_Text"));
 			if (label != null)
 			{

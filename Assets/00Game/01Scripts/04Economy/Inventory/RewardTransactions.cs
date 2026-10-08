@@ -49,7 +49,7 @@ public partial class InventoryManager
     {
         result = RewardClaimResult.Failed;
         if (_isApplyingBooster || _rewardTransaction || string.IsNullOrEmpty(claimId) || items == null || items.Count == 0) return false;
-        if (!RecoverRewardJournal()) return false;
+        if (!ReplayPendingRewardJournal()) return false;
         _rewardTransaction = true;
         try
         {
@@ -103,7 +103,7 @@ public partial class InventoryManager
         catch (Exception error) { Debug.LogWarning("Reward transaction pending/retry: " + error.Message); return false; }
         finally { _rewardTransaction = false; }
     }
-    public bool RecoverRewardJournal()
+    public bool ReplayPendingRewardJournal()
     {
         if (_rewardTransaction) return false;
         _rewardTransaction = true;
@@ -127,7 +127,7 @@ public partial class InventoryManager
             _rewardStoreInvalid=false;
             return true;
         }
-        catch (Exception error) { _rewardStoreInvalid=true; Debug.LogWarning("Reward recovery blocked: " + error.Message); return false; }
+        catch (Exception error) { _rewardStoreInvalid=true; Debug.LogWarning("Reward journal replay blocked: " + error.Message); return false; }
         finally { _rewardTransaction = false; }
     }
     private void CompleteJournal(Journal journal)

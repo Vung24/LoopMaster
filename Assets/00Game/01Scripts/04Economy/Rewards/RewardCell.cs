@@ -10,6 +10,7 @@ namespace Snui
         public RewardItem RewardItem;
         public AudioClip CollectSound;
         [SerializeField] private Image _icon;
+        [SerializeField] private bool _useNativeIconSize;
         [SerializeField] private TMP_Text _count;
         [SerializeField] private GameObject _ribbon;
         [SerializeField] private TMP_Text _infinityText;
@@ -50,7 +51,7 @@ namespace Snui
         }
         public static UniTask<RewardCell> Show(RewardItem item, Transform parent, bool showBackLight=true, bool isRewardDialog=false, bool canShowInfoIcon=false)
         {
-            var prefab=DataPrefabLibrary.Current?.RewardCellPrefab;
+            var prefab=PrefabLibrary.Current?.RewardCellPrefab;
             if(prefab==null || parent==null) return UniTask.FromResult<RewardCell>(null);
             var cell=Instantiate(prefab,parent,false).GetComponent<RewardCell>();
             cell.Init(item,showBackLight,false,isRewardDialog,canShowInfoIcon).Forget();
@@ -63,7 +64,17 @@ namespace Snui
             if(_infoIcon!=null) _infoIcon.SetActive(false);
             SetBackLight(showBackLight);
             if(item==null || item.Type==null) return UniTask.CompletedTask;
-            if(_icon!=null) { _icon.sprite=DataPrefabLibrary.Current?.ResolveRewardIcon(item.Type.GetIconPath()); _icon.enabled=_icon.sprite!=null; }
+            if (_icon != null)
+            {
+                _icon.sprite = PrefabLibrary.Current?.ResolveRewardIcon(item.Type.GetIconPath());
+                _icon.enabled = _icon.sprite != null;
+                if (_useNativeIconSize && _icon.sprite != null)
+                {
+                    _icon.type = Image.Type.Simple;
+                    _icon.preserveAspect = true;
+                    _icon.SetNativeSize();
+                }
+            }
 
             bool isTimeLimited = item.Type.IsTimeLimited();
             if (isTimeLimited)
@@ -101,6 +112,12 @@ namespace Snui
         }
         public void SetBackLight(bool active)
         { if(_backLight!=null) _backLight.SetActive(active); }
+        public void SetTranslucence(float alpha = 0.5f)
+        {
+            var cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            cg.alpha = alpha;
+        }
         public void PlayCollectSound() { if(AudioManager.Current!=null) AudioManager.Current.PlayOneShot(CollectSound,gameObject); }
 	}
 }
