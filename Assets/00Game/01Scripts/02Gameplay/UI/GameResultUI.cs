@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Collections;
 using Cysharp.Threading.Tasks;
@@ -294,9 +294,9 @@ public sealed class GameResultUI : MonoBehaviour
 		var instance = Instantiate(prefab, content.transform, false);
 		_failTutorial = instance.GetComponent<NewPlayerTutorial>();
 		if (_failTutorial == null) { Destroy(instance); return; }
+		Canvas.ForceUpdateCanvases();
 		Transform capacity = UICanvas.Current == null ? null : UICanvas.Current.CapacityNode;
-		if (capacity != null) _failTutorial.ShowFail(capacity);
-		else _failTutorial.ShowFail(content.transform.InverseTransformPoint(content.FreeButtonNode.position));
+		_failTutorial.ShowFail(capacity, content.FreeButtonNode);
 		PlayerPrefs.SetInt("offline_HasShowFailTutorial", 1);
 		PlayerPrefs.Save();
 	}
