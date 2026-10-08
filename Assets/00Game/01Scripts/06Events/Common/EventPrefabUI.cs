@@ -47,7 +47,6 @@ namespace Snui
         private static bool BelongsToOwner(Transform target, Transform owner, Canvas canvas) =>
             target != null && (target == owner || target.IsChildOf(owner) ||
                 (canvas != null && target.IsChildOf(canvas.rootCanvas.transform)));
-        // Small home widgets still use the resident library.
         public static GameObject Load(string name) => PrefabLibrary.Current?.Resolve("Events/" + name);
         public static async UniTask<T> Show<T>(Transform parent, string name) where T : Component
         {
@@ -85,9 +84,6 @@ namespace Snui
                 var content = instance.GetComponent<DialogContent>();
                 if (content != null)
                 {
-                    // Keep input and Start animations inactive until the async frame is ready.
-                    // AddDialogContent calls Show, which resets the result; an early click
-                    // must not join the event and then lose its dismissal result here.
                     instance.SetActive(false);
                     var frame = await Dialog.ShowEmpty(parent);
                     root = frame.gameObject;
