@@ -5,7 +5,13 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>Prepares and inspects SpecialStreak through the real gameplay and home flows.</summary>
-public sealed class DebugSpecialStreakWindow : EditorWindow
+public static class DebugSpecialStreakWindow
+{
+    public static void Open() => LoopMasterDebugWindow.Open(LoopMasterDebugWindow.Tab.SpecialStreak);
+}
+
+[Serializable]
+public sealed class DebugSpecialStreakPanel
 {
     [SerializeField] private int _multiplierIndex = 1;
     [SerializeField] private bool _showTutorial;
@@ -14,20 +20,10 @@ public sealed class DebugSpecialStreakWindow : EditorWindow
     private bool _presenting;
     private static readonly string[] MultiplierLabels = { "x1", "x5", "x10", "x25", "x100" };
 
-    [MenuItem("Tools/LoopMaster/Debug SpecialStreak")]
-    public static void Open() => GetWindow<DebugSpecialStreakWindow>("SpecialStreak").Show();
-
     private static bool Running => EditorApplication.isPlaying && !EditorApplication.isPaused &&
         !EditorApplication.isCompiling && !EditorApplication.isUpdating && Time.timeScale > 0f;
 
-    private void OnEnable()
-    {
-        minSize = new Vector2(400f, 560f);
-    }
-
-    private void OnInspectorUpdate() => Repaint();
-
-    private void OnGUI()
+    public void DrawGUI()
     {
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
         EditorGUILayout.HelpBox("Test on a development save. Presets, wins and rewards persist in PlayerPrefs. Presets keep claimed stages and inventory intact; completed events cannot be reseeded here.", MessageType.Info);
@@ -79,7 +75,7 @@ public sealed class DebugSpecialStreakWindow : EditorWindow
             if (GUILayout.Button("Force Win")) Force(controller, manager, true);
             if (GUILayout.Button("Force Lose")) Force(controller, manager, false);
         }
-        using (new EditorGUI.DisabledScope(!Running || controller == null || !controller.CanRevive))
+        using (new EditorGUI.DisabledScope(!Running || controller == null || manager == null || !controller.CanRevive))
         {
             if (GUILayout.Button("Revive - Check Multiplier Kept"))
             {
@@ -89,7 +85,7 @@ public sealed class DebugSpecialStreakWindow : EditorWindow
                     "PASS: Revive kept multiplier." : "FAIL: Revive changed multiplier.");
             }
         }
-        using (new EditorGUI.DisabledScope(!Running || controller == null || !controller.CanReplayLevel))
+        using (new EditorGUI.DisabledScope(!Running || controller == null || manager == null || !controller.CanReplayLevel))
         {
             if (GUILayout.Button("Retry - Check Multiplier Reset"))
             {

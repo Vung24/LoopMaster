@@ -29,7 +29,7 @@ public sealed class LoopLevelRoadPreview : IDisposable
     }
 
     // Keep sampling, tangent fallback, topology and UVs identical to GameRoad.
-    // RecoveredRoadGeometry supplies the actual fourteen-vertex road cross section.
+    // RoadGeometry supplies the actual fourteen-vertex road cross section.
     public static Mesh BuildMesh(GamePath path, out Vector3[] line)
     {
         line = Array.Empty<Vector3>();
@@ -37,7 +37,7 @@ public sealed class LoopLevelRoadPreview : IDisposable
         foreach (ControlPoint point in path.ControlPoints)
             if (!Finite(point.Position) || !Finite(point.InTangent) || !Finite(point.OutTangent)) return null;
         int samples = Mathf.Max(2, path.ControlPoints.Count * 30), sections = samples + 1;
-        int stride = RecoveredRoadGeometry.SectionVertexCount;
+        int stride = RoadGeometry.SectionVertexCount;
         var vertices = new Vector3[sections * stride];
         var uvs = new Vector2[vertices.Length];
         line = new Vector3[sections + (path.IsCircle > 0 ? 1 : 0)];
@@ -62,7 +62,7 @@ public sealed class LoopLevelRoadPreview : IDisposable
             if (right.sqrMagnitude < .001f) right = Vector3.left;
             line[i] = position;
             int first = i * stride;
-            for (int v = 0; v < stride; v++) vertices[first + v] = RecoveredRoadGeometry.GetVertex(v, position, right);
+            for (int v = 0; v < stride; v++) vertices[first + v] = RoadGeometry.GetVertex(v, position, right);
             uvs[first + 1] = new Vector2(1f, .5f);
             for (int side = 0; side < 2; side++)
             {
@@ -79,8 +79,8 @@ public sealed class LoopLevelRoadPreview : IDisposable
         for (int i = 0; i < links; i++)
         {
             int from = i * stride, to = (i + 1) % sections * stride;
-            RecoveredRoadGeometry.WriteRoadLink(road, i * 6, from, to);
-            RecoveredRoadGeometry.WriteWallLink(walls, i * 60, from, to);
+            RoadGeometry.WriteRoadLink(road, i * 6, from, to);
+            RoadGeometry.WriteWallLink(walls, i * 60, from, to);
         }
         var mesh = new Mesh { name = "Level Editor road preview", hideFlags = HideFlags.HideAndDontSave };
         mesh.vertices = vertices; mesh.uv = uvs; mesh.subMeshCount = 2;
