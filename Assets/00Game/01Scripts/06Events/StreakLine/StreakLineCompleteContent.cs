@@ -45,9 +45,9 @@ namespace Snui.StreakLine
 		public static async UniTask<StreakLineCompleteContent> ShowWithDialog(Transform parent)
 		{
 			var settings = StreakLineSettings.Instance;
-			if (settings != null && settings.CompleteDialogPrefab != null)
+			if (settings != null)
 			{
-				return await Dialog.ShowContent<StreakLineCompleteContent>(parent, settings.CompleteDialogPrefab);
+				return await Dialog.ShowContent<StreakLineCompleteContent>(parent, "StreakLineCompleteContent");
 			}
 			return null;
 		}
