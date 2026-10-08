@@ -1,8 +1,21 @@
-using UnityEngine;
+using System;
 
 namespace Snui
 {
-	public class DailyCheckInRewardConfig : MonoBehaviour
+	[Serializable]
+	public class DailyCheckInRewardConfig
 	{
+		public RewardType RewardId;
+		public string DailyRewardImgPath;
+
+		public DailyCheckInRewardConfig()
+		{
+		}
+
+		public DailyCheckInRewardConfig(RewardType rewardId, string imgPath = "")
+		{
+			RewardId = rewardId;
+			DailyRewardImgPath = imgPath;
+		}
 	}
 }
