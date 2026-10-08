@@ -1,6 +1,7 @@
 using Spine.Unity;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Snui
 {
@@ -11,6 +12,23 @@ namespace Snui
 		[SerializeField] private CountdownHelper _countdownHelper;
 
 		public CountdownHelper CountdownHelper => _countdownHelper;
+		public UnityEvent OnStopped => _countdownHelper != null ? _countdownHelper.OnTimerStoped : null;
+
+		public void CountdownUntil(long timestamp)
+		{
+			if (_countdownHelper != null)
+			{
+				_countdownHelper.CountdownUntil(timestamp);
+			}
+		}
+
+		public void CountdownFixTime(long fixTime)
+		{
+			if (_countdownHelper != null)
+			{
+				_countdownHelper.CountdownFixTime(fixTime);
+			}
+		}
 
 		private void Awake()
 		{

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-internal static class HierarchyReferenceCache
+public static class HierarchyReferenceCache
 {
 	public static Transform Child(Transform root, string childName)
 	{
@@ -43,4 +43,7 @@ internal static class HierarchyReferenceCache
 
 	public static T DescendantComponent<T>(Transform root, string objectName) where T : Component =>
 		Component<T>(Descendant(root, objectName));
+
+	public static T PathComponent<T>(Transform root, params string[] segments) where T : Component =>
+		Component<T>(Path(root, segments));
 }

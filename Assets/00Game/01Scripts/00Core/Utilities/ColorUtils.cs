@@ -9,6 +9,11 @@ public static class ColorUtils
 		return color;
 	}
 
+	public static bool FromString(out Color color, string colorStr)
+	{
+		return ColorUtility.TryParseHtmlString(colorStr, out color);
+	}
+
 	public static Color RGB(int rgb)
 	{
 		return new Color(

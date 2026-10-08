@@ -87,6 +87,8 @@ namespace Sugar.UI
 			_content.sizeDelta = new Vector2(_content.sizeDelta.x, currentY + _bottomPadding);
 		}
 
+		public TableViewCell GetReusableCell(string type) => DequeueCell(type);
+
 		public TableViewCell DequeueCell(string type)
 		{
 			for (int i = 0; i < _recycleBin.Count; i++)
