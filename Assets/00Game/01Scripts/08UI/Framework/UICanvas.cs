@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -21,7 +22,9 @@ public sealed class UICanvas : MonoBehaviour
 	[SerializeField] private Image _capacityFill;
 	[SerializeField] private RectTransform _capacityFillRect;
 	[SerializeField] private Transform _capacityNode;
-	[SerializeField] private GameObject PauseDialogPrefab;
+	[SerializeField] private string PauseDialogAddress = "PauseDialogContent";
+	private bool _pauseLoading;
+	private int _pauseVersion;
 
 	public Transform CapacityNode => _capacityNode != null ? _capacityNode : (_capacityNode = HierarchyReferenceCache.Descendant(transform, "Capacity"));
 	[SerializeField] private SafeArea _safeArea;
@@ -81,6 +84,10 @@ public sealed class UICanvas : MonoBehaviour
 
 	private void OnDisable()
 	{
+		_pauseVersion++;
+		_pauseLoading = false;
+		if (_pauseDialog != null) { _pauseDialog.gameObject.SetActive(false); Destroy(_pauseDialog.gameObject); }
+		_pauseDialog = null;
 		ActiveCanvases.Remove(this);
 		if (_bgGame != null) _bgGame.gameObject.SetActive(false);
 	}
@@ -377,22 +384,22 @@ public sealed class UICanvas : MonoBehaviour
 			_speedIcon.sprite = speedSprite;
 	}
 
-	private void ShowPauseDialog()
+	private void ShowPauseDialog() => LoadPauseDialog().Forget();
+	private async UniTask LoadPauseDialog()
 	{
-		if (_controller == null || !_controller.IsGameplayActive) return;
-		if (_pauseDialog == null)
+		if (_pauseLoading || _pauseDialog != null || _controller == null || !_controller.IsGameplayActive) return;
+		var data = _controller.Data;
+		int version = _pauseVersion;
+		_pauseLoading = true;
+		try
 		{
-			if (PauseDialogPrefab == null)
-			{
-				Debug.LogWarning("UICanvas has no PauseDialogPrefab assigned.", this);
-				return;
-			}
-			GameObject instance = Instantiate(PauseDialogPrefab, transform, false);
-			_pauseDialog = instance.GetComponent<PauseDialogContent>();
-			if (_pauseDialog == null) _pauseDialog = instance.AddComponent<PauseDialogContent>();
+			var instance = await PopupAssets.Instantiate(PauseDialogAddress, transform, this.GetCancellationTokenOnDestroy());
+			if (this == null || version != _pauseVersion || !isActiveAndEnabled || _controller == null || _controller.Data != data || _controller.EndState != GameEndState.Playing)
+			{ Destroy(instance); return; }
+			_pauseDialog = instance.GetComponent<PauseDialogContent>() ?? instance.AddComponent<PauseDialogContent>();
+			_pauseDialog.Bind(_controller);
 		}
-		else _pauseDialog.gameObject.SetActive(true);
-		_pauseDialog.Bind(_controller);
+		finally { if (this != null && version == _pauseVersion) _pauseLoading = false; }
 	}
 
 	private void UseUndo()

@@ -31,11 +31,8 @@ public class GameLoader : MonoBehaviour
 	public GameObject FlyPath { get; private set; }
 	public GameObject GroupColorLock { get; private set; }
 	public GameObject GroupKey { get; private set; }
-	public GameObject LevelHardPanel { get; private set; }
-	public GameObject LevelExpertPanel { get; private set; }
 	public GameObject NewPlayerTutorialPrefab { get; private set; }
 	public GameObject FailTutorialPrefab { get; private set; }
-	public GameObject FeatureUnlockDialogPrefab { get; private set; }
 	public GameObject ToolPathBoxEffect { get; private set; }
 	public GameObject ToolShuffleMask { get; private set; }
 	public GameObject BoxFinishEffect { get; private set; }
@@ -140,7 +137,7 @@ public class GameLoader : MonoBehaviour
 
 	private UniTask LoadCustomerAssets(GameData gameData)
 	{
-		Snui.DataPrefabLibrary library = Snui.DataPrefabLibrary.Current;
+		Snui.PrefabLibrary library = Snui.PrefabLibrary.Current;
 		if (library != null)
 		{
 			bool blue = PlayerPrefs.GetInt("offline_IsBlueSkin", 0) != 0;
@@ -148,9 +145,6 @@ public class GameLoader : MonoBehaviour
 				? library.NewPlayerTutorialBluePrefab : library.NewPlayerTutorialPrefab;
 			FailTutorialPrefab = blue && library.FailTutorialBluePrefab != null
 				? library.FailTutorialBluePrefab : library.FailTutorialPrefab;
-			LevelHardPanel = library.LevelHardPanelPrefab;
-			LevelExpertPanel = library.LevelExpertPanelPrefab;
-			FeatureUnlockDialogPrefab = library.FeatureUnlockDialogPrefab;
 		}
 		return default;
 	}
@@ -219,7 +213,7 @@ public class GameLoader : MonoBehaviour
 			case "exit":
 			case "mapexit": return MapExit;
 			case "capacity": return Capacity;
-			default: return LoadPrefab(mapItemName);
+			default: return null;
 		}
 	}
 

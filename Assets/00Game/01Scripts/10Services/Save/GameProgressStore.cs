@@ -28,19 +28,22 @@ public static class GameProgressStore
         PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", level - 1);
         PlayerPrefs.Save();
     }
-    public static void RecordWin(int level, bool hasNextLevel)
+    public static void RecordWin(int level, bool hasNextLevel, HardLevel previousHardLevel = HardLevel.Normal)
     {
         if (level < 1) return;
+        bool newlyCompleted = !IsLevelCompleted(level);
         int next = hasNextLevel && level < int.MaxValue ? level + 1 : level;
         int unlocked = Mathf.Max(HighestUnlockedLevel, next);
         PlayerPrefs.SetInt(CompletedKey, Mathf.Max(HighestCompletedLevel, level));
         PlayerPrefs.SetInt(UnlockedKey, unlocked);
         PlayerPrefs.SetInt("offline_NormalPuzzleIndex", unlocked - 1);
         PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", unlocked - 1);
+        if (newlyCompleted) HomeLevelChangePresentation.Record(level, unlocked, previousHardLevel);
         PlayerPrefs.Save();
     }
     public static void DeleteProgress()
     {
+        HomeLevelChangePresentation.Clear();
         PlayerPrefs.DeleteKey(UnlockedKey);
         PlayerPrefs.DeleteKey(CompletedKey);
         PlayerPrefs.DeleteKey("offline_NormalPuzzleIndex");
