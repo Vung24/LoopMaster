@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using Spine.Unity;
 using TMPro;
 using UnityEngine;
@@ -25,6 +26,10 @@ namespace Snui
         private int _milestone;
         private bool _saved, _closing, _showing, _revealed;
         private Coroutine _animation;
+        private bool _levelBoxPresentation;
+        private Transform _titleNode;
+        private CanvasGroup _titleGroup, _buttonTextGroup;
+        private readonly List<Tween> _presentationTweens=new List<Tween>();
         public event Action Closed;
         public bool RewardSaved => _saved;
         // Presentation receipt only: SpecialStreak has already journaled these rewards.
@@ -58,9 +63,9 @@ namespace Snui
                 if(existing.isActiveAndEnabled) return existing;
             // Load successfully before committing the pending reward.
             var instance=await PopupAssets.Instantiate(PATH,parent,cancellationToken);
-            bool saved=LevelBoxManager.Ensure().TryOpen(milestone,out var result);
             var dialog=instance.GetComponent<RewardDialog>();
             if(dialog==null) { Destroy(instance); return null; }
+            bool saved=LevelBoxManager.Ensure().TryOpen(milestone,out var result);
             PrepareOverlay(instance,1300);
             dialog.Initialize(milestone,saved,chest,waitForMachine,receiveImmediately);
             return dialog;
@@ -134,6 +139,7 @@ namespace Snui
         private void Initialize(int milestone,bool saved,SkeletonGraphic sourceChest,bool waitForMachine,bool receiveImmediately)
         {
             _milestone=milestone; _saved=saved;
+            _levelBoxPresentation=!receiveImmediately;
             var layout=RewardLayoutHelper.GetRewardsLayoutPos(LevelBoxManager.Ensure().GetMilestoneRewards(milestone).Count);
             int index=0;
             foreach(var item in LevelBoxManager.Ensure().GetMilestoneRewards(milestone))
@@ -147,11 +153,15 @@ namespace Snui
             Snui_HeartHud.TrySetAutoUpdate(true);
             if(!saved) { SetDescription("REWARD NOT SAVED — TAP TO RETRY"); return; }
             if(receiveImmediately) { Reveal(); return; }
+            PrepareLevelBoxPresentation();
             if(sourceChest!=null)
             {
                 _chest=Instantiate(sourceChest,_safeArea,false); _chest.gameObject.SetActive(true);
-                _chest.transform.localPosition=new Vector3(0,-80,0); _chest.UnscaledTime=true;
+                _chest.transform.position=sourceChest.transform.position; _chest.UnscaledTime=true;
+                _chest.Initialize(true);
+                foreach(var follower in _chest.GetComponentsInChildren<BoneFollowerGraphic>(true)) follower.Initialize();
                 if(_chest.AnimationState!=null) _chest.AnimationState.Event+=OnChestEvent;
+                _chest.gameObject.SetActive(false);
             }
             _showing=true; foreach(var cell in _cells) cell.gameObject.SetActive(false);
             if(!waitForMachine) BeginChestAnimation();
@@ -167,8 +177,15 @@ namespace Snui
             _showing=true; foreach(var cell in _cells) cell.gameObject.SetActive(false);
             PlaySound(ChestSound);
             var animation=_chest?.SkeletonData?.FindAnimation("jump");
-            if(animation!=null) _chest.AnimationState.SetAnimation(0,animation,false);
+            if(animation!=null) { _chest.gameObject.SetActive(true); _chest.AnimationState.SetAnimation(0,animation,false); }
             else { Reveal(); yield break; }
+            if(_levelBoxPresentation)
+            {
+                // Native PlayChestRewards (RVA 0x179DAA0): jump then land at center.
+                _presentationTweens.Add(DOTween.Sequence().SetUpdate(true).SetDelay(.13f)
+                    .Append(_chest.transform.DOLocalMoveY(237f,.266f).SetEase(Ease.OutQuart))
+                    .Append(_chest.transform.DOLocalMoveY(0f,.233f).SetEase(Ease.InQuart)));
+            }
             float remaining=animation.Duration;
             while(_showing && remaining>0) { remaining-=Time.unscaledDeltaTime; yield return null; }
             if(_showing) Reveal(); // Missing Spine event cannot strand the receipt/UI.
@@ -177,6 +194,11 @@ namespace Snui
         {
             if(!isActiveAndEnabled || _closing || evt?.Data==null) return;
             if(evt.Data.Name=="rewards") Reveal();
+            else if(evt.Data.Name=="particle" && _levelBoxPresentation && _chest!=null)
+            {
+                var spark=HierarchyReferenceCache.ChildComponent<ParticleSystem>(_chest.transform,"giftBoxSpark");
+                if(spark!=null) spark.Play(true);
+            }
             else if(evt.Data.Name=="particle" && SpecialSparksPrefab!=null && _chest!=null)
             { var sparks=Instantiate(SpecialSparksPrefab,_chest.transform,false); Destroy(sparks,2); }
         }
@@ -188,6 +210,55 @@ namespace Snui
             if(_chest!=null) _chest.gameObject.SetActive(false);
             foreach(var cell in _cells) if(cell!=null) cell.gameObject.SetActive(true);
             SetDescription("TAP TO COLLECT"); PlaySound(RewardSound);
+            if(_levelBoxPresentation) StartCoroutine(PlayLevelBoxReveal());
+        }
+        private void PrepareLevelBoxPresentation()
+        {
+            _titleNode=HierarchyReferenceCache.Child(_safeArea,"Title");
+            if(_titleNode!=null)
+            {
+                _titleGroup=_titleNode.GetComponent<CanvasGroup>();
+                if(_titleGroup==null) _titleGroup=_titleNode.gameObject.AddComponent<CanvasGroup>();
+                _titleGroup.alpha=0; _titleNode.localScale=Vector3.zero;
+            }
+            if(_desc!=null)
+            {
+                _buttonTextGroup=_desc.GetComponent<CanvasGroup>();
+                if(_buttonTextGroup==null) _buttonTextGroup=_desc.gameObject.AddComponent<CanvasGroup>();
+                _buttonTextGroup.alpha=0;
+            }
+        }
+        private IEnumerator PlayLevelBoxReveal()
+        {
+            _showing=true;
+            var layout=RewardLayoutHelper.GetRewardsLayoutPos(_cells.Count);
+            for(int i=0;i<_cells.Count;i++)
+            {
+                var cell=_cells[i].transform;
+                cell.localPosition=Vector3.zero; cell.localScale=Vector3.one*(layout.Item1*.5f);
+                // Native ShowRewardsPop: move/scale .13s, settle .13s + .16s.
+                _presentationTweens.Add(DOTween.Sequence().SetUpdate(true)
+                    .Append(cell.DOLocalMove(new Vector3(layout.Item2[i].x,layout.Item2[i].y,0),.13f).SetEase(Ease.OutCubic))
+                    .Join(cell.DOScale(layout.Item1,.13f).SetEase(Ease.InOutSine))
+                    .Append(cell.DOScale(layout.Item1*.9f,.13f).SetEase(Ease.InOutSine))
+                    .Append(cell.DOScale(layout.Item1,.16f).SetEase(Ease.InOutSine)));
+            }
+            // Native PlayRewardsShowAnim (RVA 0x14753A0).
+            if(_titleNode!=null)
+                _presentationTweens.Add(DOTween.Sequence().SetUpdate(true).SetDelay(.1f)
+                    .Append(_titleNode.DOScale(1.08f,.3f).SetEase(Ease.OutSine))
+                    .Join(_titleGroup.DOFade(1f,.2f))
+                    .Append(_titleNode.DOScale(1f,.23f).SetEase(Ease.InSine)));
+            foreach(string name in new[] {"FireworksL","FireworksR"})
+            {
+                var graphic=HierarchyReferenceCache.ChildComponent<SkeletonGraphic>(_safeArea,name);
+                if(graphic==null) continue;
+                graphic.Initialize(false); graphic.UnscaledTime=true;
+                if(graphic.SkeletonData?.FindAnimation("animation")!=null) graphic.AnimationState.SetAnimation(0,"animation",false);
+            }
+            yield return new WaitForSecondsRealtime(.45f);
+            if(_buttonTextGroup!=null) _presentationTweens.Add(_buttonTextGroup.DOFade(1f,.2f).SetUpdate(true));
+            _showing=false;
         }
         public void OnClickReceive()
         {
@@ -195,7 +266,9 @@ namespace Snui
             if(!_saved)
             {
                 if(!LevelBoxManager.Ensure().TryOpen(_milestone,out var result)) { SetDescription("REWARD NOT SAVED — TAP TO RETRY"); return; }
-                _saved=true; Reveal(); return;
+                _saved=true;
+                if(_levelBoxPresentation) PrepareLevelBoxPresentation();
+                Reveal(); return;
             }
             if(_showing) { Reveal(); return; }
             _closing=true; _animation=StartCoroutine(CollectAndClose());
@@ -221,6 +294,8 @@ namespace Snui
         private void OnDisable()
         {
             _closing=true; StopAllCoroutines(); _animation=null; _coins?.Cancel();
+            foreach(var tween in _presentationTweens) tween.Kill();
+            _presentationTweens.Clear();
             if(_chest!=null && _chest.AnimationState!=null) _chest.AnimationState.Event-=OnChestEvent;
             // Back may close a failed attempt whose receipt was saved but whose
             // final journal cleanup failed. Resolve it before returning to Home.
