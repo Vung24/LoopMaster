@@ -1,8 +1,9 @@
 using System.Threading;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Snui;
 using Snui.Profile;
-using TMPro;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,6 +39,13 @@ public class HomePage : MonoBehaviour
 	private CancellationTokenSource _cts;
 	private Canvas _headerCanvas;
 	private float _topNodeY;
+	private bool _started;
+	private bool _canSkipAnimations;
+	private bool _isLeavingHome;
+	private bool _progressCommitted;
+	public bool IsEntryBlocked => !isActiveAndEnabled || !_canSkipAnimations || _isLeavingHome || GameSceneManager.OnChangeScene
+		|| EventPrefabUI.HasOpenDialogs
+		|| (GetComponent<DailyCheckInHomeUI>() != null && GetComponent<DailyCheckInHomeUI>().IsDialogOpen);
 
 	public PlayButton PlayButton => _playButton;
 	public HomeEventController EventController => _eventController;
@@ -45,8 +53,6 @@ public class HomePage : MonoBehaviour
 
 	private void Awake()
 	{
-		_cts = new CancellationTokenSource();
-
 		if (_playButton == null)
 		{
 			_playButton = GetComponentInChildren<PlayButton>(true);
@@ -101,35 +107,91 @@ public class HomePage : MonoBehaviour
 	private void OnEnable()
 	{
 		RefreshProgress();
+		if (_started) BeginStartup();
 	}
 
 	private void Start()
 	{
 		Controller().Initialize();
-		StartAsync().Forget();
+		_started = true;
+		BeginStartup();
 	}
 
-	private async UniTaskVoid StartAsync()
+	private void BeginStartup()
 	{
-		if (_homeInAudioClip != null && AudioManager.Current != null)
-		{
-			AudioManager.Current.PlayOneShot(_homeInAudioClip);
-		}
+		_cts?.Cancel();
+		_cts?.Dispose();
+		_cts = new CancellationTokenSource();
+		_canSkipAnimations = false;
+		_isLeavingHome = false;
+		_progressCommitted = false;
+		IsAnimPlaying = true;
+		if (_clickMask != null) _clickMask.SetActive(true);
+		StartAsync(_cts.Token).Forget();
+	}
 
-		if (_playButton != null)
+	private async UniTask StartAsync(CancellationToken token)
+	{
+		try
 		{
-			_playButton.PlayEnterAnim();
-		}
+			EventRuntime.BeforeEnterHome();
+			var controller = Controller();
+			if (LevelBoxManager.Ensure().PendingMilestone > 0)
+			{
+				await UniTask.WaitUntil(() => controller.CanOpenLevelBox(_levelBoxMachine) && !EventPrefabUI.HasOpenDialogs,
+					cancellationToken: token);
+				if (controller.TryOpenPendingLevelBox())
+					await UniTask.WaitUntil(() => !controller.HasLevelBoxOpen, cancellationToken: token);
+			}
+			await SetupEvents(token);
+			token.ThrowIfCancellationRequested();
+			if (_homeInAudioClip != null && AudioManager.Current != null)
+			{
+				AudioManager.Current.PlayOneShot(_homeInAudioClip);
+			}
 
-		if (_eventController != null)
-		{
-			await _eventController.PlayEnterAnimation(false);
-		}
+			if (_playButton != null)
+			{
+				await _playButton.InitAsync().AttachExternalCancellation(token);
+				token.ThrowIfCancellationRequested();
+				_playButton.PlayEnterAnim();
+			}
 
-		if (_eventController != null)
+			if (_eventController != null)
+			{
+				await _eventController.PlayEnterAnimation(true).AttachExternalCancellation(token);
+			}
+			// HomeController owns the offline collection/claim flow; do not start it twice.
+			if (_clickMask != null) _clickMask.SetActive(false);
+			_specialStreakProgress = GetComponentInChildren<SpecialStreakProgress>(true);
+			if (_specialStreakProgress != null)
+				await UniTask.WaitUntil(() => _specialStreakProgress == null || !_specialStreakProgress.IsAnimating,
+					cancellationToken: token);
+			token.ThrowIfCancellationRequested();
+
+			if (_playButton != null && HomeLevelChangePresentation.HasPending)
+				await _playButton.PlayChangeLevelAnim(token);
+			token.ThrowIfCancellationRequested();
+
+			if (_eventController != null)
+			{
+				await _eventController.ShowPopupDialog(token);
+				token.ThrowIfCancellationRequested();
+			}
+			var daily = GetComponent<DailyCheckInHomeUI>();
+			if (DailyCheckInManager.IsOpen && daily != null) await daily.ShowOnArrival(token);
+			token.ThrowIfCancellationRequested();
+			if (_eventController != null) await _eventController.PlayIdleAnimation(cancellationToken: token);
+			_canSkipAnimations = true;
+		}
+		catch (OperationCanceledException) { }
+		finally
 		{
-			await _eventController.ShowPopupDialog();
-			await _eventController.PlayIdleAnimation();
+			if (!token.IsCancellationRequested)
+			{
+				IsAnimPlaying = false;
+				if (_clickMask != null) _clickMask.SetActive(false);
+			}
 		}
 	}
 
@@ -141,54 +203,107 @@ public class HomePage : MonoBehaviour
 		return controller;
 	}
 
-	public void RefreshProgress()
+	private async UniTask SetupEvents(CancellationToken token)
 	{
-		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
-		bool complete = GameProgressStore.IsCampaignComplete;
-		bool available = !complete && catalog != null && catalog.GetLevel(GameProgressStore.NextPlayableLevel) != null;
-
-		if (_playButton != null)
+		if (_eventController == null) return;
+		_eventController.ClearWidgets();
+		ConfigureEventLayout();
+		var widgets = new List<HomeEventBase>();
+		Snui.SpecialCol.SpecialProgress special = null;
+		Snui.ChampionArena.ChampionHomeIcon champion = null;
+		bool committed = false;
+		try
 		{
-			var btn = _playButton.GetComponent<Button>();
-			if (btn != null) btn.interactable = available;
-		}
-
-		string level = complete ? "ALL LEVELS COMPLETE" : available ? GameProgressStore.NextPlayableLevel.ToString() : "LEVEL DATA MISSING";
-		if (_playButton != null)
-		{
-			foreach (TMP_Text label in _playButton.GetComponentsInChildren<TMP_Text>(true))
+			foreach (var manager in new BaseEventManager[] { Managers.Pass, Managers.StreakLine, Managers.Lava, Managers.SpaceRace })
 			{
-				if (int.TryParse(label.text, out _) || label.name == "LevelText")
-				{
-					label.text = level;
-					label.enableAutoSizing = true;
-					label.fontSizeMin = 18;
-				}
-				else if (label.text.StartsWith("LEVEL ", System.StringComparison.OrdinalIgnoreCase))
-				{
-					label.text = "LEVEL " + level;
-				}
+				if (manager == null || (manager == Managers.SpaceRace && EventPrefabUI.Load("HomeEventSpaceRace") == null)
+					|| !manager.ShouldShowIcon()) continue;
+				var icon = await manager.CreateIcon(_eventController.transform);
+				if (icon != null) widgets.Add(icon);
+				token.ThrowIfCancellationRequested();
+			}
+			if (Managers.DailyGift != null && EventPrefabUI.Load("DailyGiftWidget") != null && Managers.DailyGift.ShouldShowIcon())
+			{
+				var gift = await Managers.DailyGift.CreateIcon(_eventController.transform);
+				if (gift != null) widgets.Add(gift);
+				token.ThrowIfCancellationRequested();
+			}
+			if (Managers.SpecialCol != null && EventPrefabUI.Load("SpecialProgress") != null && !Managers.SpecialCol.IsClosed)
+			{
+					special = Snui.SpecialCol.SpecialProgress.Create(_eventController.transform);
+				token.ThrowIfCancellationRequested();
+			}
+			if (Managers.ChampionArena != null && EventPrefabUI.Load("ChampionHomeIcon") != null && (Managers.ChampionArena.ShouldShowIcon() ||
+				Managers.ChampionArena.CanStartEvent() || Managers.ChampionArena.IsExpired))
+			{
+				champion = await Snui.ChampionArena.ChampionHomeIcon.Create(_eventController.transform);
+				token.ThrowIfCancellationRequested();
+			}
+			_eventController.SetupSpecialProgress(special);
+			_eventController.SetupChampionHomeIcon(champion);
+			_eventController.SetupWidgets(widgets);
+			committed = true;
+		}
+		finally
+		{
+			if (!committed)
+			{
+				foreach (var widget in widgets) if (widget != null) Destroy(widget.gameObject);
+				if (special != null) Destroy(special.gameObject);
+				if (champion != null) Destroy(champion.gameObject);
 			}
 		}
 	}
 
+	private void ConfigureEventLayout()
+	{
+		// Leave the authored header and Special Streak strip above the event area.
+		var streak = GetComponentInChildren<SpecialStreakProgress>(true);
+		_eventController.TopPadding = streak != null && streak.gameObject.activeSelf ? 335 : 230;
+		_eventController.OffsetX = -110;
+		_eventController.CenterAlignIcons = false;
+	}
+
+	public void RefreshProgress()
+	{
+		_playButton?.RefreshLevelLabel();
+	}
+
 	public void OnClickPlay()
 	{
-		if (!isActiveAndEnabled) return;
-		Controller().TryEnterGame();
+		TryPlay();
 	}
+
+	public bool TryPlay() => !IsEntryBlocked && Controller().TryEnterGame();
 
 	private void OnSettingClick()
 	{
 		Controller().OpenSettings();
 	}
 
-	public bool IsSkipAnimationsBlocked() => false;
+	public bool IsSkipAnimationsBlocked() => IsEntryBlocked
+		|| (Managers.Heart != null && !Managers.Heart.IsHeartEnough())
+		|| (_eventController != null && _eventController.HasNonSkippableAnimation())
+		|| (_specialStreakProgress != null && _specialStreakProgress.HasNonSkippableAnimation());
 
 	public bool CommitProgressBeforeEnterGame()
 	{
+		if (IsEntryBlocked) return false;
+		if (_progressCommitted) return true;
 		_eventController?.CommitProgressBeforeEnterGame();
+		_progressCommitted = true;
 		return true;
+	}
+
+	public void SetLeavingHome(bool leaving) => _isLeavingHome = leaving;
+
+	private void OnDisable()
+	{
+		_cts?.Cancel();
+		EventPrefabUI.CloseDialogs(transform);
+		_canSkipAnimations = false;
+		IsAnimPlaying = false;
+		if (_clickMask != null) _clickMask.SetActive(false);
 	}
 
 	private void OnDestroy()

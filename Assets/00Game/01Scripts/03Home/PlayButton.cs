@@ -1,5 +1,6 @@
 using System;
 using Cysharp.Threading.Tasks;
+using System.Threading;
 using DG.Tweening;
 using Spine.Unity;
 using TMPro;
@@ -29,9 +30,13 @@ public class PlayButton : MonoBehaviour
 
 	private bool _sweepAnimDone;
 	private HardLevel _hardLevel;
+	private HardLevel _targetHardLevel;
 	private bool IsPlayLevelChangeAnim;
 	private HomePage _homePage;
 	private Color _normalOutlineColor = Color.black;
+	private CancellationTokenSource _sweepCts;
+	private bool _started;
+	private CancellationTokenSource _clickCts;
 
 	private void Awake()
 	{
@@ -56,6 +61,7 @@ public class PlayButton : MonoBehaviour
 
 	private void Start()
 	{
+		_started = true;
 		if (_canvasGroup != null)
 		{
 			_canvasGroup.alpha = 1f;
@@ -66,10 +72,7 @@ public class PlayButton : MonoBehaviour
 			_btn.onClick.AddListener(() => OnClick(false).Forget());
 		}
 
-		if (_btnText != null)
-		{
-			_btnText.text = GameProgressStore.NextPlayableLevel.ToString();
-		}
+		RefreshLevelLabel();
 
 		if (_unlimitedTipTime != null)
 		{
@@ -101,11 +104,15 @@ public class PlayButton : MonoBehaviour
 		{
 			_hardLevel = HardLevel.Normal;
 		}
+		if (this == null) return;
+		_targetHardLevel = _hardLevel;
+		RefreshLevelLabel();
 
 		if (!IsPlayLevelChangeAnim)
 		{
-			UpdateStyle(_hardLevel);
+			UpdateStyle(HomeLevelChangePresentation.HasPending ? HomeLevelChangePresentation.PreviousHardLevel : _targetHardLevel);
 		}
+		if (isActiveAndEnabled) PlaySweepAnim().Forget();
 	}
 
 	public void PlayEnterAnim()
@@ -141,9 +148,9 @@ public class PlayButton : MonoBehaviour
 
 		transform.DOKill();
 		Sequence seq = DOTween.Sequence();
-		seq.Append(transform.DOScale(0.9f, 0.06f).SetEase(Ease.OutQuad));
-		seq.Append(transform.DOScale(1.12f, 0.1f).SetEase(Ease.InQuad));
-		seq.Append(transform.DOScale(1.0f, 0.13f).SetEase(Ease.OutQuad));
+		seq.Append(transform.DOScale(0.9f, 0.06f).SetEase(Ease.InOutSine));
+		seq.Append(transform.DOScale(1.12f, 0.1f).SetEase(Ease.OutSine));
+		seq.Append(transform.DOScale(1.0f, 0.13f).SetEase(Ease.InOutSine));
 		seq.SetLink(gameObject);
 
 		UpdateUnlimitedTip();
@@ -151,26 +158,31 @@ public class PlayButton : MonoBehaviour
 
 	public async UniTaskVoid PlaySweepAnim()
 	{
+		if (_sweepCts != null || !isActiveAndEnabled || _levelLightSpine == null) return;
+		var cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+		_sweepCts = cts;
 		_sweepAnimDone = false;
-		string animName = _hardLevel switch
+		try
 		{
-			HardLevel.VeryHard => "very_hard_light",
-			HardLevel.Hard => "hard_light",
-			_ => "normal_light"
-		};
-
-		while (this != null && !_sweepAnimDone)
-		{
-			if (_levelLightSpine != null)
+			while (this != null && isActiveAndEnabled && !_sweepAnimDone && !cts.IsCancellationRequested)
 			{
+				// Native sweep (0x17a5cb4); these are the names in Light.skel.bytes.
+				string animName = _hardLevel == HardLevel.VeryHard ? "expert" :
+					_hardLevel == HardLevel.Hard ? "hard" : "normal";
 				_levelLightSpine.gameObject.SetActive(true);
 				_levelLightSpine.Initialize(true);
 				if (_levelLightSpine.AnimationState != null)
 				{
 					_levelLightSpine.AnimationState.SetAnimation(0, animName, false);
 				}
+				await UniTask.WaitForSeconds(5f, cancellationToken: cts.Token);
 			}
-			await UniTask.WaitForSeconds(5f);
+		}
+		catch (OperationCanceledException) { }
+		finally
+		{
+			if (_sweepCts == cts) _sweepCts = null;
+			cts.Dispose();
 		}
 	}
 
@@ -195,40 +207,53 @@ public class PlayButton : MonoBehaviour
 
 	public void TriggerSkipAnimationsClick()
 	{
+		if (_btn != null && (!_btn.IsInteractable() || !_btn.enabled)) return;
 		PlayClickFeedback(0.08f).Forget();
 		OnClick(true).Forget();
 	}
 
-	public async UniTask PlayChangeLevelAnim()
+	public async UniTask PlayChangeLevelAnim(CancellationToken cancellationToken = default)
 	{
-		transform.DOKill();
-		Sequence seq = DOTween.Sequence();
-		seq.Append(transform.DOScale(0.94f, 0.1f).SetEase(Ease.OutQuad));
-		seq.Append(transform.DOScale(1.2f, 0.23f).SetEase(Ease.OutBack));
-		seq.AppendCallback(() =>
+		if (IsPlayLevelChangeAnim) return;
+		IsPlayLevelChangeAnim = true;
+		int targetLevel = HomeLevelChangePresentation.TargetLevel;
+		Sequence seq = null;
+		try
 		{
-			if (_levelChangeAudioClip != null && AudioManager.Current != null)
+			transform.DOKill();
+			seq = DOTween.Sequence();
+			seq.Append(transform.DOScale(0.94f, 0.1f).SetEase(Ease.InQuad));
+			seq.Append(transform.DOScale(1.2f, 0.23f).SetEase(Ease.OutQuart));
+			seq.AppendCallback(() =>
 			{
-				AudioManager.Current.PlayOneShot(_levelChangeAudioClip);
-			}
-		});
-		seq.Append(transform.DOScale(0.94f, 0.17f).SetEase(Ease.OutQuad));
-		seq.AppendCallback(() =>
+				if (_levelChangeAudioClip != null && AudioManager.Current != null)
+				{
+					AudioManager.Current.PlayOneShot(_levelChangeAudioClip);
+				}
+			});
+			seq.Append(transform.DOScale(0.94f, 0.17f).SetEase(Ease.InCubic));
+			seq.AppendCallback(() =>
+			{
+				HomeLevelChangePresentation.Consume(targetLevel);
+				RefreshLevelLabel();
+				if (_levelChangeSpine != null)
+				{
+					_levelChangeSpine.gameObject.SetActive(true);
+					_levelChangeSpine.Initialize(false);
+					_levelChangeSpine.AnimationState?.SetAnimation(0, "animation", false);
+				}
+				UpdateStyle(_targetHardLevel);
+			});
+			seq.Append(transform.DOScale(1.0f, 0.17f).SetEase(Ease.OutSine));
+			seq.SetLink(gameObject, LinkBehaviour.KillOnDisable);
+			await seq.ToUniTask().AttachExternalCancellation(cancellationToken);
+		}
+		finally
 		{
-			if (_btnText != null)
-			{
-				_btnText.text = GameProgressStore.NextPlayableLevel.ToString();
-			}
-			if (_levelChangeSpine != null)
-			{
-				_levelChangeSpine.gameObject.SetActive(true);
-				_levelChangeSpine.AnimationState?.SetAnimation(0, "animation", false);
-			}
-			UpdateStyle(_hardLevel);
-		});
-		seq.Append(transform.DOScale(1.0f, 0.17f).SetEase(Ease.OutBack));
-		seq.SetLink(gameObject);
-		await seq.ToUniTask();
+			seq?.Kill();
+			IsPlayLevelChangeAnim = false;
+			if (this != null) transform.localScale = Vector3.one;
+		}
 	}
 
 	private void OnHeartHudChanged()
@@ -238,33 +263,43 @@ public class PlayButton : MonoBehaviour
 
 	private async UniTaskVoid OnClick(bool skipAnimations = false)
 	{
+		// Button already validated the UI click. Snui_Button can temporarily disable
+		// interactable in an earlier onClick listener, so do not reject that accepted click.
+		if (_clickCts != null || !isActiveAndEnabled || (_btn != null && !_btn.enabled)
+			|| (_homePage != null && _homePage.IsEntryBlocked)) return;
 		if (skipAnimations && _homePage != null && _homePage.IsSkipAnimationsBlocked())
 		{
 			return;
 		}
 
-		if (Managers.Heart == null || Managers.Heart.IsHeartEnough())
+		var cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+		_clickCts = cts;
+		try
 		{
-			EnterGame(skipAnimations).Forget();
-			return;
+			if (Managers.Heart != null && !Managers.Heart.IsHeartEnough())
+			{
+				var dialog = await MoreHeartDialogContent.ShowInDialog(JumpHeartDialogSourceScene.HomeBoosterIn)
+					.AttachExternalCancellation(cts.Token);
+				if (dialog == null) return;
+				var closed = new UniTaskCompletionSource();
+				void OnClosed() => closed.TrySetResult();
+				dialog.Closed += OnClosed;
+				try { await closed.Task.AttachExternalCancellation(cts.Token); }
+				finally { if (dialog != null) dialog.Closed -= OnClosed; }
+			}
+			cts.Token.ThrowIfCancellationRequested();
+			if (Managers.Heart == null || Managers.Heart.IsHeartEnough())
+				await EnterGame(skipAnimations, cts.Token);
 		}
-
-		var dialog = await MoreHeartDialogContent.ShowInDialog(JumpHeartDialogSourceScene.HomeBoosterIn);
-		if (dialog != null)
+		catch (OperationCanceledException) { }
+		finally
 		{
-			var utcs = new UniTaskCompletionSource();
-			void OnDialogClosed() => utcs.TrySetResult();
-			dialog.Closed += OnDialogClosed;
-			await utcs.Task;
-		}
-
-		if (Managers.Heart != null && Managers.Heart.IsHeartEnough())
-		{
-			EnterGame(skipAnimations).Forget();
+			if (_clickCts == cts) _clickCts = null;
+			cts.Dispose();
 		}
 	}
 
-	private async UniTaskVoid EnterGame(bool skipAnimations)
+	private async UniTask EnterGame(bool skipAnimations, CancellationToken token)
 	{
 		if (skipAnimations && _homePage != null)
 		{
@@ -272,8 +307,12 @@ public class PlayButton : MonoBehaviour
 			{
 				return;
 			}
-			await UniTask.WaitForSeconds(0.2f);
+			await UniTask.WaitForSeconds(0.2f, cancellationToken: token);
 		}
+		if (!isActiveAndEnabled) return;
+		bool entered = _homePage != null ? _homePage.TryPlay() :
+			HomeController.Current != null && HomeController.Current.TryEnterGame();
+		if (!entered) return;
 
 		_sweepAnimDone = true;
 		if (AudioManager.Current != null)
@@ -281,14 +320,19 @@ public class PlayButton : MonoBehaviour
 			AudioManager.Current.StopMusic();
 		}
 
-		if (_homePage != null)
-		{
-			_homePage.OnClickPlay();
-		}
-		else if (HomeController.Current != null)
-		{
-			HomeController.Current.TryEnterGame();
-		}
+	}
+
+	public void RefreshLevelLabel()
+	{
+		if (_btnText == null) return;
+		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
+		bool complete = GameProgressStore.IsCampaignComplete;
+		bool available = !complete && catalog != null && catalog.GetLevel(GameProgressStore.NextPlayableLevel) != null;
+		int displayLevel = HomeLevelChangePresentation.HasPending ? HomeLevelChangePresentation.PreviousLevel : GameProgressStore.NextPlayableLevel;
+		_btnText.text = complete ? "ALL LEVELS COMPLETE" : available ? displayLevel.ToString() : "LEVEL DATA MISSING";
+		_btnText.enableAutoSizing = true;
+		_btnText.fontSizeMin = 18f;
+		if (_btn != null) _btn.interactable = available;
 	}
 
 	private void UpdateStyle(HardLevel hardLevel)
@@ -424,5 +468,21 @@ public class PlayButton : MonoBehaviour
 			Managers.Heart.OnHeartChanged.RemoveListener(OnHeartHudChanged);
 		}
 		transform.DOKill();
+	}
+
+	private void OnEnable()
+	{
+		if (_started) InitAsync().Forget();
+	}
+
+	private void OnDisable()
+	{
+		var clickCts = _clickCts;
+		_clickCts = null;
+		clickCts?.Cancel();
+		_sweepAnimDone = true;
+		var cts = _sweepCts;
+		_sweepCts = null;
+		cts?.Cancel();
 	}
 }

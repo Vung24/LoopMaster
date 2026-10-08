@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -45,11 +46,35 @@ namespace Snui
 
 		public void SetupChampionHomeIcon(Snui.ChampionArena.ChampionHomeIcon championHomeIcon)
 		{
+			if (_championHomeIcon != null) _championHomeIcon.OnDestroyEvent.RemoveListener(OnChampionDestroyed);
 			_championHomeIcon = championHomeIcon;
 			if (_championHomeIcon != null)
 			{
 				_championHomeIcon.transform.SetParent(transform, false);
+				_championHomeIcon.OnDestroyEvent.AddListener(OnChampionDestroyed);
 			}
+		}
+
+		private void OnChampionDestroyed() { _championHomeIcon = null; ReLayout(); }
+
+		public void ClearWidgets()
+		{
+			foreach (var widget in _eventWidgets)
+			{
+				if (widget == null) continue;
+				widget.OnDestroyEvent.RemoveListener(OnWidgetDestroyed);
+				widget.gameObject.SetActive(false);
+				Destroy(widget.gameObject);
+			}
+			_eventWidgets.Clear();
+			if (_specialProgress != null) { _specialProgress.gameObject.SetActive(false); Destroy(_specialProgress.gameObject); }
+			if (_championHomeIcon != null)
+			{
+				_championHomeIcon.OnDestroyEvent.RemoveListener(OnChampionDestroyed);
+				_championHomeIcon.gameObject.SetActive(false); Destroy(_championHomeIcon.gameObject);
+			}
+			_specialProgress = null;
+			_championHomeIcon = null;
 		}
 
 		public void SetupWidgets(List<HomeEventBase> widgets)
@@ -92,6 +117,7 @@ namespace Snui
 			{
 				cg.alpha = 1f;
 			}
+			_championHomeIcon?.PlayEnterAnimation();
 
 			List<UniTask> tasks = new List<UniTask>();
 			for (int i = 0; i < _eventWidgets.Count; i++)
@@ -165,14 +191,15 @@ namespace Snui
 			await UniTask.WhenAll(tasks);
 		}
 
-		public async UniTask ShowPopupDialog()
+		public async UniTask ShowPopupDialog(CancellationToken cancellationToken = default)
 		{
 			var snapshot = new List<HomeEventBase>(_eventWidgets);
 			foreach (var widget in snapshot)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
 				if (widget != null && widget.gameObject.activeInHierarchy)
 				{
-					await widget.ShowPopupDialog();
+					await widget.ShowPopupDialog().AttachExternalCancellation(cancellationToken);
 				}
 			}
 		}
@@ -201,13 +228,14 @@ namespace Snui
 			}
 		}
 
-		public async UniTask PlayIdleAnimation(float interval = 0.3f)
+		public async UniTask PlayIdleAnimation(float interval = 0.3f, CancellationToken cancellationToken = default)
 		{
 			foreach (var w in _eventWidgets)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
 				if (w != null && w.PlayIdleAnimation())
 				{
-					await UniTask.WaitForSeconds(interval);
+					await UniTask.WaitForSeconds(interval, cancellationToken: cancellationToken);
 				}
 			}
 		}
@@ -219,6 +247,10 @@ namespace Snui
 				RectTransform spRt = _specialProgress.GetComponent<RectTransform>();
 				if (spRt != null)
 				{
+					spRt.anchorMin = spRt.anchorMax = new Vector2(0.5f, 1f);
+					var parentRect = transform as RectTransform;
+					float fit = parentRect != null && spRt.rect.width > 0 ? Mathf.Min(1f, (parentRect.rect.width - 28f) / spRt.rect.width) : 1f;
+					spRt.localScale = Vector3.one * Mathf.Max(0.1f, fit);
 					spRt.anchoredPosition = new Vector2(0f, 10f - TopPadding);
 				}
 			}
@@ -226,7 +258,7 @@ namespace Snui
 			List<HomeEventBase> leftWidgets = _eventWidgets.FindAll(w => w != null && w.IsLeftSide);
 			List<HomeEventBase> rightWidgets = _eventWidgets.FindAll(w => w != null && !w.IsLeftSide);
 
-			_widgetScale = (leftWidgets.Count >= 6 || rightWidgets.Count >= 6) ? 0.85f : 1.0f;
+			_widgetScale = ScreenHelper.IsShortScreen && (leftWidgets.Count >= 6 || rightWidgets.Count >= 6) ? 0.9f : 1.0f;
 
 			foreach (var w in _eventWidgets)
 			{
@@ -237,7 +269,13 @@ namespace Snui
 			}
 
 			float startY = (_specialProgress != null ? -128f : 0f) - TopPadding;
-			float itemHeight = SpacingY + _widgetScale * WidgetHeight;
+			float itemHeight = (int)(SpacingY + _widgetScale * WidgetHeight);
+			if (_championHomeIcon != null && _championHomeIcon.transform is RectTransform championRect)
+			{
+				// Offline fallback icon occupies the otherwise unused right column.
+				championRect.anchorMin = championRect.anchorMax = new Vector2(1f, 1f);
+				championRect.anchoredPosition = new Vector2(OffsetX, startY);
+			}
 
 			for (int i = 0; i < leftWidgets.Count; i++)
 			{
