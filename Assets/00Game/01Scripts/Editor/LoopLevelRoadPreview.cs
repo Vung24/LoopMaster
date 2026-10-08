@@ -93,7 +93,7 @@ public sealed class LoopLevelRoadPreview : IDisposable
     {
         if (_road != null) return;
         Shader shader = Shader.Find("Hidden/LoopMaster/RoadPreview");
-        if (shader == null) throw new InvalidOperationException("RoadPreview shader is missing; allow Unity to finish importing editor assets.");
+        if (shader == null) throw new InvalidOperationException("Thiếu shader RoadPreview; chờ Unity nhập xong tài nguyên của trình sửa.");
         _road = new Material(shader) { name = "Preview road surface", hideFlags = HideFlags.HideAndDontSave, color = new Color(.29f, .38f, .50f) };
         _wall = new Material(shader) { name = "Preview road walls", hideFlags = HideFlags.HideAndDontSave, color = new Color(.95f, .72f, .30f) };
     }
@@ -125,12 +125,12 @@ public sealed class LoopLevelRoadPreview : IDisposable
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode)
         {
-            GUI.Label(rect, "Playtest is in Game View. Stop Play Mode to edit the road preview.", EditorStyles.centeredGreyMiniLabel); return;
+            GUI.Label(rect, "Đang chơi thử ở Game View. Dừng Play Mode để sửa bản xem trước đường.", EditorStyles.centeredGreyMiniLabel); return;
         }
         if (_rendering) return;
         if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
         {
-            GUI.Label(rect, "Road preview requires a graphics device.", EditorStyles.centeredGreyMiniLabel); return;
+            GUI.Label(rect, "Xem trước đường cần thiết bị đồ họa.", EditorStyles.centeredGreyMiniLabel); return;
         }
         EnsureMaterials();
         if (_renderer == null) _renderer = new PreviewRenderUtility();
