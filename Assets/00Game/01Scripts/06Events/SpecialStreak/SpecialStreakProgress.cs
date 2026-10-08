@@ -54,11 +54,13 @@ public class SpecialStreakProgress : MonoBehaviour
     private HomeController _home;
     private SpecialStreakManager _manager;
     private SpecialStreakDialog _dialog;
+    private bool _dialogLoading;
+    private int _dialogVersion;
     private readonly List<Tween> _tweens = new List<Tween>();
     private readonly List<Material> _materials = new List<Material>();
 
     public bool IsAnimating { get; private set; }
-    public bool HasDialogOpen => _dialog != null;
+    public bool HasDialogOpen => _dialogLoading || _dialog != null;
     public bool HasAuthoredLayout => _button != null && _progressBar != null;
 
     private void Awake()
@@ -692,12 +694,21 @@ public class SpecialStreakProgress : MonoBehaviour
 
     private async UniTask ShowDetailDialog()
     {
+        if (HasDialogOpen) return;
+        int version = _dialogVersion;
         var manager = _manager ?? SpecialStreakManager.Ensure();
-        manager.SetDialogPopped();
-
         var parent = GetComponentInParent<Canvas>()?.rootCanvas.transform;
-        _dialog = await SpecialStreakDialog.Show(parent);
+        _dialogLoading = true;
+        try
+        {
+            var dialog = await SpecialStreakDialog.Show(parent);
+            if (this == null || version != _dialogVersion || !isActiveAndEnabled)
+            { if (dialog != null) dialog.Close(); return; }
+            _dialog = dialog;
+        }
+        finally { if (this != null && version == _dialogVersion) _dialogLoading = false; }
         if (_dialog == null) return;
+        manager.SetDialogPopped();
 
         if (_tutorialMask != null)
         {
@@ -746,6 +757,8 @@ public class SpecialStreakProgress : MonoBehaviour
 
     private void OnDisable()
     {
+        _dialogVersion++;
+        _dialogLoading = false;
         if (_manager != null) _manager.Changed -= RefreshProgress;
         CancelAnimation();
         foreach (var particle in new[] { _boneSpark, _multiplierLabelSpark, _rewardCellSpark })
