@@ -54,6 +54,16 @@ public class CountdownHelper : MonoBehaviour
 
 	public void StartCountdown(long timestamp) => CountdownUntil(timestamp);
 
+	public static void CountdownUntil(Snui.Timer timer, long timestamp)
+	{
+		if (timer != null) timer.CountdownUntil(timestamp);
+	}
+
+	public static void CountdownFixTime(Snui.Timer timer, long fixTime)
+	{
+		if (timer != null) timer.CountdownFixTime(fixTime);
+	}
+
 
 	public void CountdownFixTime(long fixTime)
 	{

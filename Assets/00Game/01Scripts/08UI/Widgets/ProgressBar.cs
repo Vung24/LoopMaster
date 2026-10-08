@@ -27,6 +27,7 @@ public class ProgressBar : MonoBehaviour
     public int GetCurrentCount() { return currCount; }
     public int GetTotalCount() { return totalCount; }
     public int CurrentValue => currCount;
+    public float Progress { get => currPercent; set => SetProgress(value); }
 
     public virtual void EnsureObject()
     {
@@ -40,10 +41,13 @@ public class ProgressBar : MonoBehaviour
         if (Mask != null) width = Mask.rect.width;
         if (Text != null)
         {
-            legacyText = Text.GetComponentInChildren<UnityEngine.UI.Text>(true);
+            legacyText = Text.GetComponentInChildren<Text>(true);
             tmpText = Text.GetComponentInChildren<TMP_Text>(true);
         }
     }
+
+    public void SetProgress(float progress) => SetPercent(progress);
+    public void SetProgress(int count, int total) => SetPercent(count, total);
 
     public void SetPercent(float percent)
     {
