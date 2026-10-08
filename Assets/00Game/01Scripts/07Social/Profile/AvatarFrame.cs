@@ -49,7 +49,7 @@ namespace Snui.Profile
 			}
 
 			string path = $"Profile/AvatarFrame/{name}";
-			GameObject prefab = Resources.Load<GameObject>(path);
+			GameObject prefab = name == PASS_VIP ? Snui.PrefabLibrary.Current?.Resolve("PassAvatarFrame") : Resources.Load<GameObject>(path);
 			if (prefab != null)
 			{
 				GameObject instance = Instantiate(prefab, transform);
