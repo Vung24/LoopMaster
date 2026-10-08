@@ -135,13 +135,13 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
             int milestone=manager.PendingMilestone;
             if(milestone>0)
             {
-                var rewards=await RewardDialog.ShowLevelBox(milestone,parent,receiveImmediately:true,cancellationToken:lifetime.Token);
+                var rewards=await RewardDialog.ShowLevelBox(milestone,parent,_chest,waitForMachine:true,cancellationToken:lifetime.Token);
                 if(this==null || version!=_dialogVersion || !isActiveAndEnabled) { if(rewards!=null) Destroy(rewards.gameObject); return; }
                 _rewards=rewards;
                 if(_rewards==null) { _busy=false; return; }
                 _rewards.Closed+=OnRewardClosed;
                 manager.OnViewed(); PlayMachine("last",false);
-                PlaySound(_chestAudioClip);
+                if(_rewards.RewardSaved) StartCoroutine(RewardHandoffFallback(_rewards));
             }
             else
             {
@@ -182,6 +182,14 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         if(first!=null) yield return new WaitForSecondsRealtime(first.Duration);
         if(isActiveAndEnabled && !HasDialogOpen) RefreshProgress();
     }
+    private IEnumerator RewardHandoffFallback(RewardDialog rewards)
+    {
+        // Native RVA 0x179B844 hands off at "replace". A missing Spine event
+        // or rebuilt AnimationState must not leave a saved receipt hidden.
+        var last=_machineSpine?.SkeletonData?.FindAnimation("last");
+        if(last!=null) yield return new WaitForSecondsRealtime(last.Duration);
+        if(isActiveAndEnabled && _rewards==rewards) rewards.BeginChestAnimation();
+    }
     private void PlayMachine(string name,bool loop)
     {
         if(_machineSpine?.SkeletonData?.FindAnimation(name)!=null)
@@ -214,7 +222,9 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
                 break;
             case "text_scale": PlaySound(_progressFullAudioClip); break;
             case "rocker": PlaySound(_rockerAudioClip); break;
-            case "replace": if(_rewards!=null && _rewards.RewardSaved) _rewards.BeginChestAnimation(); break;
+            case "replace":
+                if(_rewards!=null && _rewards.RewardSaved) { PlaySound(_chestAudioClip); _rewards.BeginChestAnimation(); }
+                break;
         }
     }
     private void PlaySound(AudioClip clip) { if(clip!=null && AudioManager.Current!=null) AudioManager.Current.PlayOneShot(clip,gameObject); }
