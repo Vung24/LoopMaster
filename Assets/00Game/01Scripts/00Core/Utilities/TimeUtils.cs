@@ -49,4 +49,16 @@ public static class TimeUtils
 			return false;
 		}
 	}
+
+	public static long GetSecondsToNextDay()
+	{
+		var tomorrow = DateTime.Now.Date.AddDays(1);
+		var diff = tomorrow - DateTime.Now;
+		return (long)Math.Max(0, diff.TotalSeconds);
+	}
+
+	public static uint GetSecondsUntilEndOfDay()
+	{
+		return (uint)GetSecondsToNextDay();
+	}
 }
