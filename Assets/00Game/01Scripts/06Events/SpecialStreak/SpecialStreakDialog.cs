@@ -4,35 +4,32 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Snui;
-using Sugar.UI;
 using TMPro;
 using UnityEngine.UI;
 
-public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
+public class SpecialStreakDialog : MonoBehaviour
 {
     [SerializeField] private Button _infoBtn;
     [SerializeField] private Button _closeBtn;
     [SerializeField] private SpecialStreakMultiplierSlider _multiplierSlider;
     [SerializeField] private ProgressBar _progressBar;
     [SerializeField] private RewardCell _rewardCell;
-    [SerializeField] private TableView _tableView;
+    [SerializeField] private SpecialStreakScrollAdapter _scrollAdapter;
     [SerializeField] private Transform _completedTickNode;
     [SerializeField] private Timer _timer;
     [SerializeField] private TMP_Text _timerText;
-    [SerializeField] private TableViewCell _specialStreakCellPrefab;
-
-    private const string CELL_ID = "special_streak_cell";
     private readonly List<Material> _materials = new List<Material>();
     private Image _tutorialMask;
     private Transform _infoBtnOriginParent;
     private GameObject _info;
     private bool _closed;
+    private bool _started;
 
     public event Action Closed;
 
     public static UniTask<SpecialStreakDialog> Show(Transform parent)
     {
-        var prefab = RecoveryPrefabLibrary.Current?.SpecialStreakDialogPrefab;
+        var prefab = PrefabLibrary.Current?.SpecialStreakDialogPrefab;
         if (parent == null || prefab == null) return UniTask.FromResult<SpecialStreakDialog>(null);
         var instance = Instantiate(prefab, parent, false);
         RewardDialog.PrepareOverlay(instance, 1350);
@@ -50,12 +47,14 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
 
     private void Start()
     {
+        SetSafeBottom();
+        Canvas.ForceUpdateCanvases();
+        _started = true;
         InitProgress();
         InitMultiplierNode();
-        InitTableView();
+        _scrollAdapter?.RefreshRewards(true);
         InitCountdown();
         CheckTutorialShow().Forget();
-        SetSafeBottom();
 
         if (_infoBtn != null) _infoBtn.onClick.AddListener(() => OnClickInfoBtn().Forget());
         if (_closeBtn != null) _closeBtn.onClick.AddListener(OnClickCloseBtn);
@@ -65,12 +64,8 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
 
     private void ResolveHierarchyReferences()
     {
-        if (_tableView == null)
-        {
-            var tableNode = HierarchyReferenceCache.Descendant(transform, "TableView");
-            if (tableNode != null && tableNode.GetComponent<ScrollRect>() != null)
-                _tableView = tableNode.GetComponent<TableView>() ?? tableNode.gameObject.AddComponent<TableView>();
-        }
+        if (_scrollAdapter == null)
+            _scrollAdapter = GetComponentInChildren<SpecialStreakScrollAdapter>(true);
         if (_infoBtn == null)
             _infoBtn = HierarchyReferenceCache.DescendantComponent<Button>(transform, "InfoBtn") ??
                        HierarchyReferenceCache.DescendantComponent<Button>(transform, "InfoButton");
@@ -90,12 +85,6 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
             _timer = HierarchyReferenceCache.DescendantComponent<Timer>(transform, "Timer");
         if (_timerText == null)
             _timerText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "TimerText");
-
-        if (_specialStreakCellPrefab == null && RecoveryPrefabLibrary.Current?.SpecialStreakCellPrefab != null)
-        {
-            var cellObj = RecoveryPrefabLibrary.Current.SpecialStreakCellPrefab;
-            _specialStreakCellPrefab = cellObj.GetComponent<TableViewCell>();
-        }
     }
 
     private void InitProgress()
@@ -131,24 +120,6 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
         _multiplierSlider?.Init(manager.MultiplierIndex);
     }
 
-    private void InitTableView()
-    {
-        if (_tableView == null) return;
-        _tableView.DataSource = this;
-        _tableView.ReloadData();
-
-        var manager = SpecialStreakManager.Ensure();
-        var configs = manager.GetRewardInfosConfig();
-        if (configs != null && configs.Count > 1)
-        {
-            float scroll = Mathf.Clamp01((float)manager.ClaimedIndex / (float)(configs.Count - 1));
-            if (_tableView.ScrollRect != null)
-            {
-                _tableView.ScrollRect.verticalNormalizedPosition = scroll;
-            }
-        }
-    }
-
     private void InitCountdown()
     {
         var manager = SpecialStreakManager.Ensure();
@@ -162,55 +133,14 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
 
     private void SetSafeBottom()
     {
-        if (_tableView == null) return;
+        if (_scrollAdapter == null) return;
         var canvas = GetComponentInParent<Canvas>();
         float safeBottom = ScreenHelper.GetCanvasSafeBottom(canvas);
-        var rt = _tableView.GetComponent<RectTransform>();
+        var rt = _scrollAdapter.GetComponent<RectTransform>();
         if (rt != null)
         {
             rt.offsetMin = new Vector2(rt.offsetMin.x, safeBottom + rt.offsetMin.y);
         }
-    }
-
-    public int GetNumOfSections(TableView tableView) => 1;
-
-    public int GetNumOfCellsInSection(TableView tableView, int section)
-    {
-        var manager = SpecialStreakManager.Ensure();
-        var configs = manager.GetRewardInfosConfig();
-        return configs != null ? configs.Count : 0;
-    }
-
-    public float GetHeightOfCell(TableView tableView, int section, int row) => 220f;
-
-    public TableViewCell GetTableViewCell(TableView tableView, int section, int row)
-    {
-        var cell = tableView.DequeueCell(CELL_ID);
-        if (cell == null)
-        {
-            if (_specialStreakCellPrefab != null)
-            {
-                cell = Instantiate(_specialStreakCellPrefab, tableView.ScrollRect.content, false);
-            }
-            else
-            {
-                var cellPrefab = RecoveryPrefabLibrary.Current?.SpecialStreakCellPrefab;
-                if (cellPrefab != null)
-                {
-                    var cellGo = Instantiate(cellPrefab, tableView.ScrollRect.content, false);
-                    cell = cellGo.GetComponent<TableViewCell>() ?? cellGo.AddComponent<TableViewCell>();
-                }
-            }
-            if (cell != null) cell.TypeIdentifier = CELL_ID;
-        }
-
-        if (cell != null)
-        {
-            var streakCell = cell.GetComponent<SpecialStreakCell>();
-            if (streakCell != null) streakCell.Init(row);
-        }
-
-        return cell;
     }
 
     private async UniTaskVoid CheckTutorialShow()
@@ -271,7 +201,7 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
         }
     }
 
-    private async UniTaskVoid CheckTutorialTableViewScroll()
+    private async UniTaskVoid CheckTutorialRewardScroll()
     {
         var manager = SpecialStreakManager.Ensure();
         if (!manager.ShouldShowTutorial()) return;
@@ -282,14 +212,15 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
             _tutorialMask = null;
         }
 
-        if (_tableView != null && _tableView.ScrollRect != null)
+        if (_scrollAdapter != null && _scrollAdapter.IsInitialized && _scrollAdapter.GetItemsCount() > 0)
         {
-            var content = _tableView.ScrollRect.content;
-            var viewport = _tableView.ScrollRect.viewport ?? (_tableView.transform as RectTransform);
-            if (content != null && viewport != null && content.rect.height - viewport.rect.height > 0)
+            if (_scrollAdapter.GetContentSize() > _scrollAdapter.GetViewportSize())
             {
-                await UniTask.WaitForSeconds(0.5f);
-                await content.DOAnchorPosY(0f, 3f).SetEase(Ease.InOutSine).SetLink(gameObject).AsyncWaitForCompletion();
+                var cancellationToken = this.GetCancellationTokenOnDestroy();
+                await UniTask.WaitForSeconds(0.5f, cancellationToken: cancellationToken);
+                _scrollAdapter.SmoothScrollTo(0, 3f, overrideCurrentScrollingAnimation: true);
+                await UniTask.WaitUntil(() => !_scrollAdapter.IsScrollToAnimationRunning(),
+                    cancellationToken: cancellationToken);
             }
         }
 
@@ -302,13 +233,13 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
     {
         InitProgress();
         InitMultiplierNode();
-        InitTableView();
+        if (_started) _scrollAdapter?.RefreshRewards();
         InitCountdown();
     }
 
     public async UniTaskVoid OnClickInfoBtn()
     {
-        var prefab = RecoveryPrefabLibrary.Current?.SpecialStreakInfoDialogPrefab;
+        var prefab = PrefabLibrary.Current?.SpecialStreakInfoDialogPrefab;
         if (_info != null || prefab == null || _closed) return;
 
         CheckTutorialMaskDismiss();
@@ -317,12 +248,17 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
         RewardDialog.PrepareOverlay(_info, 1400);
         SpecialStreakPresentation.Prepare(_info.transform, _materials);
 
-        var button = HierarchyReferenceCache.Component<Button>(HierarchyReferenceCache.Descendant(_info.transform, "ContinueButton"));
-        if (button != null) button.onClick.AddListener(CloseInfo);
+        var content = _info.GetComponent<EventInfoDialog>();
+        if (content != null) content.Dismissed += OnInfoDismissed;
+        else
+        {
+            var button = HierarchyReferenceCache.Component<Button>(HierarchyReferenceCache.Descendant(_info.transform, "ContinueButton"));
+            if (button != null) button.onClick.AddListener(CloseInfo);
+        }
 
-        RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_info.transform, "Text1"), "WIN LEVELS TO COLLECT");
-        RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_info.transform, "Text2"), "CONSECUTIVE WINS INCREASE YOUR MULTIPLIER");
-        RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_info.transform, "Text3"), "RETRY OR QUIT RESETS THE MULTIPLIER. REVIVE KEEPS IT.");
+        DialogUI.Label(HierarchyReferenceCache.Descendant(_info.transform, "Text1"), "WIN LEVELS TO COLLECT");
+        DialogUI.Label(HierarchyReferenceCache.Descendant(_info.transform, "Text2"), "CONSECUTIVE WINS INCREASE YOUR MULTIPLIER");
+        DialogUI.Label(HierarchyReferenceCache.Descendant(_info.transform, "Text3"), "RETRY OR QUIT RESETS THE MULTIPLIER. REVIVE KEEPS IT.");
 
         var manager = SpecialStreakManager.Ensure();
         if (manager.ShouldShowTutorial())
@@ -332,14 +268,21 @@ public class SpecialStreakDialog : MonoBehaviour, ITableViewDataSource
         }
 
         await UniTask.WaitUntil(() => _info == null);
-        CheckTutorialTableViewScroll().Forget();
+        CheckTutorialRewardScroll().Forget();
     }
 
     private void CloseInfo()
     {
-        if (_info != null) Destroy(_info);
+        if (_info != null)
+        {
+            var content = _info.GetComponent<EventInfoDialog>();
+            if (content != null) content.Dismissed -= OnInfoDismissed;
+            Destroy(_info);
+        }
         _info = null;
     }
+
+    private void OnInfoDismissed(int result) => CloseInfo();
 
     private void OnClickCloseBtn()
     {
