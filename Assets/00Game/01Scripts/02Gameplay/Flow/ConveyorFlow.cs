@@ -16,8 +16,14 @@ public sealed class ConveyorFlow
 	private float _normalTickTime;
 	private float _speedTickTime;
 	private int _tickCount;
+	private float _failureTickInterval;
+	// Native UpdateNormalTick adds 0.005s on failure; retain motion at its 0.2s limit.
+	private const float FailureTickIncrement = 0.005f;
+	private const float MaxFailureTickInterval = 0.2f;
 
 	public bool IsSpeedUpActive { get; private set; }
+	public bool IsFailureSlowdownActive => _failureTickInterval > 0f;
+	public float FailureTickInterval => _failureTickInterval;
 	// Box launch cadence follows manual speed, independently of automatic catch-up.
 	public int LaunchTickCount => _tickCount;
 
@@ -41,6 +47,20 @@ public sealed class ConveyorFlow
 		_speedTickTime = 0f;
 		_tickCount = 0;
 		IsSpeedUpActive = false;
+		_failureTickInterval = 0f;
+	}
+
+	public void BeginFailureSlowdown(float normalInterval)
+	{
+		SetSpeedUp(false);
+		_failureTickInterval = Mathf.Clamp(normalInterval, 0.02f, MaxFailureTickInterval);
+		_normalTickTime = _speedTickTime = 0f;
+	}
+
+	public void EndFailureSlowdown()
+	{
+		_failureTickInterval = 0f;
+		_normalTickTime = _speedTickTime = 0f;
 	}
 
 	public void SetSpeedUp(bool speedUp)
@@ -59,26 +79,30 @@ public sealed class ConveyorFlow
 		const float tolerance = 0.000001f;
 		while (_canTick())
 		{
-			float normalLag = _normalTickTime - normalInterval;
-			float speedLag = _speedTickTime - speedInterval;
+			float normalTickInterval = IsFailureSlowdownActive ? _failureTickInterval : normalInterval;
+			float speedTickInterval = IsFailureSlowdownActive ? _failureTickInterval : speedInterval;
+			float normalLag = _normalTickTime - normalTickInterval;
+			float speedLag = _speedTickTime - speedTickInterval;
 			bool normalDue = normalLag >= -tolerance;
 			bool speedDue = speedLag >= -tolerance;
 			if (!normalDue && !speedDue) break;
 			if (normalDue && (!speedDue || normalLag >= speedLag - tolerance))
 			{
 				_normalTickTime = Mathf.Max(0f, normalLag);
-				UpdateNormalTick(normalInterval);
+				UpdateNormalTick(normalTickInterval);
 			}
 			else
 			{
 				_speedTickTime = Mathf.Max(0f, speedLag);
-				UpdateSpeedUpTick(speedInterval);
+				UpdateSpeedUpTick(speedTickInterval);
 			}
 		}
 	}
 
 	private void UpdateNormalTick(float interval)
 	{
+		if (IsFailureSlowdownActive)
+			_failureTickInterval = Mathf.Min(MaxFailureTickInterval, _failureTickInterval + FailureTickIncrement);
 		if (!IsSpeedUpActive) _tickCount++;
 		UpdatePathWarning();
 		UpdateTransferSlice(interval, false);

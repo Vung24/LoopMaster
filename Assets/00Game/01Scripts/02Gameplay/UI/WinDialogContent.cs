@@ -273,7 +273,7 @@ public class WinDialogContent : DialogContent
 		if (centered)
 		{
 			// The centered prefab has a separate coin/amount line below its caption.
-			RecoveryDialogUI.HideNamed(_claimButtonCenter.transform, "Coin");
+			DialogUI.HideNamed(_claimButtonCenter.transform, "Coin");
 			TMP_Text[] captions = _claimButtonCenter.GetComponentsInChildren<TMP_Text>(true);
 			for (int i = 0; i < captions.Length; i++) captions[i].gameObject.SetActive(i == 0);
 			if (captions.Length > 0) captions[0].rectTransform.anchoredPosition = Vector2.zero;

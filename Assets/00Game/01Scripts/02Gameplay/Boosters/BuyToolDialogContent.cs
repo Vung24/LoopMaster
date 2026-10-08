@@ -18,17 +18,17 @@ public class BuyToolDialogContent : DialogContent
 	protected override void Awake()
 	{
 		base.Awake();
-		_adBtn = _adBtn != null ? _adBtn : RecoveryDialogUI.ResolveButton(transform, "AdBtn");
-		_coinBtn = _coinBtn != null ? _coinBtn : RecoveryDialogUI.ResolveButton(transform, "CoinBtn");
-		_closeBtn = _closeBtn != null ? _closeBtn : RecoveryDialogUI.ResolveButton(transform, "CloseButton");
+		_adBtn = _adBtn != null ? _adBtn : DialogUI.ResolveButton(transform, "AdBtn");
+		_coinBtn = _coinBtn != null ? _coinBtn : DialogUI.ResolveButton(transform, "CoinBtn");
+		_closeBtn = _closeBtn != null ? _closeBtn : DialogUI.ResolveButton(transform, "CloseButton");
 		if (_titleText == null) _titleText = HierarchyReferenceCache.Descendant(transform, "Title");
 		if (_desc == null) _desc = HierarchyReferenceCache.Descendant(transform, "Desc");
 		if (_icon == null) _icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh");
 		if (_coinPriceLabel == null && _coinBtn != null)
 			_coinPriceLabel = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"));
-		RecoveryDialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
-		RecoveryDialogUI.Bind(_coinBtn, OnClickCoinBtn);
-		RecoveryDialogUI.Bind(_closeBtn, OnClickCloseButton);
+		DialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
+		DialogUI.Bind(_coinBtn, OnClickCoinBtn);
+		DialogUI.Bind(_closeBtn, OnClickCloseButton);
 	}
 	public void Init(string toolKey, Func<bool> isValid = null)
 	{
@@ -37,18 +37,18 @@ public class BuyToolDialogContent : DialogContent
 		_processing = false;
 		// Native default group: Undo 450, Shuffle 900, Path 900.
 		Price = toolKey == InventoryKeys.TOOL_UNDO ? 450 : 900;
-		RecoveryDialogUI.Label(_titleText, toolKey == InventoryKeys.TOOL_PATH ? "ADD SPACE" : (toolKey ?? "BOOSTER").ToUpperInvariant());
-		RecoveryDialogUI.Label(_desc, toolKey == InventoryKeys.TOOL_UNDO ? "Undo the last move" :
+		DialogUI.Label(_titleText, toolKey == InventoryKeys.TOOL_PATH ? "ADD SPACE" : (toolKey ?? "BOOSTER").ToUpperInvariant());
+		DialogUI.Label(_desc, toolKey == InventoryKeys.TOOL_UNDO ? "Undo the last move" :
 			toolKey == InventoryKeys.TOOL_SHUFFLE ? "Shuffle the colors in available boxes" : "Add space to the belt");
 		if (_icon != null)
 			foreach (Transform child in _icon)
 				if (InventoryManager.IsBoosterKey(child.name)) child.gameObject.SetActive(child.name == toolKey);
 		if (_coinPriceLabel != null) _coinPriceLabel.text = Price.ToString();
-		else if (_coinBtn != null) RecoveryDialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
+		else if (_coinBtn != null) DialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
 		if (_adBtn != null)
 		{
-			RecoveryDialogUI.HideNamed(_adBtn.transform, "Ad");
-			RecoveryDialogUI.Label(_adBtn.transform, "FREE (OFFLINE)");
+			DialogUI.HideNamed(_adBtn.transform, "Ad");
+			DialogUI.Label(_adBtn.transform, "FREE (OFFLINE)");
 		}
 		Snui_Text.EnsureFontAssets(transform);
 	}
@@ -59,7 +59,7 @@ public class BuyToolDialogContent : DialogContent
 		if (!CanPurchase) return;
 		_processing = true;
 		if (InventoryManager.Ensure().TryPurchaseBooster(_toolKey, Price)) Dismiss(RESULT_PURCHASED);
-		else { _processing = false; RecoveryDialogUI.Label(_desc, "Not enough coins. You need " + Price + "."); }
+		else { _processing = false; DialogUI.Label(_desc, "Not enough coins. You need " + Price + "."); }
 	}
 	public void OnClickOfflineFreeButton()
 	{
@@ -71,7 +71,7 @@ public class BuyToolDialogContent : DialogContent
 }
 
 // Bind hierarchy nodes where the prefab export omitted native private references.
-public static class RecoveryDialogUI
+public static class DialogUI
 {
 	public static Button ResolveButton(Transform root, string name)
 	{

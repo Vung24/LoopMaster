@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using System;
 using Snui;
 using UnityEngine;
@@ -6,11 +7,11 @@ public class BuyToolDialog : MonoBehaviour
 {
 	public BuyToolDialogContent Content { get; private set; }
 	public event Action<int> Closed;
-	public static BuyToolDialog Open(string key, Transform parent, Func<bool> isValid)
+	public static async UniTask<BuyToolDialog> Open(string key, Transform parent, Func<bool> isValid)
 	{
-		var library = DataPrefabLibrary.Current;
-		if (library == null || library.BuyToolDialogPrefab == null || parent == null) return null;
-		GameObject root = Instantiate(library.BuyToolDialogPrefab, parent, false);
+		if (parent == null || (isValid != null && !isValid())) return null;
+		GameObject root = await PopupAssets.Instantiate("BuyToolDialog", parent, parent.GetCancellationTokenOnDestroy());
+		if (isValid != null && !isValid()) { Destroy(root); return null; }
 		root.SetActive(true);
 		BuyToolDialog dialog = root.GetComponent<BuyToolDialog>();
 		if (dialog == null) dialog = root.AddComponent<BuyToolDialog>();
