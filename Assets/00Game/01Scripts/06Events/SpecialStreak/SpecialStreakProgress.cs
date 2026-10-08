@@ -125,8 +125,8 @@ public class SpecialStreakProgress : MonoBehaviour
             _multiplierLabelSpark = HierarchyReferenceCache.DescendantComponent<ParticleSystem>(transform, "MultiplierLabelSpark");
         if (_rewardCellSpark == null)
             _rewardCellSpark = HierarchyReferenceCache.DescendantComponent<ParticleSystem>(transform, "RewardCellSpark");
-        if (_collectItemPrefab == null && DataPrefabLibrary.Current?.SpecialStreakCollectItemPrefab != null)
-            _collectItemPrefab = DataPrefabLibrary.Current.SpecialStreakCollectItemPrefab;
+        if (_collectItemPrefab == null && PrefabLibrary.Current?.SpecialStreakCollectItemPrefab != null)
+            _collectItemPrefab = PrefabLibrary.Current.SpecialStreakCollectItemPrefab;
     }
 
     public void Bind(HomeController home, bool playAnimations = true)
@@ -532,7 +532,7 @@ public class SpecialStreakProgress : MonoBehaviour
         if (_winCollectionPlaying) return false;
         var manager = SpecialStreakManager.Ensure();
         if (!manager.ShouldSettleCollectionResult()) return true;
-        var prefab = DataPrefabLibrary.Current?.SpecialStreakProgressPrefab;
+        var prefab = PrefabLibrary.Current?.SpecialStreakProgressPrefab;
         if (parent == null || prefab == null) return false;
         var instance = Instantiate(prefab, parent, false);
         RewardDialog.PrepareOverlay(instance, 1340);

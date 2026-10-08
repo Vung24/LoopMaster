@@ -13,12 +13,14 @@ public class SpecialStreakCell : MonoBehaviour
     [SerializeField] private Image _labelIcon;
     [SerializeField] private Sprite _purpleIcon, _greenIcon;
     private readonly List<Material> _materials = new List<Material>();
-    private void Awake() => SpecialStreakPresentation.Prepare(transform, _materials);
+    private void Awake()
+    {
+        SpecialStreakPresentation.Prepare(transform, _materials);
+        foreach (var graphic in GetComponentsInChildren<MaskableGraphic>(true)) graphic.maskable = true;
+    }
     private void OnDestroy() => SpecialStreakPresentation.Cleanup(_materials);
     public void Init(int rowIndex)
     {
-        Snui_Text.EnsureFontAssets(transform);
-        foreach (var graphic in GetComponentsInChildren<MaskableGraphic>(true)) graphic.maskable = true;
         var manager = SpecialStreakManager.Ensure();
         var rewards = manager.GetRewardInfosConfig();
         if (rewards == null || rewards.Count == 0) return;
@@ -41,9 +43,11 @@ public class SpecialStreakCell : MonoBehaviour
 
         if (_labelTex != null) _labelTex.text = (totalCount - rowIndex).ToString();
         if (_labelIcon != null) _labelIcon.sprite = claimed ? _greenIcon : _purpleIcon;
-        if (_rewardCell != null && stage.Items().Count > 0)
+        if (_rewardCell != null)
         {
-            _rewardCell.Init(stage.Items()[0], true, true).Forget();
+            var items = stage.Items();
+            _rewardCell.gameObject.SetActive(items.Count > 0);
+            if (items.Count > 0) _rewardCell.Init(items[0], true, true).Forget();
         }
     }
 }

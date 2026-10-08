@@ -13,7 +13,7 @@ public class SpecialStreakFailBanner : MonoBehaviour
     public static UniTask<SpecialStreakFailBanner> Show(Transform parent)
     {
         var manager = SpecialStreakManager.Ensure();
-        var prefab = DataPrefabLibrary.Current?.SpecialStreakFailBannerPrefab;
+        var prefab = PrefabLibrary.Current?.SpecialStreakFailBannerPrefab;
         if (parent == null || prefab == null || !manager.ShouldShowFailBanner()) return UniTask.FromResult<SpecialStreakFailBanner>(null);
         var banner = Instantiate(prefab, parent, false).GetComponent<SpecialStreakFailBanner>();
         banner?.PlayShowAnim(); return UniTask.FromResult(banner);
