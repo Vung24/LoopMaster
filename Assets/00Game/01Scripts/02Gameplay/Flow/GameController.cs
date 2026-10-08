@@ -793,11 +793,11 @@ public class GameController : MonoBehaviour
 			}
 			LevelBoxManager.EnsureInitialized();
 			SpecialStreakManager.Ensure().OnGameWon(CurrentLevelNumber);
-			// Offline events award one progress unit per newly completed campaign level.
+			// Native Pass awards 1/2/3 stars for normal/hard/very hard campaign wins.
 			if (!GameProgressStore.IsLevelCompleted(CurrentLevelNumber))
 				Managers.Event?.DispatchEvent("OnGameWin", new System.Collections.Generic.Dictionary<string, int>
 				{
-					{ GameWinArgs.PassPoints, 1 }
+					{ GameWinArgs.PassPoints, Data == null ? 1 : Mathf.Clamp((int)Data.GetHardLevel() + 1, 1, 3) }
 				});
 			GameProgressStore.RecordWin(CurrentLevelNumber, _levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber),
 				Data == null ? HardLevel.Normal : Data.GetHardLevel());

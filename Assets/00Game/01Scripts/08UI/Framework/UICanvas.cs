@@ -16,7 +16,6 @@ public sealed class UICanvas : MonoBehaviour
 	[SerializeField] private Button _undoButton;
 	[SerializeField] private Button _shuffleButton;
 	[SerializeField] private Button _pathButton;
-	[SerializeField] private Button _speedButton;
 	[SerializeField] private TMP_Text _levelLabel;
 	[SerializeField] private TMP_Text _capacityLabel;
 	[SerializeField] private Image _capacityFill;
@@ -144,13 +143,6 @@ public sealed class UICanvas : MonoBehaviour
 		BindButton(_undoButton, UseUndo);
 		BindButton(_shuffleButton, UseShuffle);
 		BindButton(_pathButton, UsePath);
-		if (_speedButton != null)
-		{
-			SpeedButtonInput input = _speedButton.GetComponent<SpeedButtonInput>();
-			if (input == null) input = _speedButton.gameObject.AddComponent<SpeedButtonInput>();
-			input.Bind(_controller);
-			_speedIcon = _speedButton.targetGraphic as Image;
-		}
 		RefreshDisplay();
 	}
 
@@ -256,7 +248,6 @@ public sealed class UICanvas : MonoBehaviour
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");
 		if (_pathButton == null) _pathButton = ResolveButton(_top, _bottom, "Path");
-		if (_speedButton == null) _speedButton = ResolveButton(_top, _bottom, "Speed");
 	}
 
 	private static Button ResolveButton(Transform top, Transform bottom, string name)
@@ -283,7 +274,7 @@ public sealed class UICanvas : MonoBehaviour
 
 		var hitAreas = new HashSet<Graphic>();
 		foreach (Button button in new[] { _pauseButton, _undoButton,
-			_shuffleButton, _pathButton, _speedButton })
+			_shuffleButton, _pathButton })
 		{
 			if (button == null) continue;
 			button.gameObject.SetActive(true);
@@ -377,7 +368,6 @@ public sealed class UICanvas : MonoBehaviour
 		if (_undoTool != null) _undoTool.UpdateCanUseState(_controller.CanRequestUndoTool);
 		if (_shuffleTool != null) _shuffleTool.UpdateCanUseState(_controller.CanRequestShuffleTool);
 		if (_pathTool != null) _pathTool.UpdateCanUseState(_controller.CanRequestPathTool);
-		if (_speedButton != null) _speedButton.interactable = active;
 		if (_speedLabel != null) _speedLabel.text = _controller.IsSpeedUpActive ? "x4" : "x2";
 		Sprite speedSprite = _controller.SpeedButtonSprite;
 		if (_speedIcon != null && speedSprite != null && _speedIcon.sprite != speedSprite)

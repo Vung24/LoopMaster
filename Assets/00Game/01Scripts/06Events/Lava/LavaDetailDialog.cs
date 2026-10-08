@@ -211,11 +211,7 @@ namespace Snui.Lava
 			SetButtonsInteractable(false);
 			try
 			{
-				if (!IsEventDone && Managers.Lava.ShouldPlayStartAnim())
-				{
-					await LavaStartDialogContent.ShowWithDialog(transform.parent)
-						.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
-				}
+				await PlayEntryAnimation();
 
 				if (_jumpPending || _failed)
 				{
@@ -242,7 +238,8 @@ namespace Snui.Lava
 					await ShowFailNode();
 				}
 				else await ShowTutorialIfNeeded();
-				ShowContinue();
+				// Native shows Continue only for a new result, never for a manual view.
+				if (_jumpPending || IsEventDone) ShowContinue();
 			}
 			catch (System.OperationCanceledException) { }
 			finally
@@ -262,10 +259,32 @@ namespace Snui.Lava
 			if (_continueBtn != null) _continueBtn.interactable = enabled;
 		}
 
+		private async UniTask PlayEntryAnimation()
+		{
+			foreach (var player in _players)
+			{
+				if (player == null) continue;
+				player.SetAlpha(0f);
+				player.DOFade(1f, 0.33f)?.SetLink(player.gameObject);
+			}
+			if (_topNode != null)
+			{
+				float targetY = _topNode.localPosition.y;
+				_topNode.localPosition += Vector3.up * 363f;
+				DOTween.Sequence()
+					.Append(_topNode.DOLocalMoveY(targetY - 7f, 0.13f).SetEase(Ease.InOutSine))
+					.Append(_topNode.DOLocalMoveY(targetY, 0.13f).SetEase(Ease.OutSine))
+					.SetLink(gameObject);
+			}
+			await UniTask.Delay(330, cancellationToken: this.GetCancellationTokenOnDestroy());
+		}
+
 		public void ShowContinue()
 		{
 			if (_continueBtn != null)
 			{
+				// Platform hint hit areas overlap the result button in the authored board.
+				_continueBtn.transform.SetAsLastSibling();
 				_continueBtn.gameObject.SetActive(true);
 				BreathAnim breath = _continueBtn.gameObject.GetOrAddComponent<BreathAnim>();
 				breath?.Play(0f, 3f);
@@ -304,13 +323,41 @@ namespace Snui.Lava
 
 		public virtual async UniTask ShowRecordAddAnim()
 		{
-			if (_playerCountText != null && Managers.Lava != null)
+			if (Managers.Lava == null) return;
+			if (_levelCountText != null)
+				AnimateLabel(_levelCountText)
+					.InsertCallback(0.26f, () => _levelCountText.text = $"{_record}/{Managers.Lava.GetLevelGoal()}")
+					.InsertCallback(0.54f, () => PlayLabelSpark(_levelCountText));
+			await UniTask.Delay(1000, cancellationToken: this.GetCancellationTokenOnDestroy());
+			if (_playerCountText != null)
 			{
-				_playerCountText.text = Managers.Lava.GetRemainingPlayers().ToString();
+				int count = _remainingPlayers;
+				DOTween.To(() => count, value =>
+				{
+					count = value;
+					_playerCountText.text = value.ToString();
+				}, Managers.Lava.GetRemainingPlayers(), 0.47f).SetLink(gameObject);
+				AnimateLabel(_playerCountText).InsertCallback(0.54f, () => PlayLabelSpark(_playerCountText));
 			}
-			if (_levelCountText != null && Managers.Lava != null)
-				_levelCountText.text = $"{_record}/{Managers.Lava.GetLevelGoal()}";
-			await UniTask.CompletedTask;
+			await UniTask.Delay(1000, cancellationToken: this.GetCancellationTokenOnDestroy());
+		}
+
+		private Sequence AnimateLabel(TMP_Text label)
+		{
+			return DOTween.Sequence()
+				.Append(label.transform.DOScale(0.94f, 0.13f).SetEase(Ease.InOutSine))
+				.Append(label.transform.DOScale(1.3f, 0.17f).SetEase(Ease.InOutSine))
+				.Append(label.transform.DOScale(1.31f, 0.17f).SetEase(Ease.OutCirc))
+				.Append(label.transform.DOScale(0.85f, 0.07f).SetEase(Ease.InOutCubic))
+				.Append(label.transform.DOScale(1.02f, 0.13f).SetEase(Ease.InOutSine))
+				.Append(label.transform.DOScale(1f, 0.13f).SetEase(Ease.InOutSine))
+				.SetLink(gameObject);
+		}
+
+		private static void PlayLabelSpark(TMP_Text label)
+		{
+			if (label == null || label.transform.parent == null) return;
+			HierarchyReferenceCache.ChildComponent<ParticleSystem>(label.transform.parent, "LavaSpark")?.Play();
 		}
 
 		public virtual async UniTask ShowFailNode()
@@ -374,7 +421,7 @@ namespace Snui.Lava
 
 		private void OnClickContinueButton()
 		{
-			if (IsPlayAnimation) return;
+			if (IsPlayAnimation || !(_jumpPending || IsEventDone)) return;
 			ExitDialog();
 		}
 

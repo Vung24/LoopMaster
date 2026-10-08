@@ -146,7 +146,14 @@ namespace Snui
 			dialog.Dismissed += value => result = value;
 			await UniTask.WaitUntil(() => dialog == null || result != DialogContent.RESULT_UNKNOWN,
 				cancellationToken: this.GetCancellationTokenOnDestroy());
-			if (result == 1 && Managers.Lava.IsOngoing()) await ShowDetailDialog();
+			if (result == 1 && Managers.Lava.IsOngoing())
+			{
+				// Native recruitment runs once after Join, before the progress board.
+				Managers.Lava.OnStartAnimShown();
+				await LavaStartDialogContent.ShowWithDialog(transform.parent)
+					.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
+				await ShowDetailDialog();
+			}
 		}
 
 		public async UniTask ShowDetailDialog()
