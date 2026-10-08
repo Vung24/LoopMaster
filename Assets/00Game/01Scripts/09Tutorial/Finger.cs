@@ -11,7 +11,7 @@ namespace Snui
 
         public static UniTask<Finger> Show(Transform parent)
         {
-            DataPrefabLibrary library = DataPrefabLibrary.Current;
+            PrefabLibrary library = PrefabLibrary.Current;
             GameObject instance = Instantiate(library.FingerPrefab, parent, false);
             Finger finger = instance.GetComponent<Finger>();
             return UniTask.FromResult(finger);

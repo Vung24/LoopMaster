@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Cysharp.Threading.Tasks;
 
 namespace Snui
 {
@@ -8,6 +9,8 @@ namespace Snui
         public static CheatManager Current { get; private set; }
         public CheatDialog Dialog { get; private set; }
         public CheatDelegate Commands { get; private set; }
+        private bool _loading;
+        private int _version;
         internal static int RequestedLevel;
         public static bool SkipTutorial
         {
@@ -35,17 +38,24 @@ namespace Snui
         }
 
         [ContextMenu("Toggle Cheat Menu")]
-        public void Toggle()
+        public void Toggle() => LoadDialog().Forget();
+        private async UniTask LoadDialog()
         {
             if (Dialog != null) { Dialog.Close(); return; }
-            var prefab = PrefabLibrary.Current?.CheatDialogPrefab;
-            if (prefab == null) { Debug.LogWarning("CheatDialog prefab is missing from PrefabLibrary."); return; }
-            // The original dialog already owns a canvas and a raycast-blocking background.
-            Dialog = Instantiate(prefab, transform, false).GetComponent<CheatDialog>();
-            if (Dialog != null) Dialog.Initialize(Commands);
+            if (_loading) return;
+            _loading = true;
+            int version = _version;
+            try
+            {
+                var dialog = await PopupAssets.Instantiate<CheatDialog>("CheatDialog", transform, this.GetCancellationTokenOnDestroy());
+                if (this == null || version != _version) { Destroy(dialog.gameObject); return; }
+                Dialog = dialog;
+                Dialog.Initialize(Commands);
+            }
+            finally { if (this != null) _loading = false; }
         }
 
-        private void OnSceneChanged(Scene previous, Scene next) { if (Dialog != null) Dialog.Close(); }
+        private void OnSceneChanged(Scene previous, Scene next) { _version++; if (Dialog != null) Dialog.Close(); }
         private void OnDestroy()
         {
             SceneManager.activeSceneChanged -= OnSceneChanged;

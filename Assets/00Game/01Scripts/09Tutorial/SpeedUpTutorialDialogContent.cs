@@ -12,7 +12,7 @@ public class SpeedUpTutorialDialogContent : DialogContent
 	public static UniTask<SpeedUpTutorialDialogContent> Show(Transform parent)
 	{
 		return Dialog.ShowContent<SpeedUpTutorialDialogContent>(parent,
-			"Game/Prefab/UI/SpeedUpTutorialDialogContent.prefab");
+			"SpeedUpTutorialDialogContent");
 	}
 
 	protected override void Awake()

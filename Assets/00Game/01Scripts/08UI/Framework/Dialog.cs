@@ -24,7 +24,6 @@ namespace Snui
         protected DialogContent _content;
         private Coroutine fade;
         private Action callback;
-        private GameObject addressableContent;
         private bool closing;
         private bool entered;
 
@@ -47,16 +46,12 @@ namespace Snui
 
         protected override void Start() { if (!entered) PlayEnterAnimation(); }
 
-        public static UniTask<Dialog> ShowEmpty(Transform parent)
+        public static async UniTask<Dialog> ShowEmpty(Transform parent)
         {
-            DataPrefabLibrary library = DataPrefabLibrary.Current;
-            if (library == null || library.DialogPrefab == null)
-                throw new InvalidOperationException("The recovered Dialog prefab is not assigned.");
-            GameObject root = Instantiate(library.DialogPrefab, parent, false);
-            Dialog dialog = root.GetComponent<Dialog>();
-            if (dialog == null) { Destroy(root); throw new InvalidOperationException("Dialog prefab has no Dialog component."); }
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            Dialog dialog = await PopupAssets.Instantiate<Dialog>("Dialog", parent, parent.GetCancellationTokenOnDestroy());
             dialog.PlayEnterAnimation();
-            return UniTask.FromResult(dialog);
+            return dialog;
         }
 
         public static UniTask<T> ShowContent<T>(string path, float fadeAnimDuration = 0.03f) where T : DialogContent
@@ -64,9 +59,21 @@ namespace Snui
 
         public static async UniTask<T> ShowContent<T>(Transform parent, string path, float fadeAnimDuration = 0.03f) where T : DialogContent
         {
-            DataPrefabLibrary library = DataPrefabLibrary.Current;
-            GameObject prefab = library == null ? null : library.Resolve(path);
-            if (prefab == null) throw new InvalidOperationException("No offline prefab is available for " + path);
+            Dialog dialog = await ShowEmpty(parent);
+            try
+            {
+                dialog.FadeInOutDuration = fadeAnimDuration;
+                T content = await PopupAssets.Instantiate<T>(path, dialog._safeArea,
+                    dialog.GetCancellationTokenOnDestroy());
+                dialog.AddDialogContent(content);
+                return content;
+            }
+            catch { if (dialog != null) Destroy(dialog.gameObject); throw; }
+        }
+
+        public static async UniTask<T> ShowContent<T>(Transform parent, GameObject prefab, float fadeAnimDuration = 0.03f) where T : DialogContent
+        {
+            if (prefab == null) throw new ArgumentNullException(nameof(prefab));
             Dialog dialog = await ShowEmpty(parent);
             dialog.FadeInOutDuration = fadeAnimDuration;
             GameObject instance = Instantiate(prefab, dialog._safeArea, false);
@@ -82,19 +89,7 @@ namespace Snui
         public static async UniTask<T> ShowContent<T>(Transform parent, AssetReference reference, float fadeAnimDuration = 0.03f) where T : DialogContent
         {
             if (reference == null || !reference.RuntimeKeyIsValid()) throw new ArgumentException("Invalid content reference.", nameof(reference));
-            Dialog dialog = await ShowEmpty(parent);
-            try
-            {
-                dialog.FadeInOutDuration = fadeAnimDuration;
-                GameObject instance = await reference.InstantiateAsync(dialog._safeArea).Task;
-                if (dialog == null) { Addressables.ReleaseInstance(instance); throw new OperationCanceledException(); }
-                dialog.addressableContent = instance;
-                T content = instance.GetComponent<T>();
-                if (content == null) throw new InvalidOperationException("Prefab has no " + typeof(T).Name);
-                dialog.AddDialogContent(content);
-                return content;
-            }
-            catch { if (dialog != null) Destroy(dialog.gameObject); throw; }
+            return await ShowContent<T>(parent, reference.RuntimeKey.ToString(), fadeAnimDuration);
         }
 
         public static async UniTask<Dialog> ShowWithContent(Transform parent, DialogContent content, Action callback = null)
@@ -187,7 +182,6 @@ namespace Snui
         protected override void OnDestroy()
         {
             if (_content != null) _content.Dismissed -= OnContentDismissed;
-            if (addressableContent != null) Addressables.ReleaseInstance(addressableContent);
             base.OnDestroy();
         }
     }
