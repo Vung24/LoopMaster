@@ -79,6 +79,16 @@ public class ToolBase : MonoBehaviour
 			_priceText = HierarchyReferenceCache.Component<TMP_Text>(priceTextNode);
 		}
 		if (_button == null) _button = GetComponent<Button>();
+		if (_button != null)
+		{
+			// Keep the normal appearance while interactable blocks unavailable boosters.
+			ColorBlock colors = _button.colors;
+			colors.disabledColor = colors.normalColor;
+			_button.colors = colors;
+			SpriteState sprites = _button.spriteState;
+			sprites.disabledSprite = null;
+			_button.spriteState = sprites;
+		}
 	}
 
 	private void OnCountChanged(string key, int delta)
@@ -98,7 +108,7 @@ public class ToolBase : MonoBehaviour
 		_lastCount = count;
 		_lastCanUse = _canUse;
 		SetLock(locked);
-		SetActive(_addIcon, !locked && count == 0 && _canUse);
+		SetActive(_addIcon, !locked && count == 0);
 		SetActive(_num, !locked && count > 0);
 		if (_count != null) _count.SetText(count.ToString());
 		SetActive(_priceNode, false);
