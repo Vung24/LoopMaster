@@ -45,6 +45,8 @@ public sealed class UICanvas : MonoBehaviour
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
+	private static Canvas _staticBackgroundCanvas;
+	private static Camera _staticBackgroundCamera;
 	private Canvas _runtimeBackgroundCanvas;
 	private Camera _runtimeBackgroundCamera;
 	private Camera _cachedMainCamera;
@@ -81,7 +83,7 @@ public sealed class UICanvas : MonoBehaviour
 		ConfigureCanvasCamera();
 		EnsureVisibleLayout();
 		Bind(GameController.Current);
-		if (_bgGame != null) _bgGame.gameObject.SetActive(true);
+		if (_bgGame != null && _bgGame.parent != transform) _bgGame.gameObject.SetActive(true);
 	}
 
 	private void OnDisable()
@@ -93,7 +95,7 @@ public sealed class UICanvas : MonoBehaviour
 		if (_pauseDialog != null) { _pauseDialog.gameObject.SetActive(false); Destroy(_pauseDialog.gameObject); }
 		_pauseDialog = null;
 		ActiveCanvases.Remove(this);
-		if (_bgGame != null) _bgGame.gameObject.SetActive(false);
+		if (_bgGame != null && _bgGame.parent != transform) _bgGame.gameObject.SetActive(false);
 	}
 
 	private void OnDestroy()
@@ -161,14 +163,6 @@ public sealed class UICanvas : MonoBehaviour
 
 	private void ConfigureBackground()
 	{
-		if (_bgGame == null) return;
-
-		Image bgImage = _bgGame.GetComponent<Image>();
-		if (bgImage != null)
-		{
-			bgImage.raycastTarget = false;
-		}
-
 		Camera mainCam = _controller != null ? _controller.MainCamera : Camera.main;
 		if (mainCam != null)
 		{
@@ -187,10 +181,35 @@ public sealed class UICanvas : MonoBehaviour
 		}
 
 		Canvas bgCanvas = _controller != null ? _controller.BackgroundCanvas : null;
-		if (bgCanvas == null)
+		if (bgCanvas != null)
 		{
-			bgCanvas = ResolveOrCreateBackgroundCanvas();
+			// BackgroundCanvas is pre-configured in the scene/prefab.
+			// Ensure duplicate _bgGame inside UICanvas remains inactive so it does not overlap UI.
+			if (_bgGame != null && _bgGame.parent == transform)
+			{
+				_bgGame.gameObject.SetActive(false);
+			}
+
+			GameBg gameBg = _controller != null ? _controller.GameBg : null;
+			if (gameBg != null)
+			{
+				foreach (SpriteRenderer sr in gameBg.GetComponentsInChildren<SpriteRenderer>(true))
+				{
+					sr.enabled = false;
+				}
+			}
+			return;
 		}
+
+		if (_bgGame == null) return;
+
+		Image bgImage = _bgGame.GetComponent<Image>();
+		if (bgImage != null)
+		{
+			bgImage.raycastTarget = false;
+		}
+
+		bgCanvas = ResolveOrCreateBackgroundCanvas();
 
 		if (bgCanvas != null && _bgGame.parent != bgCanvas.transform)
 		{
@@ -203,10 +222,10 @@ public sealed class UICanvas : MonoBehaviour
 			_bgGame.localScale = Vector3.one;
 		}
 
-		GameBg gameBg = _controller != null ? _controller.GameBg : null;
-		if (gameBg != null)
+		GameBg fallbackBg = _controller != null ? _controller.GameBg : null;
+		if (fallbackBg != null)
 		{
-			foreach (SpriteRenderer sr in gameBg.GetComponentsInChildren<SpriteRenderer>(true))
+			foreach (SpriteRenderer sr in fallbackBg.GetComponentsInChildren<SpriteRenderer>(true))
 			{
 				sr.enabled = false;
 			}
@@ -215,41 +234,45 @@ public sealed class UICanvas : MonoBehaviour
 
 	private Canvas ResolveOrCreateBackgroundCanvas()
 	{
+		if (_controller != null && _controller.BackgroundCanvas != null) return _controller.BackgroundCanvas;
+		if (_staticBackgroundCanvas != null) return _staticBackgroundCanvas;
 		if (_runtimeBackgroundCanvas != null) return _runtimeBackgroundCanvas;
 
 		Camera bgCamera = _controller != null ? _controller.BackgroundCamera : null;
-		if (bgCamera == null && _runtimeBackgroundCamera == null)
+		if (bgCamera == null && _staticBackgroundCamera == null && _runtimeBackgroundCamera == null)
 		{
 			GameObject camObj = new GameObject("RuntimeBackgroundCamera");
 			camObj.layer = 5;
-			_runtimeBackgroundCamera = camObj.AddComponent<Camera>();
-			_runtimeBackgroundCamera.clearFlags = CameraClearFlags.SolidColor;
-			_runtimeBackgroundCamera.backgroundColor = new Color(0.15f, 0.12f, 0.44f, 1f);
-			_runtimeBackgroundCamera.cullingMask = 1 << 5;
-			_runtimeBackgroundCamera.depth = -2;
-			_runtimeBackgroundCamera.orthographic = true;
-			_runtimeBackgroundCamera.orthographicSize = 10f;
-			_runtimeBackgroundCamera.nearClipPlane = 0.3f;
-			_runtimeBackgroundCamera.farClipPlane = 50f;
+			_staticBackgroundCamera = camObj.AddComponent<Camera>();
+			_staticBackgroundCamera.clearFlags = CameraClearFlags.SolidColor;
+			_staticBackgroundCamera.backgroundColor = new Color(0.15f, 0.12f, 0.44f, 1f);
+			_staticBackgroundCamera.cullingMask = 1 << 5;
+			_staticBackgroundCamera.depth = -2;
+			_staticBackgroundCamera.orthographic = true;
+			_staticBackgroundCamera.orthographicSize = 10f;
+			_staticBackgroundCamera.nearClipPlane = 0.3f;
+			_staticBackgroundCamera.farClipPlane = 50f;
 			camObj.transform.position = new Vector3(0f, 0f, -10f);
-			bgCamera = _runtimeBackgroundCamera;
+			DontDestroyOnLoad(camObj);
+			bgCamera = _staticBackgroundCamera;
 		}
 
 		GameObject canvasObj = new GameObject("RuntimeBackgroundCanvas");
 		canvasObj.layer = 5;
-		_runtimeBackgroundCanvas = canvasObj.AddComponent<Canvas>();
-		_runtimeBackgroundCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-		_runtimeBackgroundCanvas.worldCamera = bgCamera != null ? bgCamera : _runtimeBackgroundCamera;
-		_runtimeBackgroundCanvas.planeDistance = 10f;
-		_runtimeBackgroundCanvas.sortingOrder = 0;
+		_staticBackgroundCanvas = canvasObj.AddComponent<Canvas>();
+		_staticBackgroundCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+		_staticBackgroundCanvas.worldCamera = bgCamera != null ? bgCamera : _staticBackgroundCamera;
+		_staticBackgroundCanvas.planeDistance = 10f;
+		_staticBackgroundCanvas.sortingOrder = 0;
 
 		CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
 		scaler.referenceResolution = new Vector2(750f, 1624f);
 		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
 		scaler.matchWidthOrHeight = 0f;
+		DontDestroyOnLoad(canvasObj);
 
-		return _runtimeBackgroundCanvas;
+		return _staticBackgroundCanvas;
 	}
 
 	private void CacheLegacyPrefabReferences()
