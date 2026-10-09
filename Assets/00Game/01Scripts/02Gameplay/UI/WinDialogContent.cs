@@ -60,7 +60,6 @@ public class WinDialogContent : DialogContent
 		PopButton(_claimButtonCenter, 0.06f);
 		PopButton(_claimButton, 0.06f);
 		PopButton(_adButton, 0.06f);
-		// The full WinDialog prefab has an opaque mask above ordinary canvas siblings.
 		HudContainer.TrySetTop();
 	}
 
@@ -81,8 +80,6 @@ public class WinDialogContent : DialogContent
 		if (group == null) group = node.gameObject.AddComponent<CanvasGroup>();
 		group.alpha = 0f;
 		_enterAnimation.Insert(delay, group.DOFade(1f, 0.16f).SetEase(Ease.OutSine));
-		// Use From so cancellation restores the authored scale through Complete.
-		// Native literal pool: 0.88 start scale and 1.04 end scale.
 		_enterAnimation.Insert(delay, node.DOScale(scale * 1.04f, 0.18f).From(scale * 0.88f).SetEase(Ease.OutBack, 1.2f));
 	}
 
@@ -281,7 +278,6 @@ public class WinDialogContent : DialogContent
 		if (_claimButton != null) _claimButton.gameObject.SetActive(!centered);
 		if (centered)
 		{
-			// The centered prefab has a separate coin/amount line below its caption.
 			DialogUI.HideNamed(_claimButtonCenter.transform, "Coin");
 			TMP_Text[] captions = _claimButtonCenter.GetComponentsInChildren<TMP_Text>(true);
 			for (int i = 0; i < captions.Length; i++) captions[i].gameObject.SetActive(i == 0);
@@ -333,8 +329,6 @@ public class WinDialogContent : DialogContent
 				tmpLabels[i].enableAutoSizing = true;
 				tmpLabels[i].fontSizeMin = 16f;
 				tmpLabels[i].fontSizeMax = 36f;
-				// The authored horizontal layout sizes text from preferred width.
-				// Reserve a bounded column so reward labels stay inside the button.
 				LayoutElement column = tmpLabels[i].GetComponent<LayoutElement>();
 				if (column == null) column = tmpLabels[i].gameObject.AddComponent<LayoutElement>();
 				column.minWidth = 0f;
@@ -355,8 +349,6 @@ public class WinDialogContent : DialogContent
 			{
 				nodes[i].gameObject.SetActive(true);
 				if (content == null || nodes[i].parent != content) continue;
-				// The embedded content in WinDialog lacks the layout component present
-				// on the standalone WinDialogContent prefab. Use the same bounded row.
 				HorizontalLayoutGroup row = content.GetComponent<HorizontalLayoutGroup>();
 				if (row == null) row = content.gameObject.AddComponent<HorizontalLayoutGroup>();
 				row.childAlignment = TextAnchor.MiddleCenter;

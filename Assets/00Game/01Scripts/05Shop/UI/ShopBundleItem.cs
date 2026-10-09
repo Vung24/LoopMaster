@@ -68,7 +68,6 @@ namespace ShopUI
 		public override void Init(string type, IShopDelegate shopDelegate)
 		{
 			base.Init(type, shopDelegate);
-			// Native ShopBundleItem only inherits Init; its rewards and labels are authored in each prefab.
 			if (_usePrefabDetails) return;
 			ResolveBundleConfig(type);
 			ConfigureBundleDetails();
@@ -77,13 +76,11 @@ namespace ShopUI
 
 		private void ResolveBundleConfig(string type)
 		{
-			// 1. If currently assigned bundle matches, keep it
 			if (_currentBundle != null && _currentBundle.Matches(type))
 			{
 				return;
 			}
 
-			// 2. Search local inspector list of bundle SOs
 			if (_bundleConfigs != null)
 			{
 				for (int i = 0; i < _bundleConfigs.Count; i++)
@@ -97,7 +94,6 @@ namespace ShopUI
 				}
 			}
 
-			// 3. Search assigned database
 			if (_bundleDatabase != null)
 			{
 				var bundle = _bundleDatabase.FindBundle(type);
@@ -108,7 +104,6 @@ namespace ShopUI
 				}
 			}
 
-			// 4. Search global singleton database
 			var globalDb = ShopBundleDatabaseSO.Instance;
 			if (globalDb != null)
 			{
@@ -139,7 +134,6 @@ namespace ShopUI
 			var lib = PrefabLibrary.Current;
 			if (lib == null || lib.ShopRewardItemPrefab == null) return;
 
-			// Ensure layout group exists so items are aligned nicely
 			var layout = _rewardsRoot.GetComponent<HorizontalLayoutGroup>();
 			if (layout == null)
 			{
@@ -152,7 +146,6 @@ namespace ShopUI
 				layout.childForceExpandHeight = false;
 			}
 
-			// Remove old items immediately from layout, including during editor preview.
 			for (int i = _rewardsRoot.childCount - 1; i >= 0; i--)
 			{
 				var child = _rewardsRoot.GetChild(i).gameObject;

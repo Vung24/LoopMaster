@@ -16,7 +16,6 @@ namespace ShopUI
 	{
 		public virtual List<string> GetShopProducts()
 		{
-			// ShopDelegate.GetShopProducts, RVA 0x17C444C.
 			var list = new List<string>
 			{
 				ShopProductCatalog.GoldenPass, ShopProductCatalog.Beginner,
@@ -25,7 +24,6 @@ namespace ShopUI
 				"loop.coins.1000", "loop.coins.5000", "loop.coins.10000",
 				"loop.coins.25000", "loop.coins.50000", "loop.coins.100000"
 			};
-			// Local counterpart of the original remote-config/deeplink gate (default: closed).
 			if (PlayerPrefs.GetInt("is_open_remove_ad", 0) == 1)
 			{
 				list.Insert(1, ShopProductCatalog.NoAdsPlus);
@@ -113,6 +111,5 @@ namespace ShopUI
 	}
 }
 
-// Global namespace aliases for parity with Il2Cpp global namespace definitions
 public class ShopDelegate : ShopUI.ShopDelegate { }
 public class MiniShopDelegate : ShopUI.MiniShopDelegate { }

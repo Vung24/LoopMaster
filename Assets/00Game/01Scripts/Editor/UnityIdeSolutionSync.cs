@@ -5,8 +5,6 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// The legacy IDE generator writes .sln; the newer generator writes .slnx.
-// A pinned, older solution can hide package assemblies from IntelliSense.
 [InitializeOnLoad]
 public sealed class UnityIdeSolutionSync : AssetPostprocessor
 {
@@ -18,9 +16,6 @@ public sealed class UnityIdeSolutionSync : AssetPostprocessor
 
     private static string OnGeneratedSlnSolution(string path, string content)
     {
-        // Incremental generation does not call OnGeneratedCSProjectFiles.
-        // Remember the generator's actual output, even if its content/timestamp
-        // is unchanged, and sync after it has finished writing the projects.
         generatedSolution = Path.GetFullPath(path);
         EditorApplication.delayCall -= Sync;
         EditorApplication.delayCall += Sync;

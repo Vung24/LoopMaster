@@ -166,7 +166,6 @@ public class PlayButton : MonoBehaviour
 		{
 			while (this != null && isActiveAndEnabled && !_sweepAnimDone && !cts.IsCancellationRequested)
 			{
-				// Native sweep (0x17a5cb4); these are the names in Light.skel.bytes.
 				string animName = _hardLevel == HardLevel.VeryHard ? "expert" :
 					_hardLevel == HardLevel.Hard ? "hard" : "normal";
 				_levelLightSpine.gameObject.SetActive(true);
@@ -263,8 +262,6 @@ public class PlayButton : MonoBehaviour
 
 	private async UniTaskVoid OnClick(bool skipAnimations = false)
 	{
-		// Button already validated the UI click. Snui_Button can temporarily disable
-		// interactable in an earlier onClick listener, so do not reject that accepted click.
 		if (_clickCts != null || !isActiveAndEnabled || (_btn != null && !_btn.enabled)
 			|| (_homePage != null && _homePage.IsEntryBlocked)) return;
 		if (skipAnimations && _homePage != null && _homePage.IsSkipAnimationsBlocked())

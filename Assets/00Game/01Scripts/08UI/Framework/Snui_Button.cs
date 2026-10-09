@@ -121,7 +121,6 @@ namespace Snui
 		public void OnPointerDown(PointerEventData eventData)
 		{
 			if (Button == null || !Button.IsInteractable() || _pressed) return;
-			// Capture after layout has settled, including buttons with no child content.
 			if (_content != null)
 			{
 				_contentLocalPos = _content.localPosition;
@@ -169,7 +168,6 @@ namespace Snui
 
 		private void DisableButtonQuickTouch()
 		{
-			// An earlier click listener may close the dialog before this listener runs.
 			if (!isActiveAndEnabled || Button == null || !Button.IsInteractable()) return;
 			if (_preventClickRoutine != null) StopCoroutine(_preventClickRoutine);
 			_preventClickRoutine = StartCoroutine(PreventRepeatedClick());

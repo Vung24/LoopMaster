@@ -37,7 +37,6 @@ namespace Snui
         }
         public async UniTask Use(bool showScrewdriver)
         {
-            // Reveal calls Use(false) while normal pointer input is disabled.
             if (_used || _block?.Screws == null || _index < 0 || _index >= _block.Screws.Length || !_block.Screws[_index]) return;
             if (showScrewdriver && _context?.ScrewdriverPrefab == null)
                 throw new InvalidOperationException("Missing KeyHunter/Prefab/Screwdriver.prefab.");

@@ -69,7 +69,6 @@ public class HomeController : MonoBehaviour
 		_ready = true;
 		var scaler = _canvas.GetComponent<CanvasScaler>() ?? _canvas.gameObject.AddComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		// HomeScene's original CanvasScaler uses Expand at 750 x 1624.
 		scaler.referenceResolution = new Vector2(750f, 1624f);
 		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand; scaler.matchWidthOrHeight = 0f;
 		if (_canvas.GetComponent<GraphicRaycaster>() == null) _canvas.gameObject.AddComponent<GraphicRaycaster>();
@@ -89,7 +88,6 @@ public class HomeController : MonoBehaviour
 		_levelBox = HomePage.GetComponentInChildren<LevelBoxMachine>(true);
 		if (_levelBox != null && !_levelBox.HasAuthoredLayout && PrefabLibrary.Current?.LevelBoxMachinePrefab != null)
 		{
-			// Restore legacy scenes that still contain a field-less LevelBox placeholder.
 			Transform slot = _levelBox.transform;
 			var restored = Instantiate(PrefabLibrary.Current.LevelBoxMachinePrefab, slot.parent, false);
 			var target = restored.transform as RectTransform; var source = slot as RectTransform;
@@ -201,7 +199,6 @@ public class HomeController : MonoBehaviour
 		if (animate)
 		{
 			_navigationBar?.SwitchPage(index);
-			// Native PageView scrolls to -viewWidth * index in 0.2 seconds.
 			_pageTween = _pageContent.DOAnchorPosX(-_pageSize.x * index, 0.2f).SetUpdate(true).OnComplete(FinishPageTransition);
 		}
 		else

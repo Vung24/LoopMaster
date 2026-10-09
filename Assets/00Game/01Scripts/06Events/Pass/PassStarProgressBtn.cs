@@ -56,7 +56,6 @@ namespace Snui
             int goal = Managers.Pass.GetRequirePoints(_displayStage);
             var tween = Bar.IncreaseTo(count, .4f, value => PassUI.Text(transform, "Value", value + "/" + goal));
             await tween.ToUniTask().AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
-            // Resume after DOTween finishes despawning the completed bar tween.
             await UniTask.NextFrame(cancellationToken: this.GetCancellationTokenOnDestroy());
         }
         public void PlayCollectAnim()

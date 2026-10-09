@@ -175,7 +175,6 @@ public sealed class GameResultUI : MonoBehaviour
 			coinOffer.GetComponentInChildren<Text>().gameObject.name = "Number";
 			((RectTransform)adButton.transform).sizeDelta = new Vector2(240f, 65f);
 			((RectTransform)coinOffer.transform).sizeDelta = new Vector2(240f, 65f);
-			// Rebind after the fallback controls are created.
 			_failContent.BindFallbackOffers();
 		}
 	}
@@ -196,7 +195,6 @@ public sealed class GameResultUI : MonoBehaviour
 	private IEnumerator ShowFailAfterDelay(GameController controller, GameData data)
 	{
 		int version = _uiVersion;
-		// Native ShowFailDialog: 0.2s before stopping BGM, then 1s on ordinary levels.
 		yield return new WaitForSeconds(controller.IsFailTutorial() ? 0.5f : 1.2f);
 		if (controller == null || _controller != controller || controller.Data != data ||
 			controller.EndState != GameEndState.Failed) yield break;
@@ -264,7 +262,6 @@ public sealed class GameResultUI : MonoBehaviour
 		_retryContent.Bind(_controller);
 		_retryContent.Dismissed += OnRetryDismissed;
 		_retryContent.Show();
-		// Native FailDialog CheckSpecialStreakBanner parents to the full-screen safe area.
 		Transform area = _failDialog == null ? null : _failDialog.SafeArea;
 		_streakBanner = SpecialStreakFailBanner.Show(area == null ? _canvas.transform : area).GetAwaiter().GetResult();
 		if (_streakBanner != null) Snui.RewardDialog.PrepareOverlay(_streakBanner.gameObject, 1321);
@@ -338,7 +335,6 @@ public sealed class GameResultUI : MonoBehaviour
 		_showWinRoutine = null;
 		if (_showFailRoutine != null) StopCoroutine(_showFailRoutine);
 		_showFailRoutine = null;
-		// The native WinDialog becomes the persistent loading overlay when returning Home.
 		if (_winDialog != null && !_winDialog.IsEnteringHome) { _winDialog.Hide(); Destroy(_winDialog.gameObject); }
 		if (_failDialog != null) { _failDialog.Hide(); Destroy(_failDialog.gameObject); }
 		_winDialog = null; _winContent = null;

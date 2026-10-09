@@ -32,7 +32,6 @@ namespace Snui
         private readonly List<Tween> _presentationTweens=new List<Tween>();
         public event Action Closed;
         public bool RewardSaved => _saved;
-        // Presentation receipt only: SpecialStreak has already journaled these rewards.
         public static async UniTask<RewardDialog> ShowSpecialStreakRewards(List<RewardItem> items, Transform parent)
         {
             if (parent == null || items == null || items.Count == 0)
@@ -61,7 +60,6 @@ namespace Snui
             if(parent==null) return null;
             foreach(var existing in parent.GetComponentsInChildren<RewardDialog>(true))
                 if(existing.isActiveAndEnabled) return existing;
-            // Load successfully before committing the pending reward.
             var instance=await PopupAssets.Instantiate(PATH,parent,cancellationToken);
             var dialog=instance.GetComponent<RewardDialog>();
             if(dialog==null) { Destroy(instance); return null; }
@@ -181,14 +179,13 @@ namespace Snui
             else { Reveal(); yield break; }
             if(_levelBoxPresentation)
             {
-                // Native PlayChestRewards (RVA 0x179DAA0): jump then land at center.
                 _presentationTweens.Add(DOTween.Sequence().SetUpdate(true).SetDelay(.13f)
                     .Append(_chest.transform.DOLocalMoveY(237f,.266f).SetEase(Ease.OutQuart))
                     .Append(_chest.transform.DOLocalMoveY(0f,.233f).SetEase(Ease.InQuart)));
             }
             float remaining=animation.Duration;
             while(_showing && remaining>0) { remaining-=Time.unscaledDeltaTime; yield return null; }
-            if(_showing) Reveal(); // Missing Spine event cannot strand the receipt/UI.
+            if(_showing) Reveal();
         }
         private void OnChestEvent(Spine.TrackEntry track, Spine.Event evt)
         {
@@ -236,14 +233,12 @@ namespace Snui
             {
                 var cell=_cells[i].transform;
                 cell.localPosition=Vector3.zero; cell.localScale=Vector3.one*(layout.Item1*.5f);
-                // Native ShowRewardsPop: move/scale .13s, settle .13s + .16s.
                 _presentationTweens.Add(DOTween.Sequence().SetUpdate(true)
                     .Append(cell.DOLocalMove(new Vector3(layout.Item2[i].x,layout.Item2[i].y,0),.13f).SetEase(Ease.OutCubic))
                     .Join(cell.DOScale(layout.Item1,.13f).SetEase(Ease.InOutSine))
                     .Append(cell.DOScale(layout.Item1*.9f,.13f).SetEase(Ease.InOutSine))
                     .Append(cell.DOScale(layout.Item1,.16f).SetEase(Ease.InOutSine)));
             }
-            // Native PlayRewardsShowAnim (RVA 0x14753A0).
             if(_titleNode!=null)
                 _presentationTweens.Add(DOTween.Sequence().SetUpdate(true).SetDelay(.1f)
                     .Append(_titleNode.DOScale(1.08f,.3f).SetEase(Ease.OutSine))
@@ -281,7 +276,6 @@ namespace Snui
             {
                 HudContainer.TrySetTop(1301);
                 _coins=gameObject.AddComponent<ClaimCoinAnim>();
-                // Hide the opaque mask while coins fly on the existing HUD flight layer.
                 if(_mask!=null) _mask.color=new Color(0,0,0,.15f);
                 yield return _coins.Play(coins,transform.parent,start,HudContainer.Current.CoinHud,null,1302);
             }
@@ -297,8 +291,6 @@ namespace Snui
             foreach(var tween in _presentationTweens) tween.Kill();
             _presentationTweens.Clear();
             if(_chest!=null && _chest.AnimationState!=null) _chest.AnimationState.Event-=OnChestEvent;
-            // Back may close a failed attempt whose receipt was saved but whose
-            // final journal cleanup failed. Resolve it before returning to Home.
             InventoryManager.Current?.ReplayPendingRewardJournal();
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.TryRevertToOriginLayer();
             Closed?.Invoke(); Closed=null;

@@ -22,7 +22,6 @@ public class WinLogoDialogContent : DialogContent
         CancelAnimation();
         SetGraphicsActive(false);
         base.Show();
-        // The mascot overlays the reward content and must not consume its buttons.
         if (_canvasGroup != null)
         {
             _canvasGroup.interactable = false;
@@ -35,11 +34,9 @@ public class WinLogoDialogContent : DialogContent
     {
         PlayAudio(_winPre);
         var logoEntry = PlayGraphic(_logo);
-        // Ghidra RVA 0x15B83FC: logo -> 1.76 seconds -> mascot, not logo clip length.
         if (logoEntry != null) yield return new WaitForSecondsRealtime(1.76f);
         PlayAudio(_winIp);
         var ipEntry = PlayGraphic(_ip);
-        // Native Dismiss releases GetResult here while the mascot keeps playing.
         Dismiss();
         while (ipEntry != null && _ip != null && _ip.isActiveAndEnabled && !ipEntry.IsComplete)
             yield return null;
@@ -77,7 +74,6 @@ public class WinLogoDialogContent : DialogContent
         Hide();
     }
 
-    // Unlike ordinary dialog content, completion does not hide the mascot yet.
     public override void Dismiss(int result = RESULT_CLOSE) { _result = result; }
 
     public override void Hide()

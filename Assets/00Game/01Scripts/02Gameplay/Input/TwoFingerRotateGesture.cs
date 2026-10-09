@@ -46,8 +46,6 @@ public class TwoFingerRotateGesture : MonoBehaviour
         }
         if (first.phase != TouchPhase.Moved && second.phase != TouchPhase.Moved) return;
 
-        // Native signs Angle(current, previous) using current x previous.
-        // RotateSpeed is serialized in the original, but is not used by its Update.
         float angle = Vector2.SignedAngle(direction, rotationBeforePosition);
         rotationBeforePosition = direction;
         transform.RotateAround(transform.position, _camera.transform.position - transform.position, angle);

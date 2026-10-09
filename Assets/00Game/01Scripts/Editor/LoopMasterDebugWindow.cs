@@ -6,7 +6,6 @@ using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>One entry point for gameplay and event debugging.</summary>
 public sealed class LoopMasterDebugWindow : EditorWindow
 {
     public enum Tab { Level, SpecialStreak, StreakLine, Lava }
@@ -179,7 +178,6 @@ public sealed class LoopMasterDebugWindow : EditorWindow
     }
 }
 
-/// <summary>Read-only milestone inspection; receipt checks never initialize or mutate inventory.</summary>
 internal static class DebugEventRewards
 {
     private static HashSet<string> _receipts;

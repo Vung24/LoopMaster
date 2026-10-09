@@ -25,7 +25,6 @@ public class PassUserState
     public List<string> ClaimedTeamRewards = new List<string>();
 }
 
-// Native BasePassManager (0x139DF2C..0x13A16B8), with durable local reward receipts.
 public abstract class BasePassManager : BaseEventManager
 {
     public const string STATE_PATH = "pass_state";
@@ -56,7 +55,7 @@ public abstract class BasePassManager : BaseEventManager
     public abstract string GetProductId();
     public abstract void ShowCoinAnimation(int amount, Vector2 startPos, UnityAction callback);
     protected abstract List<PassStageConfig> GetStageRewardsConfig();
-    public virtual bool IsTeamEnable() => false; // The project's team service is not connected.
+    public virtual bool IsTeamEnable() => false;
     public virtual bool IsHeartEnable() => true;
 
     public override void Startup()

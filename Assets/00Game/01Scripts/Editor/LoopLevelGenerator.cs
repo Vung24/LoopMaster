@@ -63,7 +63,6 @@ public sealed class LoopGeneratedLevel
     public bool Verified => Solution != null;
 }
 
-/// <summary>Build from sorted color inventories, then reverse-transfer groups into mixed stacks.</summary>
 public static class LoopLevelGenerator
 {
     private static readonly MethodInfo SetCurrent = typeof(GameData).GetProperty(nameof(GameData.Current)).GetSetMethod(true);
@@ -94,7 +93,6 @@ public static class LoopLevelGenerator
         }
         for (int i = 0; i < settings.SingleBoxes; i++) { JObject box = A.NewBox(Vector3.zero); box["BoxType"] = 1; boxes.Add(box); }
         Mix(boxes, settings, random, result.ReverseClicks);
-        // Populate every selected Single queue, even if random reverse transfers did not choose it.
         foreach (JObject single in boxes.Cast<JObject>().Where(b => A.Int(b, "BoxType") == 1 && A.Array(b, "Cubes").Count == 0))
         {
             JObject source = boxes.Cast<JObject>().FirstOrDefault(b => A.Int(b, "BoxType") == 0 && A.Array(b, "Cubes").Count > 1);
@@ -109,7 +107,6 @@ public static class LoopLevelGenerator
         foreach (JObject box in boxes)
         {
             JArray cubes = A.Array(box, "Cubes");
-            // Leave the exposed color run visible; hidden cubes are revealed after popping it.
             int firstVisible = cubes.Count - 1;
             while (firstVisible > 0 && A.Int((JObject)cubes[firstVisible - 1], "Type") == A.Int((JObject)cubes[cubes.Count - 1], "Type")) firstVisible--;
             for (int c = 0; c < firstVisible; c++)
@@ -169,7 +166,6 @@ public static class LoopLevelGenerator
         {
             if (eligible.Count == 0) throw new FormatException("Không đủ hộp cho số nhóm đã chọn.");
             int target = eligible[eligible.Count - 1]; eligible.RemoveAt(eligible.Count - 1);
-            // Each group has its own reachable key outside every generated lock.
             JArray keyCubes = A.Array((JObject)boxes[keySource], "Cubes");
             int keyIndex = keyCubes.Count - 1 - n;
             if (keyIndex < 0) throw new FormatException("Không đủ khối có thể lấy để đặt chìa khóa nhóm; thử seed khác.");
@@ -211,7 +207,6 @@ public static class LoopLevelGenerator
     }
 }
 
-/// <summary>Incremental bounded verification. The window advances this between repaints and can cancel.</summary>
 public sealed class LoopLevelGenerationJob : IDisposable
 {
     private readonly LoopLevelGeneratorSettings _settings;
@@ -253,7 +248,6 @@ public sealed class LoopLevelGenerationJob : IDisposable
             if (!_settings.VerifySolution) { Result = Candidate; Status = "Đã tạo; chưa kiểm tra lời giải."; yield break; }
             GameData data = LoopLevelGenerator.DecodeDetached(Candidate.Json);
             var plan = new List<int>(); var witness = data;
-            // A reverse construction supplies a cheap first plan; replay it through real board rules.
             foreach (int index in Candidate.ReverseClicks)
             {
                 Status = "Đang kiểm tra phương án tạo (lần thử " + Attempt + ").";

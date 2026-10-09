@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace Snui
 {
-	/// <summary>
-	/// Fits the canvas content inside the device's safe display area.
-	/// </summary>
 	[ExecuteAlways]
 	[RequireComponent(typeof(RectTransform))]
 	public sealed class SafeArea : MonoBehaviour

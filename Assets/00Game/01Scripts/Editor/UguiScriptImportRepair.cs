@@ -9,8 +9,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Legacy projects can retain MonoScript imports from their old placeholder classes.
-// Reimport the scripts against the real package assembly without changing prefab data.
 [InitializeOnLoad]
 public static class UguiScriptImportRepair
 {
@@ -34,8 +32,6 @@ public static class UguiScriptImportRepair
         }
         else if (autoCheckPending)
         {
-            // Check once after each domain reload, when the AssetDatabase is ready.
-            // Do not save prefabs or change open scenes during the automatic check.
             autoCheckPending = false;
             var lines = new List<string>();
             var repairedGuids = new HashSet<string>();
@@ -121,7 +117,6 @@ public static class UguiScriptImportRepair
     private static void RefreshPrefabs(HashSet<string> repairedGuids, List<string> lines)
     {
         if (repairedGuids.Count == 0) return;
-        // Refresh only assets referencing repaired imports. Keep open stage edits.
         foreach (string path in AssetDatabase.GetAllAssetPaths().Where(p => p.StartsWith("Assets/", StringComparison.Ordinal) && p.EndsWith(".prefab", StringComparison.Ordinal)))
         {
             if (!ScriptGuid.Matches(File.ReadAllText(path)).Cast<Match>().Any(m => repairedGuids.Contains(m.Groups[1].Value))) continue;
@@ -138,7 +133,6 @@ public static class UguiScriptImportRepair
         int errors = 0;
         foreach (Transform node in root.GetComponentsInChildren<Transform>(true))
         {
-            // UI particles create temporary renderers that are excluded from prefab saves.
             if ((node.gameObject.hideFlags & HideFlags.DontSaveInEditor) != 0) continue;
             int missing = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(node.gameObject);
             errors += missing;

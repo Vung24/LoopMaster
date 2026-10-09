@@ -54,7 +54,7 @@ public sealed class SpecialStreakMultiplierSlider : MonoBehaviour
         if (_slidingBlock != null)
         {
             var p = _slidingBlock.localPosition;
-            p.x = StartSlideX - StartSlideX * MultiplierIndex * .5f; // Init 0x1287BF0
+            p.x = StartSlideX - StartSlideX * MultiplierIndex * .5f;
             _slidingBlock.localPosition = p;
             if (_bone != null) { var bone = _bone.localPosition; bone.x = p.x - 6; _bone.localPosition = bone; }
         }
@@ -63,7 +63,6 @@ public sealed class SpecialStreakMultiplierSlider : MonoBehaviour
     {
         _tween?.Kill();
         if (_slidingBlock == null) return;
-        // Native state machine 0x128E348: wait, four warning flashes, recoil, then return to x1.
         var sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
         _tween = sequence;
         sequence.AppendInterval(.5f);

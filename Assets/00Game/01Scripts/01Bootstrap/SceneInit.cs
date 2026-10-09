@@ -23,7 +23,6 @@ public sealed class SceneInit
 			cancellationToken: cancellationToken);
 		GameplayConfig = configRequest.asset as GameAssetsConfig;
 		LevelCatalog = catalogRequest.asset as BuiltinLevelCatalog;
-		// Retain the loaded library through the scene change; HUD initialization uses it too.
 		if (uiRequest.asset != null) _ = Snui.PrefabLibrary.Current;
 
 		if (GameplayConfig == null)
@@ -33,14 +32,11 @@ public sealed class SceneInit
 
 		NextPlayableLevel = GameProgressStore.NextPlayableLevel;
 		HighestCompletedLevel = GameProgressStore.HighestCompletedLevel;
-		// Original SplashController routes on the zero-based CurrentPuzzleIndex (RVA 0x17c6308).
 		EnterGameFromSplash = GameProgressStore.CurrentPuzzleIndex == 0;
 
-		// Prepare gameplay prefabs during loading instead of first using them in GameScene.Awake.
 		if (EnterGameFromSplash)
 			await GameLoader.PreloadDefaultAssetsAsync(cancellationToken);
 
-		// These managers otherwise parse their configuration for the first time in GameController.Awake.
 		await UniTask.Yield(cancellationToken);
 		EventRuntime.EnsureInitialized();
 		await UniTask.Yield(cancellationToken);

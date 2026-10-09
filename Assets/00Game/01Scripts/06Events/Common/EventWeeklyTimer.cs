@@ -49,7 +49,6 @@ namespace Snui
 
 		private void CalculateUnixTimestamp(DateTime nowUtc)
 		{
-			// Native schedule uses a fixed UTC-8 offset and a Monday-based week.
 			DateTime calNow = nowUtc.AddHours(-8);
 			DateTime calStart = calNow.Date.AddDays(DaysBetween(StartDay, calNow.DayOfWeek)).Add(DailyStartTime);
 			DateTime calEnd = calNow.Date.AddDays(DaysBetween(EndDay, calNow.DayOfWeek)).Add(DailyEndTime);

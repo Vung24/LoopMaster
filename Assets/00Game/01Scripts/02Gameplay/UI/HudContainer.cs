@@ -27,8 +27,6 @@ public sealed class HudContainer : MonoBehaviour
 			if (parent != null && !Current.transform.IsChildOf(parent))
 			{
 				Current.transform.SetParent(parent, false);
-				// Scene instances can override counter anchors for the Home header.
-				// Restore the prefab layout when that same HUD moves to another canvas.
 				GameObject prefab = PrefabLibrary.Current == null ? null : PrefabLibrary.Current.HudContainerPrefab;
 				if (prefab != null)
 				{
@@ -65,7 +63,6 @@ public sealed class HudContainer : MonoBehaviour
 		foreach (Transform node in new[] { transform, CoinHud == null ? null : CoinHud.transform, HeartHud == null ? null : HeartHud.transform })
 		{
 			if (node == null) continue;
-			// Reused scene counters may have been hidden individually.
 			node.gameObject.SetActive(true);
 			CanvasGroup group = node.GetComponent<CanvasGroup>();
 			if (group != null) group.alpha = 1f;

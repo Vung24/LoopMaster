@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace ShopUI
 {
-    // Local reward simulation for this project's existing offline mode; no store payment.
     public static class OfflineShopPurchases
     {
         public static event Action<string, bool> PurchaseFinished;

@@ -28,8 +28,6 @@ namespace Snui.Lava
 
 		public static UniTask<LavaWinDialogContent> Show(Transform parent) => EventPrefabUI.Show<LavaWinDialogContent>(parent, "LavaWinDialog");
 
-
-
 		public static async UniTask ShowWithDialog(Transform parent)
 		{
 			var dialog = await Show(parent);
@@ -219,7 +217,6 @@ namespace Snui.Lava
 			Transform template = HierarchyReferenceCache.Child(transform, "Player");
 			if (_playerContainer != null && template != null && _players.Count == 0)
 			{
-				// Native shows self separately and at most five surviving opponents.
 				var layout = _playerContainer.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
 				if (layout != null) layout.enabled = false;
 				if (_playerContainer is RectTransform row)

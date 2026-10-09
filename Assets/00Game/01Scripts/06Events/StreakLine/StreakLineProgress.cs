@@ -332,7 +332,6 @@ namespace Snui.StreakLine
 				var chestTransform = _chestImage.transform;
 				chestTransform.localScale = Vector3.one;
 				chestTransform.localPosition = _chestPosition;
-				// Native PlayChestAnim squash/stretch and matching vertical travel.
 				_chestTween = DOTween.Sequence().SetLink(gameObject)
 					.Append(chestTransform.DOScale(new Vector3(.9f, .72f, .9f), .1f))
 					.Join(chestTransform.DOBlendableLocalMoveBy(Vector3.down * 18, .1f))

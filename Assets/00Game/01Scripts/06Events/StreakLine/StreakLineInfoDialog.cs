@@ -59,7 +59,6 @@ namespace Snui.StreakLine
 					.AppendCallback(() => AudioManager.Current?.PlayOneShot(clip, gameObject))
 					.Append(parts[i].DOScale(new Vector3(1.1f, 1.1f, 1), .27f))
 					.Append(parts[i].DOScale(Vector3.one, .17f));
-				// Native returns only the Title/Image sequence (.71s); the remaining reveals run independently.
 				if (i < 2) main.Insert(delays[i], reveal);
 				else { reveal.SetDelay(delays[i]); _animations.Add(reveal); }
 			}

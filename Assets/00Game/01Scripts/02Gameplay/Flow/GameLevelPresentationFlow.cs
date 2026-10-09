@@ -6,7 +6,6 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using static UnityEngine.Object;
 
-// Owns presentation lifetimes; gameplay state remains in GameController.
 public sealed class GameLevelPresentationFlow
 {
     private readonly GameController _controller;
@@ -89,7 +88,6 @@ public sealed class GameLevelPresentationFlow
 		if (dialog == null) { Destroy(instance); return; }
 		_featureUnlockDialog = dialog;
 		IsPlaying = true;
-		// Native CheckFeatureTutorial records the flag when the prompt is shown.
 		PlayerPrefs.SetInt("offline_FeatureTutorialState",
 			PlayerPrefs.GetInt("offline_FeatureTutorialState", 0) | (int)feature);
 		PlayerPrefs.Save();

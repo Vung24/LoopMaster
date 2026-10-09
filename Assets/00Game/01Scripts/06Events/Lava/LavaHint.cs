@@ -61,7 +61,6 @@ namespace Snui.Lava
 
 		public void SetLocalPosition(Vector3 localPos, bool flipY)
 		{
-			// Native keeps the bubble centered and moves its arrow to the target X.
 			if (_arrow != null)
 			{
 				Vector3 arrowPos = _arrow.transform.localPosition;
@@ -87,7 +86,6 @@ namespace Snui.Lava
 		{
 			if (_text != null)
 			{
-				// The offline project has no EventLava string table; use readable fallbacks.
 				string format = key == "Lava-TutorialDesc1" ? "{0} players are still in the challenge."
 					: key == "Lava-TutorialDesc2" ? "Win a level to jump to the next platform. Losing ends your round."
 					: key == "Lava-TutorialDesc3" ? "Reach the final platform to share the prize with the surviving players."

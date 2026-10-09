@@ -78,7 +78,6 @@ namespace Snui.ChampionArena
 
 		public override async UniTask<HomeEventBase> CreateIcon(Transform parent)
 		{
-			// ChampionHomeIcon is managed separately by HomeEventController.
 			await UniTask.CompletedTask;
 			return null;
 		}

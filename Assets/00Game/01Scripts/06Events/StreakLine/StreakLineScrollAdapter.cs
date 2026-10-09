@@ -38,7 +38,6 @@ namespace Snui.StreakLine
             }
         }
 
-        // Initialize after the dialog has applied its safe area.
         protected override void Start() { }
 
         public void RefreshRewards(BaseStreakLineManager manager, bool focusCurrentLevel = false)
@@ -60,7 +59,6 @@ namespace Snui.StreakLine
             if (!IsInitialized || _manager == null || GetItemsCount() == 0) return;
             _riseTween?.Kill();
             targetLevel = Mathf.Clamp(targetLevel, 0, _manager.GetFinalGoal());
-            // Native Loop PlayBalloonRise: travel at 700 canvas units/sec, at least .75 sec.
             float distance = Mathf.Abs(GetLevelContentY(targetLevel) - GetLevelContentY(_displayLevel));
             float duration = targetLevel == _displayLevel ? 0f : Mathf.Max(.75f, distance / 700f);
             RiseDip = Mathf.Max(-20, distance * -.08f);
@@ -151,7 +149,6 @@ namespace Snui.StreakLine
             int index = GetChestIndex(level);
             int from = index == 0 ? 0 : chests[index - 1].Level;
             float progress = Mathf.InverseLerp(from, chests[index].Level, level);
-            // Rows run from the final chest at the top to the first at the bottom.
             float viewportPivot = Mathf.Clamp01(1f - 400f / (float)GetViewportSize());
             ScrollTo(chests.Count - 1 - index, viewportPivot, 1f - progress);
             UpdateBalloon();
@@ -162,7 +159,6 @@ namespace Snui.StreakLine
         {
             var holder = new StreakLineViewsHolder();
             holder.Init(_Params.ItemPrefab, _Params.Content, itemIndex);
-            // Preserve the authored path's horizontal placement while OSA positions the row root.
             holder.Cell.OffsetContent(_Params.SegmentOffsetX);
             holder.Cell.Claimed += OnClaimed;
             return holder;

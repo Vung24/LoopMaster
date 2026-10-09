@@ -312,7 +312,6 @@ public class Cube : MonoBehaviour
 		lifetime?.Cancel();
 		foreach (GameObject particle in _secretParticles) if (particle != null) Destroy(particle);
 		_secretParticles.Clear();
-		// If data was committed before cancellation, keep a reused visual consistent.
 		RefreshMaterial();
 		RefreshSquareSprite();
 	}
@@ -322,7 +321,6 @@ public class Cube : MonoBehaviour
 		_arrivals.Reserve();
 		if (newCube)
 		{
-			// Reserve capacity at launch; keep the new renderer empty until landing.
 			transform.localScale = GetTargetScale();
 			RefreshPosition();
 		}
@@ -333,7 +331,6 @@ public class Cube : MonoBehaviour
 	{
 		if (_info == null || _isDismissing || !_arrivals.Arrive()) return;
 		RefreshVisibility();
-		// Exclude every slice still flying from the visual target.
 		AnimateSize(GetTargetScale(), _box == null ? transform.position :
 			_box.GetCubePos(_info, visibleSize: VisibleSize), 0f, 0.12f, false, false);
 	}
@@ -365,9 +362,6 @@ public class Cube : MonoBehaviour
 		Vector3 target = GetTargetScale();
 		Vector3 current = transform.localScale;
 
-		// A freshly created cube has already been initialized at its target size,
-		// so grow it from zero. When a slice is added to an existing cube, preserve
-		// its current size and animate only the newly added thickness.
 		if (Mathf.Approximately(current.z, target.z)) current.z = 0f;
 		transform.localScale = current;
 		AnimateSize(target, _box == null ? transform.position : _box.GetCubePos(_info, visibleSize: VisibleSize),
@@ -449,7 +443,6 @@ public class Cube : MonoBehaviour
 		_meshRenderer.GetPropertyBlock(_outlinePropBlock);
 		if (_info.IsSecret)
 		{
-			// Restore authored colors instead of retaining the surprise material's tint.
 			_outlinePropBlock.SetColor("_BaseColor", material != null && material.HasProperty("_BaseColor") ? material.GetColor("_BaseColor") : Color.white);
 			_outlinePropBlock.SetColor("_Color", material != null && material.HasProperty("_Color") ? material.GetColor("_Color") : Color.white);
 		}

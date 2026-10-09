@@ -81,7 +81,6 @@ public class ToolBase : MonoBehaviour
 		if (_button == null) _button = GetComponent<Button>();
 		if (_button != null)
 		{
-			// Keep the normal appearance while interactable blocks unavailable boosters.
 			ColorBlock colors = _button.colors;
 			colors.disabledColor = colors.normalColor;
 			_button.colors = colors;

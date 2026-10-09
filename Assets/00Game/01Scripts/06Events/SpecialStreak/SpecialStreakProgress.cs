@@ -531,7 +531,6 @@ public class SpecialStreakProgress : MonoBehaviour
         return true;
     }
 
-    // Shared by the Win claim route and the editor playtest tool.
     public static async UniTask<bool> ShowWinCollection(Transform parent)
     {
         if (_winCollectionPlaying) return false;
@@ -639,7 +638,6 @@ public class SpecialStreakProgress : MonoBehaviour
         if (_multiplierSlider != null)
         {
             var seq = DOTween.Sequence();
-            // Keep the authored alignment inside MultiplierMask on every prefab.
             seq.Append(_multiplierSlider.transform.DOLocalMoveX(_multiplierSliderShownX + 40f, 0.23f).SetEase(Ease.OutSine));
             seq.Append(_multiplierSlider.transform.DOLocalMoveX(_multiplierSliderShownX, 0.17f).SetEase(Ease.OutQuad));
             seq.SetLink(gameObject);
@@ -651,7 +649,6 @@ public class SpecialStreakProgress : MonoBehaviour
         await UniTask.WaitForSeconds(0.18f, cancellationToken: this.GetCancellationTokenOnDestroy());
         if (ShouldStopAnimations()) return;
 
-        // Move the highlighted block and bone together with the new value.
         _multiplierSlider?.Init(_pendingMultiplierIndex);
         if (_sliderValueText != null) _sliderValueText.text = "x" + multiplier;
         SpecialStreakPresentation.Sound(_labelTextChangeAudioClip, gameObject);

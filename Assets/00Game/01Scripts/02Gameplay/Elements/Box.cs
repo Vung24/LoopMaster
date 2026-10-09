@@ -163,7 +163,6 @@ public class Box : MonoBehaviour
 		}
 		catch
 		{
-			// One cancelled visual must not leave sibling tasks running after the batch ends.
 			if (_surpriseLifetime == lifetime) CancelSurpriseTransformation();
 			throw;
 		}
@@ -382,7 +381,6 @@ public class Box : MonoBehaviour
 		finally
 		{
 			_onUnlockingColorLock = false;
-			// Cancellation preserves the logical lock and releases only this operation's state.
 			if (this != null && _info == info && info.State == BoxState.OnUnlocking)
 				info.State = previousState == BoxState.OnPush && OnPushSliceCount == 0
 					? BoxState.Free : previousState;
@@ -488,7 +486,6 @@ public class Box : MonoBehaviour
 	{
 		if (_isFinishHandled || IsSurpriseTransformationPlaying || _info == null || OnPushSliceCount > 0 || !_info.IsFinished()) return false;
 		_isFinishHandled = true;
-		// HandleBoxFinished can declare the win synchronously, before PlayFullAnim starts.
 		_finishAnimationPending = true;
 		float interval = GameController.Current == null ? float.PositiveInfinity :
 			GameController.Current.GetLastFinishBoxInterval();
@@ -537,7 +534,6 @@ public class Box : MonoBehaviour
 			if (text != null)
 			{
 				text.gameObject.SetActive(show && !emoji);
-				// Keep Text's authored movement axes; Square already has the camera tilt.
 				SpriteRenderer square = text.GetComponentInChildren<SpriteRenderer>(true);
 				if (square != null)
 				{

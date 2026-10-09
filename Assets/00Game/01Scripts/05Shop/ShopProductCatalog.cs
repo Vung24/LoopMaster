@@ -37,7 +37,6 @@ namespace ShopUI
                 case "loop.coins.25000": return 25000;
                 case "loop.coins.50000": return 50000;
                 case "loop.coins.100000": return 100000;
-                // Retain callers of the earlier offline shop.
                 case "coins_500": return 500;
                 case "coins_1200": return 1200;
                 case "coins_2500": return 2500;

@@ -21,13 +21,11 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 		return !GameProgressStore.IsCampaignComplete && LoadExactLevel(GameProgressStore.NextPlayableLevel, controller);
 	}
 
-	/// <summary>Loads an exact unfinished level from the exported catalog.</summary>
 	public bool LoadLevel(int levelNumber, GameController controller = null)
 	{
 		return LoadExactLevel(levelNumber, controller);
 	}
 
-	/// <summary>Loads an exact exported level without falling back to another puzzle.</summary>
 	public bool LoadExactLevel(int levelNumber, GameController controller = null)
 	{
 		if (levelNumber < 1 || GameProgressStore.IsLevelCompleted(levelNumber)) return false;
@@ -87,7 +85,6 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 		finally { _loading = false; }
 	}
 
-	/// <summary>Loads a "Level N.json" file from an exported level-pack folder.</summary>
 	public bool LoadJsonLevel(string folderPath, int levelNumber, GameController controller = null)
 	{
 		if (string.IsNullOrEmpty(folderPath) || levelNumber < 1 || GameProgressStore.IsLevelCompleted(levelNumber)) return false;
