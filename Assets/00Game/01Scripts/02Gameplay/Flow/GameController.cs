@@ -18,7 +18,7 @@ public class GameController : MonoBehaviour
 {
 	[SerializeField, Min(0.1f)] private float _sliceJumpDuration = GameplayFeedbackRules.SliceJumpDuration;
 	[SerializeField, Min(0.1f)] private float _sliceJumpHeight = GameplayFeedbackRules.SliceJumpHeight;
-	[SerializeField, Min(0.02f)] private float _conveyorTickInterval = 0.04f;
+	[SerializeField, Min(0.02f)] private float _conveyorTickInterval = 0.08f;
 	[SerializeField, Range(0.4f, 1f)] private float _sliceSpacingScale = 1f;
 	public static GameController Current;
 #if UNITY_EDITOR
@@ -147,7 +147,7 @@ public class GameController : MonoBehaviour
 	private GameBoosterUIFlow _boosterUI;
 	private GameBoosterUIFlow BoosterUI => _boosterUI ?? (_boosterUI = new GameBoosterUIFlow(this));
 	private bool IsBoosterShopOpen => _boosterUI != null && _boosterUI.IsOpen;
-	[SerializeField] private bool _enableSpeedUpTutorial = false;
+	[SerializeField] private bool _enableSpeedUpTutorial = true;
 
 	private void Awake()
 	{

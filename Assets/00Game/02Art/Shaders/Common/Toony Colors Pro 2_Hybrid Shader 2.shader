@@ -93,9 +93,11 @@ Shader "Toony Colors Pro 2/Hybrid Shader 2" {
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile_fwdbase
+			#pragma shader_feature_local _RECEIVE_SHADOWS_OFF
 
 			#include "UnityCG.cginc"
 			#include "Lighting.cginc"
+			#include "AutoLight.cginc"
 
 			sampler2D _BaseMap;
 			float4 _BaseMap_ST;
@@ -105,18 +107,26 @@ Shader "Toony Colors Pro 2/Hybrid Shader 2" {
 			half _RampThreshold;
 			half _RampSmoothing;
 			half _IndirectIntensity;
+			half _ReceiveShadowsOff;
+			half _UseAlphaTest;
+			half _Cutoff;
 			half _UseSpecular;
 			half _SpecularType;
 			half _SpecularRoughness;
 			half _SpecularToonSize;
 			half _SpecularToonSmoothness;
 			half3 _SpecularColor;
+            sampler2D _EmissionMap;
+            half _UseEmission;
+            half _EmissionChannel;
+            half3 _EmissionColor;
 
 			struct appdata
 			{
 				float4 vertex : POSITION;
 				float3 normal : NORMAL;
 				float2 uv : TEXCOORD0;
+				float2 uv1 : TEXCOORD1;
 			};
 
 			struct v2f
@@ -125,29 +135,39 @@ Shader "Toony Colors Pro 2/Hybrid Shader 2" {
 				float2 uv : TEXCOORD0;
 				float3 worldNormal : TEXCOORD1;
 				float3 worldPos : TEXCOORD2;
+				UNITY_LIGHTING_COORDS(3, 4)
 			};
 
-			v2f vert(appdata input)
+			v2f vert(appdata v)
 			{
 				v2f output;
-				output.pos = UnityObjectToClipPos(input.vertex);
-				output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-				output.worldNormal = UnityObjectToWorldNormal(input.normal);
-				output.worldPos = mul(unity_ObjectToWorld, input.vertex).xyz;
+				UNITY_INITIALIZE_OUTPUT(v2f, output);
+				output.pos = UnityObjectToClipPos(v.vertex);
+				output.uv = TRANSFORM_TEX(v.uv, _BaseMap);
+				output.worldNormal = UnityObjectToWorldNormal(v.normal);
+				output.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+				UNITY_TRANSFER_LIGHTING(output, v.uv1);
 				return output;
 			}
 
 			fixed4 frag(v2f input) : SV_Target
 			{
 				fixed4 albedo = tex2D(_BaseMap, input.uv) * _BaseColor;
+				if (_UseAlphaTest > 0.5h) clip(albedo.a - _Cutoff);
+				UNITY_LIGHT_ATTENUATION(attenuation, input, input.worldPos);
+				#if defined(_RECEIVE_SHADOWS_OFF)
+				attenuation = 1.0h;
+				#else
+				if (_ReceiveShadowsOff < 0.5h) attenuation = 1.0h;
+				#endif
 				half3 normal = normalize(input.worldNormal);
 				half3 lightDirection = normalize(UnityWorldSpaceLightDir(input.worldPos));
 				half normalDotLight = saturate(dot(normal, lightDirection));
 				half smoothing = max(_RampSmoothing, 0.02h);
 				half toon = smoothstep(_RampThreshold - smoothing, _RampThreshold + smoothing, normalDotLight);
-				half3 toonLight = lerp(_SColor.rgb, _HColor.rgb, toon) * _LightColor0.rgb;
+				half3 toonLight = lerp(_SColor.rgb, _HColor.rgb, toon) * _LightColor0.rgb * attenuation;
 				half3 ambient = ShadeSH9(half4(normal, 1.0h)) * _IndirectIntensity;
-				half3 lighting = max(toonLight + ambient, half3(0.35h, 0.35h, 0.35h));
+				half3 lighting = max(toonLight + ambient, half3(0, 0, 0));
 				half3 specular = half3(0, 0, 0);
 				if (_UseSpecular > 0.5h && normalDotLight > 0)
 				{
@@ -174,11 +194,55 @@ Shader "Toony Colors Pro 2/Hybrid Shader 2" {
 							smoothstep(threshold - smoothing, threshold + smoothing, normalDotHalf);
 						 specular = _SpecularColor * highlight * normalDotLight;
 					}
-					specular *= _LightColor0.rgb;
+					specular *= _LightColor0.rgb * attenuation;
 				}
-				return fixed4(albedo.rgb * lighting + specular, albedo.a);
+				                half3 emission = half3(0, 0, 0);
+                if (_UseEmission > 0.5h)
+                {
+                    half4 emissionSample = tex2D(_EmissionMap, input.uv);
+                    half3 emissionMask = emissionSample.rgb;
+                    if (_EmissionChannel < 0.5h) emissionMask = emissionSample.rrr;
+                    else if (_EmissionChannel < 1.5h) emissionMask = emissionSample.ggg;
+                    else if (_EmissionChannel < 2.5h) emissionMask = emissionSample.bbb;
+                    else if (_EmissionChannel < 3.5h) emissionMask = emissionSample.aaa;
+                    else if (_EmissionChannel > 4.5h) emissionMask = half3(1, 1, 1);
+                    emission = emissionMask * _EmissionColor;
+                }
+                return fixed4(albedo.rgb * lighting + specular + emission, albedo.a);
 			}
 
+			ENDCG
+		}
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags { "LightMode" = "ShadowCaster" }
+			ZWrite On
+			ZTest LEqual
+			CGPROGRAM
+			#pragma vertex shadowVert
+			#pragma fragment shadowFrag
+			#pragma multi_compile_shadowcaster
+			#include "UnityCG.cginc"
+			sampler2D _BaseMap;
+			float4 _BaseMap_ST;
+			fixed4 _BaseColor;
+			half _UseAlphaTest;
+			half _Cutoff;
+			struct shadowOutput { V2F_SHADOW_CASTER; float2 uv : TEXCOORD1; };
+			shadowOutput shadowVert(appdata_base v)
+			{
+				shadowOutput o;
+				UNITY_INITIALIZE_OUTPUT(shadowOutput, o);
+				o.uv = TRANSFORM_TEX(v.texcoord, _BaseMap);
+				TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
+				return o;
+			}
+			float4 shadowFrag(shadowOutput i) : SV_Target
+			{
+				if (_UseAlphaTest > 0.5h) clip(tex2D(_BaseMap, i.uv).a * _BaseColor.a - _Cutoff);
+				SHADOW_CASTER_FRAGMENT(i)
+			}
 			ENDCG
 		}
 	}
