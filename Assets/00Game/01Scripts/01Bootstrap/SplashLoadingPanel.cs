@@ -1,10 +1,18 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class SplashLoadingPanel : LoadingPanel
 {
-	private Transform _term;
-	private Transform _privacy;
+	[SerializeField] private Transform _term;
+	[SerializeField] private Transform _privacy;
+
+	// Native Splash uses LoadingPanel's immediate show; only dismissal fades out.
+	protected override UniTask PlayShowAnim()
+	{
+		if (_canvasGroup != null) _canvasGroup.alpha = 1f;
+		return UniTask.CompletedTask;
+	}
 
 	protected override float GetMinLoadingTime()
 	{
@@ -14,8 +22,8 @@ public class SplashLoadingPanel : LoadingPanel
 	protected override void Awake()
 	{
 		base.Awake();
-		_term = HierarchyReferenceCache.Child(transform, "TermBtn");
-		_privacy = HierarchyReferenceCache.Child(transform, "PrivacyBtn");
+		if (_term == null) _term = HierarchyReferenceCache.Child(transform, "TermBtn");
+		if (_privacy == null) _privacy = HierarchyReferenceCache.Child(transform, "PrivacyBtn");
 
 		if (_term != null)
 		{

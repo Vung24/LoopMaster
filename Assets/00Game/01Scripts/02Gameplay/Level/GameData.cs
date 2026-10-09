@@ -36,6 +36,7 @@ public class GameData
 	public UndoData UndoData;
 	public int ExtraPathLength;
 	private Dictionary<int, int> _colorMap;
+	private Dictionary<int, int> _transferTypeCounts = new Dictionary<int, int>();
 	private float _pathDistance;
 	private float _roadSpacingScale = 1f;
 	public float RoadSpacingScale => _roadSpacingScale;
@@ -64,6 +65,7 @@ public class GameData
 	{
 		// Do not call the constructor: it replaces the live GameData.Current.
 		GameData copy = (GameData)MemberwiseClone();
+		copy._transferTypeCounts = new Dictionary<int, int>();
 		copy.UndoData = new UndoData();
 		copy.LimitedColor = new List<int>(LimitedColor);
 		copy.Groups = Groups.Select(group => new GroupInfo(new GroupData(
@@ -322,17 +324,20 @@ public class GameData
 	public bool IsIgnoreBox(int type, BoxInfo boxInfo)
 	{
 		if (LimitedColor.Contains(type) || IsTheColorBox(boxInfo, type)) return false;
-		return GetTheColorBox(type).Count > 0;
+		for (int i = 0; i < Boxes.Count; i++)
+			if (IsTheColorBox(Boxes[i], type)) return true;
+		return false;
 	}
-
-	private List<BoxInfo> GetTheColorBox(int type) => Boxes.Where(box => IsTheColorBox(box, type)).ToList();
 
 	private bool IsTheColorBox(BoxInfo box, int type)
 	{
 		if (box == null || box.IsEmpty() || box.IsFull() || box.HasBlockingLock() ||
 			box.IsLongBoxTypeIncompatible(type)) return false;
 		CubeInfo top = box.GetTopCube();
-		return (top == null || top.NumLock <= 0) && box.CubeInfos.All(cube => cube.Type == type);
+		if (top != null && top.NumLock > 0) return false;
+		for (int i = 0; i < box.CubeInfos.Count; i++)
+			if (box.CubeInfos[i].Type != type) return false;
+		return true;
 	}
 
 	public void CircleTransferSlice(SliceInfo slice)
@@ -440,8 +445,20 @@ public class GameData
 	public bool CanCubeJumpToTransfer() => OnJumpingCube + GetTransferGroup() < GetPathLength();
 	public int GetTransferAvailableGroup() =>
 		Math.Max(0, GetPathLength() - GetTransferGroup() - Math.Max(0, OnJumpingCube));
-	public int GetTransferGroup() => TransferSlice.GroupBy(slice => slice.Type)
-		.Sum(group => (group.Count() + SliceCountPerGroup - 1) / SliceCountPerGroup);
+	public int GetTransferGroup()
+	{
+		_transferTypeCounts.Clear();
+		for (int i = 0; i < TransferSlice.Count; i++)
+		{
+			int type = TransferSlice[i].Type;
+			_transferTypeCounts.TryGetValue(type, out int count);
+			_transferTypeCounts[type] = count + 1;
+		}
+		int groups = 0;
+		foreach (int count in _transferTypeCounts.Values)
+			groups = checked(groups + (count + SliceCountPerGroup - 1) / SliceCountPerGroup);
+		return groups;
+	}
 	public float GetPathBusyRate()
 	{
 		int capacity = GetTransferMaxGroup() * SliceCountPerGroup;
