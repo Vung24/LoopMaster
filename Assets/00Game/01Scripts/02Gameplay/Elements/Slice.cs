@@ -18,6 +18,7 @@ public class Slice : MonoBehaviour
 	private Tween _rotationTween;
 	private Tween _scaleTween;
 	private bool _isJumping;
+	private bool _scaleJumpWithConveyor;
 	[SerializeField] private Texture _longBoxSignTex;
 
 	public SliceInfo Info => _info;
@@ -68,7 +69,7 @@ public class Slice : MonoBehaviour
 			if (_info == null) return;
 			_info.PathIndex = WrapPathIndex(targetPathIndex);
 			_info.IsMoved = false;
-		}, jumpHeight, Ease.InQuad);
+		}, jumpHeight, Ease.InQuad, false);
 		return default;
 	}
 
@@ -125,7 +126,7 @@ public class Slice : MonoBehaviour
 
 	private void StartAnimation(Vector3 targetPosition, Quaternion targetRotation,
 		Vector3 targetScale, float duration, Action completed, float jumpHeight = 0f,
-		Ease rotationEase = Ease.OutQuad)
+		Ease rotationEase = Ease.OutQuad, bool scaleJumpWithConveyor = true)
 	{
 		StopMotion();
 		_rotationTween = transform.DORotate(targetRotation.eulerAngles, duration)
@@ -133,6 +134,7 @@ public class Slice : MonoBehaviour
 		if (jumpHeight > 0f)
 		{
 			_isJumping = true;
+			_scaleJumpWithConveyor = scaleJumpWithConveyor;
 			_scaleTween = transform.DOScale(targetScale, duration)
 				.SetEase(Ease.OutQuad).SetTarget(gameObject);
 			_positionTween = transform.DOJump(targetPosition, jumpHeight, 1, duration)
@@ -154,7 +156,7 @@ public class Slice : MonoBehaviour
 
 	public void SetJumpTimeScale(float timeScale)
 	{
-		if (!_isJumping) return;
+		if (!_isJumping || !_scaleJumpWithConveyor) return;
 		timeScale = Mathf.Max(0.01f, timeScale);
 		if (_positionTween != null) _positionTween.timeScale = timeScale;
 		if (_rotationTween != null) _rotationTween.timeScale = timeScale;
