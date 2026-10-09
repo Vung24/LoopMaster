@@ -6,6 +6,13 @@ public class SplashController : MonoBehaviour
 	[SerializeField]
 	private SplashLoadingPanel splashLoadingPanel;
 
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+	private static void ConfigureFrameRate()
+	{
+		QualitySettings.vSyncCount = 0;
+		Application.targetFrameRate = 60;
+	}
+
 	private void Awake()
 	{
 		if (splashLoadingPanel == null)
@@ -16,7 +23,6 @@ public class SplashController : MonoBehaviour
 
 	private void Start()
 	{
-		Application.targetFrameRate = 60;
 		Screen.sleepTimeout = SleepTimeout.NeverSleep;
 		StartAsync().Forget();
 	}
