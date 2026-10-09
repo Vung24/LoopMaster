@@ -64,7 +64,7 @@ public sealed class GameLevelPresentationFlow
 			CheckNewPlayerTutorial(data);
 			await CheckSpeedUpTutorial(lifetime.Token);
 		}
-		catch (System.OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+		catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
 		finally
 		{
 			if (_levelPresentation == lifetime)

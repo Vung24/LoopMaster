@@ -30,7 +30,7 @@ public class SpeedUpTutorialDialogContent : DialogContent
 			Transform desc = HierarchyReferenceCache.Descendant(transform, "Desc");
 			_descText = desc == null ? null : desc.GetComponent<TMP_Text>();
 		}
-		if (_descText != null) _descText.text = "Tap the speed button to switch between 2x and 4x.";
+		if (_descText != null) _descText.text = "Tap the speed button to switch between x1 and x2.";
 		Snui_Text.EnsureFontAssets(transform);
 	}
 
