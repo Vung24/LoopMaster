@@ -16,12 +16,10 @@ public sealed class GameplaySceneBuilder
 	private GameLoader _gameLoader;
 	private Transform GameRoot;
 
-	// Flows retain these lists across level resets; clear them in place.
 	public IReadOnlyList<Box> Boxes => _boxes;
 	public IReadOnlyList<GameRoad> Roads => _roads;
 	public IReadOnlyList<PathArrow> PathArrows => _pathArrows;
 
-	// The controller cancels active operations and clears the previous scene first.
 	public void Build(GameData data, GameLoader loader, Transform gameRoot, Action onMapCreated)
 	{
 		Data = data;
@@ -88,7 +86,6 @@ public sealed class GameplaySceneBuilder
 	{
 		if (box == null) return null;
 		if (box.BoxType == BoxType.Long) return _gameLoader.LongBox != null ? _gameLoader.LongBox : _gameLoader.Box;
-		// Native GameController.GetBoxObject: Long, enter-only, limited color, Single, normal.
 		if (box.IsEnterOnly && _gameLoader.BoxEnterOnly != null) return _gameLoader.BoxEnterOnly;
 		if (box.LimitedColor > 0 && _gameLoader.LimitedColorBox != null) return _gameLoader.LimitedColorBox;
 		if (box.BoxType == BoxType.Single) return _gameLoader.SingleTypeBox != null ? _gameLoader.SingleTypeBox : _gameLoader.Box;

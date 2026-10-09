@@ -1,13 +1,11 @@
 using Spine.Unity;
 using UnityEngine;
 
-/// <summary>Plays authored effects and removes their complete hierarchy after playback.</summary>
 public static class GameplayEffects
 {
 	public static void PlaySlicePopIn(GameObject effect, Color color)
 	{
 		if (effect == null) return;
-		// Clear autoplay before tinting both sides of the exported Splash effect.
 		foreach (ParticleSystem particle in effect.GetComponentsInChildren<ParticleSystem>(true))
 			particle.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
 		PlayParticles(effect, color);

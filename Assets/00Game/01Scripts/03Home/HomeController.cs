@@ -274,7 +274,7 @@ public class HomeController : MonoBehaviour
 		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasDailyCheckInOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
 		if (GameProgressStore.IsCampaignComplete || !SpecialStreakManager.Ensure().SettlePending()) return false;
 		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
-		if (catalog == null || catalog.GetLevel(GameProgressStore.NextPlayableLevel) == null) { HomePage.RefreshProgress(); return false; }
+		if (catalog == null || !catalog.HasLevel(GameProgressStore.NextPlayableLevel)) { HomePage.RefreshProgress(); return false; }
 		if (HomePage != null && !HomePage.CommitProgressBeforeEnterGame()) return false;
 		_openingGame = true;
 		HomePage?.SetLeavingHome(true);

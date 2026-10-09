@@ -434,7 +434,6 @@ public class GameController : MonoBehaviour
 		{
 			_groupUnlockKeys.Remove(key);
 			if (key != null) key.DestroySelf();
-			// Old level completions cannot release a new level's group with the same ID.
 			if (Data == data)
 			{
 				_unlockingGroupIds.Remove(groupId);
@@ -562,11 +561,14 @@ public class GameController : MonoBehaviour
 	public bool TryCheatLoadLevel(int level)
 	{
 		if (level < 1 || _isTransitioningLevel || IsUsingBooster) return false;
-		var asset = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName)?.GetLevel(level);
-		if (asset == null) return false;
+		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
+		if (catalog == null || !catalog.HasLevel(level)) return false;
+		TextAsset asset = null;
 		GameData previous = GameData.Current;
 		try
 		{
+			asset = Resources.Load<TextAsset>($"{BuiltinLevelCatalog.ResourceFolder}/Level {level}");
+			if (asset == null) return false;
 			var data = GameLevelDataConverter.FromJson(asset.text, level);
 			// Explicit cheat entry permits replaying completed levels without deleting progress.
 			Initialize(data, true);
@@ -577,6 +579,10 @@ public class GameController : MonoBehaviour
 			GameData.SetCurrent(previous);
 			Debug.LogException(exception);
 			return false;
+		}
+		finally
+		{
+			if (asset != null) Resources.UnloadAsset(asset);
 		}
 	}
 

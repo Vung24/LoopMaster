@@ -1,11 +1,10 @@
 using UnityEngine;
 
-/// <summary>Native UpdateCamera sizing, with full mesh projection for authored boards.</summary>
 public static class GameplayCameraLayout
 {
-	public const float NativeDepthProjection = .9063078f; // sin(65 degrees), RVA 0x15CBB7C
+	public const float NativeDepthProjection = .9063078f; 
 	public const float NativePadding = .4f;
-	public const float NativeBottomReserve = 175f; // Canvas units, before device bottom inset.
+	public const float NativeBottomReserve = 175f; 
 
 	public static float NativeSize(Bounds bounds, float aspect, float visibleHeight, int level)
 	{
@@ -22,7 +21,7 @@ public static class GameplayCameraLayout
 		float right = Mathf.Min(pixels.xMax, safeArea.xMax);
 		float top = Mathf.Min(pixels.yMax, safeArea.yMax) - Mathf.Max(0f, topPixels);
 		float bottom = Mathf.Max(pixels.yMin, safeArea.yMin) + Mathf.Max(0f, bottomPixels);
-		// Native sizing reserves the larger of top/notch and bottom/navigation on both sides.
+
 		float inset = Mathf.Clamp(Mathf.Max(pixels.yMax - top, bottom - pixels.yMin), 0f, pixels.height * .45f);
 		float horizontalInset = Mathf.Clamp(Mathf.Max(left - pixels.xMin, pixels.xMax - right), 0f, pixels.width * .45f);
 		return new Rect(horizontalInset / pixels.width, inset / pixels.height,
@@ -47,7 +46,6 @@ public static class GameplayCameraLayout
 
 	public static Bounds FallbackBounds(GameData data, Transform root)
 	{
-		// Missing prefab/empty-draft fallback; production boards use generated renderer bounds.
 		float size = data?.Puzzle == null ? 8f : Mathf.Max(1f, data.Puzzle.Size);
 		Bounds bounds = new Bounds(root == null ? Vector3.zero : root.position, new Vector3(size, 2f, size));
 		if (data == null) return bounds;
@@ -63,7 +61,6 @@ public static class GameplayCameraLayout
 		Vector3 right = main.transform.right, up = main.transform.up, forward = main.transform.forward;
 		float horizontal = Project(extents, right), vertical = Project(extents, up);
 		float size = NativeSize(bounds, main.aspect, viewport.height, level);
-		// Include mesh height and horizontal safe-area insets as well as native X/Z sizing.
 		float projectedSize = Mathf.Max((vertical + NativePadding) / Mathf.Max(.1f, viewport.height),
 			(horizontal + .25f) / (Mathf.Max(.01f, main.aspect) * Mathf.Max(.1f, viewport.width))) + NativePadding;
 		size = Mathf.Max(size, projectedSize);
