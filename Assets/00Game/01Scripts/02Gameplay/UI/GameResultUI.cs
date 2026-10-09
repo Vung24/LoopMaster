@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Collections;
 using Cysharp.Threading.Tasks;
@@ -16,9 +16,7 @@ public sealed class GameResultUI : MonoBehaviour
 	private CancellationTokenSource _resultLoad;
 	private int _uiVersion;
 	private bool _retryLoading;
-	private GameObject _canvasObject;
-	private Canvas _canvas;
-	private bool _built;
+	[SerializeField] private Canvas _canvas;
 	private WinDialog _winDialog;
 	private WinDialogContent _winContent;
 	private FailDialog _failDialog;
@@ -28,7 +26,7 @@ public sealed class GameResultUI : MonoBehaviour
 	private RetryDialogContent _retryContent;
 	private GameObject _retryRoot, _streakWarning;
 	private SpecialStreakFailBanner _streakBanner;
-	public Transform DialogParent { get { BuildIfNeeded(); return _canvasObject == null ? null : _canvasObject.transform; } }
+	public Transform DialogParent => _canvas == null ? null : _canvas.transform;
 	private Coroutine _showWinRoutine;
 	private Coroutine _showFailRoutine;
 	private static EventSystem _eventSystem;
@@ -51,7 +49,11 @@ public sealed class GameResultUI : MonoBehaviour
 	{
 		if (controller == null) return null;
 		GameResultUI result = controller.GetComponent<GameResultUI>();
-		if (result == null) result = controller.gameObject.AddComponent<GameResultUI>();
+		if (result == null)
+		{
+			Debug.LogError("GameResultUI must be configured on the controller with a dialog canvas.", controller);
+			return null;
+		}
 		result._winAddress = winAddress;
 		result._failAddress = failAddress;
 		result._failContentAddress = failContentAddress;
@@ -61,6 +63,11 @@ public sealed class GameResultUI : MonoBehaviour
 
 	public void Bind(GameController controller)
 	{
+		if (controller != null && _canvas == null)
+		{
+			Debug.LogError("Assign the scene dialog canvas to GameResultUI.", this);
+			return;
+		}
 		if (_controller != controller)
 		{
 			HideAll();
@@ -75,29 +82,11 @@ public sealed class GameResultUI : MonoBehaviour
 			}
 		}
 
-		if (_controller != null) BuildIfNeeded();
-	}
-
-	private void BuildIfNeeded()
-	{
-		if (_built || _controller == null) return;
-		_built = true;
-		EnsureEventSystem();
-
-		_canvasObject = new GameObject("RuntimeDialogCanvas", typeof(RectTransform),
-			typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-		_canvasObject.transform.SetParent(transform, false);
-		_canvasObject.SetActive(false);
-		_canvas = _canvasObject.GetComponent<Canvas>();
-		_canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-		_canvas.overrideSorting = true;
-		_canvas.sortingOrder = 1001;
-		CanvasScaler scaler = _canvasObject.GetComponent<CanvasScaler>();
-		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		scaler.referenceResolution = new Vector2(1080f, 1920f);
-		scaler.matchWidthOrHeight = 0.5f;
-
-		_canvasObject.SetActive(true);
+		if (_controller != null)
+		{
+			EnsureEventSystem();
+			_canvas.gameObject.SetActive(true);
+		}
 	}
 
 	private async UniTask BuildResultDialog(GameEndState state)
@@ -108,7 +97,7 @@ public sealed class GameResultUI : MonoBehaviour
 		{
 			if (state == GameEndState.Won && !string.IsNullOrEmpty(_winAddress))
 			{
-				GameObject root = await Snui.PopupAssets.Instantiate(_winAddress, _canvasObject.transform, lifetime.Token);
+				GameObject root = await Snui.PopupAssets.Instantiate(_winAddress, _canvas.transform, lifetime.Token);
 				root.SetActive(false);
 				_winDialog = root.GetComponent<WinDialog>() ?? root.AddComponent<WinDialog>();
 				_winDialog.Bind(_controller);
@@ -118,7 +107,7 @@ public sealed class GameResultUI : MonoBehaviour
 			}
 			else if (state == GameEndState.Failed && !string.IsNullOrEmpty(_failAddress))
 			{
-				GameObject root = await Snui.PopupAssets.Instantiate(_failAddress, _canvasObject.transform, lifetime.Token);
+				GameObject root = await Snui.PopupAssets.Instantiate(_failAddress, _canvas.transform, lifetime.Token);
 				root.SetActive(false);
 				_failDialog = root.GetComponent<FailDialog>() ?? root.AddComponent<FailDialog>();
 				_failDialog.Bind(_controller);
@@ -159,7 +148,7 @@ public sealed class GameResultUI : MonoBehaviour
 	{
 		if (win && _winDialog == null)
 		{
-			GameObject root = CreateOverlay("WinDialogFallback", _canvasObject.transform);
+			GameObject root = CreateOverlay("WinDialogFallback", _canvas.transform);
 			_winDialog = root.AddComponent<WinDialog>();
 			_winDialog.Bind(_controller);
 			RectTransform panel = CreatePanel(root.transform, new Color(0.08f, 0.18f, 0.22f, 0.98f));
@@ -172,7 +161,7 @@ public sealed class GameResultUI : MonoBehaviour
 
 		if (fail && _failDialog == null)
 		{
-			GameObject root = CreateOverlay("FailDialogFallback", _canvasObject.transform);
+			GameObject root = CreateOverlay("FailDialogFallback", _canvas.transform);
 			_failDialog = root.AddComponent<FailDialog>();
 			_failDialog.Bind(_controller);
 			RectTransform panel = CreatePanel(root.transform, new Color(0.24f, 0.09f, 0.10f, 0.98f));
@@ -193,7 +182,6 @@ public sealed class GameResultUI : MonoBehaviour
 
 	private void OnGameEnded(GameEndState state)
 	{
-		BuildIfNeeded();
 		HideAll();
 		if (state == GameEndState.Won)
 		{
@@ -265,7 +253,7 @@ public sealed class GameResultUI : MonoBehaviour
 		int version = _uiVersion;
 		_retryLoading = true;
 		GameObject loaded;
-		try { loaded = await Snui.PopupAssets.Instantiate("RetryDialogContent", _canvasObject.transform, this.GetCancellationTokenOnDestroy()); }
+		try { loaded = await Snui.PopupAssets.Instantiate("RetryDialogContent", _canvas.transform, this.GetCancellationTokenOnDestroy()); }
 		finally { if (this != null && version == _uiVersion) _retryLoading = false; }
 		if (this == null || version != _uiVersion || _controller == null || _controller.EndState != GameEndState.Failed)
 		{ Destroy(loaded); return; }
@@ -278,7 +266,7 @@ public sealed class GameResultUI : MonoBehaviour
 		_retryContent.Show();
 		// Native FailDialog CheckSpecialStreakBanner parents to the full-screen safe area.
 		Transform area = _failDialog == null ? null : _failDialog.SafeArea;
-		_streakBanner = SpecialStreakFailBanner.Show(area == null ? _canvasObject.transform : area).GetAwaiter().GetResult();
+		_streakBanner = SpecialStreakFailBanner.Show(area == null ? _canvas.transform : area).GetAwaiter().GetResult();
 		if (_streakBanner != null) Snui.RewardDialog.PrepareOverlay(_streakBanner.gameObject, 1321);
 	}
 	private void OnRetryDismissed(int result)
@@ -319,7 +307,7 @@ public sealed class GameResultUI : MonoBehaviour
 		if (!isActiveAndEnabled || version != _uiVersion || controller == null || controller.Data != data || controller.EndState != GameEndState.Won) yield break;
 		if (_winContent != null)
 			_winContent.SetLevel(controller.CurrentLevelNumber, controller.CanLoadNextLevel);
-		HudContainer.Show(_canvasObject.transform).Forget();
+		HudContainer.Show(_canvas.transform).Forget();
 		HudContainer.Current?.DisableClick();
 		if (_winDialog != null) _winDialog.Show();
 	}
@@ -343,7 +331,7 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_streakBanner != null) Destroy(_streakBanner.gameObject); _streakBanner = null;
 		if (_streakWarning != null) Destroy(_streakWarning); _streakWarning = null;
 		HudContainer.TryRevertToOriginLayer();
-		if (HudContainer.Current != null && _canvasObject != null && HudContainer.Current.transform.IsChildOf(_canvasObject.transform))
+		if (HudContainer.Current != null && _canvas != null && HudContainer.Current.transform.IsChildOf(_canvas.transform))
 			HudContainer.Current.gameObject.SetActive(false);
 		HideFailTutorial();
 		if (_showWinRoutine != null) StopCoroutine(_showWinRoutine);
