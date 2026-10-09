@@ -16,7 +16,6 @@ public sealed class SliceTransferFlow
 	private readonly MonoBehaviour _host;
 	private readonly IReadOnlyList<Box> _boxes;
 	private readonly Func<bool> _isGameRunning;
-	private readonly Func<int> _getLaunchTick;
 	private readonly Func<Box, bool> _isGroupUnlocking;
 	private readonly Action _updateCombo;
 	private readonly Action _refreshPathState;
@@ -31,13 +30,12 @@ public sealed class SliceTransferFlow
 	private int _version;
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
-		Func<int> getLaunchTick, Func<Box, bool> isGroupUnlocking, Action updateCombo,
+		Func<Box, bool> isGroupUnlocking, Action updateCombo,
 		Action refreshPathState, Action onLaunchFinished, Action checkGameOver)
 	{
 		_host = host;
 		_boxes = boxes;
 		_isGameRunning = isGameRunning;
-		_getLaunchTick = getLaunchTick;
 		_isGroupUnlocking = isGroupUnlocking;
 		_updateCombo = updateCombo;
 		_refreshPathState = refreshPathState;
@@ -197,6 +195,7 @@ public sealed class SliceTransferFlow
 	{
 		try
 		{
+			yield return new WaitForSeconds(GameplayFeedbackRules.SliceLaunchStartDelay);
 			var created = new List<SliceInfo>();
 			for (int cubeIndex = 0; cubeIndex < topCubes.Count; cubeIndex++)
 			{
@@ -207,7 +206,6 @@ public sealed class SliceTransferFlow
 				int sliceCount = cube.Size;
 				for (int sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++)
 				{
-					yield return WaitForNextConveyorTick();
 					if (!IsCurrent(operation.Version)) yield break;
 					if (_data == null) break;
 					var info = new SliceInfo(cube.Type, box.Info);
@@ -222,6 +220,7 @@ public sealed class SliceTransferFlow
 					if (visual != null) visual.JumpToTransfer(box.Info.PathIndex, jumpDuration, jumpHeight);
 					created.Add(info);
 					_refreshPathState();
+					yield return new WaitForSeconds(GameplayFeedbackRules.SliceLaunchInterval);
 				}
 			}
 
@@ -256,13 +255,6 @@ public sealed class SliceTransferFlow
 			_onLaunchFinished();
 		}
 		finally { _launches.Remove(operation); }
-	}
-
-	private IEnumerator WaitForNextConveyorTick()
-	{
-		int version = _version;
-		int launchTick = _getLaunchTick();
-		while (IsCurrent(version) && _getLaunchTick() == launchTick) yield return null;
 	}
 
 	private Slice CreateSlice(SliceInfo info, Box box)

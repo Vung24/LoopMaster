@@ -119,7 +119,7 @@ public class GameController : MonoBehaviour
 		slice => IsGameplayActive && Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight), CheckGameOver));
 	private SliceTransferFlow _sliceTransferFlow;
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
-		this, Scene.Boxes, () => _isGameStart, () => Conveyor.LaunchTickCount,
+		this, Scene.Boxes, () => _isGameStart,
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver));
 	[SerializeField] private Camera _mainCamera;
 	[SerializeField] private Camera _topCamera;
