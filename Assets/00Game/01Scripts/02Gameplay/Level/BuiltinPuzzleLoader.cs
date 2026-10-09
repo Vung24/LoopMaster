@@ -5,10 +5,8 @@ using UnityEngine;
 public class BuiltinPuzzleLoader : MonoBehaviour
 {
 	[SerializeField] private string _bundleName = "puzzle";
-	[SerializeField] private int _defaultPuzzleId = 440044;
 	[SerializeField] private int _defaultLevel = 1;
 	[SerializeField] private string _levelDataFolder = "00Game/05LevelData/LevelData";
-	[SerializeField] private bool _preferExportedLevelData = true;
 	private AssetBundle _bundle;
 	private bool _loading;
 	private string _lastJsonFolder;
