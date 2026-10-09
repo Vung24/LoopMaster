@@ -23,6 +23,7 @@ public sealed class SliceTransferFlow
 	private readonly Action _onLaunchFinished;
 	private readonly Action _checkGameOver;
 	private readonly List<LaunchOperation> _launches = new List<LaunchOperation>();
+	private readonly List<Box> _arrivalCandidates = new List<Box>();
 	private readonly HashSet<Box> _surprises = new HashSet<Box>();
 	private GameData _data;
 	private GameLoader _loader;
@@ -60,6 +61,7 @@ public sealed class SliceTransferFlow
 		foreach (LaunchOperation operation in _launches.ToArray())
 			if (operation.Routine != null && _host != null) _host.StopCoroutine(operation.Routine);
 		_launches.Clear();
+		_arrivalCandidates.Clear();
 	}
 
 	private bool IsCurrent(int version) => version == _version && _isGameRunning();
@@ -67,25 +69,29 @@ public sealed class SliceTransferFlow
 	public bool CheckInBox(Slice slice, float jumpDuration, float jumpHeight)
 	{
 		if (_data == null || slice == null || slice.Info == null) return false;
-		var candidates = new List<Box>();
-		for (int i = 0; i < _boxes.Count; i++)
+		_arrivalCandidates.Clear();
+		try
 		{
-			Box box = _boxes[i];
-			if (IsSliceCanJump(slice.Info, box)) candidates.Add(box);
-		}
+			for (int i = 0; i < _boxes.Count; i++)
+			{
+				Box box = _boxes[i];
+				if (IsSliceCanJump(slice.Info, box)) _arrivalCandidates.Add(box);
+			}
 
-		if (candidates.Count > 1 && slice.Info.SourceBox != null)
-			candidates.RemoveAll(box => box != null && box.Info == slice.Info.SourceBox);
+			// Count before skipping source or unlocking boxes, as in the original selection.
+			bool skipSource = _arrivalCandidates.Count > 1 && slice.Info.SourceBox != null;
+			for (int i = 0; i < _arrivalCandidates.Count; i++)
+			{
+				Box box = _arrivalCandidates[i];
+				if ((skipSource && box.Info == slice.Info.SourceBox) || _isGroupUnlocking(box)) continue;
+				// IsSliceCanJump already checked ignore rules; selection has not changed data.
+				JumpSliceToBox(slice, box, jumpDuration, jumpHeight);
+				return true;
+			}
 
-		for (int i = 0; i < candidates.Count; i++)
-		{
-			Box box = candidates[i];
-			if (_isGroupUnlocking(box) ||
-				(_data != null && _data.IsIgnoreBox(slice.Info.Type, box.Info))) continue;
-			JumpSliceToBox(slice, box, jumpDuration, jumpHeight);
-			return true;
+			return false;
 		}
-		return false;
+		finally { _arrivalCandidates.Clear(); }
 	}
 
 	private bool IsSliceCanJump(SliceInfo slice, Box box)
@@ -114,14 +120,12 @@ public sealed class SliceTransferFlow
 			return;
 		}
 		_data.RemoveTransferSlice(slice.Info);
-		// Snapshot each reserved slot so overlapping arrivals burst at their own target.
 		int effectSliceCount = box.Info.GetSliceCount();
 		Color effectColor = GameAssetsConfig.GetCubeColor(slice.Info.Type);
 		int version = _version;
 		slice.JumpToBox(box, jumpDuration, () =>
 		{
 			if (version != _version || _data == null || box == null || box.Info == null) return;
-			// Match impact rather than a fixed delay, including speed changes mid-flight.
 			if (mergedWithTopCube) box.PlayCubeAddEffect(effectColor, effectSliceCount);
 			FinishJumpSliceToBox(box, destination, version);
 		}, jumpHeight);
