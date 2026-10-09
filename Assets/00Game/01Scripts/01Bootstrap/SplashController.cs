@@ -6,6 +6,8 @@ public class SplashController : MonoBehaviour
 	[SerializeField]
 	private SplashLoadingPanel splashLoadingPanel;
 
+	public SceneInit InitData { get; private set; }
+
 	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 	private static void ConfigureFrameRate()
 	{
@@ -29,10 +31,15 @@ public class SplashController : MonoBehaviour
 
 	private async UniTaskVoid StartAsync()
 	{
-		await RequestAttPermission();
+		if (splashLoadingPanel != null)
+			await splashLoadingPanel.Show();
 
-		int currentLevel = GameProgressStore.NextPlayableLevel;
-		if (currentLevel <= 1 && GameProgressStore.HighestCompletedLevel < 1)
+		await RequestAttPermission();
+		InitData = new SceneInit();
+		await InitData.LoadAsync(this.GetCancellationTokenOnDestroy());
+
+		int currentLevel = InitData.NextPlayableLevel;
+		if (currentLevel <= 1 && InitData.HighestCompletedLevel < 1)
 		{
 			GameSceneManager.EnterGame(GameEnterRoute.Splash, withAnimation: false).Forget();
 		}

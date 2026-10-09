@@ -1,10 +1,20 @@
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class GameLoader : MonoBehaviour
 {
 	private const string ResourceRoot = "CoreGamePrefabs/";
+	private static readonly string[] DefaultPrefabNames =
+	{
+		"Box", "OnlyEnterBox", "LimitedColorBox", "SingleTypeBox", "LongColorBox",
+		"BoxColorLock", "BoxAdjacentLock", "BoxNumLock", "CubeNumLock", "Slice", "Cube",
+		"CubeFinish", "CubeLongFinish", "GameRoad", "BoxArrow", "MapArrow", "MapEnter",
+		"MapExit", "Capacity", "FlyAddPath", "KeyLockBox", "Key", "BoxComboEffect", "PathCombo"
+	};
+	private static readonly Dictionary<string, GameObject> PreloadedPrefabs = new Dictionary<string, GameObject>();
+	private bool _defaultAssetsLoaded;
 	private GameAssetsConfig _config;
 	private readonly Dictionary<string, Stack<PooledGameObject>> _gameObjectPools =
 		new Dictionary<string, Stack<PooledGameObject>>();
@@ -79,6 +89,7 @@ public class GameLoader : MonoBehaviour
 
 	private UniTask LoadDefaultAssets()
 	{
+		if (_defaultAssetsLoaded) return UniTask.CompletedTask;
 		Box = LoadPrefab("Box");
 		BoxEnterOnly = LoadPrefab("OnlyEnterBox");
 		LimitedColorBox = LoadPrefab("LimitedColorBox");
@@ -111,7 +122,23 @@ public class GameLoader : MonoBehaviour
 			SpeedSprite = _config.SpeedImage;
 			UnSpeedSprite = _config.UnSpeedImage;
 		}
+		_defaultAssetsLoaded = true;
 		return default;
+	}
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ResetPreloadedPrefabs() => PreloadedPrefabs.Clear();
+
+	public static async UniTask PreloadDefaultAssetsAsync(CancellationToken cancellationToken)
+	{
+		foreach (string name in DefaultPrefabNames)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			if (PreloadedPrefabs.TryGetValue(name, out GameObject prefab) && prefab != null) continue;
+			ResourceRequest request = Resources.LoadAsync<GameObject>(ResourceRoot + name);
+			await request.WithCancellation(cancellationToken);
+			if (request.asset is GameObject loaded) PreloadedPrefabs[name] = loaded;
+		}
 	}
 
 	private UniTask LoadAudio(GameData gameData)
@@ -198,7 +225,10 @@ public class GameLoader : MonoBehaviour
 
 	private static GameObject LoadPrefab(string name)
 	{
-		return Resources.Load<GameObject>(ResourceRoot + name);
+		if (PreloadedPrefabs.TryGetValue(name, out GameObject prefab) && prefab != null) return prefab;
+		prefab = Resources.Load<GameObject>(ResourceRoot + name);
+		if (prefab != null) PreloadedPrefabs[name] = prefab;
+		return prefab;
 	}
 
 	public GameObject GetMapPrefab(string mapItemName)

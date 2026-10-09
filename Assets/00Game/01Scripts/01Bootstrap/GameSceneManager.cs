@@ -95,6 +95,14 @@ public static class GameSceneManager
 			await LoadSceneAndWait(sceneType, scenePath);
 			CurSceneType = sceneType;
 
+			if (sceneType == SceneType.Game && LoadingPanel.Current != null)
+			{
+				// Scene activation completes before Start builds the board. Keep loading visible
+				// through startup and the first rendered frame of gameplay.
+				await UniTask.NextFrame();
+				await UniTask.NextFrame();
+			}
+
 			await LoadingPanel.TryDismiss();
 		}
 		finally
