@@ -1,4 +1,5 @@
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Spine.Unity;
 using UnityEngine;
@@ -22,6 +23,7 @@ public class WinDialog : MonoBehaviour
 	private Coroutine _presentation;
 	private Tween _maskFade;
 	private bool _canSkip;
+	public bool IsEnteringHome { get; private set; }
 
 	private void Awake() { ResolveReferences(); }
 
@@ -176,8 +178,68 @@ public class WinDialog : MonoBehaviour
 	public void OnClickNextLevel()
 	{
 		if (_winDialogContent != null) _winDialogContent.OnClickNextLevel();
-		else if (_controller != null && _controller.HasClaimedWinReward(_controller.Data) && !_controller.TryLoadNextLevel())
-			_controller.TryReturnHome();
+		else EnterNextScene();
+	}
+
+	public bool EnterNextScene()
+	{
+		if (!isActiveAndEnabled || _controller == null || _controller.EndState != GameEndState.Won ||
+			!_controller.HasClaimedWinReward(_controller.Data) || IsEnteringHome || GameSceneManager.OnChangeScene)
+			return false;
+		if (!_controller.ShouldReturnHomeAfterWin) return _controller.TryLoadNextLevel();
+		IsEnteringHome = true;
+		FadeOutAndEnterHome().Forget();
+		return true;
+	}
+
+	private async UniTaskVoid FadeOutAndEnterHome()
+	{
+		// Native RVA 0x1433920: reuse the win mask as LoadingPanel, above Home, without GameLoading.
+		CancelPresentation();
+		Transform previousParent = transform.parent;
+		transform.SetParent(null, false);
+		Canvas canvas = GetComponent<Canvas>();
+		bool addedCanvas = canvas == null;
+		if (addedCanvas) canvas = gameObject.AddComponent<Canvas>();
+		RenderMode previousMode = canvas.renderMode;
+		int previousOrder = canvas.sortingOrder;
+		canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+		canvas.sortingOrder = 9999;
+		CanvasScaler scaler = GetComponent<CanvasScaler>();
+		bool addedScaler = scaler == null;
+		if (addedScaler)
+		{
+			scaler = gameObject.AddComponent<CanvasScaler>();
+			scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+			scaler.referenceResolution = new Vector2(750f, 1624f);
+			scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+		}
+		GraphicRaycaster raycaster = GetComponent<GraphicRaycaster>();
+		bool addedRaycaster = raycaster == null;
+		if (addedRaycaster) raycaster = gameObject.AddComponent<GraphicRaycaster>();
+		Snui.SafeArea safeArea = _safeArea == null ? null : _safeArea.GetComponent<Snui.SafeArea>();
+		bool safeAreaEnabled = safeArea != null && safeArea.enabled;
+		if (safeArea != null) safeArea.enabled = false;
+		SetMaskAlpha(254f / 255f);
+		LoadingPanel panel = gameObject.AddComponent<LoadingPanel>();
+		if (await _controller.ReturnHomeAsync(withAnimation: false) || this == null) return;
+
+		// A failed scene load must leave the claimed reward screen usable for another attempt.
+		if (LoadingPanel.Current == panel) LoadingPanel.Current = null;
+		Destroy(panel);
+		if (previousParent != null)
+		{
+			UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(gameObject, previousParent.gameObject.scene);
+			transform.SetParent(previousParent, false);
+		}
+		if (addedRaycaster) Destroy(raycaster);
+		if (addedScaler) Destroy(scaler);
+		if (addedCanvas) Destroy(canvas);
+		else { canvas.renderMode = previousMode; canvas.sortingOrder = previousOrder; }
+		if (safeArea != null) safeArea.enabled = safeAreaEnabled;
+		if (_canvasGroup != null) _canvasGroup.alpha = 1f;
+		IsEnteringHome = false;
+		_winDialogContent?.AllowNavigationRetry();
 	}
 	public void OnClickReplayLevel() { if (_controller != null) _controller.TryReplayLevel(); }
 }
