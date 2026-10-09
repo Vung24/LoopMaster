@@ -338,7 +338,8 @@ public sealed class GameResultUI : MonoBehaviour
 		_showWinRoutine = null;
 		if (_showFailRoutine != null) StopCoroutine(_showFailRoutine);
 		_showFailRoutine = null;
-		if (_winDialog != null) { _winDialog.Hide(); Destroy(_winDialog.gameObject); }
+		// The native WinDialog becomes the persistent loading overlay when returning Home.
+		if (_winDialog != null && !_winDialog.IsEnteringHome) { _winDialog.Hide(); Destroy(_winDialog.gameObject); }
 		if (_failDialog != null) { _failDialog.Hide(); Destroy(_failDialog.gameObject); }
 		_winDialog = null; _winContent = null;
 		_failDialog = null; _failContent = null; _preFailContent = null;

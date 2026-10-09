@@ -3,6 +3,7 @@ public static class GameProgressStore
 {
     private const string UnlockedKey = "offline_HighestUnlockedLevel";
     private const string CompletedKey = "offline_HighestCompletedLevel";
+    public static int CurrentPuzzleIndex => Mathf.Max(0, PlayerPrefs.GetInt("offline_CurrentPuzzleIndex", 0));
     public static int HighestUnlockedLevel => Mathf.Max(1, Mathf.Max(PlayerPrefs.GetInt(UnlockedKey, 1), LegacyLevel()));
     public static int HighestCompletedLevel => Mathf.Max(0, PlayerPrefs.HasKey(CompletedKey)
         ? PlayerPrefs.GetInt(CompletedKey) : HighestUnlockedLevel - 1);

@@ -70,8 +70,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 			}
 			else _canvasGroup.alpha = 1f;
 		}
-		if (_homeBtn != null)
-			_homeBtn.interactable = Application.CanStreamedLevelBeLoaded("HomeScene");
+		EnableResumeButton(_homeBtn);
 		RefreshToggles();
 	}
 
@@ -137,12 +136,6 @@ public sealed class PauseDialogContent : MonoBehaviour
 
 	private void ReturnHome()
 	{
-		if (!Application.CanStreamedLevelBeLoaded("HomeScene"))
-		{
-			if (_homeBtn != null) _homeBtn.interactable = false;
-			Debug.LogWarning("HomeScene is not enabled in Build Settings.", this);
-			return;
-		}
 		OpenConfirmation(PauseConfirmType.Quit);
 	}
 

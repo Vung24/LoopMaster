@@ -38,8 +38,7 @@ public class SplashController : MonoBehaviour
 		InitData = new SceneInit();
 		await InitData.LoadAsync(this.GetCancellationTokenOnDestroy());
 
-		int currentLevel = InitData.NextPlayableLevel;
-		if (currentLevel <= 1 && InitData.HighestCompletedLevel < 1)
+		if (InitData.EnterGameFromSplash)
 		{
 			GameSceneManager.EnterGame(GameEnterRoute.Splash, withAnimation: false).Forget();
 		}

@@ -10,6 +10,7 @@ public sealed class SceneInit
 	public BuiltinLevelCatalog LevelCatalog { get; private set; }
 	public int NextPlayableLevel { get; private set; }
 	public int HighestCompletedLevel { get; private set; }
+	public bool EnterGameFromSplash { get; private set; }
 
 	public async UniTask LoadAsync(CancellationToken cancellationToken)
 	{
@@ -32,9 +33,11 @@ public sealed class SceneInit
 
 		NextPlayableLevel = GameProgressStore.NextPlayableLevel;
 		HighestCompletedLevel = GameProgressStore.HighestCompletedLevel;
+		// Original SplashController routes on the zero-based CurrentPuzzleIndex (RVA 0x17c6308).
+		EnterGameFromSplash = GameProgressStore.CurrentPuzzleIndex == 0;
 
 		// Prepare gameplay prefabs during loading instead of first using them in GameScene.Awake.
-		if (NextPlayableLevel <= 1 && HighestCompletedLevel < 1)
+		if (EnterGameFromSplash)
 			await GameLoader.PreloadDefaultAssetsAsync(cancellationToken);
 
 		// These managers otherwise parse their configuration for the first time in GameController.Awake.
