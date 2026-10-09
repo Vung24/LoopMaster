@@ -16,6 +16,7 @@ public sealed class UICanvas : MonoBehaviour
 	[SerializeField] private Button _undoButton;
 	[SerializeField] private Button _shuffleButton;
 	[SerializeField] private Button _pathButton;
+	[SerializeField] private Button _speedButton;
 	[SerializeField] private TMP_Text _levelLabel;
 	[SerializeField] private TMP_Text _capacityLabel;
 	[SerializeField] private Image _capacityFill;
@@ -39,6 +40,8 @@ public sealed class UICanvas : MonoBehaviour
 	private bool _visibilityInitialized;
 	private bool _inputInitialized;
 	private bool _referencesCached;
+	private Image _speedIcon;
+	private TMP_Text _speedLabel;
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
@@ -71,6 +74,8 @@ public sealed class UICanvas : MonoBehaviour
 
 	private void OnEnable()
 	{
+		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
+		if (shadowBackground != null) shadowBackground.enabled = true;
 		if (!ActiveCanvases.Contains(this)) ActiveCanvases.Add(this);
 		CacheLegacyPrefabReferences();
 		ConfigureCanvasCamera();
@@ -81,6 +86,8 @@ public sealed class UICanvas : MonoBehaviour
 
 	private void OnDisable()
 	{
+		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
+		if (shadowBackground != null) shadowBackground.enabled = false;
 		_pauseVersion++;
 		_pauseLoading = false;
 		if (_pauseDialog != null) { _pauseDialog.gameObject.SetActive(false); Destroy(_pauseDialog.gameObject); }
@@ -141,6 +148,14 @@ public sealed class UICanvas : MonoBehaviour
 		BindButton(_undoButton, UseUndo);
 		BindButton(_shuffleButton, UseShuffle);
 		BindButton(_pathButton, UsePath);
+		if (_speedButton != null)
+		{
+			SpeedButtonInput input = _speedButton.GetComponent<SpeedButtonInput>();
+			if (input == null) input = _speedButton.gameObject.AddComponent<SpeedButtonInput>();
+			input.Bind(_controller);
+			_speedIcon = _speedButton.targetGraphic as Image;
+			if (_speedIcon == null) _speedIcon = _speedButton.GetComponent<Image>();
+		}
 		RefreshDisplay();
 	}
 
@@ -157,6 +172,9 @@ public sealed class UICanvas : MonoBehaviour
 		Camera mainCam = _controller != null ? _controller.MainCamera : Camera.main;
 		if (mainCam != null)
 		{
+			GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
+			if (shadowBackground == null) shadowBackground = gameObject.AddComponent<GameBackgroundController>();
+			shadowBackground.Bind(mainCam);
 			if (!_hasCachedMainCameraState)
 			{
 				_cachedMainCamera = mainCam;
@@ -246,9 +264,15 @@ public sealed class UICanvas : MonoBehaviour
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");
 		if (_pathButton == null) _pathButton = ResolveButton(_top, _bottom, "Path");
+		if (_speedButton == null) _speedButton = ResolveButton(_top, _bottom, "Speed");
 		Transform speedNode = HierarchyReferenceCache.Descendant(_top, "Speed")
 			?? HierarchyReferenceCache.Descendant(_bottom, "Speed");
-		if (speedNode != null) speedNode.gameObject.SetActive(false);
+		if (speedNode != null)
+		{
+			speedNode.gameObject.SetActive(true);
+			if (_speedLabel == null)
+				_speedLabel = HierarchyReferenceCache.DescendantComponent<TMP_Text>(speedNode, "Text");
+		}
 	}
 
 	private static Button ResolveButton(Transform top, Transform bottom, string name)
@@ -275,7 +299,7 @@ public sealed class UICanvas : MonoBehaviour
 
 		var hitAreas = new HashSet<Graphic>();
 		foreach (Button button in new[] { _pauseButton, _undoButton,
-			_shuffleButton, _pathButton })
+			_shuffleButton, _pathButton, _speedButton })
 		{
 			if (button == null) continue;
 			button.gameObject.SetActive(true);
@@ -369,6 +393,11 @@ public sealed class UICanvas : MonoBehaviour
 		if (_undoTool != null) _undoTool.UpdateCanUseState(_controller.CanRequestUndoTool);
 		if (_shuffleTool != null) _shuffleTool.UpdateCanUseState(_controller.CanRequestShuffleTool);
 		if (_pathTool != null) _pathTool.UpdateCanUseState(_controller.CanRequestPathTool);
+		if (_speedButton != null) _speedButton.interactable = active;
+		if (_speedLabel != null) _speedLabel.text = _controller.IsSpeedUpActive ? "x2" : "x1";
+		Sprite speedSprite = _controller.SpeedButtonSprite;
+		if (_speedIcon != null && speedSprite != null && _speedIcon.sprite != speedSprite)
+			_speedIcon.sprite = speedSprite;
 	}
 
 	private void ShowPauseDialog() => LoadPauseDialog().Forget();
