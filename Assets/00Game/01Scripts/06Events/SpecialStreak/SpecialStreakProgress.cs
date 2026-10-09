@@ -39,6 +39,7 @@ public class SpecialStreakProgress : MonoBehaviour
     private const float SkipAnimSpeed = 3f;
     private SpecialStreakCollectItem _collectItem;
     private Vector3 _rewardCellScale = Vector3.one;
+    private float _multiplierSliderShownX;
     private Image _tutorialMask;
     private Finger _finger;
     private Transform _originParent;
@@ -67,6 +68,8 @@ public class SpecialStreakProgress : MonoBehaviour
     {
         SpecialStreakPresentation.Prepare(transform, _materials);
         ResolveHierarchyReferences();
+        if (_multiplierSlider != null)
+            _multiplierSliderShownX = _multiplierSlider.transform.localPosition.x;
     }
 
     private void Start()
@@ -82,7 +85,7 @@ public class SpecialStreakProgress : MonoBehaviour
             _button.onClick.AddListener(OnClick);
         }
 
-        SpecialStreakPresentation.SetActive(_multiplierSlider, false);
+        if (!IsAnimating) SpecialStreakPresentation.SetActive(_multiplierSlider, false);
         RefreshProgress();
     }
 
@@ -629,15 +632,16 @@ public class SpecialStreakProgress : MonoBehaviour
         if (_multiplierSlider != null)
         {
             _multiplierSlider.gameObject.SetActive(true);
-            _multiplierSlider.transform.localPosition = new Vector3(-680f, _multiplierSlider.transform.localPosition.y, _multiplierSlider.transform.localPosition.z);
+            _multiplierSlider.transform.localPosition = new Vector3(_multiplierSliderShownX - 480f, _multiplierSlider.transform.localPosition.y, _multiplierSlider.transform.localPosition.z);
         }
         SpecialStreakPresentation.Sound(_multiplierSliderWhooshAudioClip, gameObject);
 
         if (_multiplierSlider != null)
         {
             var seq = DOTween.Sequence();
-            seq.Append(_multiplierSlider.transform.DOLocalMoveX(-160f, 0.23f).SetEase(Ease.OutSine));
-            seq.Append(_multiplierSlider.transform.DOLocalMoveX(-200f, 0.17f).SetEase(Ease.OutQuad));
+            // Keep the authored alignment inside MultiplierMask on every prefab.
+            seq.Append(_multiplierSlider.transform.DOLocalMoveX(_multiplierSliderShownX + 40f, 0.23f).SetEase(Ease.OutSine));
+            seq.Append(_multiplierSlider.transform.DOLocalMoveX(_multiplierSliderShownX, 0.17f).SetEase(Ease.OutQuad));
             seq.SetLink(gameObject);
             _tweens.Add(seq);
             await seq.AsyncWaitForCompletion();
@@ -647,30 +651,33 @@ public class SpecialStreakProgress : MonoBehaviour
         await UniTask.WaitForSeconds(0.18f, cancellationToken: this.GetCancellationTokenOnDestroy());
         if (ShouldStopAnimations()) return;
 
+        // Move the highlighted block and bone together with the new value.
+        _multiplierSlider?.Init(_pendingMultiplierIndex);
         if (_sliderValueText != null) _sliderValueText.text = "x" + multiplier;
         SpecialStreakPresentation.Sound(_labelTextChangeAudioClip, gameObject);
         if (_multiplierLabelText != null) _multiplierLabelText.text = "x" + multiplier;
         _multiplierLabelSpark?.Play();
         PlayLabelTextScale();
 
-        HideMultiplierSliderAfterDelay().Forget();
+        await HideMultiplierSliderAfterDelay();
     }
 
-    private async UniTaskVoid HideMultiplierSliderAfterDelay()
+    private async UniTask HideMultiplierSliderAfterDelay()
     {
         await UniTask.WaitForSeconds(1.12f, cancellationToken: this.GetCancellationTokenOnDestroy());
         if (ShouldStopAnimations() || _multiplierSlider == null) return;
 
         SpecialStreakPresentation.Sound(_multiplierSliderWhooshAudioClip, gameObject);
         var seq = DOTween.Sequence();
-        seq.Append(_multiplierSlider.transform.DOLocalMoveX(-12f, 0.17f).SetEase(Ease.OutSine));
-        seq.Append(_multiplierSlider.transform.DOLocalMoveX(-680f, 0.23f).SetEase(Ease.InQuad));
+        seq.Append(_multiplierSlider.transform.DOLocalMoveX(_multiplierSliderShownX + 188f, 0.17f).SetEase(Ease.OutSine));
+        seq.Append(_multiplierSlider.transform.DOLocalMoveX(_multiplierSliderShownX - 480f, 0.23f).SetEase(Ease.InQuad));
         seq.OnComplete(() =>
         {
             if (_multiplierSlider != null) _multiplierSlider.gameObject.SetActive(false);
         });
         seq.SetLink(gameObject);
         _tweens.Add(seq);
+        await seq.AsyncWaitForCompletion();
     }
 
     private void PlayLabelTextScale()
