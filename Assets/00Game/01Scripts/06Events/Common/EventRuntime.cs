@@ -2,7 +2,6 @@ using Snui;
 using Snui.StreakLine;
 using UnityEngine;
 
-// Owns the offline events across Home/Game scene changes.
 public sealed class EventRuntime : MonoBehaviour
 {
     private static EventRuntime _current;

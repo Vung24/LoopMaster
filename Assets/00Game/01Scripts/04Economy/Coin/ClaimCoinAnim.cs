@@ -12,8 +12,6 @@ namespace Snui
 		private readonly List<Sequence> _flights = new List<Sequence>();
 		private GameObject _flightRoot;
 
-		// Native CoinFly (0x14E0674) and CoinsFly.MoveNext (0x14E0E1C).
-		// The caller owns this enumerator; coin balance has already been committed.
 		public IEnumerator Play(int count, Transform parent, Vector3 startWorld, Snui_CoinHud hud, GameObject prefab = null, int sortingOrder = 1101)
 		{
 			Cancel();

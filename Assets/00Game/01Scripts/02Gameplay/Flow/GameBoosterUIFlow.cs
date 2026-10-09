@@ -1,7 +1,6 @@
 using Cysharp.Threading.Tasks;
 using System;
 
-// Keeps purchase UI separate from BoosterFlow's board operations.
 public sealed class GameBoosterUIFlow
 {
     private readonly GameController _controller;
@@ -35,8 +34,6 @@ public sealed class GameBoosterUIFlow
             if (_dialog != null) _dialog.Closed += OnClosed;
         }
         finally { if (version == _version) _loading = false; }
-        // Native PrepareUsedTool returns false after opening the shop.
-        // Buying replenishes inventory; the next tap performs the board operation.
     }
 
     private void OnClosed(int result)

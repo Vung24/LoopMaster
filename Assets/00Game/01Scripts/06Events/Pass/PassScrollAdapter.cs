@@ -6,7 +6,6 @@ using Snui;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Ticket, reward rows and final chest share one virtualized list, with separate pools.
 public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
 {
     private BasePassManager _manager;
@@ -37,7 +36,6 @@ public sealed class PassScrollAdapter : OSA<PassScrollParams, PassViewsHolder>
         _background.pivot = new Vector2(.5f, 1);
         _background.sizeDelta = Vector2.zero;
         _background.SetAsFirstSibling();
-        // OSA keeps Content at viewport size. Move the authored path to its own full-height plane.
         while (scroll.content.childCount > 0) scroll.content.GetChild(0).SetParent(_background, false);
         _lockLine = _background.GetComponentInChildren<PassLockLine>(true);
         _rewardsBg = HierarchyReferenceCache.ChildComponent<RectTransform>(_background, "RewardsBg");

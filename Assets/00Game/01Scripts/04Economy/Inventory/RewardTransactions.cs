@@ -20,13 +20,11 @@ public partial class InventoryManager
         public string[] keys;
         public int[] before;
         public int[] after;
-        // Optional fields keep existing version-1 wallet journals readable.
         public bool hasInfiniteHeart;
         public int infiniteHeartBefore;
         public int infiniteHeartAfter;
     }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-    // Verification-only fault/process interruption injection; never grants anything.
     private static Action<string> RewardCommitCheckpoint;
     private static void Checkpoint(string stage) => RewardCommitCheckpoint?.Invoke(stage);
 #else
@@ -46,7 +44,6 @@ public partial class InventoryManager
         catch (Exception error) { Debug.LogWarning(error.Message); return false; }
     }
 #if UNITY_EDITOR
-    // Read once per debug panel without initializing inventory or replaying pending rewards.
     public static bool TryDebugReadRewardReceipts(out HashSet<string> ids, out string error)
     {
         try { ids = new HashSet<string>(ReadReceipts().ids); error = null; return true; }
@@ -119,7 +116,7 @@ public partial class InventoryManager
         {
             if (PlayerPrefs.GetInt(InfiniteHeartRewardKey, 0) > TimeUtils.GetUnixTimestamp())
                 HeartManager.EnsureInitialized();
-            ReadReceipts(); // A corrupt receipt store must never be silently reset.
+            ReadReceipts();
             if (!PlayerPrefs.HasKey(RewardJournalKey)) { _rewardStoreInvalid=false; return true; }
             var journal = JsonUtility.FromJson<Journal>(PlayerPrefs.GetString(RewardJournalKey));
             if (journal == null || journal.version != 1 || string.IsNullOrEmpty(journal.id) || journal.keys == null ||
@@ -147,7 +144,6 @@ public partial class InventoryManager
         {
             for (int i = 0; i < journal.keys.Length; i++) PlayerPrefs.SetInt(CountKey(journal.keys[i]), journal.after[i]);
             if (journal.hasInfiniteHeart) PlayerPrefs.SetInt(InfiniteHeartRewardKey, journal.infiniteHeartAfter);
-            // Allows process interruption between wallet and receipt writes.
             PlayerPrefs.Save(); Checkpoint("balances-saved");
             receipts.ids.Add(journal.id);
             PlayerPrefs.SetString(RewardReceiptsKey, JsonUtility.ToJson(receipts));
@@ -164,7 +160,6 @@ public partial class InventoryManager
                 catch (Exception error) { Debug.LogWarning("Reward saved; heart listener failed: " + error.Message); }
         }
     }
-    // Called only by the existing explicit full-user-data reset.
     public void ClearRewardData()
     {
         if(_rewardTransaction || _isApplyingBooster) return;

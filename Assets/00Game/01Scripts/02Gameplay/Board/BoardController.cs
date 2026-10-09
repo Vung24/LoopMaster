@@ -183,7 +183,6 @@ public class BoardController : MonoBehaviour
         DisableClick();
         try
         {
-            // Snapshot because OnOpenedBlock removes entries synchronously.
             List<BlockController> prizeBlocks = _blocks.Where(b => b != null && b.IsPrize())
                 .OrderBy(b => b.GetScrewCount()).ToList();
             int index = 0;

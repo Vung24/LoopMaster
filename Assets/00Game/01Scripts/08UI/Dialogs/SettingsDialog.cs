@@ -47,7 +47,6 @@ public class SettingsDialog : MonoBehaviour
 			row.OnClickCellButton += OnClickButton;
 			row.gameObject.SetActive(row.IsOfflineToggle);
 		}
-		// Native group dividers refer to the hidden service rows.
 		if (_scrollView != null && _scrollView.content != null)
 			foreach (Transform node in _scrollView.content)
 				if (node.GetComponent<SettingButton>() == null) node.gameObject.SetActive(false);

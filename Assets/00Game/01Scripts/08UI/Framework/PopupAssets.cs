@@ -6,7 +6,6 @@ using UnityEngine.AddressableAssets;
 
 namespace Snui
 {
-    // Hold the prefab and its dependencies only for the lifetime of the UI instance.
     public static class PopupAssets
     {
         public static async UniTask<GameObject> Instantiate(string key, Transform parent,
@@ -20,7 +19,6 @@ namespace Snui
             bool ownsHandle = false;
             try
             {
-                // Let an in-flight load finish before releasing its handle, including on cancellation.
                 var prefab = await handle.Task;
                 cancellationToken.ThrowIfCancellationRequested();
                 if (parent == null) throw new OperationCanceledException("The popup parent was destroyed.");
@@ -29,7 +27,6 @@ namespace Snui
                 var lifetime = instance.GetComponent<AddressCell>() ?? instance.AddComponent<AddressCell>();
                 lifetime.AddReferenceHandle(key, handle);
                 ownsHandle = true;
-                // Unity invokes OnDestroy only for objects that have been active.
                 instance.SetActive(true);
                 return instance;
             }

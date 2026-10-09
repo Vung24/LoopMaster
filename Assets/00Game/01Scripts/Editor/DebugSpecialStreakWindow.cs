@@ -4,7 +4,6 @@ using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>Prepares and inspects SpecialStreak through the real gameplay and home flows.</summary>
 public static class DebugSpecialStreakWindow
 {
     public static void Open() => LoopMasterDebugWindow.Open(LoopMasterDebugWindow.Tab.SpecialStreak);

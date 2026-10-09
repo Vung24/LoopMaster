@@ -25,7 +25,7 @@ namespace Snui.SpaceRace
 		public long LastPromptTime;
 		public List<EventRaceOpponent> Opponents = new List<EventRaceOpponent>();
 		public int TutorialStage;
-		public int Result; // 0: None, 1: Win, 2: Fail
+		public int Result;
 		public int EnterLevel;
 	}
 

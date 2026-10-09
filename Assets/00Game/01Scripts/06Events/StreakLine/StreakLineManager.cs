@@ -7,7 +7,6 @@ namespace Snui.StreakLine
 {
 	public class StreakLineManager : BaseStreakLineManager
 	{
-		// Native game override, RVA 0x1418a38 (base library value is 26).
 		public override int GetUnlockLevel() => 31;
 		[Serializable] private sealed class ConfigReward { public string type; public int count; }
 		[Serializable] private sealed class ConfigStage { public int Goal; public List<ConfigReward> Rewards; }

@@ -8,7 +8,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-/// <summary>Detached JSON authoring. Never constructs GameData or changes the live board.</summary>
 public static class LoopLevelAuthoring
 {
     public const string LevelFolder = "Assets/00Game/05LevelData/LevelData";
@@ -26,7 +25,6 @@ public static class LoopLevelAuthoring
     public static JArray Array(JObject obj, string key)
     {
         if (obj[key] is JArray array) return array;
-        // Reading a legacy null/absent list must not change its JSON representation.
         return new JArray();
     }
     public static int Int(JObject obj, string key, int fallback = 0) => obj[key]?.Value<int>() ?? fallback;
@@ -62,7 +60,6 @@ public static class LoopLevelAuthoring
         if (levelNumber < 1) throw new ArgumentOutOfRangeException(nameof(levelNumber));
         JObject draft = (JObject)source.DeepClone();
         draft["level_number"] = levelNumber; draft["puzzle_id"] = levelNumber;
-        // New authoring no longer uses Map/Decor. Keep every puzzle mechanic and unknown field.
         Layout(draft).Remove("MapData");
         if (draft["editor_generator"] is JObject proof)
         { proof["verified"] = false; proof.Remove("solution_clicks"); }
@@ -85,7 +82,6 @@ public static class LoopLevelAuthoring
 
     public static int CubeCapacity(JObject box) => Int(box, "BoxType") == 1 ? 64 : Int(box, "BoxType") == 2 ? 6 : 4;
 
-    // Palette colors obey the native long-color range. Special colors stay available in JSON/inspector.
     public static int BrushColor(JObject box, int paletteColor) =>
         Int(box, "BoxType") == 2 ? 100 + Mathf.Clamp(paletteColor, 1, 5) : Mathf.Clamp(paletteColor, 1, 14);
 
@@ -95,7 +91,6 @@ public static class LoopLevelAuthoring
         if (index < 0 || index > cubes.Count || index >= CubeCapacity(box)) return false;
         int color = BrushColor(box, paletteColor);
         if (index == cubes.Count) { cubes.Add(NewCube(color)); box["Cubes"] = cubes; return true; }
-        // Recolor the existing token so keys, locks, secrets, links and unknown metadata survive.
         JObject cube = (JObject)cubes[index];
         if (Int(cube, "Type") == color) return false;
         cube["Type"] = color; return true;
@@ -130,7 +125,6 @@ public static class LoopLevelAuthoring
             var tangent = new Vector3(-Mathf.Sin(angle), 0, Mathf.Cos(angle)) * handle;
             points.Add(Point(position, position - tangent, position + tangent));
         }
-        // Store an exact seam, rather than relying on floating-point sin(2*pi).
         points[4] = points[0].DeepClone();
         return new JObject { ["IsCircle"] = 1, ["ControlPoints"] = points };
     }
@@ -152,7 +146,6 @@ public static class LoopLevelAuthoring
         return path;
     }
 
-    /// <summary>Generate aligned, bounded handles from anchor positions; preserve custom JSON fields.</summary>
     public static void SmoothRoad(JObject path, float smoothing)
     {
         JArray points = Array(path, "ControlPoints");
@@ -273,7 +266,6 @@ public static class LoopLevelAuthoring
         }
     }
 
-    // De Casteljau subdivision preserves the curve exactly when inserting a point.
     public static int SplitSegment(JArray points, int index)
     {
         if (index < 0 || index >= points.Count - 1) throw new ArgumentOutOfRangeException(nameof(index));
@@ -370,7 +362,7 @@ public static class LoopLevelAuthoring
             float candidate = dx * dx + dz * dz;
             if (candidate < distance) { distance = candidate; best = i; }
         }
-        return best + 1; // Native JSON binding is one-based; zero means find nearest at runtime.
+        return best + 1;
     }
 
     public static List<string> Validate(JObject root, out List<string> warnings)
@@ -412,7 +404,6 @@ public static class LoopLevelAuthoring
                 CheckVector(box, "Position", errors); CheckVector(box, "Rotation", errors);
                 var cubes = box["Cubes"] as JArray;
                 if (cubes == null) { errors.Add("Hộp " + index + ": Cubes phải là mảng."); continue; }
-                // Single boxes can contain several queued cubes; only one pops per click.
                 int capacity = type == 2 ? 6 : 4;
                 if (type != 1 && cubes.Count > capacity) errors.Add("Hộp " + index + ": vượt sức chứa " + capacity + ".");
                 if (type == 1 && cubes.Count > 64) errors.Add("Hộp " + index + ": hàng đợi hộp đơn vượt 64 khối.");

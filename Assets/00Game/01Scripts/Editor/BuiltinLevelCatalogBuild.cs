@@ -8,7 +8,6 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-// Refresh before each build so added/edited levels require no manual packaging step.
 public sealed class BuiltinLevelCatalogBuild : IPreprocessBuildWithReport
 {
 	public int callbackOrder => 0;
@@ -25,7 +24,6 @@ public sealed class BuiltinLevelCatalogBuild : IPreprocessBuildWithReport
 		string[] paths = Directory.GetFiles(folder, "*.json");
 		if (paths.Length == 0) throw new BuildFailedException("No exported levels found in " + folder);
 		var levels = new SortedDictionary<int, string>();
-		// Validate the entire source set before changing any packaged files.
 		foreach (string path in paths)
 		{
 			string name = Path.GetFileNameWithoutExtension(path);

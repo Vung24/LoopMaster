@@ -50,8 +50,6 @@ namespace Sugar.UI
 			_recycleBin.Clear();
 
 			if (DataSource == null || _content == null) return;
-			// Authored scroll prefabs may stretch Content to the viewport. A table's
-			// height must be absolute, otherwise scrolling leaves an empty extra page.
 			_content.anchorMin = new Vector2(0f, 1f);
 			_content.anchorMax = Vector2.one;
 			_content.pivot = new Vector2(0.5f, 1f);

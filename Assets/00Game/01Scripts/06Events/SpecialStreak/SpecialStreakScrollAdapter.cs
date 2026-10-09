@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class SpecialStreakScrollAdapter : OSA<SpecialStreakScrollParams, SpecialStreakViewsHolder>
 {
-    // The dialog initializes OSA after applying the safe area and updating the canvas.
     protected override void Start() { }
 
     public void RefreshRewards(bool focusCurrentReward = false)
@@ -26,7 +25,6 @@ public class SpecialStreakScrollAdapter : OSA<SpecialStreakScrollParams, Special
 
         if (focusCurrentReward && count > 0)
         {
-            // Rows run from the grand prize at the top to the first reward at the bottom.
             int row = count - 1 - Mathf.Clamp(manager.ClaimedIndex, 0, count - 1);
             ScrollTo(row, 0.5f, 0.5f);
         }
@@ -50,7 +48,6 @@ public class SpecialStreakScrollParams : BaseParamsWithPrefab
 {
     public SpecialStreakScrollParams()
     {
-        // The authored cell stretches horizontally, so its prefab width can be zero.
         PrefabControlsDefaultItemSize = false;
         DefaultItemSize = 220f;
     }

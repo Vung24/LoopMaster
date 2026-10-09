@@ -38,7 +38,6 @@ public class BouncyLavaDetailDialog : Snui.Lava.LavaDetailDialog
 				}
 			}
 
-			// Let the jump, splash callback and avatar fade finish before hiding players.
 			int presentationMs = Mathf.CeilToInt((0.45f + GetWaterSplashDelay(nextIndex) + 0.25f) * 1000f) + 50;
 			await UniTask.Delay(presentationMs, cancellationToken: this.GetCancellationTokenOnDestroy());
 			foreach (int index in fallIndexes)
@@ -60,8 +59,6 @@ public class BouncyLavaDetailDialog : Snui.Lava.LavaDetailDialog
 				_fallIndexes.Add(i);
 			}
 		}
-		// Native sorts by horizontal position: side 0 takes the rightmost opponents,
-		// side 1 takes the leftmost. At the endpoint it uses their current positions.
 		int next = GetNextPlaneIndex();
 		bool endpoint = next == _planes.Count - 1;
 		bool leftmost = GetFallPlayerSide(next);

@@ -272,7 +272,6 @@ namespace Snui
 			float itemHeight = (int)(SpacingY + _widgetScale * WidgetHeight);
 			if (_championHomeIcon != null && _championHomeIcon.transform is RectTransform championRect)
 			{
-				// Offline fallback icon occupies the otherwise unused right column.
 				championRect.anchorMin = championRect.anchorMax = new Vector2(1f, 1f);
 				championRect.anchoredPosition = new Vector2(OffsetX, startY);
 			}

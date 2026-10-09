@@ -12,7 +12,6 @@ namespace Snui
 	{
 		public static readonly int LOGIN_DAY_COUNT = 7;
 		public static readonly int BOX_COUNT = 5;
-		// Not enabled in the main game yet; retain the implementation for later use.
 		public static bool IsOpen = false;
 
 		private static DailyCheckInManager _instance;
@@ -150,7 +149,6 @@ namespace Snui
 			}
 			catch (Exception error)
 			{
-				// Completed receipts survive retries; unfinished rewards remain claimable.
 				ReadData();
 				Debug.LogWarning("DailyCheckIn reward pending/retry: " + error.Message);
 			}
@@ -363,7 +361,6 @@ namespace Snui
 
 		private int GetNewInterval(int loginDays)
 		{
-			// Native falls back to 5 when remote interval configuration has no entry.
 			return 5;
 		}
 

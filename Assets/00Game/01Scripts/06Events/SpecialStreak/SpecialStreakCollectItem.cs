@@ -53,8 +53,6 @@ public class SpecialStreakCollectItem : MonoBehaviour
                     await UniTask.Delay(TimeSpan.FromSeconds(Mathf.Max(0, labelAnimation.Duration - .1f) / _speed), ignoreTimeScale: true, cancellationToken: token);
                     RemoveLabelListener();
                 }
-                // The wait ends before the Spine disappear event, especially when sped up.
-                // Hide the multiplier badge before replacing the count with the total.
                 SpecialStreakPresentation.SetActive(_multiplierLabel, false);
                 _numParticle?.Play(); _boneParticle?.Play(); SpecialStreakPresentation.Sound(_doubleAudioClip, gameObject);
                 if (_numText != null)

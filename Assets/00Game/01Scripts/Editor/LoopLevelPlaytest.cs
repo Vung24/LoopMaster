@@ -38,7 +38,6 @@ internal static class LoopLevelPlaytest
         if (errors.Count > 0) { error = string.Join("\n", errors); return false; }
         SceneAsset scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
         if (scene == null) { error = "Không tìm thấy scene chơi game: " + ScenePath; return false; }
-        // SessionState survives assembly reloads; neither the draft nor its file is replaced.
         SessionState.SetString(PendingKey, root.ToString(Formatting.None));
         SetStatus("Đang mở Game View với màn chơi xem trước…");
         BeginWaiting();
@@ -107,7 +106,6 @@ internal static class LoopLevelPlaytest
     private static void RestoreStartScene()
     {
         if (!SessionState.GetBool(Prefix + "RestoreScene", false)) return;
-        // Avoid replacing a start-scene preference changed by another tool during the test.
         if (AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene) == ScenePath)
             EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(SessionState.GetString(Prefix + "PreviousScene", ""));
         SessionState.EraseBool(Prefix + "RestoreScene"); SessionState.EraseString(Prefix + "PreviousScene");

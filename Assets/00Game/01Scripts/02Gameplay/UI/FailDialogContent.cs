@@ -89,14 +89,12 @@ public class FailDialogContent : DialogContent
 	{
 		_offeredData = _controller == null ? null : _controller.Data;
 		_isResolved = false;
-		// Native Start 0x15BDC0C hides the loss mascot while offering extra capacity/revive.
 		if (_loseContainer != null) _loseContainer.gameObject.SetActive(false);
 		base.Show();
 		UpdateButtons();
 	}
 	public override void Hide()
 	{
-		// Return highlighted capacity before deactivating its temporary tutorial parent.
 		foreach (NewPlayerTutorial tutorial in GetComponentsInChildren<NewPlayerTutorial>(true))
 			if (tutorial != null) tutorial.CancelAndDismiss();
 		base.Hide();

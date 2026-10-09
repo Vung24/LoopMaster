@@ -44,7 +44,6 @@ public class CountdownHelper : MonoBehaviour
 			return;
 		}
 
-		// Replacing a countdown is not a completion event. Stop listeners may restart it.
 		ClearTimer();
 		_countdownTimer = new CountdownUntil(timestamp);
 		_countdownTimer.OnTimerTick += UpdateTimer;
@@ -63,7 +62,6 @@ public class CountdownHelper : MonoBehaviour
 	{
 		if (timer != null) timer.CountdownFixTime(fixTime);
 	}
-
 
 	public void CountdownFixTime(long fixTime)
 	{
@@ -108,7 +106,6 @@ public class CountdownHelper : MonoBehaviour
 
 			var currentTimer = _countdownTimer;
 			currentTimer.UpdateTimer();
-			// Tick/stop listeners can clear or replace the timer synchronously.
 			if (_countdownTimer != currentTimer) yield break;
 			if (currentTimer.GetCurrTime() <= 0)
 			{

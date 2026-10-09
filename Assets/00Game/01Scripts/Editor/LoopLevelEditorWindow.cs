@@ -63,7 +63,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         minSize = new Vector2(470, 520);
         if (_tabLayoutVersion == 0)
         {
-            // Restore old Groups/JSON selections after removing the Map tab.
             _tab = _tab == 3 ? 0 : _tab > 3 ? _tab - 1 : _tab;
             _tabLayoutVersion = 1;
         }
@@ -142,7 +141,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void Commit(JObject root, string action = "Sửa màn chơi")
     {
-        // A stored plan describes the generated layout. Manual geometry / puzzle edits invalidate it.
         if (root["editor_generator"] is JObject metadata && metadata.Value<bool?>("verified") == true)
         {
             JObject before = A.Parse(_document.Json);
@@ -176,7 +174,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         try
         {
             string disk = File.ReadAllText(path); JObject root = A.Parse(disk);
-            // Check shape before handing data to the inspector. Do not reject drafts with semantic errors.
             ExportedPuzzleJsonDecoder.Decode(disk);
             foreach (string key in new[] { "Boxes", "Paths" })
                 if (!(A.Layout(root)[key] is JArray)) throw new FormatException("layout." + key + " phải là mảng.");
@@ -307,7 +304,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     case 2: DrawPaths(layout); break;
                     case 3: DrawGroups(layout); break;
                 }
-                EditorGUI.EndChangeCheck(); // Compare JSON so list-button changes are recorded as well.
+                EditorGUI.EndChangeCheck();
                 Commit(root);
             }
         }
@@ -637,7 +634,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         JObject path = A.RoadFromPositions(_sketchPoints, _sketchClosed, _sketchSmooth ? _roadSmoothing : 0);
         JObject root = Root(); JArray paths = A.Array(A.Layout(root), "Paths");
         paths.Add(path); _path = paths.Count - 1; _point = 0;
-        // One finished road is one Undo step; cancelled sketches never change the document.
         Undo.IncrementCurrentGroup(); Commit(root, "Draw road"); Undo.IncrementCurrentGroup();
         _autoSmoothPoints = _sketchSmooth;
         CancelRoadSketch(); _status = "Đã tạo đường. Kéo các điểm để chỉnh hình dạng.";
@@ -649,7 +645,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         if (includeCursor && _sketchCursorValid && positions.Count > 0 && positions.Count < (_sketchClosed ? 127 : 128) &&
             (positions[positions.Count - 1] - _sketchCursor).sqrMagnitude > .000001f && !(_sketchClosed && atStart)) positions.Add(_sketchCursor);
         if (positions.Count < 2) { _sketchPreview?.Dispose(); _sketchPreview = null; return; }
-        // Preview stays open until a loop has enough anchors, avoiding invalid partial paths.
         JObject path = A.RoadFromPositions(positions, _sketchClosed && positions.Count >= 3, _sketchSmooth ? _roadSmoothing : 0);
         string json = new JObject { ["layout"] = new JObject { ["Paths"] = new JArray(path) } }.ToString(Formatting.None);
         if (_sketchPreview == null) _sketchPreview = new LoopLevelRoadPreview();
@@ -854,7 +849,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             {
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
                 DrawRoadPreview(); DrawBoxPreview(layout, _tab != 1 || _boxTool == 0);
-                // Control points sit inside the generated surface. Keep edit handles visible above it.
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
                 if (_showSlots)
                     for (int i = 0; i < _slots.Count; i += Math.Max(1, _slots.Count / 500))
@@ -872,7 +866,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             Commit(root, _tab == 1 && _boxTool != 0 ? "Edit boxes in Scene" : "Move level element");
             if (e.rawType == EventType.MouseUp && _dragGroup >= 0) { Undo.CollapseUndoOperations(_dragGroup); _dragGroup = -1; }
         }
-        catch (Exception exception) { _status = "Sửa ở Scene: " + exception.Message; /* Keep invalid drafts repairable without logging on every repaint. */ }
+        catch (Exception exception) { _status = "Sửa ở Scene: " + exception.Message;  }
     }
 
     private void DrawSceneBoxToolbar()
@@ -949,7 +943,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 { nearest = appendDistance; hitBox = b; hitCube = cubes.Count; }
             }
         }
-        // Pick the nearest visible cube in world space, including boxes rotated off the grid.
         if (hitBox >= 0 && e.type == EventType.MouseDown && e.button == 0 && GUIUtility.hotControl == 0)
         {
             JObject box = (JObject)boxes[hitBox]; _box = hitBox;
@@ -966,7 +959,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         foreach (Vector3[] line in _roadLines)
         {
             if (line.Length < 2) continue;
-            // The curve is the centerline, slightly lifted to avoid fighting the road's depth buffer.
             Handles.DrawAAPolyLine(3f, line.Select(p => p + Vector3.up * .12f).ToArray());
         }
     }
@@ -977,7 +969,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         {
             JObject box = (JObject)boxes[i]; Vector3 position = A.Vector(box, "Position"); Quaternion rotation = Quaternion.Euler(A.Vector(box, "Rotation"));
             int type = A.Int(box, "BoxType"), capacity = type == 2 ? 6 : 4;
-            if (type == 1) rotation = Quaternion.identity; // Single ignores Rotation at runtime.
+            if (type == 1) rotation = Quaternion.identity;
             Bounds footprint = LoopLevelBoardLayout.LocalBounds(type);
             using (new Handles.DrawingScope(Matrix4x4.TRS(position, rotation, Vector3.one)))
             {

@@ -5,8 +5,6 @@ using System.Collections.Generic;
 
 public class CheatDelegate : MonoBehaviour
 {
-    // These adapters are rebuilt from the surviving prefab controls. Only
-    // CheatItem, CheatItemSelector and GameController.CheatWin survive in IL2CPP.
     public static readonly RewardType[] InventoryTypes =
         { RewardType.Coin, RewardType.Undo, RewardType.Shuffle, RewardType.Path,
           RewardType.Heart, RewardType.InfinityHeart };

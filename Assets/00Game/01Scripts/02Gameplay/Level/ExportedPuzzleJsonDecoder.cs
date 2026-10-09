@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
-/// <summary>Reads JSON level packs containing puzzle metadata and a gameplay layout.</summary>
 public static class ExportedPuzzleJsonDecoder
 {
 	public static Puzzle Decode(string json)
@@ -11,11 +10,6 @@ public static class ExportedPuzzleJsonDecoder
 		return DecodeLevel(json).Puzzle;
 	}
 
-	/// <summary>
-	/// Decodes both the exported level envelope and its Puzzle layout.  The
-	/// envelope values are needed because GameData.Id is the puzzle id while
-	/// Puzzle.MainLevel/InnerIndex describe the displayed level.
-	/// </summary>
 	public static ExportedPuzzleLevel DecodeLevel(string json)
 	{
 		if (string.IsNullOrWhiteSpace(json))

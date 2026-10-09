@@ -28,7 +28,6 @@ public class CheatItem : MonoBehaviour
     public void UpdateIcon(string path)
     {
         if (_icon == null) return;
-        // The native version loads an addressable sprite, then fades it in.
         _icon.sprite = PrefabLibrary.Current?.ResolveRewardIcon(path);
         if (_icon.sprite == null && !string.IsNullOrEmpty(path))
             _icon.sprite = Resources.Load<Sprite>(System.IO.Path.ChangeExtension(path, null));

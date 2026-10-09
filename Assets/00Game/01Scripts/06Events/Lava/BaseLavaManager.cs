@@ -10,7 +10,7 @@ namespace Snui.Lava
 	public class LavaConfig
 	{
 		public float RefreshTime = 0f;
-		public int Duration = 86400; // 24 hours
+		public int Duration = 86400;
 		public int LevelGoal = 7;
 		public int CoinRewardCount = 10000;
 		public int PlayerCount = 100;
@@ -20,7 +20,7 @@ namespace Snui.Lava
 	[Serializable]
 	public class LavaData
 	{
-		public int State = 1; // 0=None, 1=WaitingStart, 2=Ongoing, 7=Ended
+		public int State = 1;
 		public long StartTime;
 		public long EndTime;
 		public int Record;
@@ -76,7 +76,7 @@ namespace Snui.Lava
 		public virtual int GetUnlockLevel() => 41;
 		public virtual int GetPromptInterval() => 0;
 		public virtual int GetCurSkin() => 2;
-		public virtual int GetRetryInterval() => 900; // 15 minutes
+		public virtual int GetRetryInterval() => 900;
 
 		public virtual void LoadConfig()
 		{
@@ -177,7 +177,6 @@ namespace Snui.Lava
 
 		public override bool ShouldShowIcon()
 		{
-			// Native keeps a locked Home icon visible below the unlock level.
 			if (!IsUnlocked()) return true;
 			if (_data == null) return true;
 			return _data.State == 1 || _data.State == 2;
@@ -489,7 +488,6 @@ namespace Snui.Lava
 
 			if (_data.State == 2 && !_data.IsFailed && !IsExpired() && !IsWin())
 			{
-				// Preserve a pending presentation when several wins arrive before Home opens.
 				int pending = _data.TempPlayer;
 				_data.RemainingPlayers = Math.Max(1, _data.RemainingPlayers - pending);
 				_data.Record++;
@@ -584,7 +582,6 @@ namespace Snui.Lava
 			int dropRandom = UnityEngine.Random.Range(range.min, range.max);
 
 			int step = _data.Record;
-			// Native target: (goal - record) * (playerCount / goal) + final survivors.
 			int target = (goal - step) * (_config.PlayerCount / Math.Max(1, goal)) + dropRandom;
 			return Math.Max(0, Math.Min(_data.RemainingPlayers - 1, _data.RemainingPlayers - target));
 		}

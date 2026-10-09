@@ -50,7 +50,6 @@ public class ProgressBar : MonoBehaviour
     public void SetProgress(float progress) => SetPercent(progress);
     public void SetProgress(int count, int total) => SetPercent(count, total);
 
-    // A mask's authored width can represent partial progress rather than the full track.
     public void SetFillBounds(RectTransform bounds)
     {
         fillBounds = bounds;

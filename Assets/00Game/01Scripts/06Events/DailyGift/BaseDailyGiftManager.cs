@@ -42,7 +42,6 @@ namespace Snui
 
 		public virtual bool IsUnlocked()
 		{
-			// Native unlocks on the day after first launch, independently of level progress.
 			return PlayerPrefs.HasKey(PrefFirstLaunchTime) && !TimeUtils.IsToday(PlayerPrefs.GetInt(PrefFirstLaunchTime));
 		}
 

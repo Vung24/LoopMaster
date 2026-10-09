@@ -6,7 +6,6 @@ public class SpecialStreakSettings : MonoBehaviour
 {
 }
 
-// Shared presentation helpers retain authored assets and own every material copy.
 internal static class SpecialStreakPresentation
 {
     internal static void Prepare(Transform root, List<Material> materials)

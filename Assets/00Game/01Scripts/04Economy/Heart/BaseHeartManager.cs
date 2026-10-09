@@ -21,7 +21,6 @@ public class BaseHeartManager : BaseManager
 	private readonly List<FreeHeart> _freeHearts = new List<FreeHeart>();
 
 	private const string InfiniteHeartEndTimeKey = "infiniteHeartEndTime";
-	// Keep the existing save key for player-data compatibility.
 	private const string LastHeartRefillTimeKey = "lastRecoverHeartTime";
 	private const string HeartCountKey = "Heart";
 

@@ -5,8 +5,6 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
 
-// Run only in the isolated Unity project prepared under Temp/LevelCatalogVerification.
-// Copy this file into its Assets/Editor, together with the catalog/build scripts and source JSON.
 public static class BuiltinLevelCatalogVerification
 {
     private const string Source = "Assets/00Game/05LevelData/LevelData";
@@ -33,7 +31,6 @@ public static class BuiltinLevelCatalogVerification
             var asset = Resources.Load<TextAsset>($"LevelData/Level {id}");
             Require(asset != null && asset.text == File.ReadAllText(Source + $"/Level {id}.json"), "on-demand resource contents");
             Resources.UnloadAsset(asset);
-            // Editor import caching is not a player memory measurement; check the reload cycle here.
             var reloaded = Resources.Load<TextAsset>($"LevelData/Level {id}");
             Require(reloaded != null && reloaded.text == File.ReadAllText(Source + $"/Level {id}.json"), "resource reload after unload");
             Resources.UnloadAsset(reloaded);

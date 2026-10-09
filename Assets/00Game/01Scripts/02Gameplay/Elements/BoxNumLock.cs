@@ -52,7 +52,6 @@ public class BoxNumLock : MonoBehaviour
 			_boxInfo.HasBlockingLockExceptNumLock()) return;
 		BoxInfo info = _boxInfo;
 		UpdateLockState(info.NumLock - 1).Forget();
-		// Native DecNumLock keeps the final logical lock until UnLock completes.
 		if (info.NumLock == 1) await UnLock();
 		else GameVibrationHelper.PlayLockDecrement();
 		info.NumLock--;

@@ -5,7 +5,6 @@ using Spine.Unity;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Runtime bridge from the authored win prefab to level flow.</summary>
 public class WinDialog : MonoBehaviour
 {
 	[SerializeField] private Image _mask;
@@ -72,13 +71,10 @@ public class WinDialog : MonoBehaviour
 		if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(_winPopperCheerClip, gameObject);
 		if (_logoDialogContent != null)
 		{
-			// Native StartAsync: fireworks first, then logo and skip input after 0.8s.
 			yield return new WaitForSecondsRealtime(0.8f);
 			if (_mask != null) _maskFade = _mask.DOFade(0.98f, 0.1f).SetUpdate(true);
 			_canSkip = true;
 			_logoDialogContent.PlayLogoAnimation();
-			// Dismiss releases the result when the mascot starts, while its animation
-			// continues. Keep rewards and claim input hidden until it finishes or skips.
 			while (_logoDialogContent != null && _logoDialogContent.gameObject.activeSelf) yield return null;
 		}
 		else
@@ -194,7 +190,6 @@ public class WinDialog : MonoBehaviour
 
 	private async UniTaskVoid FadeOutAndEnterHome()
 	{
-		// Native RVA 0x1433920: reuse the win mask as LoadingPanel, above Home, without GameLoading.
 		CancelPresentation();
 		Transform previousParent = transform.parent;
 		transform.SetParent(null, false);
@@ -224,7 +219,6 @@ public class WinDialog : MonoBehaviour
 		LoadingPanel panel = gameObject.AddComponent<LoadingPanel>();
 		if (await _controller.ReturnHomeAsync(withAnimation: false) || this == null) return;
 
-		// A failed scene load must leave the claimed reward screen usable for another attempt.
 		if (LoadingPanel.Current == panel) LoadingPanel.Current = null;
 		Destroy(panel);
 		if (previousParent != null)

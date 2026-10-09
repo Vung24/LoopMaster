@@ -60,10 +60,8 @@ public class GameData
 	}
 
 #if UNITY_EDITOR
-	/// <summary>Detached state for debug search; preserves Current and strips scene references.</summary>
 	public GameData CreateDebugSimulationCopy()
 	{
-		// Do not call the constructor: it replaces the live GameData.Current.
 		GameData copy = (GameData)MemberwiseClone();
 		copy._transferTypeCounts = new Dictionary<int, int>();
 		copy.UndoData = new UndoData();
@@ -157,7 +155,6 @@ public class GameData
 	{
 		scale = Math.Max(0.4f, Math.Min(1f, scale));
 		if (Math.Abs(scale - _roadSpacingScale) < 0.00001f) return;
-		// Preserve physical entry positions when increasing the number of road slots.
 		var previousPoints = new List<Vector3>(PathPoints);
 		_roadSpacingScale = scale;
 		InitPath();
@@ -406,8 +403,6 @@ public class GameData
 	}
 
 	public bool RemoveTransferSlice(SliceInfo slice) => TransferSlice.Remove(slice);
-	// These lists are mutable (including in debug simulations), so read their current
-	// entries directly rather than keeping an index that can become stale.
 	public GroupInfo GetGroupInfo(int id)
 	{
 		for (int i = 0; i < Groups.Count; i++)

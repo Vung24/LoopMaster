@@ -69,7 +69,6 @@ namespace Snui.StreakLine
 			if (ScrollView == null || ScrollView.BackgroundContent == null) return;
 			var node = HierarchyReferenceCache.Child(ScrollView.BackgroundContent, "BlocksNode");
 			if (node == null || _bgBlocksPrefab == null || _bgBlockTopPrefab == null) return;
-			// Native Loop dialog: top cap at (-412,-270), repeats of four blocks.
 			var top = Instantiate(_bgBlockTopPrefab, node, false).GetComponent<RectTransform>();
 			top.anchorMin = top.anchorMax = new Vector2(.5f, 1);
 			top.anchoredPosition = new Vector2(-412, -270);

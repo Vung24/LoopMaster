@@ -112,7 +112,6 @@ public class BouncyLavaPlayer : Snui.Lava.LavaPlayer
 	}
 }
 
-// A reparented splash still belongs to the player that created it.
 public sealed class LavaSplashLifetime : MonoBehaviour
 {
 	public GameObject Owner;

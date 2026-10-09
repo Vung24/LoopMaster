@@ -10,6 +10,5 @@ public sealed class SecretBlockMarker : MonoBehaviour
 
     public bool IsSecret => Owner != null && Owner.Info != null && Owner.Info.IsSecret;
 
-    // Box clears IsSecret before calling this, so do not gate on that data flag.
     public UniTask Reveal() => Owner != null ? Owner.HiddenSecret() : UniTask.CompletedTask;
 }

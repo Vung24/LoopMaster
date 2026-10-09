@@ -181,7 +181,6 @@ namespace Snui
 			Vector3 nodePos = _rewardNode != null ? _rewardNode.position : transform.position;
 			Vector3 localPos = canvasTransform != null ? canvasTransform.InverseTransformPoint(nodePos) : nodePos;
 
-			// DailyGiftDialog commits the day and milestone rewards before animation.
 			ClaimRewardsToast.Show(_rewardData, canvasTransform, localPos.x, localPos.y).Forget();
 
 			await UniTask.WaitForSeconds(0.15f, cancellationToken: _cancellationTokenOnDestroy);
