@@ -1,7 +1,5 @@
 using UnityEngine;
 
-// Visual state corresponding to native PendingLevelChangeAnim/LastLevelHardTag.
-// This journal never grants rewards or advances gameplay progress.
 public static class HomeLevelChangePresentation
 {
     private const string PreviousKey = "offline_HomePreviousLevel";

@@ -78,13 +78,11 @@ public sealed class SliceTransferFlow
 				if (IsSliceCanJump(slice.Info, box)) _arrivalCandidates.Add(box);
 			}
 
-			// Count before skipping source or unlocking boxes, as in the original selection.
 			bool skipSource = _arrivalCandidates.Count > 1 && slice.Info.SourceBox != null;
 			for (int i = 0; i < _arrivalCandidates.Count; i++)
 			{
 				Box box = _arrivalCandidates[i];
 				if ((skipSource && box.Info == slice.Info.SourceBox) || _isGroupUnlocking(box)) continue;
-				// IsSliceCanJump already checked ignore rules; selection has not changed data.
 				JumpSliceToBox(slice, box, jumpDuration, jumpHeight);
 				return true;
 			}
@@ -227,9 +225,6 @@ public sealed class SliceTransferFlow
 				}
 			}
 
-			// Native starts this delay after launching the batch, without awaiting its flights.
-			// Reveal the exposed secret while slices are still in flight; keep Undo and
-			// the source's input guard pending until every launched slice has landed.
 			yield return new WaitForSeconds(0.3f);
 			if (!IsCurrent(operation.Version) || box == null || box.Info == null) yield break;
 			box.RemoveEmptyCube();
@@ -283,6 +278,6 @@ public sealed class SliceTransferFlow
 	private void CheckNearOver()
 	{
 		if (_data == null || !_data.IsGameCanSpeedUp()) return;
-		_data.IsNearOver = true; // Keep the player's selected x2/x4 speed.
+		_data.IsNearOver = true;
 	}
 }

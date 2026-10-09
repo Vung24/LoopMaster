@@ -12,7 +12,6 @@ namespace Snui.StreakLine
 		public Sprite PlatformCommonSprite, PlatformAdvancedSprite;
 		private Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
 
-		// Native GetChestSize (0x15e5620): first half S, remaining M, final L.
 		public Sprite GetChestSprite(int index, int count, bool claimed)
 		{
 			if (index == count - 1) return claimed ? ChestEmptyLSprite : ChestRewardLSprite;

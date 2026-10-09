@@ -65,7 +65,6 @@ namespace Snui
                 _passVipToggle.SetIsOnWithoutNotify(HeartManager.EnsureInitialized().MAX_HEART == BaseHeartManager.PASS_VIP_MAX_HEART);
                 _passVipToggle.onValueChanged.AddListener(value => { _commands.SetVipHearts(value); Refresh(); });
             }
-            // Ad/Firebase integrations were removed from this offline reconstruction.
             DisableService(_noAdToggle, "No AD (offline)");
             DisableService(_adToggle, "AD unavailable");
             DisableService(_firebaseInfoBtn, "Firebase unavailable");

@@ -7,7 +7,6 @@ namespace Snui
 {
 	public class SettingButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 	{
-		// Preserve the native numeric values serialized by the exported prefabs.
 		public enum Type { None = 0, Sound = 1, Music = 2, Vibration = 3, Language = 4, ContactUs = 5,
 			About = 6, Restore = 7, Sign = 8, DeleteAccount = 9, Term = 10, Privacy = 11,
 			Personal = 12, Nickname = 13, ColorBlind = 14 }
@@ -34,7 +33,6 @@ namespace Snui
 				var label = HierarchyReferenceCache.Child(transform, "Text");
 				_label = label == null ? GetComponentInChildren<TMPro.TMP_Text>(true) : label.GetComponent<TMPro.TMP_Text>();
 			}
-			// The exported Sound row retains a placeholder while localization is offline.
 			if (_type == Type.Sound && _label != null)
 			{
 				_label.text = "Sound";
@@ -52,7 +50,6 @@ namespace Snui
 		private void OnClickButton()
 		{
 			if (!isActiveAndEnabled || !IsOfflineToggle || _button == null || !_button.IsInteractable()) return;
-			// Native feedback precedes the switch; reuse the existing button backend if present.
 			if (GetComponent<Snui_Button>() == null)
 			{
 				AudioClip clip = GameAssetsConfig.Instance?.ButtonClickAudio;

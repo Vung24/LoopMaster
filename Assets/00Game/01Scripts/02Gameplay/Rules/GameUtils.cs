@@ -36,7 +36,6 @@ public class GameUtils
 		return result;
 	}
 
-	// Both jump helpers operate in local XY and preserve the node's Z position.
 	public static void LocalJumpByParabola(Transform node, Vector3 targetPos,
 		float duration, float jumpHeight, float jumpDuration)
 	{

@@ -1,6 +1,5 @@
 using UnityEngine;
 
-/// <summary>Interactive coin HUD entry point referenced by UICanvas prefabs.</summary>
 public sealed class CoinHud : Snui_CoinHud
 {
 	protected override void Awake()

@@ -55,7 +55,6 @@ public class NewPlayerTutorial : MonoBehaviour
 			_descText = desc != null ? desc.GetComponent<TMP_Text>() : _textNode.GetComponentInChildren<TMP_Text>(true);
 		}
 		_lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
-		// Decorative graphics must not swallow the tap intended for a box behind the UI.
 		foreach (Graphic graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
 		foreach (Button button in new[] { _bgBtn, _tapBtn,
 			_topMask == null ? null : _topMask.GetComponent<Button>() })

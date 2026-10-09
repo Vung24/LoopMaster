@@ -7,7 +7,6 @@ namespace Snui
     public enum RewardLayoutType { RewardDialog = 0, RewardDetailToast = 1, ClaimRewardsToast = 2, Card = 3 }
     public static class RewardLayoutHelper
     {
-        // RVA 0x1479E6C; InitializeArray blobs verified by SHA256 in global-metadata.dat.
         private static readonly float[][] Scale = { new[] {.95f,.8f,.75f,.65f}, new[] {.35f,.35f,.35f,.35f},
             new[] {.5f,.4f,.4f,.4f}, new[] {.55f,.55f,.55f,.55f} };
         private static readonly float[][] SpaceX = {new[] {200f,200f,180f},new[] {90f,90f,90f},new[] {130f,95f,90f},new[] {242f,242f,242f}};

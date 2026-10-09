@@ -112,7 +112,6 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		return true;
 	}
 
-	/// <summary>Commit one count only when the gameplay operation succeeds.</summary>
 	public bool TryUseBooster(string key, Func<bool> apply)
 	{
 		if (apply == null || !CanUseBooster(key)) return false;
@@ -139,7 +138,6 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		if (IsMutationBlocked || !IsBoosterUnlocked(key) || price < 0) return false;
 		int coins = GetAmount(InventoryKeys.COIN), count = GetAmount(key);
 		if (coins < price || count == int.MaxValue) return false;
-		// Native AddTool grants exactly one use. Save both sides before publishing either event.
 		PlayerPrefs.SetInt(CountKey(InventoryKeys.COIN), coins - price);
 		PlayerPrefs.SetInt(CountKey(key), count + 1);
 		PlayerPrefs.Save();

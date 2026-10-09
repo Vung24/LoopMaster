@@ -35,7 +35,6 @@ public class BuyToolDialogContent : DialogContent
 		_toolKey = toolKey;
 		_isValid = isValid;
 		_processing = false;
-		// Native default group: Undo 450, Shuffle 900, Path 900.
 		Price = toolKey == InventoryKeys.TOOL_UNDO ? 450 : 900;
 		DialogUI.Label(_titleText, toolKey == InventoryKeys.TOOL_PATH ? "ADD SPACE" : (toolKey ?? "BOOSTER").ToUpperInvariant());
 		DialogUI.Label(_desc, toolKey == InventoryKeys.TOOL_UNDO ? "Undo the last move" :
@@ -70,7 +69,6 @@ public class BuyToolDialogContent : DialogContent
 	}
 }
 
-// Bind hierarchy nodes where the prefab export omitted native private references.
 public static class DialogUI
 {
 	public static Button ResolveButton(Transform root, string name)

@@ -29,7 +29,6 @@ namespace Snui
 				if (_text == null) _text = GetComponentInChildren<TMP_Text>(true);
 			}
 
-			// Use a fallback when the reward-item prefab is unavailable.
 			if (_rewardImg == null)
 			{
 				var icon = new GameObject("RewardImg", typeof(RectTransform), typeof(Image));

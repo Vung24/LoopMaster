@@ -23,7 +23,6 @@ public class CubeNumLock : MonoBehaviour
 		if (_canvas == null) _canvas = HierarchyReferenceCache.Child(transform, "Canvas");
 		if (_countText == null)
 			_countText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Child(_canvas, "Count"));
-		// Play the whole effect rather than the serialized SnowPiont sub-particle.
 		if (_decParticle == null)
 			_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall"));
 		_isLoaded = true;
@@ -37,7 +36,6 @@ public class CubeNumLock : MonoBehaviour
 		if (_canvas != null && transform.parent != null)
 		{
 			Vector3 angles = _canvas.eulerAngles;
-			// Native Init passes the parent's quaternion Y to SetRotationY.
 			_canvas.rotation = Quaternion.Euler(angles.x, transform.parent.rotation.y, angles.z);
 		}
 		RefreshCount();

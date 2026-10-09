@@ -49,7 +49,6 @@ public class LevelDifficultyPanel : MonoBehaviour
 					var animation = GameUtils.GetSkeletonAnimation(data, "idle");
 					if (animation != null && _spine.AnimationState != null)
 						_spine.AnimationState.SetAnimation(0, animation, false);
-					// Apply the opening pose before positioning the banner's attached label.
 					_spine.Update(0f);
 				}
 				if (_text != null)

@@ -76,7 +76,6 @@ public sealed class DebugLevelSolver
                             Order = ++order
                         });
                 }
-                // The editor drives one or more transitions per frame and can cancel search.
                 yield return null;
             }
             if (visited.Count >= _maxStates) break;
@@ -85,8 +84,6 @@ public sealed class DebugLevelSolver
             "Search limit reached. Increase Max search states or replay the level.";
     }
 
-    // Ignore road phase: a circulating slice does not invalidate a plan. Box order,
-    // lock state and road source/color/count remain part of the key.
     public static string Signature(GameData data)
     {
         var key = new StringBuilder();
@@ -138,7 +135,6 @@ public sealed class DebugLevelSolver
         int cubeIndex = 0, remaining = 0, lastLaunch = 0, quiet = 0;
         bool launching = true, released = false;
         const int jumpTicks = 16;
-        // Two complete circuits without an acceptance mean the road needs another click.
         int quietLimit = data.PathPoints.Count * 2 + jumpTicks;
         int limit = (data.TransferSlice.Count + top.Sum(cube => cube.Size) + 2) * quietLimit;
         for (int tick = 0; tick < limit; tick++)
@@ -188,8 +184,6 @@ public sealed class DebugLevelSolver
             if (data.TransferSlice.Count == 0 || quiet >= quietLimit) return data;
             if (quiet > 0 && moved == data.TransferSlice.Count)
             {
-                // Once every slice moves together, skip empty road ticks up to
-                // the nearest eligible box. No board rule changes in between.
                 int distance = DistanceToNextAcceptance(data);
                 if (distance == int.MaxValue) return data;
                 int skip = Math.Min(distance, quietLimit - quiet - 1);

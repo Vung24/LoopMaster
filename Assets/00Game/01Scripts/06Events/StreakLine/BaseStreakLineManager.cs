@@ -203,7 +203,6 @@ namespace Snui.StreakLine
 		public virtual void OnGameFailed()
 		{
 			if (_data == null || _data.State != EventState.Ongoing || _data.CurrLevel >= GetFinalGoal()) return;
-			// Native failure returns to the beginning of the current chest segment.
 			int checkpoint = 0;
 			foreach (var chest in GetChests())
 				if (chest != null && chest.Level <= _data.CurrLevel)

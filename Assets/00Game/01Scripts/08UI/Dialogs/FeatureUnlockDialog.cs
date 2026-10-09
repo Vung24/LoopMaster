@@ -95,7 +95,6 @@ public class FeatureUnlockDialog : MonoBehaviour
         }
     }
 
-    // The original localization tables are absent; retain readable offline text.
     private string GetTitle()
     {
         switch (_featureType)
@@ -137,7 +136,6 @@ public class FeatureUnlockDialog : MonoBehaviour
     public static FeatureType GetUnseenFeature(GameData data, FeatureType shown)
     {
         if (data == null) return FeatureType.None;
-        // Native GameController.IsFeatureTutorial checks these flags in this order.
         foreach (FeatureType feature in new[] { FeatureType.SecretCube, FeatureType.ColorLock, FeatureType.EnterOnly,
             FeatureType.NumLock, FeatureType.GroupColorLock, FeatureType.LimitedColor, FeatureType.AdjacentLock,
             FeatureType.SingleBox, FeatureType.LongBox, FeatureType.CubeNumLock, FeatureType.SurpriseCube })

@@ -104,7 +104,6 @@ namespace Snui
             }
         }
 
-        // Accept existing paths while using short, unique catalog addresses.
         public static string Resolve(string key)
         {
             if (string.IsNullOrEmpty(key)) throw new System.ArgumentException("A popup address is required.", nameof(key));

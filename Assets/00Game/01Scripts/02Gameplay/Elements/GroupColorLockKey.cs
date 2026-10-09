@@ -57,7 +57,6 @@ public class GroupColorLockKey : MonoBehaviour
             .SetTarget(transform).SetLink(gameObject);
         _animation = sequence;
         await WaitForAnimation(sequence);
-        // The door opens after insertion. Dismiss is a separate awaited operation.
     }
 
     public async UniTask PlayDismiss()

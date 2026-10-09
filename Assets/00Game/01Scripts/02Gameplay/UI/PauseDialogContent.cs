@@ -56,7 +56,6 @@ public sealed class PauseDialogContent : MonoBehaviour
 		Time.timeScale = 0f;
 		_ownsPause = true;
 		_isClosing = false;
-		// OnlyOnce buttons stay disabled after closing this reused dialog.
 		EnableResumeButton(_closeBtn);
 		EnableResumeButton(_continueBtn);
 		if (_canvasGroup != null)

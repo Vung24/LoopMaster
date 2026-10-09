@@ -29,7 +29,7 @@ public class GameBg : MonoBehaviour
 			}
 		}
 		if (Input.touchCount > 0) HandleTouchEvent();
-		else HandleMouseEvent(); // Editor/desktop adaptation of InputWrapper.Input.
+		else HandleMouseEvent();
 	}
 
 	private bool IsPointerOverGameObject(int fingerId)

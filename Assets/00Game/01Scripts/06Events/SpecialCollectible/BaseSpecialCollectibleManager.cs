@@ -117,7 +117,7 @@ namespace Snui.SpecialCol
 			{
 				if (IsExpired || IsCompleted())
 				{
-					_data.State = (EventState)7; // Closed
+					_data.State = (EventState)7;
 					SaveData();
 				}
 			}
@@ -341,7 +341,6 @@ namespace Snui.SpecialCol
 			if (rewards == null || rewards.Count == 0 || _data == null) return;
 			foreach (var cell in rewards)
 			{
-				// Accept only the next configured milestone; stale lists cannot grant again.
 				if (cell == null || !ReferenceEquals(cell, GetCurrSpecialColCell()) || _data.CurrCount < cell.Count) break;
 				if (cell.Reward != null)
 				{

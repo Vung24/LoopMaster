@@ -39,8 +39,6 @@ namespace Snui.Lava
 
 		public static UniTask<LavaDetailDialog> Show(Transform parent) => EventPrefabUI.Show<LavaDetailDialog>(parent, "LavaDetailDialog");
 
-
-
 		public async UniTask WaitForCloseAsync()
 		{
 			await _closeTcs.Task.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
@@ -121,7 +119,6 @@ namespace Snui.Lava
 			UpdateInfo();
 			InitPlane();
 			CreatePlayers();
-			// Cache presentation values before acknowledging the terminal state.
 			if (_timedOut) Managers.Lava.OnTimeOutShown();
 			else if (_failed) Managers.Lava.OnFailedShown();
 			StartAsync().Forget();
@@ -170,7 +167,6 @@ namespace Snui.Lava
 			if (_players.Count == 0 && _playerPrefab != null && _playerNode != null)
 			{
 				_playerNode.gameObject.SetActive(true);
-				// Native CreatePlayers uses the authored player prefab: self plus at most nine opponents.
 				int count = Mathf.Min(10, _remainingPlayers);
 				for (int i = 0; i < count; i++)
 				{
@@ -238,7 +234,6 @@ namespace Snui.Lava
 					await ShowFailNode();
 				}
 				else await ShowTutorialIfNeeded();
-				// Native shows Continue only for a new result, never for a manual view.
 				if (_jumpPending || IsEventDone) ShowContinue();
 			}
 			catch (System.OperationCanceledException) { }
@@ -283,7 +278,6 @@ namespace Snui.Lava
 		{
 			if (_continueBtn != null)
 			{
-				// Platform hint hit areas overlap the result button in the authored board.
 				_continueBtn.transform.SetAsLastSibling();
 				_continueBtn.gameObject.SetActive(true);
 				BreathAnim breath = _continueBtn.gameObject.GetOrAddComponent<BreathAnim>();

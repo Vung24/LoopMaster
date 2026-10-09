@@ -31,14 +31,12 @@ public sealed class ConveyorFlow
 	private float _speedTickTime;
 	private int _tickCount;
 	private float _failureTickInterval;
-	// Native UpdateNormalTick adds 0.005s on failure; retain motion at its 0.2s limit.
 	private const float FailureTickIncrement = 0.005f;
 	private const float MaxFailureTickInterval = 0.2f;
 
 	public bool IsSpeedUpActive { get; private set; }
 	public bool IsFailureSlowdownActive => _failureTickInterval > 0f;
 	public float FailureTickInterval => _failureTickInterval;
-	// Box launch cadence follows manual speed, independently of automatic catch-up.
 	public int LaunchTickCount => _tickCount;
 
 	public ConveyorFlow(IReadOnlyList<Box> boxes, IReadOnlyList<GameRoad> roads,
@@ -138,8 +136,6 @@ public sealed class ConveyorFlow
 
 	private void UpdateSpeedUpTick(float interval)
 	{
-		// Launch cadence and arrows still follow the player's selected road speed.
-		// Automatic catch-up only changes the selected slices, not box launch timing.
 		if (IsSpeedUpActive) _tickCount++;
 		UpdateTransferSlice(interval, true);
 		if (IsSpeedUpActive) UpdateTransferArrow(interval);
@@ -156,7 +152,6 @@ public sealed class ConveyorFlow
 	{
 		if (Data.TransferSlice.Count == 0) return;
 
-		// Keep arrival order stable, including slices sharing a point while launching.
 		int retained = 0;
 		for (int i = 0; i < Data.TransferSlice.Count; i++)
 		{
@@ -169,7 +164,6 @@ public sealed class ConveyorFlow
 		_arrivedSlices.AddRange(Data.TransferSlice);
 		try
 		{
-			// Arrival callbacks can remove slices or otherwise change the live list.
 			for (int i = 0; i < _arrivedSlices.Count; i++)
 			{
 				SliceInfo info = _arrivedSlices[i];
@@ -191,7 +185,6 @@ public sealed class ConveyorFlow
 		if (_sortScratch.Length < count)
 			Array.Resize(ref _sortScratch, Math.Max(count, Math.Max(16, _sortScratch.Length * 2)));
 
-		// Merge from the left on ties to match LINQ's stable OrderByDescending.
 		for (int width = 1; width < count; width *= 2)
 		{
 			for (int start = 0; start < count; start += width * 2)
@@ -241,7 +234,6 @@ public sealed class ConveyorFlow
 			SliceInfo slice = Data.TransferSlice[i];
 			if (slice != null && slice.PathIndex >= 0) _orderedSlices.Add(slice);
 		}
-		// Usually already sorted; still handle mutations made by arrival callbacks.
 		StableSortByPathIndex(_orderedSlices);
 		List<SliceInfo> speedSlices = GetSpeedUpSlice(_orderedSlices);
 		if (isSpeedUp) return speedSlices;

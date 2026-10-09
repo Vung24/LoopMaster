@@ -2,7 +2,6 @@ using Snui;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Base coin counter used by both the prefab and the interactive CoinHud component.</summary>
 public class Snui_CoinHud : Snui_BaseHud
 {
 	public static Snui_CoinHud Current;

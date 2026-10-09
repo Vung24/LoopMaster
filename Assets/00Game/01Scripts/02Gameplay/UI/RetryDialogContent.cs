@@ -1,4 +1,4 @@
-﻿using Snui;
+using Snui;
 using TMPro;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -61,7 +61,6 @@ public class RetryDialogContent : DialogContent
         int offerVersion = _offerVersion;
         try
         {
-            // Native RestartGame (0x15c41f4) waits for MoreHeart when lives are exhausted.
             if (Managers.Heart != null)
             {
                 Managers.Heart.UpdateHeart();

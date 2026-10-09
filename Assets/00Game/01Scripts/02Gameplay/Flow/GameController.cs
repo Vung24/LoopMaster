@@ -22,7 +22,6 @@ public class GameController : MonoBehaviour
 	[SerializeField, Range(0.4f, 1f)] private float _sliceSpacingScale = 1f;
 	public static GameController Current;
 #if UNITY_EDITOR
-	// The editor supplies a detached draft after the Play Mode domain reload.
 	public static System.Func<GameData> EditorPlaytestSource;
 	public void InitializeEditorPlaytest(GameData data) => Initialize(data, true);
 #endif
@@ -330,7 +329,6 @@ public class GameController : MonoBehaviour
 			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvasInstance.GetComponent<UICanvas>()?.CapacityNode);
 	}
 
-
 	public void HandleBoxFinished(Box box)
 	{
 		if (box == null || box.Info == null || Data == null) return;
@@ -446,7 +444,6 @@ public class GameController : MonoBehaviour
 	{
 		GameplayFeedbackRules.RegisterArrival(ref ComboInCount, ref _comboTime);
 	}
-
 
 	public void SetSpeedUp(bool speedUp)
 	{
@@ -570,7 +567,6 @@ public class GameController : MonoBehaviour
 			asset = Resources.Load<TextAsset>($"{BuiltinLevelCatalog.ResourceFolder}/Level {level}");
 			if (asset == null) return false;
 			var data = GameLevelDataConverter.FromJson(asset.text, level);
-			// Explicit cheat entry permits replaying completed levels without deleting progress.
 			Initialize(data, true);
 			return Data == data;
 		}
@@ -708,7 +704,6 @@ public class GameController : MonoBehaviour
 		Time.timeScale = 1f;
 		try
 		{
-			// Native Pause.OnExitGame and FailDialog show the Lava loss before leaving gameplay.
 			if (EndState != GameEndState.Won && Managers.Lava != null && Managers.Lava.ShouldShowFailDialog())
 			{
 				GameResultUI resultUI = GetComponent<GameResultUI>();
@@ -839,7 +834,6 @@ public class GameController : MonoBehaviour
 			}
 			LevelBoxManager.EnsureInitialized();
 			SpecialStreakManager.Ensure().OnGameWon(CurrentLevelNumber);
-			// Native Pass awards 1/2/3 stars for normal/hard/very hard campaign wins.
 			if (!GameProgressStore.IsLevelCompleted(CurrentLevelNumber))
 				Managers.Event?.DispatchEvent("OnGameWin", new System.Collections.Generic.Dictionary<string, int>
 				{

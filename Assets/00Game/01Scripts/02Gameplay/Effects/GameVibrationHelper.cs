@@ -20,7 +20,6 @@ public static class GameVibrationHelper
 	public static void PlaySlicePopOutFirst() => Vibrate(10, 80);
 	public static void PlaySlicePopIn() => Vibrate(8, 20);
 
-	// The offline haptic backend maps native Tiny/Light requests to Handheld.Vibrate.
 	public static void PlayLockDecrement() => Vibrate(2, 20);
 	public static void PlayLockUnlock() => Vibrate(15, 80);
 

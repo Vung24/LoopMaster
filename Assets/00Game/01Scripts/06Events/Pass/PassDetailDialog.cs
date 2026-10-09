@@ -88,7 +88,6 @@ public class PassDetailDialog : MonoBehaviour
                 int target = _manager.GetTotalPoints();
                 int fromStage = _manager.GetStageAtPoints(_displayPoints), targetStage = _manager.GetStageAtPoints(target);
                 _star?.PlayCollectAnim(); PassUI.Sound(ExpSingleSound);
-                // Native bar segments take .4 sec; large restored-save jumps use one summary fill.
                 if (targetStage - fromStage <= 8 && _star != null)
                 {
                     int cursor = _displayPoints;

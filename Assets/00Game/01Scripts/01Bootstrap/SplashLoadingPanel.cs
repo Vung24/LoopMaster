@@ -7,7 +7,6 @@ public class SplashLoadingPanel : LoadingPanel
 	[SerializeField] private Transform _term;
 	[SerializeField] private Transform _privacy;
 
-	// Native Splash uses LoadingPanel's immediate show; only dismissal fades out.
 	protected override UniTask PlayShowAnim()
 	{
 		if (_canvasGroup != null) _canvasGroup.alpha = 1f;

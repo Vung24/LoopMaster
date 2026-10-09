@@ -41,7 +41,6 @@ namespace InputWrapper
 			{
 				get
 				{
-					// Cache by frame instead of scaled time so input still updates when paused.
 					if (_lastFrame == Time.frameCount) return _touch;
 					_lastFrame = Time.frameCount;
 					Vector2 position = UnityEngine.Input.mousePosition;

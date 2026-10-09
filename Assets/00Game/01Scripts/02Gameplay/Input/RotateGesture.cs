@@ -15,7 +15,6 @@ public class RotateGesture : MonoBehaviour
 
     private bool IsPointerOverGameObject(int fingerId)
     {
-        // The desktop wrapper uses finger 0; EventSystem uses -1 for its mouse.
         int pointerId = UnityEngine.Input.touchCount > 0 ? fingerId : -1;
         return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(pointerId);
     }

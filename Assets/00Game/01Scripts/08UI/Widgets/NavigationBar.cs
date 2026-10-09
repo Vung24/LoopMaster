@@ -64,7 +64,6 @@ namespace Snui
 		{
 			float bottom = ScreenHelper.GetCanvasSafeBottom(GetComponentInParent<Canvas>());
 			_rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _authoredHeight + bottom);
-			// Keep the controls above the device inset; only the background fills it.
 			if (_cellsNode is RectTransform strip)
 			{
 				strip.offsetMin = new Vector2(strip.offsetMin.x, bottom);
@@ -77,7 +76,6 @@ namespace Snui
 			if (CurrIndex < 0 || _cells == null || _cells.Length == 0 || _cellsNode == null) return;
 			RectTransform strip = _cellsNode as RectTransform;
 			if (strip == null || strip.rect.width <= 0f) return;
-			// Native Init rebuilds the exported layout before taking ownership of cell positions.
 			if (!animate && strip.GetComponent<UnityEngine.UI.LayoutGroup>()?.enabled == true)
 				UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(strip);
 			foreach (var layout in strip.GetComponents<UnityEngine.UI.LayoutGroup>()) layout.enabled = false;
@@ -96,7 +94,6 @@ namespace Snui
 				bool selected = i == CurrIndex;
 				float cellWidth = selected && NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth;
 				cell.DOKill();
-				// The exported scene cells have zero height after the LayoutGroup is disabled.
 				cell.anchorMin = new Vector2(0.5f, 0f);
 				cell.anchorMax = new Vector2(0.5f, 1f);
 				cell.pivot = new Vector2(0.5f, 0.5f);

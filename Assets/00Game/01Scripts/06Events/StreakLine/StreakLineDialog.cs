@@ -59,7 +59,6 @@ namespace Snui.StreakLine
 			if (_scrollAdapter != null) _scrollAdapter.Claimed += OnClaimedRewards;
 		}
 
-
 		protected override void Start()
 		{
 			base.Start();
@@ -72,7 +71,6 @@ namespace Snui.StreakLine
 		public void Init()
 		{
 			if (Managers.StreakLine == null) return;
-			// Keep the authored localized Sky Rise heading; use the manager only for an empty fallback.
 			if (_titleText != null && string.IsNullOrEmpty(_titleText.text)) _titleText.text = Managers.StreakLine.GetTitleI18n();
 			if (_started) _scrollAdapter?.RefreshRewards(Managers.StreakLine, true);
 			HideClaimButton();
@@ -92,7 +90,6 @@ namespace Snui.StreakLine
 				{
 					_scrollAdapter.SetVirtualAbstractNormalizedScrollPosition(1, true, out _);
 					Managers.StreakLine.SetPlayedEnterAnim();
-					// Native DOScrollEnter: top to bottom in 3 seconds, InOutQuart.
 					var enterScroll = DOVirtual.Float(1, 0, 3f,
 						position => _scrollAdapter.SetVirtualAbstractNormalizedScrollPosition(position, true, out _))
 						.SetEase(Ease.InOutQuart).SetLink(gameObject);
@@ -247,7 +244,6 @@ namespace Snui.StreakLine
 				{
 					Managers.StreakLine.ClaimRewards(chest.Level);
 					if (!Managers.StreakLine.IsChestClaimed(chest.Level)) continue;
-					// Native GetAllClaimableRewards merges equal reward types before presentation.
 					foreach (var item in chest.Items())
 					{
 						if (rewardsByType.TryGetValue(item.Type, out var merged)) merged.Count += item.Count;
@@ -294,7 +290,6 @@ namespace Snui.StreakLine
 				if (receipt != null)
 					await UniTask.WaitUntil(() => receipt == null || !receipt.isActiveAndEnabled, cancellationToken: this.GetCancellationTokenOnDestroy());
 				if (this == null || !completed) return;
-				// Native PlayEndAnimation waits for the reward receipt, then opens completion.
 				await StreakLineCompleteContent.ShowWithDialog(parent);
 				if (this != null) Dismiss();
 			}

@@ -5,7 +5,7 @@ using UnityEngine;
 public sealed class SpecialStreakManager : MonoBehaviour
 {
     public const string DATA_PATH = "offline_special_streak_data_v1";
-    private static readonly int[] Multipliers = { 1, 5, 10, 25, 100 }; // .cctor 0x128D8AC
+    private static readonly int[] Multipliers = { 1, 5, 10, 25, 100 };
     public static SpecialStreakManager Current { get; private set; }
     public event Action Changed;
     private SpecialStreakData _data;
@@ -77,7 +77,6 @@ public sealed class SpecialStreakManager : MonoBehaviour
     }
     private void CheckStartEvent()
     {
-        // CanStartEvent RVA 0x128CE2C: normal index + 1 > 20.
         if (_invalid || _data == null || _data.Activated || GameProgressStore.HighestUnlockedLevel < GetUnlockLevel()) return;
         _data.Activated = true;
         _data.LastWonLevel = GameProgressStore.HighestCompletedLevel;
@@ -85,7 +84,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
     }
     public int GetUnlockLevel() => 21;
     public int GetPreviewLevel() => 1;
-    public bool IsExpired() => false; // permanent offline event
+    public bool IsExpired() => false;
     public bool IsCompleted() => IsCompleted(ClaimedIndex);
     public bool IsCompleted(int index) => _rewardInfoConfigs != null && index >= _rewardInfoConfigs.Count;
     public IReadOnlyList<SpecialStreakRewardInfo> GetRewardInfosConfig() => _rewardInfoConfigs?.AsReadOnly();
@@ -143,16 +142,15 @@ public sealed class SpecialStreakManager : MonoBehaviour
     public void OnGameWon(int level)
     {
         if (!IsOngoing || level <= _data.LastWonLevel || GameProgressStore.IsLevelCompleted(level) || _settling) return;
-        _data.TempCount = checked(_data.TempCount + 1); // native 0x128D444
+        _data.TempCount = checked(_data.TempCount + 1);
         _data.LastWonLevel = level;
         SaveData(); Changed?.Invoke();
     }
-    // Native OnGameFail is dispatched on decline/Retry/Quit, not while a road-full state still allows revival.
     public void OnGameFailed()
     {
         if (!IsOngoing || _settling) return;
         _data.LastMultiplierIndex = _data.MultiplierIndex;
-        _data.MultiplierIndex = 0; // 0x128D4B4. Revive never calls this.
+        _data.MultiplierIndex = 0;
         SaveData(); Changed?.Invoke();
     }
     public static string ClaimId(int index) => "SpecialStreak/v1/" + index;
@@ -168,7 +166,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
                 _data.TargetCount = checked(CurrCount + GetMultipliedCount(TempCount, MultiplierIndex));
                 _data.TargetMultiplier = TempCount > 0 && !IsCompleted() ? GetNextMultiplierIndex(MultiplierIndex) : MultiplierIndex;
                 _data.Settling = true;
-                SaveData(); // durable intent before granting a milestone
+                SaveData();
             }
             var inventory = InventoryManager.Ensure();
             if (!inventory.ReplayPendingRewardJournal()) return false;
@@ -177,7 +175,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
             {
                 if (!inventory.TryClaimRewards(ClaimId(ClaimedIndex), stage.Items(), out _))
                 { LastError = "COULD NOT ADD REWARD — TRY AGAIN"; return false; }
-                _data.TargetCount -= stage.Goal; // per-stage goals, not cumulative thresholds (0x1294308)
+                _data.TargetCount -= stage.Goal;
                 _data.ClaimedIndex++;
                 SaveData();
             }
@@ -197,7 +195,6 @@ public sealed class SpecialStreakManager : MonoBehaviour
     public long DebugPendingCollectionCount => _data?.Settling == true ? _data.TargetCount :
         (long)CurrCount + (long)GetCurrentMultiplier() * TempCount;
 
-    // Keep claimed stages and reward journal intact when preparing a playtest.
     public bool TryDebugPrepare(int multiplierIndex, bool nearReward, bool showTutorial, bool pendingWin = false)
     {
         if (!Application.isPlaying || _invalid || _settling || _data == null ||

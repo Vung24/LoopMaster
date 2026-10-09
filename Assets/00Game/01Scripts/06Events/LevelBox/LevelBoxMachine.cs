@@ -54,8 +54,6 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         }
         if(_chest!=null) _chest.gameObject.SetActive(false);
     }
-    // Support older prefabs using the package shader references instead
-    // of Shader.Find: exported placeholder shaders have the same shader names.
     private void RestoreSpineMaterials(SkeletonGraphic graphic)
     {
         var library=PrefabLibrary.Current;
@@ -100,8 +98,6 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     public static float GetTargetMaskOffsetPosX(int progress,int goal) => progress<=0 ? 0 : (goal>5 ? NormalMask : FastMask)[Mathf.Clamp(progress-1,0,goal>5 ? 9 : 4)];
     private void SetProgressMaskWidth(float width)
     {
-        // The authored mask has a left pivot at x=-105. Progress values are
-        // widths, not offsetMax coordinates relative to the parent's anchor.
         _progressMaskRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,width);
     }
     private void SetProgressText(float progress)
@@ -184,8 +180,6 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     }
     private IEnumerator RewardHandoffFallback(RewardDialog rewards)
     {
-        // Native RVA 0x179B844 hands off at "replace". A missing Spine event
-        // or rebuilt AnimationState must not leave a saved receipt hidden.
         var last=_machineSpine?.SkeletonData?.FindAnimation("last");
         if(last!=null) yield return new WaitForSecondsRealtime(last.Duration);
         if(isActiveAndEnabled && _rewards==rewards) rewards.BeginChestAnimation();
@@ -216,7 +210,6 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
             case "progress":
                 PlaySound(_sliceDropAudioClip); var stage=_displayStage ?? LevelBoxManager.Ensure().GetCurStageInfo();
                 KillProgressTweens();
-                // Native RVA 0x179B844 runs width and percentage together for 0.6s.
                 if(_progressMaskRect!=null) _maskTween=DOTween.To(()=>_progressMaskRect.rect.width,SetProgressMaskWidth,GetTargetMaskOffsetPosX(stage.Progress,stage.Goal),.6f).SetUpdate(true);
                 if(_progressText!=null) _textTween=DOTween.To(()=>_shownProgress,SetProgressText,stage.Progress,.6f).SetUpdate(true);
                 break;

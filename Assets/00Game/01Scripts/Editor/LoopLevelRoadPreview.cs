@@ -5,7 +5,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-/// <summary>Owns disposable preview meshes; no objects are added to the edited scene.</summary>
 public sealed class LoopLevelRoadPreview : IDisposable
 {
     public readonly List<Mesh> Meshes = new List<Mesh>();
@@ -28,8 +27,6 @@ public sealed class LoopLevelRoadPreview : IDisposable
         _pathJson = pathJson;
     }
 
-    // Keep sampling, tangent fallback, topology and UVs identical to GameRoad.
-    // RoadGeometry supplies the actual fourteen-vertex road cross section.
     public static Mesh BuildMesh(GamePath path, out Vector3[] line)
     {
         line = Array.Empty<Vector3>();
@@ -163,7 +160,6 @@ public sealed class LoopLevelRoadPreview : IDisposable
             finally { _rendering = false; }
         }
         GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
-        // Project handles over the image so points and tangent positions remain legible.
         GUI.BeginGroup(rect);
         Handles.BeginGUI();
         for (int i = 0; i < Lines.Count; i++)

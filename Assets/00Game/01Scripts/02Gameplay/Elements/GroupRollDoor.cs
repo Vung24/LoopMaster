@@ -27,7 +27,6 @@ public class GroupRollDoor : MonoBehaviour
 	private Transform _keyHole;
 	private GroupInfo _groupInfo;
 	private bool _isUnlocked;
-	// The controller also treats a destroyed door as complete, matching the native flow.
 	public bool IsUnlockComplete => _isUnlocked && (_visualRoot == null || !_visualRoot.activeSelf);
 
 	private struct DoorFrame
@@ -78,8 +77,6 @@ public class GroupRollDoor : MonoBehaviour
 	{
 		position = Vector3.zero;
 		rotation = Quaternion.identity;
-		// Native uses downVector at Vector3 static-field offset 0x24.
-		// Rotation uses the door forward; the key inserts down into the horizontal lock.
 		insertDirection = Vector3.down;
 		Transform hole = GetKeyHoleTransform();
 		if (hole == null) return false;
@@ -167,7 +164,6 @@ public class GroupRollDoor : MonoBehaviour
 		}
 		else
 		{
-			// Offline fallback when the optional palette config is absent.
 			var block = new MaterialPropertyBlock();
 			renderer.GetPropertyBlock(block);
 			block.SetColor("_BaseColor", GroupColorLockConstants.GetColorByType(groupInfo.LockedByColor));

@@ -143,7 +143,6 @@ public class HomePage : MonoBehaviour
 					cancellationToken: token);
 				if (!controller.TryOpenPendingLevelBox()) break;
 				await UniTask.WaitUntil(() => !controller.HasLevelBoxOpen, cancellationToken: token);
-				// A failed save or asset load must leave a retry, not reopen forever.
 				if (LevelBoxManager.Ensure().PendingMilestone == milestone) break;
 			}
 			await SetupEvents(token);
@@ -164,7 +163,6 @@ public class HomePage : MonoBehaviour
 			{
 				await _eventController.PlayEnterAnimation(true).AttachExternalCancellation(token);
 			}
-			// HomeController owns the offline collection/claim flow; do not start it twice.
 			if (_clickMask != null) _clickMask.SetActive(false);
 			_specialStreakProgress = GetComponentInChildren<SpecialStreakProgress>(true);
 			if (_specialStreakProgress != null)
@@ -260,7 +258,6 @@ public class HomePage : MonoBehaviour
 
 	private void ConfigureEventLayout()
 	{
-		// Leave the authored header and Special Streak strip above the event area.
 		var streak = GetComponentInChildren<SpecialStreakProgress>(true);
 		_eventController.TopPadding = streak != null && streak.gameObject.activeSelf ? 335 : 230;
 		_eventController.OffsetX = -110;

@@ -4,7 +4,6 @@ using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-/// <summary>Forces Win/Lose results and controls progress through the real gameplay flow.</summary>
 public static class DebugLevelWindow
 {
     public static void Open() => LoopMasterDebugWindow.Open(LoopMasterDebugWindow.Tab.Level);

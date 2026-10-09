@@ -6,13 +6,10 @@ using Newtonsoft.Json.Linq;
 using UnityEngine;
 using A = LoopLevelAuthoring;
 
-/// <summary>World-space footprints include the collider, box back and outgoing arrow.</summary>
 public static class LoopLevelBoardLayout
 {
     public static Bounds LocalBounds(int type)
     {
-        // CoreGamePrefabs: Normal collider 1.45 x 4.07; Long 1.45 x 5.17,
-        // centered at z=-.82. The outgoing arrow extends past the collider.
         if (type == 1) return new Bounds(new Vector3(0, .9f, 0), new Vector3(2.2f, 1.8f, 2.4f));
         return type == 2
             ? new Bounds(new Vector3(0, .7f, -.15f), new Vector3(2, 1.4f, 6.9f))
@@ -73,7 +70,6 @@ public static class LoopLevelBoardLayout
             var candidate = new List<List<int>>(); float width = 0, depth = settings.BoxGap * (rows - 1);
             for (int row = 0; row < rows; row++)
             {
-                // Spread the short final row across all rows instead of leaving one orphan box.
                 int count = boxes.Count / rows + (row < boxes.Count % rows ? 1 : 0);
                 var indices = order.GetRange(offset, count); offset += count; candidate.Add(indices);
                 width = Mathf.Max(width, indices.Sum(i => LocalBounds(A.Int((JObject)boxes[i], "BoxType")).size.x) + settings.BoxGap * (count - 1));
@@ -119,7 +115,6 @@ public static class LoopLevelBoardLayout
                 JObject box = (JObject)boxes[index]; int type = A.Int(box, "BoxType"); Bounds local = LocalBounds(type);
                 Vector3 rotation = new Vector3(0, type == 1 ? 0 : sign * 90, 0);
                 float radial = type == 1 ? local.size.x : local.size.z, length = tangent(index);
-                // Align the outgoing edge of different-length boxes along the same bank.
                 Vector3 center = new Vector3(sign * (gap * .5f + radialDepth - radial * .5f), 0, bottom + length * .5f);
                 Vector3 pivot = Quaternion.Euler(rotation) * new Vector3(local.center.x, 0, local.center.z);
                 box["Rotation"] = A.Vector(rotation); box["Position"] = A.Vector(center - pivot);
@@ -189,7 +184,6 @@ public static class LoopLevelBoardLayout
         Vector3 extents = bounds.extents;
         float horizontal = Mathf.Abs(right.x) * extents.x + Mathf.Abs(right.y) * extents.y + Mathf.Abs(right.z) * extents.z;
         float vertical = Mathf.Abs(up.x) * extents.x + Mathf.Abs(up.y) * extents.y + Mathf.Abs(up.z) * extents.z;
-        // Reserve room for the HUD above and controls below, including at portrait aspect ratios.
         camera.orthographicSize = Mathf.Max(vertical / .72f, horizontal / Mathf.Max(.1f, camera.aspect) / .9f) + .3f;
         float distance = Mathf.Max(25, bounds.size.magnitude * 2);
         camera.transform.position = bounds.center - camera.transform.forward * distance;
