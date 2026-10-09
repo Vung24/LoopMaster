@@ -42,7 +42,7 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 		if (!string.IsNullOrEmpty(_lastJsonFolder) &&
 			File.Exists(Path.Combine(_lastJsonFolder, "Level " + levelNumber + ".json"))) return true;
 		return File.Exists(Path.Combine(GetProjectLevelFolder(), "Level " + levelNumber + ".json")) ||
-			(Catalog != null && Catalog.GetLevel(levelNumber) != null);
+			(Catalog != null && Catalog.HasLevel(levelNumber));
 	}
 
 	public bool LoadPuzzle(int puzzleId, GameController controller = null)
@@ -116,12 +116,13 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 
 	private bool LoadPackagedLevel(int levelNumber, GameController controller)
 	{
-		if (_loading || Catalog == null) return false;
-		TextAsset asset = Catalog.GetLevel(levelNumber);
-		if (asset == null) return false;
+		if (_loading || Catalog == null || !Catalog.HasLevel(levelNumber)) return false;
+		TextAsset asset = null;
 		_loading = true;
 		try
 		{
+			asset = Resources.Load<TextAsset>($"{BuiltinLevelCatalog.ResourceFolder}/Level {levelNumber}");
+			if (asset == null) return false;
 			if (!InitializeJson(asset.text, levelNumber, controller)) return false;
 			_lastJsonFolder = null;
 			return true;
@@ -131,7 +132,11 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 			Debug.LogException(exception);
 			return false;
 		}
-		finally { _loading = false; }
+		finally
+		{
+			if (asset != null) Resources.UnloadAsset(asset);
+			_loading = false;
+		}
 	}
 
 	private static bool InitializeJson(string json, int levelNumber, GameController controller)
