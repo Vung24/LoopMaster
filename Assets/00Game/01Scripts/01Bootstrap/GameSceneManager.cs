@@ -26,7 +26,7 @@ public enum GameEnterRoute
 
 public static class GameSceneManager
 {
-	public static SceneType CurSceneType { get; set; } = SceneType.Home;
+	public static SceneType CurSceneType { get; set; } = SceneType.Splash;
 	public static bool OnChangeScene { get; set; }
 	private static AsyncOperationHandle<SceneInstance> _homeSceneHandle;
 
@@ -46,7 +46,7 @@ public static class GameSceneManager
 
 	public static async UniTask EnterGame(GameEnterRoute route, bool withAnimation = true)
 	{
-		PlayerPrefs.SetInt("LastRouteEnterGame", (int)route);
+		PlayerPrefs.SetInt("offline_LastRouteEnterGame", (int)route);
 		PlayerPrefs.Save();
 		await TransitionToScene(SceneType.Game, withAnimation);
 	}
@@ -68,7 +68,11 @@ public static class GameSceneManager
 
 	public static async UniTask ReloadScene(GameEnterRoute route)
 	{
-		if (CurSceneType == SceneType.Home)
+		if (CurSceneType == SceneType.Game)
+		{
+			await EnterGame(route, withAnimation: true);
+		}
+		else if (CurSceneType == SceneType.Home)
 		{
 			await EnterHome(withAnimation: true);
 		}

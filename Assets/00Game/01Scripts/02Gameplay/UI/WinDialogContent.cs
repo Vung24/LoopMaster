@@ -258,9 +258,15 @@ public class WinDialogContent : DialogContent
 	{
 		if (!OfferValid || _isNavigating) return;
 		_isNavigating = true;
-		bool changed = _canAdvance && _controller.TryLoadNextLevel();
-		if (!changed && OfferValid) changed = _controller.TryReturnHome();
+		WinDialog winDialog = GetComponentInParent<WinDialog>();
+		bool changed = winDialog != null ? winDialog.EnterNextScene() : _controller.TryContinueAfterWin();
 		if (!changed) { _isNavigating = false; RefreshRewardButtons(); }
+	}
+
+	public void AllowNavigationRetry()
+	{
+		_isNavigating = false;
+		RefreshRewardButtons();
 	}
 
 	public void OnClickReplayLevel() { if (OfferValid && !_isClaiming && !_isNavigating) _controller.TryReplayLevel(); }

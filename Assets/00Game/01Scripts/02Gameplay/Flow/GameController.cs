@@ -675,19 +675,85 @@ public class GameController : MonoBehaviour
 	}
 	public bool TryReturnHome()
 	{
-		if (_isTransitioningLevel || !Application.CanStreamedLevelBeLoaded("HomeScene")) return false;
+		if (!BeginReturnHome()) return false;
+		ReturnHomeWithLoading().Forget();
+		return true;
+	}
+
+	private bool BeginReturnHome()
+	{
+		if (_isTransitioningLevel || GameSceneManager.OnChangeScene) return false;
 		if (!SpecialStreakManager.Ensure().SettlePending()) return false;
 		Managers.StreakLine?.SynchronizeTempLevel();
 		CommitAbandonedLevel();
 		_isTransitioningLevel = true;
-		GameData.ClearCurrent(); Time.timeScale = 1f;
-		GameSceneManager.ExitGame().Forget();
 		return true;
+	}
+
+	public async UniTask<bool> ReturnHomeAsync(bool withAnimation = true)
+	{
+		if (!BeginReturnHome()) return false;
+		return await LoadHomeAsync(withAnimation);
+	}
+
+	private async UniTaskVoid ReturnHomeWithLoading()
+	{
+		if (!await LoadHomeAsync(withAnimation: true))
+			await LoadingPanel.TryDismiss();
+	}
+
+	private async UniTask<bool> LoadHomeAsync(bool withAnimation)
+	{
+		GameData previousData = GameData.Current;
+		Time.timeScale = 1f;
+		try
+		{
+			// Native Pause.OnExitGame and FailDialog show the Lava loss before leaving gameplay.
+			if (EndState != GameEndState.Won && Managers.Lava != null && Managers.Lava.ShouldShowFailDialog())
+			{
+				GameResultUI resultUI = GetComponent<GameResultUI>();
+				Transform parent = resultUI == null ? null : resultUI.DialogParent;
+				var dialog = await Snui.Lava.LavaDetailDialog.Show(parent);
+				if (dialog != null)
+				{
+					Snui.RewardDialog.PrepareOverlay(dialog.gameObject, 1400);
+					await dialog.WaitForCloseAsync();
+				}
+			}
+			if (GameSceneManager.OnChangeScene)
+			{
+				_isTransitioningLevel = false;
+				return false;
+			}
+			GameData.ClearCurrent();
+			await GameSceneManager.EnterHome(withAnimation);
+			return true;
+		}
+		catch (System.Exception error)
+		{
+			if (this != null)
+			{
+				GameData.SetCurrent(previousData);
+				_isTransitioningLevel = false;
+			}
+			Debug.LogException(error);
+			return false;
+		}
 	}
 
 	public void OnClickNextLevel()
 	{
 		TryLoadNextLevel();
+	}
+
+	public bool ShouldReturnHomeAfterWin => !CanLoadNextLevel ||
+		GameSceneRoutingRules.ReturnHomeAfterWin(GameProgressStore.CurrentPuzzleIndex);
+
+	public bool TryContinueAfterWin()
+	{
+		if (EndState != GameEndState.Won || !HasClaimedWinReward(Data) || _isTransitioningLevel ||
+			GameSceneManager.OnChangeScene) return false;
+		return ShouldReturnHomeAfterWin ? TryReturnHome() : TryLoadNextLevel();
 	}
 
 	public void OnClickReplayLevel()
