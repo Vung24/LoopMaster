@@ -15,6 +15,9 @@ public class GameRoad : MonoBehaviour
 	private MeshRenderer _pathMeshRenderer;
 	private GamePath _path;
 	private Color _originWallColor = Color.white;
+	private MaterialPropertyBlock _wallPropertyBlock;
+	private Color _lastWallColor;
+	private bool _hasWallColor;
 	private readonly List<Vector3> _sampledPoints = new List<Vector3>();
 
 	public IReadOnlyList<Vector3> PathPoints => _sampledPoints;
@@ -43,6 +46,7 @@ public class GameRoad : MonoBehaviour
 		if (_pathMeshRenderer != null)
 		{
 			_pathMeshRenderer.sharedMaterials = new[] { road, wall };
+			_hasWallColor = false;
 			if (wall != null)
 			{
 				if (wall.HasProperty("_BaseColor")) _originWallColor = wall.GetColor("_BaseColor");
@@ -62,11 +66,14 @@ public class GameRoad : MonoBehaviour
 	private void SetWallMatColor(Color color)
 	{
 		if (_pathMeshRenderer == null) return;
-		var block = new MaterialPropertyBlock();
-		_pathMeshRenderer.GetPropertyBlock(block, 1);
-		block.SetColor("_BaseColor", color);
-		block.SetColor("_Color", color);
-		_pathMeshRenderer.SetPropertyBlock(block, 1);
+		if (_hasWallColor && _lastWallColor == color) return;
+		if (_wallPropertyBlock == null) _wallPropertyBlock = new MaterialPropertyBlock();
+		_pathMeshRenderer.GetPropertyBlock(_wallPropertyBlock, 1);
+		_wallPropertyBlock.SetColor("_BaseColor", color);
+		_wallPropertyBlock.SetColor("_Color", color);
+		_pathMeshRenderer.SetPropertyBlock(_wallPropertyBlock, 1);
+		_lastWallColor = color;
+		_hasWallColor = true;
 	}
 
 	private void UpdatePathMesh()
