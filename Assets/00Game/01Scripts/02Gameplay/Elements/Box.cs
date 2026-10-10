@@ -28,6 +28,7 @@ public class Box : MonoBehaviour
 	private bool _onCreatingCube;
 	private bool _isFinishHandled;
 	private bool _finishAnimationPending;
+	private float? _finishPresentationTime;
 	private bool _onUnlockingColorLock;
 	private bool _onDecrementingNumLock;
 	private System.Threading.CancellationTokenSource _surpriseLifetime;
@@ -66,6 +67,7 @@ public class Box : MonoBehaviour
 		_gameLoader = gameLoader;
 		_isFinishHandled = false;
 		_finishAnimationPending = false;
+		_finishPresentationTime = null;
 		if (_info == null) return;
 
 		transform.position = _info.Pos;
@@ -225,7 +227,8 @@ public class Box : MonoBehaviour
 		_onPlayingAnim = true;
 		try
 		{
-			List<Cube> cubes = Cubes.Where(cube => cube != null).ToList();
+			List<Cube> cubes = Cubes.Where(cube => cube != null && cube.Info != null &&
+				cube.Info.Size == GameData.SliceCountPerGroup).ToList();
 			for (int i = cubes.Count - 1; i >= 0; i--)
 			{
 				if (cubes[i] != null) cubes[i].PlayAnim("Skeleton|cube_one");
@@ -421,6 +424,9 @@ public class Box : MonoBehaviour
 		if (newCube) CreateCube(info);
 		if (info.CubeSc == null) return null;
 		info.CubeSc.ReserveIncomingSlice(newCube);
+		// Native PushSlice starts the 0.5s finish delay before the slice's flight.
+		// Keep logical completion at landing, but count that flight toward the delay.
+		_finishPresentationTime = _info.IsFinished() ? Time.time + BoxFinishRules.FinishDelay : (float?)null;
 		PlayPopInAudio();
 		return info.CubeSc;
 	}
@@ -501,7 +507,10 @@ public class Box : MonoBehaviour
 	{
 		try
 		{
-			yield return new WaitForSeconds(BoxFinishRules.FinishDelay);
+			float delay = _finishPresentationTime.HasValue
+				? Mathf.Max(0f, _finishPresentationTime.Value - Time.time)
+				: BoxFinishRules.FinishDelay;
+			if (delay > 0f) yield return new WaitForSeconds(delay);
 			if (_info == null) yield break;
 			CreateFinishCube(_info.GetTopType());
 
@@ -517,6 +526,7 @@ public class Box : MonoBehaviour
 	private void OnDisable()
 	{
 		_finishAnimationPending = false;
+		_finishPresentationTime = null;
 		CancelSurpriseTransformation();
 	}
 

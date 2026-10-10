@@ -82,8 +82,21 @@ public class WinDialog : MonoBehaviour
 			SetMaskAlpha(0.98f);
 			_canSkip = true;
 		}
-		if (_winDialogContent != null) _winDialogContent.Show();
+		if (_winDialogContent != null)
+		{
+			_winDialogContent.Show();
+			while (_winDialogContent != null && _winDialogContent.gameObject.activeSelf) yield return null;
+		}
 		_presentation = null;
+
+		Canvas canvas = GetComponentInParent<Canvas>();
+		Transform parent = canvas == null ? transform.parent : canvas.rootCanvas.transform;
+		bool streakPresented = false;
+		yield return SpecialStreakProgress.ShowWinCollection(parent).ToCoroutine(result => streakPresented = result);
+		if (streakPresented)
+			yield return Snui.StreakLine.StreakLineBanner.ShowWinProgress(parent).ToCoroutine();
+
+		EnterNextScene();
 	}
 
 	public void Hide()
@@ -98,7 +111,14 @@ public class WinDialog : MonoBehaviour
 			_canvasGroup.interactable = false;
 			_canvasGroup.blocksRaycasts = false;
 		}
+		HudContainer.TryRevertToOriginLayer();
 		gameObject.SetActive(false);
+	}
+
+	public void BeginCoinClaim()
+	{
+		_maskFade?.Kill();
+		if (_mask != null) _maskFade = _mask.DOFade(0.85f, 0.15f).SetUpdate(true).SetLink(gameObject);
 	}
 
 	private static void PlayFireworks(Transform root)
@@ -154,6 +174,7 @@ public class WinDialog : MonoBehaviour
 	{
 		CancelPresentation();
 		if (_logoDialogContent != null) _logoDialogContent.Hide();
+		HudContainer.TryRevertToOriginLayer();
 	}
 
 	private void OnDestroy()

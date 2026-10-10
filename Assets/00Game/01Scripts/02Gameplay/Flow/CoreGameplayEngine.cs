@@ -216,7 +216,10 @@ public sealed class CoreGameplayEngine
 	{
 		if (slice == null || slice.PathIndex < 0 || IsBoxBlockIndex(slice.PathIndex))
 			return false;
-		return !_data.TransferSlice.Any(other => IsSliceBlocked(slice, other, allowOverlap));
+		List<SliceInfo> transferSlices = _data.TransferSlice;
+		for (int i = 0; i < transferSlices.Count; i++)
+			if (IsSliceBlocked(slice, transferSlices[i], allowOverlap)) return false;
+		return true;
 	}
 
 	public bool IsSliceBlocked(SliceInfo slice, SliceInfo other, bool allowOverlap)
@@ -294,7 +297,13 @@ public sealed class CoreGameplayEngine
 
 	private bool IsBoxBlockIndex(int pathIndex)
 	{
-		return _data.Boxes.Any(box => box.State == BoxState.OnPopup && box.PathIndex - 1 == pathIndex);
+		List<BoxInfo> boxes = _data.Boxes;
+		for (int i = 0; i < boxes.Count; i++)
+		{
+			BoxInfo box = boxes[i];
+			if (box.State == BoxState.OnPopup && box.PathIndex - 1 == pathIndex) return true;
+		}
+		return false;
 	}
 
 	private int WrapPathIndex(int index)

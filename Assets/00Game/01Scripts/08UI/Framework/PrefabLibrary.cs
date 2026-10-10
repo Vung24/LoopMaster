@@ -9,6 +9,7 @@ namespace Snui
         public EventPrefabEntry[] EventPrefabs;
         public GameObject FingerPrefab;
         public GameObject FlyCoinPrefab;
+		public GameObject AddNumberToastPrefab;
         public GameObject HudContainerPrefab;
         public GameObject HomeIconNotifierPrefab;
         public GameObject HomeIconProgressPrefab;

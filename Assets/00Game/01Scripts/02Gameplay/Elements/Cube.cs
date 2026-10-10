@@ -56,6 +56,7 @@ public class Cube : MonoBehaviour
 
 	private void RefreshVisibility()
 	{
+		RefreshSquareSprite();
 		Transform root = CubeRootTransform;
 		bool shouldBeVisible = _info == null || VisibleSize > 0;
 		if (root != null)
@@ -378,6 +379,7 @@ public class Cube : MonoBehaviour
 	private void AnimateSize(Vector3 scale, Vector3 position, float delay, float duration,
 		bool deactivate, bool checkEmpty)
 	{
+		RefreshSquareSprite();
 		if (_sizeAnimation != null) StopCoroutine(_sizeAnimation);
 		_sizeAnimation = StartCoroutine(AnimateSizeRoutine(scale, position, delay, duration, deactivate, checkEmpty));
 	}
@@ -462,7 +464,7 @@ public class Cube : MonoBehaviour
 		_square.sprite = _info.IsSecret ? GameAssetsConfig.GetCubeSecretSprite() :
 			CubeData.IsSurpriseColor(_info.Type) ? GameAssetsConfig.GetCubeSurpriseSprite() :
 			GameAssetsConfig.GetCubeSpriteByType(_info.Type);
-		_square.gameObject.SetActive(_square.sprite != null);
+		_square.gameObject.SetActive(_square.sprite != null && VisibleSize >= GameData.SliceCountPerGroup);
 	}
 
 	private void OnDestroy()

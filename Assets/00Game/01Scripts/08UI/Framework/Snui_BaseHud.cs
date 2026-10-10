@@ -20,6 +20,7 @@ namespace Snui
 		private Canvas _sortingCanvas;
 		private bool _originalOverrideSorting;
 		private int _originalSortingOrder;
+		private int _originalSortingLayer;
 
 		public bool AutoUpdate { get; protected set; } = true;
 
@@ -78,6 +79,12 @@ namespace Snui
 			return _numTween;
 		}
 
+		protected void StopNumberAnimation()
+		{
+			_numTween?.Kill();
+			_numTween = null;
+		}
+
 		public Tween IncreaseBy(int num, float duration = 0.3f, Action callback = null) =>
 			IncreaseTo(_currentNumber + num, duration, callback);
 
@@ -104,7 +111,10 @@ namespace Snui
 				if (_sortingCanvas == null) _sortingCanvas = gameObject.AddComponent<Canvas>();
 				_originalOverrideSorting = _sortingCanvas.overrideSorting;
 				_originalSortingOrder = _sortingCanvas.sortingOrder;
+				_originalSortingLayer = _sortingCanvas.sortingLayerID;
 			}
+			Canvas parentCanvas = transform.parent == null ? null : transform.parent.GetComponentInParent<Canvas>();
+			if (parentCanvas != null) _sortingCanvas.sortingLayerID = parentCanvas.sortingLayerID;
 			_sortingCanvas.overrideSorting = true;
 			_sortingCanvas.sortingOrder = order;
 		}
@@ -114,6 +124,7 @@ namespace Snui
 			if (_sortingCanvas == null) return;
 			_sortingCanvas.overrideSorting = _originalOverrideSorting;
 			_sortingCanvas.sortingOrder = _originalSortingOrder;
+			_sortingCanvas.sortingLayerID = _originalSortingLayer;
 		}
 
 		public virtual void PlayAddNumberAnimation(int num) => IncreaseBy(num, _increaseAnimTime, PlaySparks);

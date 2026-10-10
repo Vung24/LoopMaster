@@ -1,4 +1,5 @@
 using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Snui
@@ -11,6 +12,7 @@ namespace Snui
 		public bool AutoAlignRTL;
 
 		private TMP_Text tMP_Text;
+		private readonly List<MonoBehaviour> _textBehaviours = new List<MonoBehaviour>();
 
 		public TMP_Text TMP_Text
 		{
@@ -62,8 +64,8 @@ namespace Snui
 				}
 				if (label.font != null && label.fontSharedMaterial == null)
 					label.fontSharedMaterial = label.font.material;
-				label.enabled = true;
-				label.SetAllDirty();
+				// Font/material setters already dirty the label when values change.
+				if (!label.enabled) label.enabled = true;
 			}
 		}
 
@@ -75,10 +77,11 @@ namespace Snui
 
 		public void SetText(string value)
 		{
-			MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
-			for (int i = 0; i < behaviours.Length; i++)
-				if (behaviours[i] != null && behaviours[i].GetType().Name == "LocalizeStringEvent")
-					behaviours[i].enabled = false;
+			// Re-query to support components added at runtime, reusing the result buffer.
+			GetComponents(_textBehaviours);
+			for (int i = 0; i < _textBehaviours.Count; i++)
+				if (_textBehaviours[i] != null && _textBehaviours[i].GetType().Name == "LocalizeStringEvent")
+					_textBehaviours[i].enabled = false;
 			if (TMP_Text != null) TMP_Text.text = value ?? string.Empty;
 		}
 

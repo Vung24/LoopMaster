@@ -132,6 +132,7 @@ public sealed class SliceTransferFlow
 	{
 		if (version != _version || _data == null || box == null || box.Info == null) return;
 		box.CompleteIncomingSlice(destination);
+		box.PlayAddCubeAnim().Forget();
 		box.OnPushSliceCount = Mathf.Max(0, box.OnPushSliceCount - 1);
 		if (box.OnPushSliceCount == 0)
 		{
@@ -197,6 +198,7 @@ public sealed class SliceTransferFlow
 		{
 			yield return new WaitForSeconds(GameplayFeedbackRules.SliceLaunchStartDelay);
 			var created = new List<SliceInfo>();
+			float nextLaunchTime = Time.time;
 			for (int cubeIndex = 0; cubeIndex < topCubes.Count; cubeIndex++)
 			{
 				CubeInfo cube = topCubes[cubeIndex];
@@ -220,7 +222,14 @@ public sealed class SliceTransferFlow
 					if (visual != null) visual.JumpToTransfer(box.Info.PathIndex, jumpDuration, jumpHeight);
 					created.Add(info);
 					_refreshPathState();
-					yield return new WaitForSeconds(GameplayFeedbackRules.SliceLaunchInterval);
+					// Keep the release cadence across frames; a per-slice wait rounds
+					// every interval up to a frame and spreads the airborne train out.
+					nextLaunchTime += GameplayFeedbackRules.SliceLaunchInterval;
+					while (Time.time < nextLaunchTime)
+					{
+						if (!IsCurrent(operation.Version)) yield break;
+						yield return null;
+					}
 				}
 			}
 
