@@ -304,8 +304,6 @@ public sealed class GameResultUI : MonoBehaviour
 		if (!isActiveAndEnabled || version != _uiVersion || controller == null || controller.Data != data || controller.EndState != GameEndState.Won) yield break;
 		if (_winContent != null)
 			_winContent.SetLevel(controller.CurrentLevelNumber, controller.CanLoadNextLevel);
-		HudContainer.Show(_canvas.transform).Forget();
-		HudContainer.Current?.DisableClick();
 		if (_winDialog != null) _winDialog.Show();
 	}
 

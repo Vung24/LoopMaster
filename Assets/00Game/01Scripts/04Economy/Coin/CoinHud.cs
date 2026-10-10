@@ -19,8 +19,8 @@ public sealed class CoinHud : Snui_CoinHud
 		if (home != null) home.JumpToPage(HomeController.SHOP_PAGE_INDEX);
 		else PlayShakeAnimation();
 	}
-	public override void PlayAddNumberAnimation(int num) => base.PlayAddNumberAnimation(num);
-	public bool CanClick() => _button != null && _button.IsInteractable();
+	public override void PlayAddNumberAnimation(int num) => ShowAddNumberToast(num, new Vector2(90f, -40f));
+	public bool CanClick() => _button != null && _button.isActiveAndEnabled && _button.IsInteractable();
 
 	protected override void OnDestroy()
 	{

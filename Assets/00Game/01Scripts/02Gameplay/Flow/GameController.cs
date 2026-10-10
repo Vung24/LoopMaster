@@ -835,7 +835,7 @@ public class GameController : MonoBehaviour
 			LevelBoxManager.EnsureInitialized();
 			SpecialStreakManager.Ensure().OnGameWon(CurrentLevelNumber);
 			if (!GameProgressStore.IsLevelCompleted(CurrentLevelNumber))
-				Managers.Event?.DispatchEvent("OnGameWin", new System.Collections.Generic.Dictionary<string, int>
+				Managers.Event?.DispatchEvent("OnGameWin", new Dictionary<string, int>
 				{
 					{ GameWinArgs.PassPoints, Data == null ? 1 : Mathf.Clamp((int)Data.GetHardLevel() + 1, 1, 3) }
 				});

@@ -5,7 +5,6 @@ public static class GameplayFeedbackRules
     public const float SliceComboWindow = 0.6f;
     public const float SliceJumpDuration = 0.4f;
     public const float SliceJumpHeight = 2.2f;
-    // Native GetSliceInterval(true): 0.032 seconds * 0.5.
     public const float SliceLaunchInterval = 0.016f;
     public const float SliceLaunchStartDelay = 0.05f;
     public static float GetTransferTimeScale(bool speedUp) => speedUp ? 2f : 1f;

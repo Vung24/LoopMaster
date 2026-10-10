@@ -1,12 +1,15 @@
-using DG.Tweening;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using Spine.Unity;
+using Sequence = DG.Tweening.Sequence;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Snui;
-using Cysharp.Threading.Tasks;
 
 public class WinDialogContent : DialogContent
 {
@@ -18,9 +21,9 @@ public class WinDialogContent : DialogContent
 	[SerializeField] private Transform _coinsBgLight;
 	[SerializeField] private ParticleSystem _coinShineEffect;
 	[SerializeField] private ParticleSystem _coinSparkEffect;
-	[SerializeField] private Component _coinsSpine;
+	[SerializeField] private SkeletonGraphic _coinsSpine;
 	[SerializeField] private Transform _featureProgressNode;
-	[SerializeField] private Component _featureProgressBar;
+	[SerializeField] private ProgressBar _featureProgressBar;
 	[SerializeField] private Image _featureProgressIcon;
 	[SerializeField] private ParticleSystem _featureProgressEffect;
 	[SerializeField] private Transform _featureProgressIconBackLight;
@@ -29,136 +32,696 @@ public class WinDialogContent : DialogContent
 	[SerializeField] private AudioClip _coinCollectAudioClip;
 	[SerializeField] private GameObject _flyCoinAsset;
 
-	private Button _fallbackNextButton;
-	private Button _fallbackReplayButton;
-	private Text _fallbackTitle;
+	private GameObject _eventBanner;
+	private int _coinCount = 20;
+	private float _artTitlePosY;
+	private Sequence _seq1;
+	private Sequence _seq2;
+	private CancellationTokenSource _cancelTokenSource;
+	private CancellationToken _token;
+	private bool _isCanSkipAnims;
+	private bool _isSkippingAnims;
+	private bool _isAnimsDone;
+	private bool _isEventBannerSetupDone;
+	private bool _showRvButton;
+	private Button _activeClaimButton;
+	private int _featureProgressEndCount;
+	private int _featureProgressTotalCount;
+	private bool _shouldShowFeatureProgress;
+
 	private GameController _controller;
-	private bool _canAdvance;
 	private GameData _offeredData;
-	private Coroutine _claimRoutine;
-	private ClaimCoinAnim _coinAnimation;
+	private bool _canAdvance = true;
 	private bool _isClaiming;
 	private bool _isNavigating;
-	private Sequence _enterAnimation;
-	private readonly Dictionary<Transform, Vector3> _authoredScales = new Dictionary<Transform, Vector3>();
+	private Text _fallbackTitle;
+	private Button _fallbackNextButton;
+	private Button _fallbackReplayButton;
+	private readonly List<Sequence> _doubleCoinTweens = new List<Sequence>();
+
+	protected override void Awake()
+	{
+		base.Awake();
+		_cancelTokenSource = new CancellationTokenSource();
+		_token = _cancelTokenSource.Token;
+		if (_artTitle != null)
+		{
+			_artTitlePosY = _artTitle.localPosition.y;
+		}
+		InitButtons();
+		InitFeatureProgress();
+		SetUpEventBannerIfAny().Forget();
+	}
+
+	private bool ShouldShowRvBtn()
+	{
+		int level = _controller != null && _controller.Data != null
+			? _controller.Data.GetPuzzleActualLevel()
+			: GameProgressStore.NextPlayableLevel;
+		return level >= 10;
+	}
+
+	private void InitButtons()
+	{
+		_coinCount = 20;
+
+		_showRvButton = ShouldShowRvBtn();
+
+		if (_claimButton != null) _claimButton.gameObject.SetActive(_showRvButton);
+		if (_claimButtonCenter != null) _claimButtonCenter.gameObject.SetActive(!_showRvButton);
+		if (_adButton != null) _adButton.gameObject.SetActive(_showRvButton);
+
+		_activeClaimButton = _showRvButton ? _claimButton : _claimButtonCenter;
+
+		if (_activeClaimButton != null)
+		{
+			SetupButton(_activeClaimButton);
+			SetButtonText(_activeClaimButton, _coinCount);
+			_activeClaimButton.onClick.RemoveListener(OnClaimButtonClick);
+			_activeClaimButton.onClick.AddListener(OnClaimButtonClick);
+		}
+
+		if (_showRvButton && _adButton != null)
+		{
+			SetupButton(_adButton);
+			SetButtonText(_adButton, _coinCount * 2);
+			_adButton.onClick.RemoveListener(OnAdButtonClick);
+			_adButton.onClick.AddListener(OnAdButtonClick);
+		}
+
+		if (_fallbackNextButton != null)
+		{
+			_fallbackNextButton.onClick.RemoveListener(OnClickNextLevel);
+			_fallbackNextButton.onClick.AddListener(OnClickNextLevel);
+		}
+		if (_fallbackReplayButton != null)
+		{
+			_fallbackReplayButton.onClick.RemoveListener(OnClickDoubleReward);
+			_fallbackReplayButton.onClick.AddListener(OnClickDoubleReward);
+		}
+	}
+
+	private void SetupButton(Button button)
+	{
+		if (button == null) return;
+		CanvasGroup group = button.GetComponent<CanvasGroup>();
+		if (group == null) group = button.gameObject.AddComponent<CanvasGroup>();
+		group.alpha = 0f;
+		button.interactable = false;
+	}
+
+	private void SetButtonText(Button button, int coinCount)
+	{
+		if (button == null) return;
+		Transform content = HierarchyReferenceCache.Child(button.transform, "Content");
+		if (content == null) content = button.transform;
+
+		Snui_Text[] texts = content.GetComponentsInChildren<Snui_Text>(true);
+		if (button == _claimButtonCenter && texts.Length > 1)
+		{
+			texts[1].SetText("+" + coinCount);
+		}
+		else if (texts.Length > 0)
+		{
+			texts[texts.Length - 1].SetText("+" + coinCount);
+		}
+		else
+		{
+			Transform textTransform = HierarchyReferenceCache.Path(button.transform, "Content", "Snui_Text");
+			if (textTransform != null && textTransform.TryGetComponent<Snui_Text>(out var snuiText))
+			{
+				snuiText.SetText("+" + coinCount);
+			}
+		}
+
+		TMP_Text[] tmpTexts = content.GetComponentsInChildren<TMP_Text>(true);
+		if (button == _claimButtonCenter && tmpTexts.Length > 1)
+		{
+			tmpTexts[1].text = "+" + coinCount;
+		}
+		else if (tmpTexts.Length > 0 && button != _claimButtonCenter)
+		{
+			tmpTexts[tmpTexts.Length - 1].text = "+" + coinCount;
+		}
+	}
+
+	private void InitFeatureProgress()
+	{
+		_shouldShowFeatureProgress = false;
+		if (_featureProgressNode != null) _featureProgressNode.gameObject.SetActive(false);
+	}
+
+	private async UniTaskVoid SetUpEventBannerIfAny()
+	{
+		await UniTask.Yield();
+		_isEventBannerSetupDone = true;
+	}
+
+	private async UniTask ShowEventBannerAsync()
+	{
+		await UniTask.Yield();
+	}
+
+	private void PlayBannerFadeOutAnim()
+	{
+		if (_eventBanner != null)
+		{
+			CanvasGroup cg = _eventBanner.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(0f, 0.2f).SetUpdate(true).SetLink(gameObject);
+		}
+	}
 
 	public override void Show()
 	{
-		CancelClaimAnimation();
-		_offeredData = _controller == null ? null : _controller.Data;
+		_result = RESULT_UNKNOWN;
+		_isClaiming = false;
 		_isNavigating = false;
-		CancelEnterAnimation();
+		_offeredData = _controller == null ? null : _controller.Data;
+
+		_cancelTokenSource?.Cancel();
+		_cancelTokenSource?.Dispose();
+		_cancelTokenSource = new CancellationTokenSource();
+		_token = _cancelTokenSource.Token;
+
+		gameObject.SetActive(true);
 		base.Show();
-		RefreshRewardButtons();
-		PlayCoinSpine("open");
-		foreach (ParticleSystem particle in new[] { _coinShineEffect, _coinSparkEffect })
-			if (particle != null) { var main = particle.main; main.useUnscaledTime = true; particle.Play(true); }
-		if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
-		_enterAnimation = DOTween.Sequence().SetUpdate(true);
-		PopNode(_artTitle, 0f);
-		PopNode(_coinsNode, 0f);
-		PopButton(_claimButtonCenter, 0.06f);
-		PopButton(_claimButton, 0.06f);
-		PopButton(_adButton, 0.06f);
-		HudContainer.TrySetTop();
+
+		if (HudContainer.Current != null) HudContainer.Current.gameObject.SetActive(false);
+
+		InitButtons();
+		HideEffects();
+
+		if (_artTitle != null) _artTitle.gameObject.SetActive(false);
+		if (_coinsNode != null) _coinsNode.gameObject.SetActive(true);
+
+		PlayAnim().Forget();
 	}
 
-	private void PopButton(Button button, float delay)
+	public async UniTaskVoid PlayAnim()
 	{
-		if (button != null && button.gameObject.activeSelf) PopNode(button.transform, delay);
-	}
+		if (_isSkippingAnims) return;
 
-	private void PopNode(Transform node, float delay)
-	{
-		if (node == null || !node.gameObject.activeSelf) return;
-		if (!_authoredScales.TryGetValue(node, out Vector3 scale))
+		_isCanSkipAnims = true;
+		_isAnimsDone = false;
+
+		if (_artTitle != null)
 		{
-			scale = node.localScale;
-			_authoredScales.Add(node, scale);
+			CanvasGroup titleGroup = _artTitle.GetComponent<CanvasGroup>();
+			if (titleGroup == null) titleGroup = _artTitle.gameObject.AddComponent<CanvasGroup>();
+			titleGroup.alpha = 0f;
+			_artTitle.localPosition = new Vector3(_artTitle.localPosition.x, _artTitlePosY + 300f, _artTitle.localPosition.z);
+			_artTitle.localScale = Vector3.one * 0.8f;
+			_artTitle.gameObject.SetActive(true);
+
+			_seq1 = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+			_seq1.Append(_artTitle.DOScale(1.3f, 0.13f).SetEase(Ease.OutSine));
+			_seq1.Join(titleGroup.DOFade(1f, 0.13f).SetEase(Ease.OutSine));
+			_seq1.Append(_artTitle.DOScale(1.18f, 0.13f).SetEase(Ease.InSine));
+			_seq1.Append(_artTitle.DOScale(1.24f, 0.13f).SetEase(Ease.OutSine));
+
+			await UniTask.Delay(TimeSpan.FromSeconds(0.4f), cancellationToken: _token).SuppressCancellationThrow();
+			if (_isSkippingAnims) return;
+
+			_seq2 = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+			_seq2.Append(_artTitle.DOLocalMoveY(_artTitlePosY - 6f, 0.2f).SetEase(Ease.InSine));
+			_seq2.Join(_artTitle.DOScale(0.96f, 0.2f).SetEase(Ease.InCubic));
+			_seq2.Append(_artTitle.DOLocalMoveY(_artTitlePosY, 0.27f).SetEase(Ease.OutBack));
+			_seq2.Join(_artTitle.DOScale(1.0f, 0.27f).SetEase(Ease.OutBack));
+
+			await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: _token).SuppressCancellationThrow();
+			if (_isSkippingAnims) return;
 		}
-		CanvasGroup group = node.GetComponent<CanvasGroup>();
-		if (group == null) group = node.gameObject.AddComponent<CanvasGroup>();
-		group.alpha = 0f;
-		_enterAnimation.Insert(delay, group.DOFade(1f, 0.16f).SetEase(Ease.OutSine));
-		_enterAnimation.Insert(delay, node.DOScale(scale * 1.04f, 0.18f).From(scale * 0.88f).SetEase(Ease.OutBack, 1.2f));
+
+		_isCanSkipAnims = false;
+
+		if (AudioManager.Current != null)
+		{
+			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
+		}
+
+		if (_coinsBgLight != null)
+		{
+			_coinsBgLight.gameObject.SetActive(true);
+			_coinsBgLight.DORotate(new Vector3(0, 0, 360f), 8f, RotateMode.FastBeyond360)
+				.SetEase(Ease.Linear)
+				.SetLoops(-1)
+				.SetUpdate(true)
+				.SetLink(gameObject);
+		}
+
+		if (_coinsSpine != null)
+		{
+			_coinsSpine.gameObject.SetActive(true);
+			_coinsSpine.UnscaledTime = true;
+			_coinsSpine.Initialize(false);
+			if (_coinsSpine.AnimationState != null)
+			{
+				_coinsSpine.AnimationState.ClearTracks();
+				_coinsSpine.AnimationState.SetAnimation(0, "open", false);
+			}
+		}
+
+		if (_coinShineEffect != null)
+		{
+			var main = _coinShineEffect.main;
+			main.useUnscaledTime = true;
+			_coinShineEffect.Play(true);
+		}
+		if (_coinSparkEffect != null)
+		{
+			var main = _coinSparkEffect.main;
+			main.useUnscaledTime = true;
+			_coinSparkEffect.Play(true);
+		}
+
+		await UniTask.Delay(TimeSpan.FromSeconds(0.1f), cancellationToken: _token).SuppressCancellationThrow();
+		if (_isSkippingAnims) return;
+
+		if (_activeClaimButton != null)
+		{
+			CanvasGroup cg = _activeClaimButton.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(1f, 0.13f).SetUpdate(true).SetLink(gameObject);
+			_activeClaimButton.interactable = true;
+		}
+
+		if (_showRvButton && _adButton != null)
+		{
+			CanvasGroup cg = _adButton.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(1f, 0.13f).SetUpdate(true).SetLink(gameObject);
+			_adButton.interactable = true;
+		}
+
+		if (_shouldShowFeatureProgress && _featureProgressNode != null)
+		{
+			CanvasGroup cg = _featureProgressNode.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(1f, 0.13f).SetUpdate(true).SetLink(gameObject);
+		}
+
+		await ShowEventBannerAsync();
+
+		await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: _token).SuppressCancellationThrow();
+		SetAnimsDoneState();
 	}
 
-	public void OnSkipAnims() { CancelEnterAnimation(); }
+	public void OnSkipAnims()
+	{
+		if (!_isCanSkipAnims || _isSkippingAnims || _isAnimsDone) return;
+		OnSkipAnimsAsync().Forget();
+	}
+
+	private async UniTaskVoid OnSkipAnimsAsync()
+	{
+		_isSkippingAnims = true;
+		_cancelTokenSource?.Cancel();
+		_cancelTokenSource?.Dispose();
+		_cancelTokenSource = new CancellationTokenSource();
+		_token = _cancelTokenSource.Token;
+		_seq1?.Kill();
+		_seq2?.Kill();
+		await PlaySkipAnims();
+	}
+
+	private async UniTask PlaySkipAnims()
+	{
+		if (_artTitle != null)
+		{
+			_artTitle.localPosition = new Vector3(_artTitle.localPosition.x, _artTitlePosY, _artTitle.localPosition.z);
+			_artTitle.localScale = Vector3.one;
+			CanvasGroup titleGroup = _artTitle.GetComponent<CanvasGroup>();
+			if (titleGroup != null) titleGroup.alpha = 1f;
+			_artTitle.gameObject.SetActive(true);
+		}
+
+		if (AudioManager.Current != null)
+		{
+			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
+		}
+
+		if (_coinsBgLight != null)
+		{
+			_coinsBgLight.gameObject.SetActive(true);
+			_coinsBgLight.DORotate(new Vector3(0, 0, 360f), 8f, RotateMode.FastBeyond360)
+				.SetEase(Ease.Linear)
+				.SetLoops(-1)
+				.SetUpdate(true)
+				.SetLink(gameObject);
+		}
+
+		if (_coinsSpine != null)
+		{
+			_coinsSpine.gameObject.SetActive(true);
+			_coinsSpine.UnscaledTime = true;
+			_coinsSpine.Initialize(false);
+			if (_coinsSpine.AnimationState != null)
+			{
+				_coinsSpine.AnimationState.ClearTracks();
+				_coinsSpine.AnimationState.SetAnimation(0, "open", false);
+			}
+		}
+
+		if (_coinShineEffect != null) _coinShineEffect.Play(true);
+		if (_coinSparkEffect != null) _coinSparkEffect.Play(true);
+
+		if (_activeClaimButton != null)
+		{
+			CanvasGroup cg = _activeClaimButton.GetComponent<CanvasGroup>();
+			if (cg != null) cg.alpha = 1f;
+			_activeClaimButton.interactable = true;
+		}
+
+		if (_showRvButton && _adButton != null)
+		{
+			CanvasGroup cg = _adButton.GetComponent<CanvasGroup>();
+			if (cg != null) cg.alpha = 1f;
+			_adButton.interactable = true;
+		}
+
+		await ShowEventBannerAsync();
+		SetAnimsDoneState();
+	}
+
+	private void SetAnimsDoneState()
+	{
+		_isAnimsDone = true;
+		_isSkippingAnims = false;
+		_isCanSkipAnims = false;
+	}
+
+	public void OnClaimButtonClick()
+	{
+		if (_isClaiming || _isNavigating) return;
+		_isClaiming = true;
+		if (_activeClaimButton != null) _activeClaimButton.interactable = false;
+		if (_adButton != null) _adButton.interactable = false;
+		RewardCoins(false, "WinDialog").Forget();
+	}
+
+	public void OnAdButtonClick()
+	{
+		if (_isClaiming || _isNavigating) return;
+		_isClaiming = true;
+		if (_activeClaimButton != null) _activeClaimButton.interactable = false;
+		if (_adButton != null) _adButton.interactable = false;
+
+		RewardCoins(true, "WinDialogRv").Forget();
+	}
+
+	private async UniTask RewardCoins(bool isDouble, string way)
+	{
+		Canvas canvas = GetComponentInParent<Canvas>();
+		Transform parent = canvas != null ? canvas.rootCanvas.transform : transform.parent;
+		await HudContainer.Show(parent);
+		if (this == null || _token.IsCancellationRequested || !isActiveAndEnabled) return;
+		HudContainer.TrySetTop(1100);
+		HudContainer.Current?.BeginCoinClaim(canvas);
+		GetComponentInParent<WinDialog>(true)?.BeginCoinClaim();
+		HudContainer.Current?.DisableClick();
+		Snui_CoinHud.TrySetAutoUpdate(false);
+
+		if (_activeClaimButton != null)
+		{
+			CanvasGroup cg = _activeClaimButton.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(0f, 0.2f).SetUpdate(true).SetLink(gameObject);
+		}
+		if (_showRvButton && _adButton != null)
+		{
+			CanvasGroup cg = _adButton.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(0f, 0.2f).SetUpdate(true).SetLink(gameObject);
+		}
+		if (_artTitle != null)
+		{
+			CanvasGroup cg = _artTitle.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(0f, 0.2f).SetUpdate(true).SetLink(gameObject);
+		}
+		PlayBannerFadeOutAnim();
+		if (_shouldShowFeatureProgress && _featureProgressNode != null)
+		{
+			CanvasGroup cg = _featureProgressNode.GetComponent<CanvasGroup>();
+			if (cg != null) cg.DOFade(0f, 0.2f).SetUpdate(true).SetLink(gameObject);
+		}
+
+		int coinsToGive = isDouble ? _coinCount * 2 : _coinCount;
+		GameData data = _offeredData ?? (_controller != null ? _controller.Data : null);
+		if (_controller != null && data != null)
+		{
+			_controller.TryClaimWinReward(data, isDouble, out _);
+		}
+		else
+		{
+			InventoryManager.Ensure()?.Add(InventoryKeys.COIN, coinsToGive, way);
+		}
+
+		if (isDouble)
+		{
+			PlayDoubleCoinAnim();
+		}
+		else
+		{
+			PlayCommonCoinAnim(_coinCount);
+		}
+	}
+
+	private void PlayCommonCoinAnim(int coinCount)
+	{
+		HideEffects();
+		if (_coinsSpine != null && _coinsSpine.AnimationState != null)
+		{
+			_coinsSpine.AnimationState.ClearTracks();
+			_coinsSpine.AnimationState.SetAnimation(0, "claim_direct", false);
+		}
+
+		Vector2 startPos = _coinsSpine != null ? (Vector2)_coinsSpine.transform.position : (Vector2)transform.position;
+		ClaimCoinAnim.Play(coinCount, startPos, () =>
+		{
+			FinishCoinClaim().Forget();
+		}).Forget();
+	}
+
+	private async UniTask FinishCoinClaim()
+	{
+		bool cancelled = await UniTask.Delay(TimeSpan.FromSeconds(0.4f), ignoreTimeScale: true,
+			cancellationToken: _token).SuppressCancellationThrow();
+		if (!cancelled && this != null && isActiveAndEnabled) Dismiss(RESULT_CLOSE);
+	}
+
+	private void ReleaseClaimHud()
+	{
+		// The outer dialog owns the mask and releases sorting when that mask is removed.
+		if (GetComponentInParent<WinDialog>(true) == null) HudContainer.TryRevertToOriginLayer();
+	}
+
+	private void PlayDoubleCoinAnim()
+	{
+		if (AudioManager.Current != null)
+		{
+			AudioManager.Current.PlayOneShot(_coinAudioClip, gameObject);
+		}
+
+		if (_coinsSpine != null && _coinsSpine.AnimationState != null)
+		{
+			_coinsSpine.AnimationState.ClearTracks();
+			_coinsSpine.AnimationState.SetAnimation(0, "claim_double", false);
+			bool triggered = false;
+			_coinsSpine.AnimationState.Event += (entry, e) =>
+			{
+				if (!triggered && e != null && e.Data != null && !string.IsNullOrEmpty(e.Data.Name))
+				{
+					triggered = true;
+					PlayDoubleCoinAnimAsync().Forget();
+				}
+			};
+			DOVirtual.DelayedCall(0.5f, () =>
+			{
+				if (!triggered)
+				{
+					triggered = true;
+					PlayDoubleCoinAnimAsync().Forget();
+				}
+			}).SetUpdate(true).SetLink(gameObject);
+		}
+		else
+		{
+			PlayDoubleCoinAnimAsync().Forget();
+		}
+	}
+
+	private async UniTaskVoid PlayDoubleCoinAnimAsync()
+	{
+		HideEffects();
+		ClearDoubleCoinTweens();
+
+		Canvas canvas = GetComponentInParent<Canvas>();
+		Transform parent = canvas != null ? canvas.rootCanvas.transform : transform;
+		Vector3 startPos = _coinsSpine != null ? _coinsSpine.transform.position : transform.position;
+		Vector3 targetPos = Snui_CoinHud.Current != null
+			? Snui_CoinHud.Current.GetIconPos()
+			: new Vector3(Screen.width * 0.15f, Screen.height * 0.92f, 0f);
+
+		GameObject flightRoot = new GameObject("DoubleCoinFlightRoot", typeof(RectTransform), typeof(Canvas));
+		flightRoot.transform.SetParent(parent, false);
+		Canvas flightCanvas = flightRoot.GetComponent<Canvas>();
+		flightCanvas.overrideSorting = true;
+		flightCanvas.sortingLayerID = canvas != null ? canvas.sortingLayerID : 0;
+		Canvas hudCanvas = Snui_CoinHud.Current == null ? null : Snui_CoinHud.Current.GetComponent<Canvas>();
+		if (hudCanvas != null) flightCanvas.sortingLayerID = hudCanvas.sortingLayerID;
+		flightCanvas.sortingOrder = hudCanvas != null ? hudCanvas.sortingOrder + 1 : 1101;
+
+		GameObject coinPrefab = _flyCoinAsset;
+		if (coinPrefab == null && PrefabLibrary.Current != null)
+			coinPrefab = PrefabLibrary.Current.FlyCoinPrefab;
+
+		Sprite[] sprites = null;
+		if (coinPrefab != null)
+			sprites = await FlyCoin.LoadSprites(coinPrefab);
+
+		List<GameObject> spawnedCoins = new List<GameObject>();
+		const int totalCoins = 20;
+
+		for (int i = 0; i < totalCoins; i++)
+		{
+			if (coinPrefab == null) break;
+			GameObject coin = Instantiate(coinPrefab, flightRoot.transform, false);
+			coin.SetActive(true);
+			foreach (var img in coin.GetComponentsInChildren<Graphic>(true)) img.raycastTarget = false;
+
+			FlyCoin fly = coin.GetComponent<FlyCoin>();
+			if (fly != null && sprites != null)
+			{
+				fly.SetSprites(sprites);
+				fly.Play(true);
+			}
+
+			coin.transform.position = startPos;
+			coin.transform.localScale = Vector3.zero;
+			spawnedCoins.Add(coin);
+
+			float angle = (i / (float)totalCoins) * Mathf.PI * 2f;
+			float radius = UnityEngine.Random.Range(100f, 160f);
+			Vector3 burstOffset = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f);
+
+			Sequence burst = DOTween.Sequence().SetUpdate(true).SetLink(coin);
+			burst.Append(coin.transform.DOScale(UnityEngine.Random.Range(0.7f, 1.0f), 0.53f).SetEase(Ease.OutBack));
+			burst.Join(coin.transform.DOMove(startPos + burstOffset, 0.53f).SetEase(Ease.OutQuad));
+			_doubleCoinTweens.Add(burst);
+		}
+
+		await UniTask.Delay(TimeSpan.FromSeconds(0.56f), cancellationToken: _token).SuppressCancellationThrow();
+
+		List<UniTask> flightTasks = new List<UniTask>();
+		for (int i = 0; i < spawnedCoins.Count; i++)
+		{
+			GameObject coin = spawnedCoins[i];
+			if (coin == null) continue;
+			float delay = i * 0.02f;
+			Sequence flight = DOTween.Sequence().SetUpdate(true).SetLink(coin);
+			flight.AppendInterval(delay);
+			flight.Append(coin.transform.DOMove(targetPos, 0.45f).SetEase(Ease.InQuad));
+			flight.Join(coin.transform.DOScale(0.5f, 0.45f).SetEase(Ease.InCubic));
+			flight.OnComplete(() =>
+			{
+				if (coin != null) Destroy(coin);
+			});
+			_doubleCoinTweens.Add(flight);
+			flightTasks.Add(flight.ToUniTask().AttachExternalCancellation(_token));
+		}
+
+		if (flightTasks.Count > 0)
+		{
+			try
+			{
+				await UniTask.WhenAll(flightTasks);
+			}
+			catch (OperationCanceledException)
+			{
+			}
+		}
+
+		ClearDoubleCoinTweens();
+		if (flightRoot != null) Destroy(flightRoot);
+
+		if (Snui_CoinHud.Current != null)
+		{
+			Snui_CoinHud.Current.SetAutoUpdate(true);
+			Snui_CoinHud.Current.PlaySparks();
+			Snui_CoinHud.Current.PlayShakeAnimation();
+		}
+		if (_coinCollectAudioClip != null && AudioManager.Current != null)
+		{
+			AudioManager.Current.PlayOneShot(_coinCollectAudioClip, gameObject);
+		}
+
+		await FinishCoinClaim();
+	}
+
+	private void ClearDoubleCoinTweens()
+	{
+		foreach (var tween in _doubleCoinTweens) tween?.Kill();
+		_doubleCoinTweens.Clear();
+	}
+
+	private void HideEffects()
+	{
+		if (_coinSparkEffect != null) _coinSparkEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+		if (_coinShineEffect != null) _coinShineEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+		if (_coinsBgLight != null)
+		{
+			_coinsBgLight.DOKill();
+			_coinsBgLight.gameObject.SetActive(false);
+		}
+	}
+
+	public override void Dismiss(int result = RESULT_CLOSE)
+	{
+		_isClaiming = false;
+		ClearDoubleCoinTweens();
+		ReleaseClaimHud();
+		base.Dismiss(result);
+	}
 
 	public override void Hide()
 	{
-		CancelClaimAnimation();
-		CancelEnterAnimation();
+		_isClaiming = false;
+		_seq1?.Kill();
+		_seq2?.Kill();
+		ClearDoubleCoinTweens();
+		HideEffects();
+		ReleaseClaimHud();
 		base.Hide();
 	}
 
-	private void OnDisable() { CancelEnterAnimation(); CancelClaimAnimation(); }
-
-	private void CancelClaimAnimation()
+	private void OnDisable()
 	{
-		if (_claimRoutine != null) StopCoroutine(_claimRoutine);
-		_claimRoutine = null;
-		_coinAnimation?.Cancel();
-		_isClaiming = false;
-		HudContainer.TryRevertToOriginLayer();
-		if (AudioManager.Current != null) AudioManager.Current.StopAudio(gameObject);
+		_cancelTokenSource?.Cancel();
+		_seq1?.Kill();
+		_seq2?.Kill();
+		ClearDoubleCoinTweens();
+		HideEffects();
+		ReleaseClaimHud();
 	}
 
-	private float PlayCoinSpine(string name)
-	{
-		SkeletonGraphic graphic = _coinsSpine as SkeletonGraphic;
-		if (graphic == null || graphic.skeletonDataAsset == null) return 0f;
-		graphic.gameObject.SetActive(true);
-		graphic.UnscaledTime = true;
-		graphic.raycastTarget = false;
-		graphic.Initialize(false);
-		var data = graphic.skeletonDataAsset.GetSkeletonData(false);
-		var animation = data == null ? null : data.FindAnimation(name);
-		if (animation == null || graphic.AnimationState == null) return 0f;
-		graphic.Skeleton.SetToSetupPose();
-		graphic.AnimationState.ClearTracks();
-		graphic.AnimationState.SetAnimation(0, name, false);
-		return animation.Duration;
-	}
-
-	private void OnLevelStarted(int level) { Hide(); _offeredData = null; }
 	private void OnDestroy()
 	{
+		_cancelTokenSource?.Cancel();
+		_cancelTokenSource?.Dispose();
+		_seq1?.Kill();
+		_seq2?.Kill();
+		ClearDoubleCoinTweens();
+		ReleaseClaimHud();
 		if (_controller != null) _controller.LevelStarted -= OnLevelStarted;
-		CancelClaimAnimation();
-		CancelEnterAnimation();
 	}
 
-	private void CancelEnterAnimation()
+	private void OnLevelStarted(int level)
 	{
-		if (_enterAnimation != null)
-		{
-			_enterAnimation.Complete(true);
-			_enterAnimation.Kill();
-		}
-		_enterAnimation = null;
+		Hide();
+		_offeredData = null;
 	}
 
 	public void Bind(GameController controller)
 	{
-		if (_controller != controller) CancelClaimAnimation();
 		if (_controller != null) _controller.LevelStarted -= OnLevelStarted;
 		_controller = controller;
 		if (_controller != null) _controller.LevelStarted += OnLevelStarted;
-		if (_artTitle != null) _artTitle.gameObject.SetActive(true);
-		if (_coinsNode != null) _coinsNode.gameObject.SetActive(true);
-		if (_featureProgressNode != null) _featureProgressNode.gameObject.SetActive(false);
-		BindButton(_claimButtonCenter, OnClickNextLevel);
-		BindButton(_claimButton, OnClickNextLevel);
-		BindButton(_adButton, OnClickDoubleReward);
-		if (_claimButtonCenter != null) _claimButtonCenter.gameObject.SetActive(false);
-		if (_claimButton != null) _claimButton.gameObject.SetActive(true);
-		if (_adButton != null) _adButton.gameObject.SetActive(true);
-		RestoreRewardIcons(_claimButton);
-		RestoreRewardIcons(_adButton);
-		BindButton(_fallbackNextButton, OnClickNextLevel);
-		BindButton(_fallbackReplayButton, OnClickDoubleReward);
-		RefreshRewardButtons();
+		InitButtons();
 	}
 
 	public void Bind(GameController controller, Text title, Button nextButton, Button replayButton)
@@ -172,195 +735,39 @@ public class WinDialogContent : DialogContent
 	public void SetLevel(int level, bool canLoadNext)
 	{
 		_canAdvance = canLoadNext;
-		string title = GameProgressStore.IsCampaignComplete && !canLoadNext ? "ALL LEVELS COMPLETE" : "LEVEL " + level + " COMPLETE";
-		SetArtTitle(title);
 		if (_fallbackTitle != null)
-			_fallbackTitle.text = title;
-		RefreshRewardButtons();
+			_fallbackTitle.text = GameProgressStore.IsCampaignComplete && !canLoadNext ? "ALL LEVELS COMPLETE" : "LEVEL " + level + " COMPLETE";
+		InitButtons();
 	}
 
 	public void SetNoMoreLevels()
 	{
 		_canAdvance = false;
-		string title = GameProgressStore.IsCampaignComplete ? "ALL LEVELS COMPLETE" : "LEVEL COMPLETE";
-		SetArtTitle(title);
-		if (_fallbackTitle != null) _fallbackTitle.text = title;
-		RefreshRewardButtons();
+		if (_fallbackTitle != null)
+			_fallbackTitle.text = GameProgressStore.IsCampaignComplete ? "ALL LEVELS COMPLETE" : "LEVEL COMPLETE";
+		InitButtons();
 	}
 
 	public void OnClickNextLevel()
 	{
-		ClaimReward(false);
-	}
-	public void OnClickDoubleReward() { ClaimReward(true); }
-
-	private bool OfferValid => isActiveAndEnabled && _controller != null && _offeredData != null &&
-		_controller.Data == _offeredData && _controller.EndState == GameEndState.Won;
-
-	private void ClaimReward(bool doubled)
-	{
-		if (!OfferValid || _isClaiming || _isNavigating) return;
-		if (_controller.HasClaimedWinReward(_offeredData))
-		{
-			_isClaiming = true;
-			RefreshRewardButtons();
-			_claimRoutine = StartCoroutine(CollectAndAdvance(0, false));
-			return;
-		}
-		_isClaiming = true;
-		RefreshRewardButtons();
-		if (!_controller.TryClaimWinReward(_offeredData, doubled, out int coins))
-		{
-			_isClaiming = false;
-			SetArtTitle("COULD NOT ADD COINS — TRY AGAIN");
-			if (_fallbackTitle != null) _fallbackTitle.text = "COULD NOT ADD COINS — TRY AGAIN";
-			RefreshRewardButtons();
-			return;
-		}
-		if (!OfferValid) { CancelClaimAnimation(); return; }
-		_claimRoutine = StartCoroutine(CollectAndAdvance(coins, doubled));
+		OnClaimButtonClick();
 	}
 
-	private IEnumerator CollectAndAdvance(int coins, bool doubled)
+	public void OnClickDoubleReward()
 	{
-		yield return null;
-		if (!OfferValid) { CancelClaimAnimation(); yield break; }
-		float spineDuration = PlayCoinSpine(doubled ? "claim_double" : "claim_direct");
-		if (doubled && spineDuration > 0f) yield return new WaitForSecondsRealtime(spineDuration);
-		if (!OfferValid) { CancelClaimAnimation(); yield break; }
-		Canvas canvas = GetComponentInParent<Canvas>();
-		Transform parent = canvas == null ? transform.parent : canvas.rootCanvas.transform;
-		if (_coinAnimation == null) _coinAnimation = GetComponent<ClaimCoinAnim>();
-		if (_coinAnimation == null) _coinAnimation = gameObject.AddComponent<ClaimCoinAnim>();
-		_coinAnimation.ShowSound = _coinAudioClip;
-		_coinAnimation.CollectSound = _coinCollectAudioClip;
-		HudContainer.TrySetTop();
-		Snui_CoinHud hud = HudContainer.Current == null ? Snui_CoinHud.Current : HudContainer.Current.CoinHud;
-		Vector3 start = _coinsSpine != null ? _coinsSpine.transform.position : transform.position;
-		if (coins > 0) yield return _coinAnimation.Play(coins, parent, start, hud, _flyCoinAsset);
-		if (!OfferValid) { CancelClaimAnimation(); yield break; }
-		bool streakPresented = false;
-		yield return SpecialStreakProgress.ShowWinCollection(parent).ToCoroutine(result => streakPresented = result);
-		if (!OfferValid) { CancelClaimAnimation(); yield break; }
-		if (streakPresented)
-			yield return Snui.StreakLine.StreakLineBanner.ShowWinProgress(parent).ToCoroutine();
-		_claimRoutine = null;
-		_isClaiming = false;
-		HudContainer.TryRevertToOriginLayer();
-		if (OfferValid && streakPresented) AdvanceAfterClaim();
-		else if (OfferValid) RefreshRewardButtons();
-	}
-
-	private void AdvanceAfterClaim()
-	{
-		if (!OfferValid || _isNavigating) return;
-		_isNavigating = true;
-		WinDialog winDialog = GetComponentInParent<WinDialog>();
-		bool changed = winDialog != null ? winDialog.EnterNextScene() : _controller.TryContinueAfterWin();
-		if (!changed) { _isNavigating = false; RefreshRewardButtons(); }
+		OnAdButtonClick();
 	}
 
 	public void AllowNavigationRetry()
 	{
 		_isNavigating = false;
-		RefreshRewardButtons();
+		_isClaiming = false;
+		if (_activeClaimButton != null) _activeClaimButton.interactable = true;
+		if (_showRvButton && _adButton != null) _adButton.interactable = true;
 	}
 
-	public void OnClickReplayLevel() { if (OfferValid && !_isClaiming && !_isNavigating) _controller.TryReplayLevel(); }
-
-	private void RefreshRewardButtons()
+	public void OnClickReplayLevel()
 	{
-		GameData data = _offeredData ?? (_controller == null ? null : _controller.Data);
-		bool claimed = _controller != null && _controller.HasClaimedWinReward(data);
-		int coins = _controller == null ? 0 : _controller.GetWinRewardCoins(data);
-		bool centered = _claimButtonCenter != null && (claimed || _claimButton == null);
-		if (_claimButtonCenter != null) _claimButtonCenter.gameObject.SetActive(centered);
-		if (_claimButton != null) _claimButton.gameObject.SetActive(!centered);
-		if (centered)
-		{
-			DialogUI.HideNamed(_claimButtonCenter.transform, "Coin");
-			TMP_Text[] captions = _claimButtonCenter.GetComponentsInChildren<TMP_Text>(true);
-			for (int i = 0; i < captions.Length; i++) captions[i].gameObject.SetActive(i == 0);
-			if (captions.Length > 0) captions[0].rectTransform.anchoredPosition = Vector2.zero;
-		}
-		string normal = claimed ? (_canAdvance ? "NEXT LEVEL" : "HOME") : "CLAIM " + coins;
-		string doubled = "FREE x2\n" + (coins * 2);
-		foreach (Button button in new[] { _claimButton, _claimButtonCenter, _fallbackNextButton })
-		{
-			SetButtonLabel(button, normal);
-			if (button != null) button.interactable = !_isClaiming && !_isNavigating;
-		}
-		foreach (Button button in new[] { _adButton, _fallbackReplayButton })
-		{
-			SetButtonLabel(button, doubled);
-			if (button != null) { button.gameObject.SetActive(!claimed); button.interactable = !_isClaiming && !_isNavigating; }
-		}
-	}
-
-	private void SetArtTitle(string label)
-	{
-		if (_artTitle == null) return;
-		Snui_Text[] titleLabels = _artTitle.GetComponentsInChildren<Snui_Text>(true);
-		for (int i = 0; i < titleLabels.Length; i++)
-			if (titleLabels[i] != null) titleLabels[i].SetText(label);
-		TMP_Text[] tmpLabels = _artTitle.GetComponentsInChildren<TMP_Text>(true);
-		for (int i = 0; i < tmpLabels.Length; i++)
-			if (tmpLabels[i] != null) tmpLabels[i].text = label;
-	}
-
-	private static void BindButton(Button button, UnityEngine.Events.UnityAction callback)
-	{
-		if (button == null) return;
-		button.onClick.RemoveListener(callback);
-		button.onClick.AddListener(callback);
-	}
-
-	private static void SetButtonLabel(Button button, string label)
-	{
-		if (button == null) return;
-		Snui_Text[] labels = button.GetComponentsInChildren<Snui_Text>(true);
-		for (int i = 0; i < labels.Length; i++)
-			if (labels[i] != null) labels[i].SetText(label);
-		TMP_Text[] tmpLabels = button.GetComponentsInChildren<TMP_Text>(true);
-		for (int i = 0; i < tmpLabels.Length; i++)
-			if (tmpLabels[i] != null)
-			{
-				tmpLabels[i].text = label;
-				tmpLabels[i].enableAutoSizing = true;
-				tmpLabels[i].fontSizeMin = 16f;
-				tmpLabels[i].fontSizeMax = 36f;
-				LayoutElement column = tmpLabels[i].GetComponent<LayoutElement>();
-				if (column == null) column = tmpLabels[i].gameObject.AddComponent<LayoutElement>();
-				column.minWidth = 0f;
-				column.preferredWidth = 180f;
-				column.flexibleWidth = 0f;
-				column.minHeight = 72f; column.preferredHeight = 72f;
-			}
-		foreach (Text text in button.GetComponentsInChildren<Text>(true)) text.text = label;
-	}
-
-	private static void RestoreRewardIcons(Button button)
-	{
-		if (button == null) return;
-		Transform content = HierarchyReferenceCache.Child(button.transform, "Content");
-		Transform[] nodes = button.GetComponentsInChildren<Transform>(true);
-		for (int i = 1; i < nodes.Length; i++)
-			if (nodes[i].name == "Coin")
-			{
-				nodes[i].gameObject.SetActive(true);
-				if (content == null || nodes[i].parent != content) continue;
-				HorizontalLayoutGroup row = content.GetComponent<HorizontalLayoutGroup>();
-				if (row == null) row = content.gameObject.AddComponent<HorizontalLayoutGroup>();
-				row.childAlignment = TextAnchor.MiddleCenter;
-				row.childControlWidth = true; row.childControlHeight = true;
-				row.childForceExpandWidth = false; row.childForceExpandHeight = false;
-				row.spacing = 12f;
-				nodes[i].SetAsFirstSibling();
-				LayoutElement icon = nodes[i].GetComponent<LayoutElement>();
-				if (icon == null) icon = nodes[i].gameObject.AddComponent<LayoutElement>();
-				icon.minWidth = 72f; icon.preferredWidth = 72f; icon.flexibleWidth = 0f;
-				icon.minHeight = 72f; icon.preferredHeight = 72f;
-			}
-			else if (nodes[i].name == "Ad") nodes[i].gameObject.SetActive(false);
+		if (_controller != null) _controller.TryReplayLevel();
 	}
 }

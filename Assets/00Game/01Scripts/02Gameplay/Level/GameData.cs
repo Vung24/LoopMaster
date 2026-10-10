@@ -430,10 +430,20 @@ public class GameData
 	public bool IsGameFailed()
 	{
 		if (IsTransferHaveSpace()) return false;
-		IEnumerable<BoxInfo> availableBoxes = Boxes.Where(box =>
-			box != null && box.GetSliceCount() < GetSliceCapacity(box.BoxType));
-		return !TransferSlice.Any(slice => slice != null &&
-			availableBoxes.Any(box => box.IsSliceCanJumpIn(slice)));
+		if (TransferSlice.Count == 0) return true;
+		// These predicates only inspect state. Check capacity once per box instead
+		// of re-enumerating the available-box query for every transfer slice.
+		for (int boxIndex = 0; boxIndex < Boxes.Count; boxIndex++)
+		{
+			BoxInfo box = Boxes[boxIndex];
+			if (box == null || box.GetSliceCount() >= GetSliceCapacity(box.BoxType)) continue;
+			for (int sliceIndex = 0; sliceIndex < TransferSlice.Count; sliceIndex++)
+			{
+				SliceInfo slice = TransferSlice[sliceIndex];
+				if (slice != null && box.IsSliceCanJumpIn(slice)) return false;
+			}
+		}
+		return true;
 	}
 
 	public bool IsTransferHaveSpace() => GetTransferGroup() < GetPathLength();
