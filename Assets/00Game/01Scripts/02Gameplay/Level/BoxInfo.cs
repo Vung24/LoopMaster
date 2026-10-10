@@ -118,7 +118,16 @@ public class BoxInfo
 	public bool IsEmpty() => CubeInfos.Count == 0 || GetSliceCount() == 0;
 	public bool IsFull() => GetSliceCount() >= GetTotalSize();
 	private int GetTotalSize() => GameData.GetSliceCapacity(BoxType);
-	public int GetSliceCount() => CubeInfos.Where(cube => cube != null).Sum(cube => cube.Size);
+	public int GetSliceCount()
+	{
+		int count = 0;
+		for (int i = 0; i < CubeInfos.Count; i++)
+		{
+			CubeInfo cube = CubeInfos[i];
+			if (cube != null) count = checked(count + cube.Size);
+		}
+		return count;
+	}
 	public int GetWantedCount() => GetTotalSize() - GetSliceCount();
 
 	public bool IsFinished()
@@ -126,7 +135,9 @@ public class BoxInfo
 		if (CubeInfos.Count == 0) return true;
 		if (BoxType == BoxType.Single || GetSliceCount() < GetTotalSize() || HasSurpriseCube()) return false;
 		int type = CubeInfos[CubeInfos.Count - 1].Type;
-		return CubeInfos.All(cube => cube.Type == type);
+		for (int i = 0; i < CubeInfos.Count; i++)
+			if (CubeInfos[i].Type != type) return false;
+		return true;
 	}
 
 	public bool IsSameColorOrEmpty() => IsEmpty() || IsCubeSameType();
@@ -135,7 +146,9 @@ public class BoxInfo
 	{
 		if (IsEmpty()) return false;
 		int type = GetTopType();
-		return CubeInfos.All(cube => cube.Type == type);
+		for (int i = 0; i < CubeInfos.Count; i++)
+			if (CubeInfos[i].Type != type) return false;
+		return true;
 	}
 
 	public bool CanShuffle() => BoxType != BoxType.Single && !HasUnFinishedCube() && !IsEmpty() &&
@@ -220,7 +233,12 @@ public class BoxInfo
 	public bool HasBlockingLock() => LockColor > 0 || NumLock > 0 || IsGroupLocked() || IsAdjacentLocked;
 	public bool HasBlockingLockExceptNumLock() => LockColor > 0 || IsGroupLocked() || IsAdjacentLocked;
 	public bool IsGroupLocked() => GroupInfo != null && GroupInfo.IsLocked;
-	public bool HasSurpriseCube() => CubeInfos.Any(cube => CubeData.IsSurpriseColor(cube.Type));
+	public bool HasSurpriseCube()
+	{
+		for (int i = 0; i < CubeInfos.Count; i++)
+			if (CubeData.IsSurpriseColor(CubeInfos[i].Type)) return true;
+		return false;
+	}
 	public bool IsSurpriseCubeFinished() => !IsFinished() && HasSurpriseCube() &&
 		GetSliceCount() >= GetTotalSize() && IsCubeSameType();
 }

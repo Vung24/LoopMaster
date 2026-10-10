@@ -36,6 +36,9 @@ public sealed class UICanvas : MonoBehaviour
 	private GameController _controller;
 	private Canvas _canvas;
 	private float _capacityFillWidth;
+	private int _displayedLevel = -1;
+	private int _displayedCapacityUsed = -1;
+	private int _displayedCapacityMaximum = -1;
 	private PauseDialogContent _pauseDialog;
 	private bool _visibilityInitialized;
 	private bool _inputInitialized;
@@ -76,8 +79,6 @@ public sealed class UICanvas : MonoBehaviour
 
 	private void OnEnable()
 	{
-		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
-		if (shadowBackground != null) shadowBackground.enabled = true;
 		if (!ActiveCanvases.Contains(this)) ActiveCanvases.Add(this);
 		CacheLegacyPrefabReferences();
 		ConfigureCanvasCamera();
@@ -88,8 +89,6 @@ public sealed class UICanvas : MonoBehaviour
 
 	private void OnDisable()
 	{
-		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
-		if (shadowBackground != null) shadowBackground.enabled = false;
 		_pauseVersion++;
 		_pauseLoading = false;
 		if (_pauseDialog != null) { _pauseDialog.gameObject.SetActive(false); Destroy(_pauseDialog.gameObject); }
@@ -137,6 +136,10 @@ public sealed class UICanvas : MonoBehaviour
 
 	public void Bind(GameController controller)
 	{
+		// Rebinding (including re-enable) must render the current values again.
+		_displayedLevel = -1;
+		_displayedCapacityUsed = -1;
+		_displayedCapacityMaximum = -1;
 		_controller = controller;
 		CacheLegacyPrefabReferences();
 		_undoTool = BindTool(_undoButton, InventoryKeys.TOOL_UNDO);
@@ -161,14 +164,23 @@ public sealed class UICanvas : MonoBehaviour
 		RefreshDisplay();
 	}
 
+	private GameBackgroundController ResolveShadowBackground()
+	{
+		GameController controller = _controller != null ? _controller : GameController.Current;
+		GameBg gameBg = controller != null ? controller.GameBg : null;
+		return gameBg != null ? gameBg.GetComponent<GameBackgroundController>() : null;
+	}
+
 	private void ConfigureBackground()
 	{
 		Camera mainCam = _controller != null ? _controller.MainCamera : Camera.main;
 		if (mainCam != null)
 		{
-			GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
-			if (shadowBackground == null) shadowBackground = gameObject.AddComponent<GameBackgroundController>();
-			shadowBackground.Bind(mainCam);
+			GameBackgroundController shadowBackground = ResolveShadowBackground();
+			if (shadowBackground != null)
+			{
+				shadowBackground.Bind(mainCam);
+			}
 			if (!_hasCachedMainCameraState)
 			{
 				_cachedMainCamera = mainCam;
@@ -393,8 +405,12 @@ public sealed class UICanvas : MonoBehaviour
 		if (_controller == null) _controller = GameController.Current;
 		if (_controller == null) return;
 
-		if (_controller.CurrentLevelNumber > 0 && _levelLabel != null)
-			_levelLabel.text = _controller.CurrentLevelNumber.ToString();
+		int level = _controller.CurrentLevelNumber;
+		if (level > 0 && _levelLabel != null && level != _displayedLevel)
+		{
+			_levelLabel.text = level.ToString();
+			_displayedLevel = level;
+		}
 
 		int maximum = Mathf.Max(0, _controller.RoadMaxCapacity);
 		int used = Mathf.Clamp(_controller.RoadUsedCapacity, 0, maximum);
@@ -403,13 +419,22 @@ public sealed class UICanvas : MonoBehaviour
 			_capacityFill.fillAmount = progress;
 		else if (_capacityFillRect != null)
 		{
-			if (_capacityFillWidth <= 0f && _capacityFillRect.rect.width > 0f)
-				_capacityFillWidth = _capacityFillRect.rect.width;
+			float currentWidth = _capacityFillRect.rect.width;
+			if (_capacityFillWidth <= 0f && currentWidth > 0f)
+				_capacityFillWidth = currentWidth;
 			if (_capacityFillWidth > 0f)
-				_capacityFillRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
-					_capacityFillWidth * progress);
+			{
+				float targetWidth = _capacityFillWidth * progress;
+				if (!Mathf.Approximately(currentWidth, targetWidth))
+					_capacityFillRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, targetWidth);
+			}
 		}
-		if (_capacityLabel != null) _capacityLabel.text = used + "/" + maximum;
+		if (_capacityLabel != null && (used != _displayedCapacityUsed || maximum != _displayedCapacityMaximum))
+		{
+			_capacityLabel.text = used + "/" + maximum;
+			_displayedCapacityUsed = used;
+			_displayedCapacityMaximum = maximum;
+		}
 
 		bool active = _controller.IsGameplayActive;
 		if (_pauseButton != null) _pauseButton.interactable = active;
