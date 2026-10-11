@@ -10,21 +10,18 @@ public sealed class GameLevelPresentationFlow
 {
     private readonly GameController _controller;
     private readonly GameLoader _loader;
-    private readonly Func<bool> _speedTutorialEnabled;
     private GameObject _canvas;
     private IReadOnlyList<Box> _boxes;
     private NewPlayerTutorial _newPlayerTutorial;
     private FeatureUnlockDialog _featureUnlockDialog;
     private LevelDifficultyPanel _difficultyPanel;
-    private Snui.Dialog _speedTutorialDialog;
     private CancellationTokenSource _levelPresentation;
     public bool IsPlaying { get; private set; }
 
-    public GameLevelPresentationFlow(GameController controller, GameLoader loader, Func<bool> speedTutorialEnabled)
+    public GameLevelPresentationFlow(GameController controller, GameLoader loader)
     {
         _controller = controller;
         _loader = loader;
-        _speedTutorialEnabled = speedTutorialEnabled;
     }
 
     public void OnBoxClicked(Transform capacityNode)
@@ -62,7 +59,6 @@ public sealed class GameLevelPresentationFlow
 			}
 			lifetime.Token.ThrowIfCancellationRequested();
 			CheckNewPlayerTutorial(data);
-			await CheckSpeedUpTutorial(lifetime.Token);
 		}
 		catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
 		finally
@@ -77,7 +73,7 @@ public sealed class GameLevelPresentationFlow
 	}
 
 	public FeatureType IsFeatureTutorial() => Snui.CheatManager.SkipTutorial ? FeatureType.None : FeatureUnlockDialog.GetUnseenFeature(_controller.Data,
-		(FeatureType)PlayerPrefs.GetInt("offline_FeatureTutorialState", 0));
+		(FeatureType)GamePrefs.GetInt(GamePrefKeys.FeatureTutorial, 0));
 
 	private async UniTask ShowFeatureTutorial(CancellationToken token)
 	{
@@ -88,9 +84,9 @@ public sealed class GameLevelPresentationFlow
 		if (dialog == null) { Destroy(instance); return; }
 		_featureUnlockDialog = dialog;
 		IsPlaying = true;
-		PlayerPrefs.SetInt("offline_FeatureTutorialState",
-			PlayerPrefs.GetInt("offline_FeatureTutorialState", 0) | (int)feature);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(GamePrefKeys.FeatureTutorial,
+			GamePrefs.GetInt(GamePrefKeys.FeatureTutorial, 0) | (int)feature);
+		GamePrefs.Save();
 		dialog.Init(feature);
 		await UniTask.WaitUntil(() => dialog == null || !dialog.gameObject.activeInHierarchy, cancellationToken: token);
 		if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
@@ -120,40 +116,6 @@ public sealed class GameLevelPresentationFlow
 		else if (stage == 2) _newPlayerTutorial.ShowLevel2();
 	}
 
-	private bool ShouldShowSpeedUpTutorial()
-	{
-		if (_speedTutorialEnabled == null || !_speedTutorialEnabled()) return false;
-		return !Snui.CheatManager.SkipTutorial && GameProgressStore.HighestUnlockedLevel >= 5 &&
-			PlayerPrefs.GetInt("offline_HasShowSpeedUpTutorial", 0) == 0;
-	}
-
-	private async UniTask CheckSpeedUpTutorial(CancellationToken token)
-	{
-		if (!ShouldShowSpeedUpTutorial()) return;
-		IsPlaying = true;
-		SpeedUpTutorialDialogContent content = await SpeedUpTutorialDialogContent.Show(_canvas.transform);
-		if (content == null) return;
-		Snui.Dialog dialog = content.GetComponentInParent<Snui.Dialog>();
-		try
-		{
-			token.ThrowIfCancellationRequested();
-			_speedTutorialDialog = dialog;
-			PlayerPrefs.SetInt("offline_HasShowSpeedUpTutorial", 1);
-			PlayerPrefs.Save();
-			await UniTask.WaitUntil(() => content == null || content.Result != Snui.DialogContent.RESULT_UNKNOWN ||
-				!content.gameObject.activeInHierarchy, cancellationToken: token);
-		}
-		finally
-		{
-			if (dialog != null)
-			{
-				dialog.gameObject.SetActive(false);
-				Destroy(dialog.gameObject);
-			}
-			if (_speedTutorialDialog == dialog) _speedTutorialDialog = null;
-		}
-	}
-
 	public void Cancel()
 	{
 		CancellationTokenSource lifetime = _levelPresentation;
@@ -174,12 +136,6 @@ public sealed class GameLevelPresentationFlow
 			Destroy(_difficultyPanel.gameObject);
 		}
 		_difficultyPanel = null;
-		if (_speedTutorialDialog != null)
-		{
-			_speedTutorialDialog.gameObject.SetActive(false);
-			Destroy(_speedTutorialDialog.gameObject);
-		}
-		_speedTutorialDialog = null;
 	}
 
 }

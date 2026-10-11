@@ -152,25 +152,23 @@ public static class BottleRules
 		}
 
 		SolverBlock top = bottle[bottle.Count - 1];
-		if (!top.IsSecret)
-		{
-			return false;
-		}
-
-		revealedColor = top.Color;
+		bool revealed = false;
 		for (int i = bottle.Count - 1; i >= 0; i--)
 		{
 			SolverBlock block = bottle[i];
-			if (!block.IsSecret || block.Color != revealedColor)
+			if (block.Color != top.Color)
 			{
 				break;
 			}
 
+			if (!block.IsSecret) continue;
 			block.IsSecret = false;
 			bottle[i] = block;
+			revealed = true;
 		}
 
-		return true;
+		if (revealed) revealedColor = top.Color;
+		return revealed;
 	}
 
 	public static bool IsPureColorPriorityTarget(

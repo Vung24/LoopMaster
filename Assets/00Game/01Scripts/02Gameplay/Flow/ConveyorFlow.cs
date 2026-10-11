@@ -10,6 +10,9 @@ public sealed class ConveyorFlow
 	private readonly Func<bool> _canTick;
 	private readonly Func<Slice, bool> _checkInBox;
 	private readonly Action _checkGameOver;
+	private readonly Action<bool> _arrivalBatch;
+	private readonly Dictionary<SliceInfo, bool> _preparedMoves = new Dictionary<SliceInfo, bool>();
+	private bool _preparingMoves;
 	private readonly List<SliceInfo> _arrivedSlices = new List<SliceInfo>();
 	private readonly List<SliceInfo> _orderedSlices = new List<SliceInfo>();
 	private readonly List<SliceInfo> _moveSlices = new List<SliceInfo>();
@@ -41,7 +44,7 @@ public sealed class ConveyorFlow
 
 	public ConveyorFlow(IReadOnlyList<Box> boxes, IReadOnlyList<GameRoad> roads,
 		IReadOnlyList<PathArrow> pathArrows, Func<bool> canTick,
-		Func<Slice, bool> checkInBox, Action checkGameOver)
+		Func<Slice, bool> checkInBox, Action checkGameOver, Action<bool> arrivalBatch = null)
 	{
 		_boxes = boxes;
 		_roads = roads;
@@ -49,6 +52,7 @@ public sealed class ConveyorFlow
 		_canTick = canTick;
 		_checkInBox = checkInBox;
 		_checkGameOver = checkGameOver;
+		_arrivalBatch = arrivalBatch;
 	}
 
 	public void Reset(GameData data, CoreGameplayEngine engine)
@@ -65,6 +69,8 @@ public sealed class ConveyorFlow
 
 	private void ClearSliceBuffers()
 	{
+		_preparingMoves = false;
+		_preparedMoves.Clear();
 		_arrivedSlices.Clear();
 		_orderedSlices.Clear();
 		_moveSlices.Clear();
@@ -164,11 +170,16 @@ public sealed class ConveyorFlow
 		_arrivedSlices.AddRange(Data.TransferSlice);
 		try
 		{
-			for (int i = 0; i < _arrivedSlices.Count; i++)
+			try
 			{
-				SliceInfo info = _arrivedSlices[i];
-				if (info.SliceSc != null) _checkInBox(info.SliceSc);
+				_arrivalBatch?.Invoke(true);
+				for (int i = 0; i < _arrivedSlices.Count; i++)
+				{
+					SliceInfo info = _arrivedSlices[i];
+					if (info.SliceSc != null) _checkInBox(info.SliceSc);
+				}
 			}
+			finally { _arrivalBatch?.Invoke(false); }
 
 			MoveTransferSlice(interval, isSpeedUp);
 		}
@@ -204,10 +215,21 @@ public sealed class ConveyorFlow
 
 	private void MoveTransferSlice(float interval, bool isSpeedUp)
 	{
-		List<SliceInfo> moveSlices = GetMoveSlice(isSpeedUp);
-		if (moveSlices.Count == 0) return;
-
-		int moveIndex = GetSliceBeginMoveIndex(moveSlices);
+		List<SliceInfo> moveSlices;
+		int moveIndex;
+		_preparedMoves.Clear();
+		_preparingMoves = true;
+		try
+		{
+			moveSlices = GetMoveSlice(isSpeedUp);
+			if (moveSlices.Count == 0) return;
+			moveIndex = GetSliceBeginMoveIndex(moveSlices);
+		}
+		finally
+		{
+			_preparingMoves = false;
+			_preparedMoves.Clear();
+		}
 		bool isOverlapMove = false;
 		if (moveIndex < 0)
 		{
@@ -335,6 +357,11 @@ public sealed class ConveyorFlow
 
 	private bool IsSliceCanMove(SliceInfo slice, bool isOverlapMove = false)
 	{
-		return _engine != null && _engine.CanMove(slice, isOverlapMove);
+		if (_engine == null) return false;
+		if (!_preparingMoves || isOverlapMove || slice == null) return _engine.CanMove(slice, isOverlapMove);
+		if (_preparedMoves.TryGetValue(slice, out bool canMove)) return canMove;
+		canMove = _engine.CanMove(slice, false);
+		_preparedMoves.Add(slice, canMove);
+		return canMove;
 	}
 }

@@ -49,7 +49,7 @@ namespace Snui
 		protected virtual void Start()
 		{
 			if (!string.IsNullOrEmpty(InventoryKey))
-				SetNumber(Mathf.Max(0, PlayerPrefs.GetInt("offline_inventory_" + InventoryKey, ReadDisplayedNumber())));
+				SetNumber(Mathf.Max(0, GamePrefs.GetInt(GamePrefKeys.Inventory(InventoryKey), ReadDisplayedNumber())));
 			else SetNumber(ReadDisplayedNumber());
 		}
 

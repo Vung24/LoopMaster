@@ -7,8 +7,8 @@ namespace ShopUI
     {
         public static event Action<string, bool> PurchaseFinished;
         public static bool IsBusy { get; private set; }
-        public static bool IsAnyPurchased => PlayerPrefs.GetInt("offline_shop_any_purchase", 0) != 0;
-        public static int PurchaseCount(string id) => PlayerPrefs.GetInt("offline_shop_purchase_" + ShopProductCatalog.CanonicalId(id), 0);
+        public static bool IsAnyPurchased => GamePrefs.GetInt(GamePrefKeys.AnyPurchase, 0) != 0;
+        public static int PurchaseCount(string id) => GamePrefs.GetInt(GamePrefKeys.ShopPurchase(ShopProductCatalog.CanonicalId(id)), 0);
 
         public static void Purchase(string id, string route)
         {
@@ -35,9 +35,9 @@ namespace ShopUI
                 if (Managers.Pass == null || !Managers.Pass.CanPurchaseVIP()) return false;
                 Managers.Pass.SetVip();
                 if (!Managers.Pass.HasActiveVip) return false;
-                PlayerPrefs.SetInt("offline_shop_purchase_" + id, PurchaseCount(id) + 1);
-                PlayerPrefs.SetInt("offline_shop_any_purchase", 1);
-                PlayerPrefs.Save();
+                GamePrefs.SetInt(GamePrefKeys.ShopPurchase(id), PurchaseCount(id) + 1);
+                GamePrefs.SetInt(GamePrefKeys.AnyPurchase, 1);
+                GamePrefs.Save();
                 return true;
             }
             var rewards = ShopProductCatalog.GetRewards(id);
@@ -53,10 +53,10 @@ namespace ShopUI
                         if (reward.Type == RewardType.InfinityHeart) Managers.Heart.AddInfinite(reward.Count);
             }
             if (id == ShopProductCatalog.NoAds || id == ShopProductCatalog.NoAdsPlus)
-                PlayerPrefs.SetInt("HasRemovedAds", 1);
-            PlayerPrefs.SetInt("offline_shop_purchase_" + id, PurchaseCount(id) + 1);
-            PlayerPrefs.SetInt("offline_shop_any_purchase", 1);
-            PlayerPrefs.Save();
+                GamePrefs.SetInt(GamePrefKeys.RemovedAds, 1);
+            GamePrefs.SetInt(GamePrefKeys.ShopPurchase(id), PurchaseCount(id) + 1);
+            GamePrefs.SetInt(GamePrefKeys.AnyPurchase, 1);
+            GamePrefs.Save();
             return true;
         }
     }

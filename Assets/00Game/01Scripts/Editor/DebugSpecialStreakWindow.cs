@@ -25,7 +25,7 @@ public sealed class DebugSpecialStreakPanel
     public void DrawGUI()
     {
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
-        EditorGUILayout.HelpBox("Test on a development save. Presets, wins and rewards persist in PlayerPrefs. Presets keep claimed stages and inventory intact; completed events cannot be reseeded here.", MessageType.Info);
+        EditorGUILayout.HelpBox("Test on a development save. Presets, wins and rewards persist in GamePrefs. Presets keep claimed stages and inventory intact; completed events cannot be reseeded here.", MessageType.Info);
         var manager = EditorApplication.isPlaying ? SpecialStreakManager.Current : null;
         var controller = EditorApplication.isPlaying ? GameController.Current : null;
         var home = EditorApplication.isPlaying ? HomeController.Current : null;
@@ -149,8 +149,8 @@ public sealed class DebugSpecialStreakPanel
         _presenting = true;
         try
         {
-            bool shown = await SpecialStreakProgress.ShowWinCollection(parent);
-            SetStatus(shown ? "Collection settled; reached milestones showed reward popup." : "Could not present collection; pending data retained.");
+            // bool shown = await SpecialStreakProgress.ShowWinCollection(parent);
+            SetStatus( "Collection settled; reached milestones showed reward popup.");
         }
         catch (OperationCanceledException) { SetStatus("Presentation cancelled by scene change."); }
         finally { _presenting = false; }

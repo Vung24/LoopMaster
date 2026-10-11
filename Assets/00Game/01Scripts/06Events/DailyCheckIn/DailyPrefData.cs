@@ -12,7 +12,7 @@ namespace Snui
 
 	public static class DailyPrefKeys
 	{
-		public static string DailyCheckInData = "DailyCheckInData";
+		public static string DailyCheckInData = GamePrefKeys.DailyCheckIn;
 	}
 
 	[Serializable]

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public sealed class SpecialStreakManager : MonoBehaviour
 {
-    public const string DATA_PATH = "offline_special_streak_data_v1";
+    public const string DATA_PATH = GamePrefKeys.SpecialStreak;
     private static readonly int[] Multipliers = { 1, 5, 10, 25, 100 };
     public static SpecialStreakManager Current { get; private set; }
     public event Action Changed;
@@ -63,7 +63,7 @@ public sealed class SpecialStreakManager : MonoBehaviour
                     if (reward == null || reward.count < 0 || RewardType.FromString(reward.type) == RewardType.Unknown)
                         throw new InvalidOperationException("Invalid SpecialStreak reward.");
             }
-            _data = PlayerPrefs.HasKey(DATA_PATH) ? JsonUtility.FromJson<SpecialStreakData>(PlayerPrefs.GetString(DATA_PATH)) : new SpecialStreakData();
+            _data = GamePrefs.HasKey(DATA_PATH) ? JsonUtility.FromJson<SpecialStreakData>(GamePrefs.GetString(DATA_PATH)) : new SpecialStreakData();
             if (_data == null || _data.Version != 1 || _data.CurrCount < 0 || _data.TempCount < 0 ||
                 _data.ClaimedIndex < 0 || _data.ClaimedIndex > _rewardInfoConfigs.Count ||
                 _data.MultiplierIndex < 0 || _data.MultiplierIndex >= Multipliers.Length ||
@@ -213,12 +213,12 @@ public sealed class SpecialStreakManager : MonoBehaviour
         return true;
     }
 #endif
-    private void SaveData() { PlayerPrefs.SetString(DATA_PATH, JsonUtility.ToJson(_data)); PlayerPrefs.Save(); }
+    private void SaveData() { GamePrefs.SetString(DATA_PATH, JsonUtility.ToJson(_data)); GamePrefs.Save(); }
     public static void ClearOfflineData()
     {
-        PlayerPrefs.DeleteKey(DATA_PATH);
+        GamePrefs.DeleteKey(DATA_PATH);
         if (Current != null) { Current._data = new SpecialStreakData(); Current._invalid = false; }
-        PlayerPrefs.Save();
+        GamePrefs.Save();
     }
     private void OnDestroy() { if (Current == this) Current = null; }
 }

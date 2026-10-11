@@ -20,26 +20,26 @@ public class BaseHeartManager : BaseManager
 
 	private readonly List<FreeHeart> _freeHearts = new List<FreeHeart>();
 
-	private const string InfiniteHeartEndTimeKey = "infiniteHeartEndTime";
-	private const string LastHeartRefillTimeKey = "lastRecoverHeartTime";
-	private const string HeartCountKey = "Heart";
+	private const string InfiniteHeartEndTimeKey = GamePrefKeys.InfiniteHeartEnd;
+	private const string LastHeartRefillTimeKey = GamePrefKeys.HeartRefillTime;
+	private const string HeartCountKey = GamePrefKeys.HeartCount;
 
 	public int LastHeartRefillTime
 	{
-		get => PlayerPrefs.GetInt(LastHeartRefillTimeKey, 0);
-		set { PlayerPrefs.SetInt(LastHeartRefillTimeKey, value); PlayerPrefs.Save(); }
+		get => GamePrefs.GetInt(LastHeartRefillTimeKey, 0);
+		set { GamePrefs.SetInt(LastHeartRefillTimeKey, value); GamePrefs.Save(); }
 	}
 
 	public int InfiniteHeartEndTime
 	{
-		get => PlayerPrefs.GetInt(InfiniteHeartEndTimeKey, 0);
-		set { PlayerPrefs.SetInt(InfiniteHeartEndTimeKey, value); PlayerPrefs.Save(); }
+		get => GamePrefs.GetInt(InfiniteHeartEndTimeKey, 0);
+		set { GamePrefs.SetInt(InfiniteHeartEndTimeKey, value); GamePrefs.Save(); }
 	}
 
 	private int HeartCount
 	{
-		get => PlayerPrefs.GetInt(HeartCountKey, MAX_HEART);
-		set { PlayerPrefs.SetInt(HeartCountKey, value); PlayerPrefs.Save(); }
+		get => GamePrefs.GetInt(HeartCountKey, MAX_HEART);
+		set { GamePrefs.SetInt(HeartCountKey, value); GamePrefs.Save(); }
 	}
 
 	public int InfiniteLeftTime => Mathf.Max(0, InfiniteHeartEndTime - (int)TimeUtils.GetUnixTimestamp());
@@ -188,10 +188,10 @@ public class BaseHeartManager : BaseManager
 	public override void ClearData()
 	{
 		_freeHearts.Clear();
-		PlayerPrefs.DeleteKey(InfiniteHeartEndTimeKey);
-		PlayerPrefs.DeleteKey(LastHeartRefillTimeKey);
-		PlayerPrefs.DeleteKey(HeartCountKey);
-		PlayerPrefs.Save();
+		GamePrefs.DeleteKey(InfiniteHeartEndTimeKey);
+		GamePrefs.DeleteKey(LastHeartRefillTimeKey);
+		GamePrefs.DeleteKey(HeartCountKey);
+		GamePrefs.Save();
 		MAX_HEART = DEFAULT_MAX_HEART;
 		HeartCount = MAX_HEART;
 		OnHeartChanged?.Invoke();

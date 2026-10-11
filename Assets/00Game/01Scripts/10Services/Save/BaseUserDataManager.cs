@@ -2,7 +2,6 @@ using UnityEngine;
 
 public abstract class BaseUserDataManager : MonoBehaviour, IGameManager
 {
-	private const string Prefix = "offline_";
 
 	public ManagerStatus status { get; protected set; } = ManagerStatus.Shutdown;
 
@@ -104,17 +103,17 @@ public abstract class BaseUserDataManager : MonoBehaviour, IGameManager
 		SpecialStreakManager.ClearOfflineData();
 		GameProgressStore.DeleteProgress();
 		InventoryManager.Ensure().ResetInventory();
-		PlayerPrefs.DeleteKey("offline_free_revive_used");
-		foreach (string key in keys) PlayerPrefs.DeleteKey(Prefix + key);
-		PlayerPrefs.Save();
+		GamePrefs.DeleteKey(GamePrefKeys.FreeRevive);
+		foreach (string key in keys) GamePrefs.DeleteKey(GamePrefKeys.UserData(key));
+		GamePrefs.Save();
 	}
 
-	public int GetInt(string key, int defaultValue = 0) => PlayerPrefs.GetInt(Prefix + key, defaultValue);
-	public void SetInt(string key, int value) { PlayerPrefs.SetInt(Prefix + key, value); PlayerPrefs.Save(); }
+	public int GetInt(string key, int defaultValue = 0) => GamePrefs.GetInt(GamePrefKeys.UserData(key), defaultValue);
+	public void SetInt(string key, int value) { GamePrefs.SetInt(GamePrefKeys.UserData(key), value); GamePrefs.Save(); }
 	public bool GetBool(string key, bool defaultValue = false) => GetInt(key, defaultValue ? 1 : 0) != 0;
 	public void SetBool(string key, bool value) => SetInt(key, value ? 1 : 0);
-	public string GetString(string key, string defaultValue = null) => PlayerPrefs.GetString(Prefix + key, defaultValue ?? string.Empty);
-	public void SetString(string key, string value) { PlayerPrefs.SetString(Prefix + key, value ?? string.Empty); PlayerPrefs.Save(); }
+	public string GetString(string key, string defaultValue = null) => GamePrefs.GetString(GamePrefKeys.UserData(key), defaultValue ?? string.Empty);
+	public void SetString(string key, string value) { GamePrefs.SetString(GamePrefKeys.UserData(key), value ?? string.Empty); GamePrefs.Save(); }
 
 	protected virtual void OnLoginDayChanged() { }
 	protected virtual void OnColorBlindChanged() { }
