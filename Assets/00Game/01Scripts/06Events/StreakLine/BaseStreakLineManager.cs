@@ -8,7 +8,7 @@ namespace Snui.StreakLine
 	public class BaseStreakLineManager : BaseEventManager
 	{
 		public const int UNLOCK_LEVEL = 26;
-		private const string SAVE_KEY = "streak_line_data";
+		private const string SAVE_KEY = GamePrefKeys.StreakLine;
 
 		[SerializeField]
 		private StreakLineConfig _config = new StreakLineConfig();
@@ -344,9 +344,9 @@ namespace Snui.StreakLine
 		{
 			try
 			{
-				if (PlayerPrefs.HasKey(SAVE_KEY))
+				if (GamePrefs.HasKey(SAVE_KEY))
 				{
-					string json = PlayerPrefs.GetString(SAVE_KEY, string.Empty);
+					string json = GamePrefs.GetString(SAVE_KEY, string.Empty);
 					if (!string.IsNullOrEmpty(json))
 					{
 						_data = JsonUtility.FromJson<StreakLineData>(json);
@@ -368,8 +368,8 @@ namespace Snui.StreakLine
 			try
 			{
 				string json = JsonUtility.ToJson(_data);
-				PlayerPrefs.SetString(SAVE_KEY, json);
-				PlayerPrefs.Save();
+				GamePrefs.SetString(SAVE_KEY, json);
+				GamePrefs.Save();
 			}
 			catch (Exception)
 			{
@@ -379,8 +379,8 @@ namespace Snui.StreakLine
 		public override void ClearData()
 		{
 			_data = new StreakLineData();
-			PlayerPrefs.DeleteKey(SAVE_KEY);
-			PlayerPrefs.Save();
+			GamePrefs.DeleteKey(SAVE_KEY);
+			GamePrefs.Save();
 		}
 
 		public virtual UniTask PreloadAssets() => UniTask.CompletedTask;

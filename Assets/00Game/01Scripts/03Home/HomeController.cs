@@ -119,7 +119,7 @@ public class HomeController : MonoBehaviour
 			if (slot != null) { restored.transform.SetSiblingIndex(slot.GetSiblingIndex()); slot.gameObject.SetActive(false); Destroy(slot.gameObject); }
 			_specialStreak = restored.GetComponent<SpecialStreakProgress>();
 		}
-		if (_specialStreak != null) { _specialStreak.gameObject.SetActive(true); _specialStreak.Bind(this); }
+		if (_specialStreak != null) { _specialStreak.gameObject.SetActive(true); _specialStreak.Bind(this, false); }
 		if (DailyCheckInManager.IsOpen)
 		{
 			_dailyCheckIn = HomePage.GetComponent<DailyCheckInHomeUI>();

@@ -54,9 +54,14 @@ public class GameController : MonoBehaviour
 	public bool CanRequestUndoTool => !IsBoosterShopOpen && Boosters.CanRequestUndo;
 	public bool CanRequestShuffleTool => !IsBoosterShopOpen && Boosters.CanRequestShuffle;
 	public bool CanRequestPathTool => !IsBoosterShopOpen && Boosters.CanRequestPath;
+	public void GetToolRequestState(out bool undo, out bool shuffle, out bool path)
+	{
+		undo = shuffle = path = false;
+		if (!IsBoosterShopOpen) Boosters.GetRequestState(out undo, out shuffle, out path);
+	}
 	public bool CanRevive => Data != null && Data.PathPoints.Count > 1 &&
 		EndState == GameEndState.Failed && !_isTransitioningLevel;
-	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && PlayerPrefs.GetInt("offline_HasShowFailTutorial", 0) == 0;
+	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && GamePrefs.GetInt(GamePrefKeys.FailTutorial, 0) == 0;
 	public bool CanReplayLevel => Data != null && !_isTransitioningLevel && EndState != GameEndState.Won && !GameProgressStore.IsLevelCompleted(CurrentLevelNumber);
 	public bool CanLoadNextLevel => EndState == GameEndState.Won && !_isTransitioningLevel &&
 		_levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber);
@@ -116,11 +121,12 @@ public class GameController : MonoBehaviour
 	private ConveyorFlow Conveyor => _conveyorFlow ?? (_conveyorFlow = new ConveyorFlow(
 		Scene.Boxes, Scene.Roads, Scene.PathArrows,
 		() => CanTickConveyor,
-		slice => IsGameplayActive && Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight), CheckGameOver));
+		slice => IsGameplayActive && Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight), CheckGameOver,
+		active => { if (active) Transfers.BeginArrivalBatch(); else Transfers.EndArrivalBatch(); }));
 	private SliceTransferFlow _sliceTransferFlow;
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
 		this, Scene.Boxes, () => _isGameStart,
-		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver));
+		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp));
 	[SerializeField] private Camera _mainCamera;
 	[SerializeField] private Camera _topCamera;
 	[SerializeField] private Camera _uiCamera;
@@ -143,11 +149,10 @@ public class GameController : MonoBehaviour
 	private GameObject _uiCanvasInstance;
 	private GameLevelPresentationFlow _presentation;
 	private GameLevelPresentationFlow Presentation => _presentation ?? (_presentation =
-		new GameLevelPresentationFlow(this, _gameLoader, () => _enableSpeedUpTutorial));
+		new GameLevelPresentationFlow(this, _gameLoader));
 	private GameBoosterUIFlow _boosterUI;
 	private GameBoosterUIFlow BoosterUI => _boosterUI ?? (_boosterUI = new GameBoosterUIFlow(this));
 	private bool IsBoosterShopOpen => _boosterUI != null && _boosterUI.IsOpen;
-	[SerializeField] private bool _enableSpeedUpTutorial = true;
 
 	private void Awake()
 	{

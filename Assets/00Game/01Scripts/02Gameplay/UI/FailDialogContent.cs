@@ -119,7 +119,7 @@ public class FailDialogContent : DialogContent
 			SetTitle(useCoins ? "NEED 900 COINS" : "TRY AGAIN");
 			return;
 		}
-		if (_isFreeRevive) { PlayerPrefs.SetInt("offline_free_revive_used", 1); PlayerPrefs.Save(); }
+		if (_isFreeRevive) { GamePrefs.SetInt(GamePrefKeys.FreeRevive, 1); GamePrefs.Save(); }
 		Dismiss(way == "coin" ? 1 : way == "free" ? 3 : 2);
 	}
 	private void UpdateButtons()

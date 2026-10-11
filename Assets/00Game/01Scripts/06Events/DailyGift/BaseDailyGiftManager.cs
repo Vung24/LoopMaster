@@ -15,9 +15,9 @@ namespace Snui
 
 	public abstract class BaseDailyGiftManager : BaseManager
 	{
-		private const string PrefSignDay = "daily_gift_sign_day";
-		private const string PrefSignTime = "daily_gift_sign_time";
-		private const string PrefFirstLaunchTime = "daily_gift_first_launch_time";
+		private const string PrefSignDay = GamePrefKeys.DailyGiftDay;
+		private const string PrefSignTime = GamePrefKeys.DailyGiftTime;
+		private const string PrefFirstLaunchTime = GamePrefKeys.DailyGiftLaunch;
 
 		public List<int> SignMonthSections = new List<int>();
 		public UnityEvent OnSignClaimTimeChanged = new UnityEvent();
@@ -27,10 +27,10 @@ namespace Snui
 		public override void Startup()
 		{
 			base.Startup();
-			if (!PlayerPrefs.HasKey(PrefFirstLaunchTime))
+			if (!GamePrefs.HasKey(PrefFirstLaunchTime))
 			{
-				PlayerPrefs.SetInt(PrefFirstLaunchTime, (int)TimeUtils.GetUnixTimestamp());
-				PlayerPrefs.Save();
+				GamePrefs.SetInt(PrefFirstLaunchTime, (int)TimeUtils.GetUnixTimestamp());
+				GamePrefs.Save();
 			}
 			InitMonthSections();
 		}
@@ -42,7 +42,7 @@ namespace Snui
 
 		public virtual bool IsUnlocked()
 		{
-			return PlayerPrefs.HasKey(PrefFirstLaunchTime) && !TimeUtils.IsToday(PlayerPrefs.GetInt(PrefFirstLaunchTime));
+			return GamePrefs.HasKey(PrefFirstLaunchTime) && !TimeUtils.IsToday(GamePrefs.GetInt(PrefFirstLaunchTime));
 		}
 
 		public bool ShouldShowIcon()
@@ -59,7 +59,7 @@ namespace Snui
 		public virtual bool HasNewDailyGift()
 		{
 			if (!IsUnlocked()) return false;
-			long lastClaimTime = PlayerPrefs.GetInt(PrefSignTime, 0);
+			long lastClaimTime = GamePrefs.GetInt(PrefSignTime, 0);
 			return !TimeUtils.IsToday(lastClaimTime);
 		}
 
@@ -70,20 +70,20 @@ namespace Snui
 
 		public int GetSignDay()
 		{
-			return PlayerPrefs.GetInt(PrefSignDay, 0);
+			return GamePrefs.GetInt(PrefSignDay, 0);
 		}
 
 		public void AddSignDay()
 		{
 			int current = GetSignDay();
-			PlayerPrefs.SetInt(PrefSignDay, current + 1);
-			PlayerPrefs.Save();
+			GamePrefs.SetInt(PrefSignDay, current + 1);
+			GamePrefs.Save();
 		}
 
 		public void RefreshSignClaimTime()
 		{
-			PlayerPrefs.SetInt(PrefSignTime, (int)TimeUtils.GetUnixTimestamp());
-			PlayerPrefs.Save();
+			GamePrefs.SetInt(PrefSignTime, (int)TimeUtils.GetUnixTimestamp());
+			GamePrefs.Save();
 			OnSignClaimTimeChanged?.Invoke();
 		}
 
@@ -126,16 +126,16 @@ namespace Snui
 				}
 			}
 			if (!InventoryManager.Ensure().TryClaimRewards("DailyGift/day/" + (signDay + 1), rewards, out _)) return false;
-			PlayerPrefs.SetInt(PrefSignDay, signDay + 1);
+			GamePrefs.SetInt(PrefSignDay, signDay + 1);
 			RefreshSignClaimTime();
 			return true;
 		}
 
 		public override void ClearData()
 		{
-			PlayerPrefs.DeleteKey(PrefSignDay);
-			PlayerPrefs.DeleteKey(PrefSignTime);
-			PlayerPrefs.Save();
+			GamePrefs.DeleteKey(PrefSignDay);
+			GamePrefs.DeleteKey(PrefSignTime);
+			GamePrefs.Save();
 		}
 	}
 }

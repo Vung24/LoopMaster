@@ -246,13 +246,13 @@ public sealed class CoreGameplayEngine
 	{
 		if (box == null) return false;
 		box.ClearCubes();
-		int secretType = -1;
+		int secretType = box.GetTopType();
 		bool revealed = false;
 		for (int i = box.CubeInfos.Count - 1; i >= 0; i--)
 		{
 			CubeInfo cube = box.CubeInfos[i];
-			if (!cube.IsSecret || (secretType >= 0 && cube.Type != secretType)) break;
-			secretType = cube.Type;
+			if (cube.Type != secretType) break;
+			if (!cube.IsSecret) continue;
 			cube.IsSecret = false;
 			revealed = true;
 		}

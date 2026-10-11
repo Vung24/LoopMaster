@@ -24,7 +24,7 @@ namespace ShopUI
 				"loop.coins.1000", "loop.coins.5000", "loop.coins.10000",
 				"loop.coins.25000", "loop.coins.50000", "loop.coins.100000"
 			};
-			if (PlayerPrefs.GetInt("is_open_remove_ad", 0) == 1)
+			if (GamePrefs.GetInt(GamePrefKeys.RemoveAdsOffer, 0) == 1)
 			{
 				list.Insert(1, ShopProductCatalog.NoAdsPlus);
 				list.Insert(2, ShopProductCatalog.NoAds);
@@ -39,7 +39,7 @@ namespace ShopUI
 			if (type == ShopProductCatalog.Beginner) return OfflineShopPurchases.PurchaseCount(type) > 0;
 			if (type == ShopProductCatalog.NoAds || type == ShopProductCatalog.NoAdsPlus)
 			{
-				return PlayerPrefs.GetInt("HasRemovedAds", 0) == 1;
+				return GamePrefs.GetInt(GamePrefKeys.RemovedAds, 0) == 1;
 			}
 			return false;
 		}

@@ -167,7 +167,7 @@ public class GameLoader : MonoBehaviour
 		Snui.PrefabLibrary library = Snui.PrefabLibrary.Current;
 		if (library != null)
 		{
-			bool blue = PlayerPrefs.GetInt("offline_IsBlueSkin", 0) != 0;
+			bool blue = GamePrefs.GetInt(GamePrefKeys.BlueSkin, 0) != 0;
 			NewPlayerTutorialPrefab = blue && library.NewPlayerTutorialBluePrefab != null
 				? library.NewPlayerTutorialBluePrefab : library.NewPlayerTutorialPrefab;
 			FailTutorialPrefab = blue && library.FailTutorialBluePrefab != null

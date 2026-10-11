@@ -50,7 +50,6 @@ public class SpecialStreakProgress : MonoBehaviour
     private readonly AnimSpeedController _animSpeedController = new AnimSpeedController();
     private bool _canSpeedUpAddCollectionAnim;
     private bool _isLeavingHome;
-    private static bool _winCollectionPlaying;
 
     private HomeController _home;
     private SpecialStreakManager _manager;
@@ -531,25 +530,18 @@ public class SpecialStreakProgress : MonoBehaviour
         return true;
     }
 
-    public static async UniTask<bool> ShowWinCollection(Transform parent)
+    public async UniTask<bool> ShowHomeCollection(Transform parent)
     {
-        if (_winCollectionPlaying) return false;
-        var manager = SpecialStreakManager.Ensure();
+        if (IsAnimating || !isActiveAndEnabled) return false;
+        var manager = _manager ?? SpecialStreakManager.Ensure();
         if (!manager.ShouldSettleCollectionResult()) return true;
-        var prefab = PrefabLibrary.Current?.SpecialStreakProgressPrefab;
-        if (parent == null || prefab == null) return false;
-        var instance = Instantiate(prefab, parent, false);
-        RewardDialog.PrepareOverlay(instance, 1340);
-        var progress = instance.GetComponent<SpecialStreakProgress>();
-        if (progress == null) { Destroy(instance); return false; }
-        _winCollectionPlaying = true;
+        if (parent == null) return false;
         RewardDialog dialog = null;
         try
         {
             int claimedBefore = manager.ClaimedIndex;
-            progress.Bind(null, false);
-            await progress.PlayAnims(false);
-            if (progress == null || manager.ShouldSettleCollectionResult()) return false;
+            await PlayAnims(false);
+            if (this == null || manager.ShouldSettleCollectionResult()) return false;
             if (manager.ClaimedIndex > claimedBefore)
             {
                 var rewards = new List<RewardItem>();
@@ -558,15 +550,13 @@ public class SpecialStreakProgress : MonoBehaviour
                 dialog = await RewardDialog.ShowSpecialStreakRewards(rewards, parent);
                 if (dialog != null)
                     await UniTask.WaitUntil(() => dialog == null || !dialog.isActiveAndEnabled,
-                        cancellationToken: instance.GetCancellationTokenOnDestroy());
+                        cancellationToken: this.GetCancellationTokenOnDestroy());
             }
             return true;
         }
         finally
         {
-            _winCollectionPlaying = false;
             if (dialog != null) Destroy(dialog.gameObject);
-            if (instance != null) Destroy(instance);
         }
     }
 

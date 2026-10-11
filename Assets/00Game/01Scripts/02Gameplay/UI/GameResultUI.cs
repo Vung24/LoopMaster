@@ -205,7 +205,7 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_preFailContent != null)
 		{
 			if (_failContent != null) _failContent.Hide();
-			_preFailContent.Configure(PlayerPrefs.GetInt("offline_free_revive_used", 0) == 0, ShowFinalFailure);
+			_preFailContent.Configure(GamePrefs.GetInt(GamePrefKeys.FreeRevive, 0) == 0, ShowFinalFailure);
 			_preFailContent.Show();
 			ShowStreakWarning(_preFailContent.transform);
 			ShowFailTutorial(_preFailContent);
@@ -219,7 +219,7 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_controller == null || _controller.EndState != GameEndState.Failed) return;
 		if (_preFailContent != null) _preFailContent.Hide();
 		if (_failContent == null) return;
-		_failContent.Configure(PlayerPrefs.GetInt("offline_free_revive_used", 0) == 0, ShowRetryAfterLoss);
+		_failContent.Configure(GamePrefs.GetInt(GamePrefKeys.FreeRevive, 0) == 0, ShowRetryAfterLoss);
 		_failContent.ReviveRoute = "fail";
 		_failContent.SetLevel(_controller.CurrentLevelNumber, _controller.Data.FailReason);
 		_failContent.Show();
@@ -282,8 +282,8 @@ public sealed class GameResultUI : MonoBehaviour
 		Canvas.ForceUpdateCanvases();
 		Transform capacity = UICanvas.Current == null ? null : UICanvas.Current.CapacityNode;
 		_failTutorial.ShowFail(capacity, content.FreeButtonNode);
-		PlayerPrefs.SetInt("offline_HasShowFailTutorial", 1);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(GamePrefKeys.FailTutorial, 1);
+		GamePrefs.Save();
 	}
 	private void HideFailTutorial()
 	{
@@ -307,7 +307,11 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_winDialog != null) _winDialog.Show();
 	}
 
-	private void OnLevelStarted(int level) { HideAll(); }
+	private void OnLevelStarted(int level)
+	{
+		if (HudContainer.Current != null) HudContainer.Current.gameObject.SetActive(false);
+		HideAll();
+	}
 
 	private void OnNextLevelUnavailable(int level)
 	{

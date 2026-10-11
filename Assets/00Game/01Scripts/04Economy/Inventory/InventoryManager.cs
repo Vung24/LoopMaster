@@ -62,11 +62,11 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		bool changed = false;
 		foreach (KeyValuePair<string, int> item in values)
 		{
-			if (!IsInventoryKey(item.Key) || PlayerPrefs.HasKey(CountKey(item.Key))) continue;
-			PlayerPrefs.SetInt(CountKey(item.Key), Math.Max(0, item.Value));
+			if (!IsInventoryKey(item.Key) || GamePrefs.HasKey(CountKey(item.Key))) continue;
+			GamePrefs.SetInt(CountKey(item.Key), Math.Max(0, item.Value));
 			changed = true;
 		}
-		if (changed) PlayerPrefs.Save();
+		if (changed) GamePrefs.Save();
 	}
 
 	public static bool IsBoosterKey(string key) => GetToolUnlockLevel(key) > 0;
@@ -86,9 +86,8 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		GameProgressStore.HighestUnlockedLevel >= GetToolUnlockLevel(key);
 	public bool CanUseBooster(string key) => !IsMutationBlocked && IsBoosterUnlocked(key) && GetAmount(key) > 0;
 	public int GetAmount(string key, int def = 0) => IsInventoryKey(key)
-		? Math.Max(0, PlayerPrefs.GetInt(CountKey(key), def)) : Math.Max(0, def);
-	private static string CountKey(string key) => key == InventoryKeys.COIN
-		? "offline_inventory_coin" : "offline_tool_" + key + "_count";
+		? Math.Max(0, GamePrefs.GetInt(CountKey(key), def)) : Math.Max(0, def);
+	private static string CountKey(string key) => GamePrefKeys.Inventory(key);
 
 	public bool Use(string key, int amount = 1, string way = "")
 	{
@@ -129,8 +128,8 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 
 	private static void WriteCount(string key, int count)
 	{
-		PlayerPrefs.SetInt(CountKey(key), count);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(CountKey(key), count);
+		GamePrefs.Save();
 	}
 
 	public bool TryPurchaseBooster(string key, int price)
@@ -138,9 +137,9 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		if (IsMutationBlocked || !IsBoosterUnlocked(key) || price < 0) return false;
 		int coins = GetAmount(InventoryKeys.COIN), count = GetAmount(key);
 		if (coins < price || count == int.MaxValue) return false;
-		PlayerPrefs.SetInt(CountKey(InventoryKeys.COIN), coins - price);
-		PlayerPrefs.SetInt(CountKey(key), count + 1);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(CountKey(InventoryKeys.COIN), coins - price);
+		GamePrefs.SetInt(CountKey(key), count + 1);
+		GamePrefs.Save();
 		OnInventoryChanged.Invoke(InventoryKeys.COIN, -price);
 		OnInventoryChanged.Invoke(key, 1);
 		return true;
@@ -166,9 +165,9 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 	{
 		if (IsMutationBlocked) return;
 		int coins = GetAmount(InventoryKeys.COIN);
-		PlayerPrefs.DeleteKey(CountKey(InventoryKeys.COIN));
+		GamePrefs.DeleteKey(CountKey(InventoryKeys.COIN));
 		ResetBoosters();
-		PlayerPrefs.Save();
+		GamePrefs.Save();
 		OnInventoryChanged.Invoke(InventoryKeys.COIN, GetAmount(InventoryKeys.COIN) - coins);
 	}
 
@@ -179,7 +178,7 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		foreach (string key in BoosterKeys)
 		{
 			previous[key] = GetAmount(key);
-			PlayerPrefs.DeleteKey(CountKey(key));
+			GamePrefs.DeleteKey(CountKey(key));
 		}
 		InitializeCounts();
 		foreach (string key in BoosterKeys) OnInventoryChanged.Invoke(key, GetAmount(key) - previous[key]);

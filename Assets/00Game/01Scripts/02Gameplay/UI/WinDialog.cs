@@ -89,13 +89,6 @@ public class WinDialog : MonoBehaviour
 		}
 		_presentation = null;
 
-		Canvas canvas = GetComponentInParent<Canvas>();
-		Transform parent = canvas == null ? transform.parent : canvas.rootCanvas.transform;
-		bool streakPresented = false;
-		yield return SpecialStreakProgress.ShowWinCollection(parent).ToCoroutine(result => streakPresented = result);
-		if (streakPresented)
-			yield return Snui.StreakLine.StreakLineBanner.ShowWinProgress(parent).ToCoroutine();
-
 		EnterNextScene();
 	}
 

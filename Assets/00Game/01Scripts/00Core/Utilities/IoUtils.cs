@@ -29,7 +29,7 @@ public static class IoUtils
 			}
 			else
 			{
-				string prefJson = PlayerPrefs.GetString("io_" + fileName, string.Empty);
+				string prefJson = GamePrefs.GetString(GamePrefKeys.JsonFile(fileName), string.Empty);
 				if (!string.IsNullOrEmpty(prefJson))
 				{
 					return JsonUtility.FromJson<T>(prefJson);
@@ -57,8 +57,8 @@ public static class IoUtils
 			string json = JsonUtility.ToJson(data);
 			string path = GetFilePath(fileName);
 			File.WriteAllText(path, json);
-			PlayerPrefs.SetString("io_" + fileName, json);
-			PlayerPrefs.Save();
+			GamePrefs.SetString(GamePrefKeys.JsonFile(fileName), json);
+			GamePrefs.Save();
 		}
 		catch (Exception ex)
 		{
@@ -69,7 +69,7 @@ public static class IoUtils
 	public static bool Exists(string fileName)
 	{
 		string path = GetFilePath(fileName);
-		return File.Exists(path) || PlayerPrefs.HasKey("io_" + fileName);
+		return File.Exists(path) || GamePrefs.HasKey(GamePrefKeys.JsonFile(fileName));
 	}
 
 	public static void DeleteJsonFile(string fileName)
@@ -81,7 +81,7 @@ public static class IoUtils
 			{
 				File.Delete(path);
 			}
-			PlayerPrefs.DeleteKey("io_" + fileName);
+			GamePrefs.DeleteKey(GamePrefKeys.JsonFile(fileName));
 		}
 		catch (Exception ex)
 		{

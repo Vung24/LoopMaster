@@ -35,6 +35,23 @@ public sealed class BoosterFlow
 	public bool CanUsePath => CanRequestPath &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_PATH);
 
+	public void GetRequestState(out bool undo, out bool shuffle, out bool path)
+	{
+		undo = shuffle = path = false;
+		if (!CanUseBooster(false)) return;
+		path = _engine != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
+		// HUD queries share one settled-state scan; action properties remain live.
+		if (!_isGameplaySettled()) return;
+		undo = _data.CanUndo() && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO);
+		for (int i = 0; i < _boxes.Count; i++)
+		{
+			Box box = _boxes[i];
+			if (box == null || box.Info == null || !box.Info.CanShuffle()) continue;
+			shuffle = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE);
+			break;
+		}
+	}
+
 	public BoosterFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<BoxInfo, Box> getBox,
 		Func<bool> isGameRunning, Func<bool> isGameplaySettled, Action refreshPathState,
 		Action onFinished, Action<AudioClip> playAudio)
