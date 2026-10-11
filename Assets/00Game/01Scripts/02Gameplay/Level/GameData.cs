@@ -37,6 +37,7 @@ public class GameData
 	public int ExtraPathLength;
 	private Dictionary<int, int> _colorMap;
 	private Dictionary<int, int> _transferTypeCounts = new Dictionary<int, int>();
+	private HashSet<int> _speedUpSeenTypes = new HashSet<int>();
 	private float _pathDistance;
 	private float _roadSpacingScale = 1f;
 	public float RoadSpacingScale => _roadSpacingScale;
@@ -64,6 +65,7 @@ public class GameData
 	{
 		GameData copy = (GameData)MemberwiseClone();
 		copy._transferTypeCounts = new Dictionary<int, int>();
+		copy._speedUpSeenTypes = new HashSet<int>();
 		copy.UndoData = new UndoData();
 		copy.LimitedColor = new List<int>(LimitedColor);
 		copy.Groups = Groups.Select(group => new GroupInfo(new GroupData(
@@ -345,13 +347,17 @@ public class GameData
 	public bool IsGameCanSpeedUp()
 	{
 		if (IsGameFailed() || IsGameOver()) return false;
-		var seenTypes = new HashSet<int>();
+		_speedUpSeenTypes.Clear();
 		int missingSlices = 0;
-		foreach (BoxInfo box in Boxes.Where(item => !item.IsFinished()))
+		for (int i = 0; i < Boxes.Count; i++)
 		{
-			if (box.HasSurpriseCube() || box.IsEmpty() || !box.IsSameColorOrEmpty()) continue;
+			BoxInfo box = Boxes[i];
+			if (box.IsFinished()) continue;
+			// Native LAB_0176ce34 disposes the enumerator and rejects the board;
+			// it does not skip an unsorted box and continue counting.
+			if (box.HasSurpriseCube() || box.IsEmpty() || !box.IsSameColorOrEmpty()) return false;
 			int type = box.GetTopType();
-			if (!seenTypes.Add(type)) continue;
+			if (!_speedUpSeenTypes.Add(type)) return false;
 			missingSlices += GameData.GetSliceCapacity(box.BoxType) - box.GetSliceCount();
 		}
 		return missingSlices <= TransferSlice.Count;

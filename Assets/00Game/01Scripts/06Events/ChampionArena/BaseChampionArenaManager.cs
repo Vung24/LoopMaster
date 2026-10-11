@@ -8,7 +8,7 @@ namespace Snui.ChampionArena
 {
 	public abstract class BaseChampionArenaManager : BaseEventManager
 	{
-		public const string DATA_FILE = "champion_arena_data";
+		public const string DATA_FILE = GamePrefKeys.ChampionArena;
 		private const int ROBOT_COUNT = 19;
 
 		[HideInInspector]
@@ -349,7 +349,7 @@ namespace Snui.ChampionArena
 
 		private void LoadData()
 		{
-			string json = PlayerPrefs.GetString(DATA_FILE, string.Empty);
+			string json = GamePrefs.GetString(DATA_FILE, string.Empty);
 			if (!string.IsNullOrEmpty(json))
 			{
 				try
@@ -371,8 +371,8 @@ namespace Snui.ChampionArena
 		{
 			if (_data != null)
 			{
-				PlayerPrefs.SetString(DATA_FILE, JsonUtility.ToJson(_data));
-				PlayerPrefs.Save();
+				GamePrefs.SetString(DATA_FILE, JsonUtility.ToJson(_data));
+				GamePrefs.Save();
 			}
 		}
 	}

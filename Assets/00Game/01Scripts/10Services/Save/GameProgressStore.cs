@@ -1,12 +1,12 @@
 using UnityEngine;
 public static class GameProgressStore
 {
-    private const string UnlockedKey = "offline_HighestUnlockedLevel";
-    private const string CompletedKey = "offline_HighestCompletedLevel";
-    public static int CurrentPuzzleIndex => Mathf.Max(0, PlayerPrefs.GetInt("offline_CurrentPuzzleIndex", 0));
-    public static int HighestUnlockedLevel => Mathf.Max(1, Mathf.Max(PlayerPrefs.GetInt(UnlockedKey, 1), LegacyLevel()));
-    public static int HighestCompletedLevel => Mathf.Max(0, PlayerPrefs.HasKey(CompletedKey)
-        ? PlayerPrefs.GetInt(CompletedKey) : HighestUnlockedLevel - 1);
+    private const string UnlockedKey = GamePrefKeys.UnlockedLevel;
+    private const string CompletedKey = GamePrefKeys.CompletedLevel;
+    public static int CurrentPuzzleIndex => Mathf.Max(0, GamePrefs.GetInt(GamePrefKeys.CurrentPuzzle, 0));
+    public static int HighestUnlockedLevel => Mathf.Max(1, Mathf.Max(GamePrefs.GetInt(UnlockedKey, 1), LegacyLevel()));
+    public static int HighestCompletedLevel => Mathf.Max(0, GamePrefs.HasKey(CompletedKey)
+        ? GamePrefs.GetInt(CompletedKey) : HighestUnlockedLevel - 1);
     public static bool IsLevelCompleted(int level) => level > 0 && level <= HighestCompletedLevel;
     public static int NextPlayableLevel
     {
@@ -29,14 +29,14 @@ public static class GameProgressStore
     }
     private static int LegacyLevel()
     {
-        int index = Mathf.Max(0, PlayerPrefs.GetInt("offline_NormalPuzzleIndex", 0));
+        int index = Mathf.Max(0, GamePrefs.GetInt(GamePrefKeys.NormalPuzzle, 0));
         return index == int.MaxValue ? int.MaxValue : index + 1;
     }
     public static void RecordStarted(int level)
     {
         if (level < 1) return;
-        PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", level - 1);
-        PlayerPrefs.Save();
+        GamePrefs.SetInt(GamePrefKeys.CurrentPuzzle, level - 1);
+        GamePrefs.Save();
     }
     public static void RecordWin(int level, bool hasNextLevel, HardLevel previousHardLevel = HardLevel.Normal)
     {
@@ -44,30 +44,30 @@ public static class GameProgressStore
         bool newlyCompleted = !IsLevelCompleted(level);
         int next = hasNextLevel && level < int.MaxValue ? level + 1 : level;
         int unlocked = Mathf.Max(HighestUnlockedLevel, next);
-        PlayerPrefs.SetInt(CompletedKey, Mathf.Max(HighestCompletedLevel, level));
-        PlayerPrefs.SetInt(UnlockedKey, unlocked);
-        PlayerPrefs.SetInt("offline_NormalPuzzleIndex", unlocked - 1);
-        PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", unlocked - 1);
+        GamePrefs.SetInt(CompletedKey, Mathf.Max(HighestCompletedLevel, level));
+        GamePrefs.SetInt(UnlockedKey, unlocked);
+        GamePrefs.SetInt(GamePrefKeys.NormalPuzzle, unlocked - 1);
+        GamePrefs.SetInt(GamePrefKeys.CurrentPuzzle, unlocked - 1);
         if (newlyCompleted) HomeLevelChangePresentation.Record(level, unlocked, previousHardLevel);
-        PlayerPrefs.Save();
+        GamePrefs.Save();
     }
     public static void SetProgress(int level)
     {
         if (level < 1) level = 1;
         HomeLevelChangePresentation.Clear();
-        PlayerPrefs.SetInt(UnlockedKey, level);
-        PlayerPrefs.SetInt(CompletedKey, level - 1);
-        PlayerPrefs.SetInt("offline_NormalPuzzleIndex", level - 1);
-        PlayerPrefs.SetInt("offline_CurrentPuzzleIndex", level - 1);
-        PlayerPrefs.Save();
+        GamePrefs.SetInt(UnlockedKey, level);
+        GamePrefs.SetInt(CompletedKey, level - 1);
+        GamePrefs.SetInt(GamePrefKeys.NormalPuzzle, level - 1);
+        GamePrefs.SetInt(GamePrefKeys.CurrentPuzzle, level - 1);
+        GamePrefs.Save();
     }
     public static void DeleteProgress()
     {
         HomeLevelChangePresentation.Clear();
-        PlayerPrefs.DeleteKey(UnlockedKey);
-        PlayerPrefs.DeleteKey(CompletedKey);
-        PlayerPrefs.DeleteKey("offline_NormalPuzzleIndex");
-        PlayerPrefs.DeleteKey("offline_CurrentPuzzleIndex");
-        PlayerPrefs.Save();
+        GamePrefs.DeleteKey(UnlockedKey);
+        GamePrefs.DeleteKey(CompletedKey);
+        GamePrefs.DeleteKey(GamePrefKeys.NormalPuzzle);
+        GamePrefs.DeleteKey(GamePrefKeys.CurrentPuzzle);
+        GamePrefs.Save();
     }
 }

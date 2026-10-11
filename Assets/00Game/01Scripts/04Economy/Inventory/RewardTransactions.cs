@@ -6,12 +6,12 @@ public enum RewardClaimResult { Failed, Claimed, AlreadyClaimed }
 
 public partial class InventoryManager
 {
-    private const string RewardJournalKey = "offline_reward_journal_v1";
-    private const string RewardReceiptsKey = "offline_reward_receipts_v1";
-    private const string InfiniteHeartRewardKey = "infiniteHeartEndTime";
+    private const string RewardJournalKey = GamePrefKeys.RewardJournal;
+    private const string RewardReceiptsKey = GamePrefKeys.RewardReceipts;
+    private const string InfiniteHeartRewardKey = GamePrefKeys.InfiniteHeartEnd;
     private bool _rewardTransaction;
     private bool _rewardStoreInvalid;
-    private bool IsMutationBlocked => _isApplyingBooster || _rewardTransaction || _rewardStoreInvalid || PlayerPrefs.HasKey(RewardJournalKey);
+    private bool IsMutationBlocked => _isApplyingBooster || _rewardTransaction || _rewardStoreInvalid || GamePrefs.HasKey(RewardJournalKey);
     [Serializable] private sealed class Receipts { public List<string> ids = new List<string>(); }
     [Serializable] private sealed class Journal
     {
@@ -32,8 +32,8 @@ public partial class InventoryManager
 #endif
     private static Receipts ReadReceipts()
     {
-        if (!PlayerPrefs.HasKey(RewardReceiptsKey)) return new Receipts();
-        var receipts = JsonUtility.FromJson<Receipts>(PlayerPrefs.GetString(RewardReceiptsKey));
+        if (!GamePrefs.HasKey(RewardReceiptsKey)) return new Receipts();
+        var receipts = JsonUtility.FromJson<Receipts>(GamePrefs.GetString(RewardReceiptsKey));
         if (receipts == null || receipts.ids == null || receipts.ids.Exists(string.IsNullOrEmpty))
             throw new InvalidOperationException("Invalid reward receipts; original data retained.");
         return receipts;
@@ -82,7 +82,7 @@ public partial class InventoryManager
             if (infiniteSeconds > 0)
             {
                 HeartManager.EnsureInitialized();
-                int before = Math.Max(0, PlayerPrefs.GetInt(InfiniteHeartRewardKey));
+                int before = Math.Max(0, GamePrefs.GetInt(InfiniteHeartRewardKey));
                 long after = Math.Max((long)before, TimeUtils.GetUnixTimestamp()) + infiniteSeconds;
                 if (after > int.MaxValue) return false;
                 journal.hasInfiniteHeart = true;
@@ -98,8 +98,8 @@ public partial class InventoryManager
                 journal.keys[index] = pair.Key; journal.before[index] = before; journal.after[index] = (int)after; index++;
             }
             Checkpoint("before-journal");
-            PlayerPrefs.SetString(RewardJournalKey, JsonUtility.ToJson(journal));
-            PlayerPrefs.Save();
+            GamePrefs.SetString(RewardJournalKey, JsonUtility.ToJson(journal));
+            GamePrefs.Save();
             Checkpoint("journal-saved");
             CompleteJournal(journal);
             result = RewardClaimResult.Claimed;
@@ -114,11 +114,11 @@ public partial class InventoryManager
         _rewardTransaction = true;
         try
         {
-            if (PlayerPrefs.GetInt(InfiniteHeartRewardKey, 0) > TimeUtils.GetUnixTimestamp())
+            if (GamePrefs.GetInt(InfiniteHeartRewardKey, 0) > TimeUtils.GetUnixTimestamp())
                 HeartManager.EnsureInitialized();
             ReadReceipts();
-            if (!PlayerPrefs.HasKey(RewardJournalKey)) { _rewardStoreInvalid=false; return true; }
-            var journal = JsonUtility.FromJson<Journal>(PlayerPrefs.GetString(RewardJournalKey));
+            if (!GamePrefs.HasKey(RewardJournalKey)) { _rewardStoreInvalid=false; return true; }
+            var journal = JsonUtility.FromJson<Journal>(GamePrefs.GetString(RewardJournalKey));
             if (journal == null || journal.version != 1 || string.IsNullOrEmpty(journal.id) || journal.keys == null ||
                 journal.before == null || journal.after == null || journal.keys.Length != journal.before.Length || journal.keys.Length != journal.after.Length)
                 throw new InvalidOperationException("Invalid reward journal; original data retained.");
@@ -142,14 +142,14 @@ public partial class InventoryManager
         bool already = receipts.ids.Contains(journal.id);
         if (!already)
         {
-            for (int i = 0; i < journal.keys.Length; i++) PlayerPrefs.SetInt(CountKey(journal.keys[i]), journal.after[i]);
-            if (journal.hasInfiniteHeart) PlayerPrefs.SetInt(InfiniteHeartRewardKey, journal.infiniteHeartAfter);
-            PlayerPrefs.Save(); Checkpoint("balances-saved");
+            for (int i = 0; i < journal.keys.Length; i++) GamePrefs.SetInt(CountKey(journal.keys[i]), journal.after[i]);
+            if (journal.hasInfiniteHeart) GamePrefs.SetInt(InfiniteHeartRewardKey, journal.infiniteHeartAfter);
+            GamePrefs.Save(); Checkpoint("balances-saved");
             receipts.ids.Add(journal.id);
-            PlayerPrefs.SetString(RewardReceiptsKey, JsonUtility.ToJson(receipts));
-            PlayerPrefs.Save(); Checkpoint("receipt-saved");
+            GamePrefs.SetString(RewardReceiptsKey, JsonUtility.ToJson(receipts));
+            GamePrefs.Save(); Checkpoint("receipt-saved");
         }
-        PlayerPrefs.DeleteKey(RewardJournalKey); PlayerPrefs.Save();
+        GamePrefs.DeleteKey(RewardJournalKey); GamePrefs.Save();
         if (!already)
         {
             for (int i = 0; i < journal.keys.Length; i++)
@@ -164,6 +164,6 @@ public partial class InventoryManager
     {
         if(_rewardTransaction || _isApplyingBooster) return;
         _rewardStoreInvalid=false;
-        PlayerPrefs.DeleteKey(RewardJournalKey); PlayerPrefs.DeleteKey(RewardReceiptsKey); PlayerPrefs.Save();
+        GamePrefs.DeleteKey(RewardJournalKey); GamePrefs.DeleteKey(RewardReceiptsKey); GamePrefs.Save();
     }
 }

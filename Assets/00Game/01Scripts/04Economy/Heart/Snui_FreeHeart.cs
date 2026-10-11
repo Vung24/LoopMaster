@@ -28,18 +28,18 @@ namespace Snui
 
 		private void UpdateFreeHeart()
 		{
-			int count = Mathf.Max(0, PlayerPrefs.GetInt("offline_free_hearts", 0));
+			int count = Mathf.Max(0, GamePrefs.GetInt(GamePrefKeys.FreeHearts, 0));
 			if (FreeHeartGo != null) FreeHeartGo.SetActive(count > 0);
 			if (_freeHeartCountText != null) _freeHeartCountText.SetText(count.ToString());
 		}
 
 		private void OnClicked()
 		{
-			int count = Mathf.Max(0, PlayerPrefs.GetInt("offline_free_hearts", 0));
+			int count = Mathf.Max(0, GamePrefs.GetInt(GamePrefKeys.FreeHearts, 0));
 			if (count <= 0) { _heartHud?.PlayShakeAnimation(); return; }
-			PlayerPrefs.SetInt("offline_free_hearts", count - 1);
-			PlayerPrefs.SetInt("offline_hearts_count", PlayerPrefs.GetInt("offline_hearts_count", 5) + 1);
-			PlayerPrefs.Save();
+			GamePrefs.SetInt(GamePrefKeys.FreeHearts, count - 1);
+			GamePrefs.SetInt(GamePrefKeys.BonusHeartCount, GamePrefs.GetInt(GamePrefKeys.BonusHeartCount, 5) + 1);
+			GamePrefs.Save();
 			_heartHud?.OnHeartCountChanged();
 			UpdateFreeHeart();
 		}

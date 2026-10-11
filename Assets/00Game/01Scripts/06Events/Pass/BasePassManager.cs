@@ -27,8 +27,8 @@ public class PassUserState
 
 public abstract class BasePassManager : BaseEventManager
 {
-    public const string STATE_PATH = "pass_state";
-    private const string TutorialKey = "pass_tutorial_shown";
+    public const string STATE_PATH = GamePrefKeys.PassState;
+    private const string TutorialKey = GamePrefKeys.PassTutorial;
     public PassSettings PassSettings { get; protected set; }
     public int TEAM_REWARD_COINS { get; protected set; } = 50;
     public int FinalStagePoint { get; protected set; } = 10;
@@ -70,7 +70,7 @@ public abstract class BasePassManager : BaseEventManager
         foreach (var stage in _stages) { sum = checked(sum + stage.Points); _accumulatedStagePoints.Add(sum); }
         try
         {
-            _state = PlayerPrefs.HasKey(STATE_PATH) ? JsonUtility.FromJson<PassUserState>(PlayerPrefs.GetString(STATE_PATH)) : new PassUserState();
+            _state = GamePrefs.HasKey(STATE_PATH) ? JsonUtility.FromJson<PassUserState>(GamePrefs.GetString(STATE_PATH)) : new PassUserState();
             if (_state == null || _state.StartTime < 0 || _state.TotalPoints < 0 || _state.PendingPoints < 0 ||
                 _state.ClaimedFreeStages == null || _state.ClaimedVipStages == null || _state.ClaimedTeamRewards == null)
                 throw new InvalidOperationException("Invalid pass state; original save retained.");
@@ -89,7 +89,7 @@ public abstract class BasePassManager : BaseEventManager
         ApplyVipBenefits(false);
     }
     protected virtual void OnDestroy() => _eventOwner?.UnregisterEvent("OnGameWin", OnGameWin);
-    private void Save() { if (_invalidState || _state == null) return; PlayerPrefs.SetString(STATE_PATH, JsonUtility.ToJson(_state)); PlayerPrefs.Save(); }
+    private void Save() { if (_invalidState || _state == null) return; GamePrefs.SetString(STATE_PATH, JsonUtility.ToJson(_state)); GamePrefs.Save(); }
     private DateTime Now => DateTimeOffset.FromUnixTimeSeconds(TimeUtils.GetUnixTimestamp()).LocalDateTime;
     private int NormalGoal => _accumulatedStagePoints.Count == 0 ? 0 : _accumulatedStagePoints[_accumulatedStagePoints.Count - 1];
     private void ComputeCurrentStage()
@@ -114,8 +114,8 @@ public abstract class BasePassManager : BaseEventManager
         var start = DateTimeOffset.FromUnixTimeSeconds(_state.StartTime).LocalDateTime;
         return start.Year != Now.Year || start.Month != Now.Month;
     }
-    public bool ShouldShowTutorial() => CheckActive() && PlayerPrefs.GetInt(TutorialKey, 0) == 0;
-    public void SetTutorialShown() { PlayerPrefs.SetInt(TutorialKey, 1); PlayerPrefs.Save(); }
+    public bool ShouldShowTutorial() => CheckActive() && GamePrefs.GetInt(TutorialKey, 0) == 0;
+    public void SetTutorialShown() { GamePrefs.SetInt(TutorialKey, 1); GamePrefs.Save(); }
     public bool CanPurchaseVIP() => CheckActive() && !IsFinished() && !IsVip();
     public bool IsVip() => _state != null && _state.IsVip;
     public bool HasActiveVip => IsVip() && !IsFinished();
@@ -289,7 +289,7 @@ public abstract class BasePassManager : BaseEventManager
     }
     public override void ClearData()
     {
-        PlayerPrefs.DeleteKey(STATE_PATH); PlayerPrefs.DeleteKey(TutorialKey); PlayerPrefs.Save();
+        GamePrefs.DeleteKey(STATE_PATH); GamePrefs.DeleteKey(TutorialKey); GamePrefs.Save();
         _invalidState = false; _state = new PassUserState(); CheckActive();
     }
 }

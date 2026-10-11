@@ -14,8 +14,8 @@ namespace Snui
         internal static int RequestedLevel;
         public static bool SkipTutorial
         {
-            get => PlayerPrefs.GetInt("offline_cheat_SkipTutorial", 0) != 0;
-            set { PlayerPrefs.SetInt("offline_cheat_SkipTutorial", value ? 1 : 0); PlayerPrefs.Save(); }
+            get => GamePrefs.GetInt(GamePrefKeys.SkipTutorial, 0) != 0;
+            set { GamePrefs.SetInt(GamePrefKeys.SkipTutorial, value ? 1 : 0); GamePrefs.Save(); }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

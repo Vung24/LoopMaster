@@ -5,8 +5,8 @@ using UnityEngine;
 public sealed class LevelBoxManager : MonoBehaviour, IGameManager
 {
     public const string PATH = "LevelBoxDialogContent";
-    private const string BaselineKey = "offline_LevelBoxBaseline_v1";
-    private const string ViewedKey = "LevelBoxLastViewedLevel";
+    private const string BaselineKey = GamePrefKeys.LevelBoxBaseline;
+    private const string ViewedKey = GamePrefKeys.LevelBoxViewed;
     public static LevelBoxManager Current { get; private set; }
     public ManagerStatus status { get; private set; } = ManagerStatus.Shutdown;
     private static readonly string[] Fast = { "I","S","IC","U","IP","C","I","C","IS","C","S","C","I","C","P","C","I","C","U" };
@@ -15,17 +15,17 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
     private static void InitializeBeforeScene() => EnsureInitialized();
     public static void EnsureInitialized()
     {
-        if (PlayerPrefs.HasKey(BaselineKey)) return;
-        PlayerPrefs.SetInt(BaselineKey, FinishedProgress()); PlayerPrefs.Save();
+        if (GamePrefs.HasKey(BaselineKey)) return;
+        GamePrefs.SetInt(BaselineKey, FinishedProgress()); GamePrefs.Save();
     }
-    private static int FinishedProgress() => PlayerPrefs.HasKey("offline_HighestCompletedLevel")
+    private static int FinishedProgress() => GamePrefs.HasKey(GamePrefKeys.CompletedLevel)
         ? GameProgressStore.HighestCompletedLevel : Math.Max(0, GameProgressStore.HighestUnlockedLevel - 1);
     public int FinishedLevel => FinishedProgress();
     public bool IsUnlock => FinishedLevel >= 4;
     public int LastViewedLevel
     {
-        get { EnsureInitialized(); return PlayerPrefs.GetInt(ViewedKey, Math.Max(4, PlayerPrefs.GetInt(BaselineKey))); }
-        private set { PlayerPrefs.SetInt(ViewedKey, Math.Max(0,value)); PlayerPrefs.Save(); }
+        get { EnsureInitialized(); return GamePrefs.GetInt(ViewedKey, Math.Max(4, GamePrefs.GetInt(BaselineKey))); }
+        private set { GamePrefs.SetInt(ViewedKey, Math.Max(0,value)); GamePrefs.Save(); }
     }
     public void OnViewed() => LastViewedLevel = FinishedLevel;
     public static LevelBoxManager Ensure()
@@ -71,7 +71,7 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
         {
             EnsureInitialized();
             var inventory=InventoryManager.Ensure();
-            int milestone=NextMilestone(PlayerPrefs.GetInt(BaselineKey));
+            int milestone=NextMilestone(GamePrefs.GetInt(BaselineKey));
             while(milestone>0 && milestone<=FinishedLevel)
             {
                 if (!inventory.IsRewardClaimed(ClaimId(milestone))) return milestone;
@@ -93,7 +93,7 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
     }
     public void ClearData() => ClearOfflineData();
     public static void ClearOfflineData()
-    { PlayerPrefs.DeleteKey(BaselineKey); PlayerPrefs.DeleteKey(ViewedKey); PlayerPrefs.Save(); }
+    { GamePrefs.DeleteKey(BaselineKey); GamePrefs.DeleteKey(ViewedKey); GamePrefs.Save(); }
     private void OnDestroy() { if(Current==this) Current=null; status=ManagerStatus.Shutdown; }
 }
 

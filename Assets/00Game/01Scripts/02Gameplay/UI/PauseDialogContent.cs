@@ -299,26 +299,26 @@ public sealed class PauseDialogContent : MonoBehaviour
 
 public static class GameAudioSettings
 {
-	private const string MusicKey = "game_music_enabled";
-	private const string EffectsKey = "game_effects_enabled";
+	private const string MusicKey = GamePrefKeys.Music;
+	private const string EffectsKey = GamePrefKeys.Effects;
 	private static readonly Dictionary<AudioSource, bool> OriginalMusicMute = new Dictionary<AudioSource, bool>();
 
-	public static bool MusicEnabled { get; private set; } = PlayerPrefs.GetInt(MusicKey, 1) != 0;
-	public static bool EffectsEnabled { get; private set; } = PlayerPrefs.GetInt(EffectsKey, 1) != 0;
+	public static bool MusicEnabled { get; private set; } = GamePrefs.GetInt(MusicKey, 1) != 0;
+	public static bool EffectsEnabled { get; private set; } = GamePrefs.GetInt(EffectsKey, 1) != 0;
 
 	public static void SetMusicEnabled(bool enabled)
 	{
 		MusicEnabled = enabled;
-		PlayerPrefs.SetInt(MusicKey, enabled ? 1 : 0);
+		GamePrefs.SetInt(MusicKey, enabled ? 1 : 0);
 		ApplyMusicPreference();
-		PlayerPrefs.Save();
+		GamePrefs.Save();
 	}
 
 	public static void SetEffectsEnabled(bool enabled)
 	{
 		EffectsEnabled = enabled;
-		PlayerPrefs.SetInt(EffectsKey, enabled ? 1 : 0);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(EffectsKey, enabled ? 1 : 0);
+		GamePrefs.Save();
 	}
 
 	public static void ApplyMusicPreference()

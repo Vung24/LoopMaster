@@ -46,8 +46,8 @@ public static class GameSceneManager
 
 	public static async UniTask EnterGame(GameEnterRoute route, bool withAnimation = true)
 	{
-		PlayerPrefs.SetInt("offline_LastRouteEnterGame", (int)route);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(GamePrefKeys.LastRoute, (int)route);
+		GamePrefs.Save();
 		await TransitionToScene(SceneType.Game, withAnimation);
 	}
 

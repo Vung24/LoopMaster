@@ -108,13 +108,13 @@ public class Box : MonoBehaviour
 	{
 		if (_info == null) return;
 		_info.ClearCubes();
-		int secretType = -1;
+		int secretType = _info.GetTopType();
 		bool revealed = false;
 		for (int i = _info.CubeInfos.Count - 1; i >= 0; i--)
 		{
 			CubeInfo cubeInfo = _info.CubeInfos[i];
-			if (!cubeInfo.IsSecret || (secretType >= 0 && cubeInfo.Type != secretType)) break;
-			secretType = cubeInfo.Type;
+			if (cubeInfo.Type != secretType) break;
+			if (!cubeInfo.IsSecret) continue;
 			cubeInfo.IsSecret = false;
 			if (cubeInfo.CubeSc != null)
 			{

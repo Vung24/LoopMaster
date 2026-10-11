@@ -83,8 +83,8 @@ namespace Snui
 		public void ClearData()
 		{
 			if (_isCollecting) return;
-			PlayerPrefs.DeleteKey(DailyPrefKeys.DailyCheckInData);
-			PlayerPrefs.Save();
+			GamePrefs.DeleteKey(DailyPrefKeys.DailyCheckInData);
+			GamePrefs.Save();
 			ResetDailyData();
 		}
 
@@ -92,8 +92,8 @@ namespace Snui
 		{
 			_data.IsTodayDialogShow = _isTodayDialogShow ? 1 : 0;
 			string json = JsonConvert.SerializeObject(_data);
-			PlayerPrefs.SetString(DailyPrefKeys.DailyCheckInData, json);
-			PlayerPrefs.Save();
+			GamePrefs.SetString(DailyPrefKeys.DailyCheckInData, json);
+			GamePrefs.Save();
 		}
 
 		public bool IsDialogNeedAutoShow()
@@ -304,7 +304,7 @@ namespace Snui
 
 		private void ReadData()
 		{
-			string json = PlayerPrefs.GetString(DailyPrefKeys.DailyCheckInData, "");
+			string json = GamePrefs.GetString(DailyPrefKeys.DailyCheckInData, "");
 			if (string.IsNullOrEmpty(json))
 			{
 				ResetDailyData();

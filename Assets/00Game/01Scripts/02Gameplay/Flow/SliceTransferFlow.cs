@@ -21,8 +21,12 @@ public sealed class SliceTransferFlow
 	private readonly Action _refreshPathState;
 	private readonly Action _onLaunchFinished;
 	private readonly Action _checkGameOver;
+	private readonly Action<bool> _setSpeedUp;
 	private readonly List<LaunchOperation> _launches = new List<LaunchOperation>();
 	private readonly List<Box> _arrivalCandidates = new List<Box>();
+	private readonly Dictionary<int, List<Box>> _boxesByPath = new Dictionary<int, List<Box>>();
+	private readonly List<List<Box>> _pathBuckets = new List<List<Box>>();
+	private bool _arrivalBatchActive;
 	private readonly HashSet<Box> _surprises = new HashSet<Box>();
 	private GameData _data;
 	private GameLoader _loader;
@@ -31,7 +35,7 @@ public sealed class SliceTransferFlow
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
 		Func<Box, bool> isGroupUnlocking, Action updateCombo,
-		Action refreshPathState, Action onLaunchFinished, Action checkGameOver)
+		Action refreshPathState, Action onLaunchFinished, Action checkGameOver, Action<bool> setSpeedUp)
 	{
 		_host = host;
 		_boxes = boxes;
@@ -41,6 +45,7 @@ public sealed class SliceTransferFlow
 		_refreshPathState = refreshPathState;
 		_onLaunchFinished = onLaunchFinished;
 		_checkGameOver = checkGameOver;
+		_setSpeedUp = setSpeedUp;
 	}
 
 	public void Reset(GameData data, GameLoader loader, Transform gameRoot)
@@ -53,6 +58,7 @@ public sealed class SliceTransferFlow
 
 	public void Cancel()
 	{
+		EndArrivalBatch();
 		_version++;
 		foreach (Box box in _surprises.ToArray()) if (box != null) box.CancelSurpriseTransformation();
 		_surprises.Clear();
@@ -64,15 +70,48 @@ public sealed class SliceTransferFlow
 
 	private bool IsCurrent(int version) => version == _version && _isGameRunning();
 
+	public void BeginArrivalBatch()
+	{
+		EndArrivalBatch();
+		int bucketCount = 0;
+		for (int i = 0; i < _boxes.Count; i++)
+		{
+			Box box = _boxes[i];
+			if (box == null || box.Info == null) continue;
+			int path = box.Info.PathIndex;
+			if (!_boxesByPath.TryGetValue(path, out List<Box> bucket))
+			{
+				if (bucketCount == _pathBuckets.Count) _pathBuckets.Add(new List<Box>());
+				bucket = _pathBuckets[bucketCount++];
+				_boxesByPath.Add(path, bucket);
+			}
+			bucket.Add(box);
+		}
+		_arrivalBatchActive = true;
+	}
+
+	public void EndArrivalBatch()
+	{
+		_arrivalBatchActive = false;
+		_boxesByPath.Clear();
+		for (int i = 0; i < _pathBuckets.Count; i++) _pathBuckets[i].Clear();
+	}
+
 	public bool CheckInBox(Slice slice, float jumpDuration, float jumpHeight)
 	{
 		if (_data == null || slice == null || slice.Info == null) return false;
 		_arrivalCandidates.Clear();
 		try
 		{
-			for (int i = 0; i < _boxes.Count; i++)
+			IReadOnlyList<Box> boxes = _boxes;
+			if (_arrivalBatchActive)
 			{
-				Box box = _boxes[i];
+				if (!_boxesByPath.TryGetValue(slice.Info.PathIndex, out List<Box> bucket)) return false;
+				boxes = bucket;
+			}
+			for (int i = 0; i < boxes.Count; i++)
+			{
+				Box box = boxes[i];
 				if (IsSliceCanJump(slice.Info, box)) _arrivalCandidates.Add(box);
 			}
 
@@ -280,5 +319,7 @@ public sealed class SliceTransferFlow
 	{
 		if (_data == null || !_data.IsGameCanSpeedUp()) return;
 		_data.IsNearOver = true;
+		// Native CheckNearOver (RVA 0x15CF6A4) also enables the controller's speed flag.
+		_setSpeedUp(true);
 	}
 }

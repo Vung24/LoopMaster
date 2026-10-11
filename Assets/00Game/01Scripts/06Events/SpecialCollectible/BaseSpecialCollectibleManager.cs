@@ -8,9 +8,9 @@ namespace Snui.SpecialCol
 	public class BaseSpecialCollectibleManager : BaseManager
 	{
 		public const int UNLOCK_LEVEL = 6;
-		private const string SAVE_KEY = "special_collectible_data";
-		private const string PREF_TUTORIAL_SHOWN = "special_col_tutorial_shown";
-		private const string PREF_GAME_TUTORIAL_SHOWN = "special_col_game_tutorial_shown";
+		private const string SAVE_KEY = GamePrefKeys.Collectible;
+		private const string PREF_TUTORIAL_SHOWN = GamePrefKeys.CollectibleTutorial;
+		private const string PREF_GAME_TUTORIAL_SHOWN = GamePrefKeys.CollectibleGameTutorial;
 
 		[SerializeField]
 		private List<SpecialColConfig> _configs = new List<SpecialColConfig>();
@@ -71,7 +71,7 @@ namespace Snui.SpecialCol
 
 		public long GetDoubleRemainTime()
 		{
-			long expireTime = PlayerPrefs.GetInt("doubleSpecial_expire", 0);
+			long expireTime = GamePrefs.GetInt(GamePrefKeys.CollectibleDoubleEnd, 0);
 			return Math.Max(0, expireTime - TimeUtils.GetUnixTimestamp());
 		}
 
@@ -281,26 +281,26 @@ namespace Snui.SpecialCol
 
 		public virtual bool ShouldShowTutorial()
 		{
-			int shown = PlayerPrefs.GetInt(PREF_TUTORIAL_SHOWN, 0);
+			int shown = GamePrefs.GetInt(PREF_TUTORIAL_SHOWN, 0);
 			int level = GameProgressStore.NextPlayableLevel;
 			return shown == 0 && (level + 1 == GetUnlockLevel());
 		}
 
 		public virtual void SetTutorialShown()
 		{
-			PlayerPrefs.SetInt(PREF_TUTORIAL_SHOWN, 1);
-			PlayerPrefs.Save();
+			GamePrefs.SetInt(PREF_TUTORIAL_SHOWN, 1);
+			GamePrefs.Save();
 		}
 
 		public virtual bool ShouldShowGameTutorial()
 		{
-			return PlayerPrefs.GetInt(PREF_GAME_TUTORIAL_SHOWN, 0) == 0;
+			return GamePrefs.GetInt(PREF_GAME_TUTORIAL_SHOWN, 0) == 0;
 		}
 
 		public virtual void SetGameTutorialShown()
 		{
-			PlayerPrefs.SetInt(PREF_GAME_TUTORIAL_SHOWN, 1);
-			PlayerPrefs.Save();
+			GamePrefs.SetInt(PREF_GAME_TUTORIAL_SHOWN, 1);
+			GamePrefs.Save();
 		}
 
 		public virtual SpecialColCell GetCurrSpecialColCell()
@@ -368,9 +368,9 @@ namespace Snui.SpecialCol
 		{
 			try
 			{
-				if (PlayerPrefs.HasKey(SAVE_KEY))
+				if (GamePrefs.HasKey(SAVE_KEY))
 				{
-					string json = PlayerPrefs.GetString(SAVE_KEY, string.Empty);
+					string json = GamePrefs.GetString(SAVE_KEY, string.Empty);
 					if (!string.IsNullOrEmpty(json))
 					{
 						_data = JsonUtility.FromJson<SpecialColData>(json);
@@ -394,8 +394,8 @@ namespace Snui.SpecialCol
 			try
 			{
 				string json = JsonUtility.ToJson(_data);
-				PlayerPrefs.SetString(SAVE_KEY, json);
-				PlayerPrefs.Save();
+				GamePrefs.SetString(SAVE_KEY, json);
+				GamePrefs.Save();
 			}
 			catch (Exception)
 			{
@@ -405,8 +405,8 @@ namespace Snui.SpecialCol
 		public override void ClearData()
 		{
 			_data = new SpecialColData();
-			PlayerPrefs.DeleteKey(SAVE_KEY);
-			PlayerPrefs.Save();
+			GamePrefs.DeleteKey(SAVE_KEY);
+			GamePrefs.Save();
 		}
 	}
 }

@@ -2,12 +2,12 @@ using UnityEngine;
 
 public static class GameVibrationHelper
 {
-	public static bool Enabled { get; set; } = PlayerPrefs.GetInt("game_vibration_enabled", 1) != 0;
+	public static bool Enabled { get; set; } = GamePrefs.GetInt(GamePrefKeys.Vibration, 1) != 0;
 	public static void SetEnabled(bool enabled)
 	{
 		Enabled = enabled;
-		PlayerPrefs.SetInt("game_vibration_enabled", enabled ? 1 : 0);
-		PlayerPrefs.Save();
+		GamePrefs.SetInt(GamePrefKeys.Vibration, enabled ? 1 : 0);
+		GamePrefs.Save();
 	}
 
 	public static void PlayBoxTap(bool canPopupSlice)
