@@ -136,6 +136,7 @@ public class HomePage : MonoBehaviour
 		{
 			EventRuntime.BeforeEnterHome();
 			var controller = Controller();
+			await UniTask.WaitUntil(() => !GameSceneManager.OnChangeScene, cancellationToken: token);
 			while (LevelBoxManager.Ensure().PendingMilestone > 0)
 			{
 				int milestone = LevelBoxManager.Ensure().PendingMilestone;
@@ -166,8 +167,13 @@ public class HomePage : MonoBehaviour
 			if (_clickMask != null) _clickMask.SetActive(false);
 			_specialStreakProgress = GetComponentInChildren<SpecialStreakProgress>(true);
 			if (_specialStreakProgress != null)
-				await UniTask.WaitUntil(() => _specialStreakProgress == null || !_specialStreakProgress.IsAnimating,
-					cancellationToken: token);
+			{
+				Canvas canvas = GetComponentInParent<Canvas>();
+				Transform parent = canvas == null ? transform : canvas.rootCanvas.transform;
+				await _specialStreakProgress.ShowHomeCollection(parent).AttachExternalCancellation(token);
+				token.ThrowIfCancellationRequested();
+				await _specialStreakProgress.PlayAnims().AttachExternalCancellation(token);
+			}
 			token.ThrowIfCancellationRequested();
 
 			if (_playButton != null && HomeLevelChangePresentation.HasPending)
