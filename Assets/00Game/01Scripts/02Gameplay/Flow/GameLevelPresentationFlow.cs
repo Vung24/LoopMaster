@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -8,8 +7,7 @@ using static UnityEngine.Object;
 
 public sealed class GameLevelPresentationFlow
 {
-    private readonly GameController _controller;
-    private readonly GameLoader _loader;
+    private readonly CancellationToken _destroyToken;
     private GameObject _canvas;
     private IReadOnlyList<Box> _boxes;
     private NewPlayerTutorial _newPlayerTutorial;
@@ -18,10 +16,9 @@ public sealed class GameLevelPresentationFlow
     private CancellationTokenSource _levelPresentation;
     public bool IsPlaying { get; private set; }
 
-    public GameLevelPresentationFlow(GameController controller, GameLoader loader)
+    public GameLevelPresentationFlow(CancellationToken destroyToken)
     {
-        _controller = controller;
-        _loader = loader;
+        _destroyToken = destroyToken;
     }
 
     public void OnBoxClicked(Transform capacityNode)
@@ -29,18 +26,19 @@ public sealed class GameLevelPresentationFlow
         if (_newPlayerTutorial != null) _newPlayerTutorial.OnClickBox(capacityNode);
     }
 
-	public async UniTask Play(GameData data, GameObject canvas, IReadOnlyList<Box> boxes)
+	public async UniTask Play(GameData data, GameObject canvas, IReadOnlyList<Box> boxes,
+		Camera gameCamera, GameObject tutorialPrefab)
 	{
 		Cancel();
 		if (canvas == null || data == null || data.PathPoints.Count < 2) return;
 		_canvas = canvas;
 		_boxes = boxes;
-		var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_controller.destroyCancellationToken);
+		var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_destroyToken);
 		_levelPresentation = lifetime;
 		IsPlaying = true;
 		try
 		{
-			await ShowFeatureTutorial(lifetime.Token);
+			await ShowFeatureTutorial(data, lifetime.Token);
 			lifetime.Token.ThrowIfCancellationRequested();
 			string address = data.GetHardLevel() == HardLevel.Hard ? "LevelHardPanel" :
 				data.GetHardLevel() == HardLevel.VeryHard ? "LevelExpertPanel" : null;
@@ -58,7 +56,7 @@ public sealed class GameLevelPresentationFlow
 				_difficultyPanel = null;
 			}
 			lifetime.Token.ThrowIfCancellationRequested();
-			CheckNewPlayerTutorial(data);
+			CheckNewPlayerTutorial(data, gameCamera, tutorialPrefab);
 		}
 		catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
 		finally
@@ -72,12 +70,12 @@ public sealed class GameLevelPresentationFlow
 		}
 	}
 
-	public FeatureType IsFeatureTutorial() => Snui.CheatManager.SkipTutorial ? FeatureType.None : FeatureUnlockDialog.GetUnseenFeature(_controller.Data,
+	public FeatureType IsFeatureTutorial(GameData data) => Snui.CheatManager.SkipTutorial ? FeatureType.None : FeatureUnlockDialog.GetUnseenFeature(data,
 		(FeatureType)GamePrefs.GetInt(GamePrefKeys.FeatureTutorial, 0));
 
-	private async UniTask ShowFeatureTutorial(CancellationToken token)
+	private async UniTask ShowFeatureTutorial(GameData data, CancellationToken token)
 	{
-		FeatureType feature = IsFeatureTutorial();
+		FeatureType feature = IsFeatureTutorial(data);
 		if (feature == FeatureType.None) return;
 		GameObject instance = await Snui.PopupAssets.Instantiate("FeatureUnlockDialog", _canvas.transform, token);
 		FeatureUnlockDialog dialog = instance.GetComponent<FeatureUnlockDialog>();
@@ -92,22 +90,21 @@ public sealed class GameLevelPresentationFlow
 		if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
 	}
 
-	private void CheckNewPlayerTutorial(GameData data)
+	private void CheckNewPlayerTutorial(GameData data, Camera gameCamera, GameObject tutorialPrefab)
 	{
 		if (Snui.CheatManager.SkipTutorial) return;
 		int stage = data.GetPuzzleActualLevel();
-		if (stage < 1 || stage > 3 || _loader.NewPlayerTutorialPrefab == null) return;
-		GameObject instance = Instantiate(_loader.NewPlayerTutorialPrefab, _canvas.transform, false);
+		if (stage < 1 || stage > 3 || tutorialPrefab == null) return;
+		GameObject instance = Instantiate(tutorialPrefab, _canvas.transform, false);
 		_newPlayerTutorial = instance.GetComponent<NewPlayerTutorial>();
 		if (_newPlayerTutorial == null) { Destroy(instance); return; }
 		_newPlayerTutorial.Initialize(stage);
 		if (stage == 1)
 		{
 			Vector2 position = Vector2.zero;
-			Box target = _boxes.Count > 1 ? _boxes[1] : _boxes.FirstOrDefault();
+			Box target = _boxes.Count > 1 ? _boxes[1] : (_boxes.Count > 0 ? _boxes[0] : null);
 			Canvas canvas = _canvas.GetComponent<Canvas>();
 			Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-			Camera gameCamera = _controller.TopCamera != null ? _controller.TopCamera : _controller.MainCamera;
 			if (target != null && gameCamera != null)
 				RectTransformUtility.ScreenPointToLocalPointInRectangle(instance.transform as RectTransform,
 					gameCamera.WorldToScreenPoint(target.transform.position), uiCamera, out position);

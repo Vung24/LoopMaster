@@ -1,11 +1,7 @@
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 
 public enum GameEndState
 {
@@ -44,7 +40,15 @@ public class GameController : MonoBehaviour
 	public bool IsGameplayActive => Time.timeScale > 0f && !IsBoosterShopOpen && _isGameStart && Data != null && EndState == GameEndState.Playing && !IsUsingBooster && !IsLevelIntroPlaying;
 	public bool IsLevelIntroPlaying => _presentation != null && _presentation.IsPlaying;
 	public bool IsSpeedUpActive => _conveyorFlow != null && _conveyorFlow.IsSpeedUpActive;
-	public bool IsFinishAnimationPlaying => Scene.Boxes.Any(box => box != null && box.IsFinishAnimationPlaying);
+	public bool IsFinishAnimationPlaying
+	{
+		get
+		{
+			for (int i = 0; i < Scene.Boxes.Count; i++)
+				if (Scene.Boxes[i] != null && Scene.Boxes[i].IsFinishAnimationPlaying) return true;
+			return false;
+		}
+	}
 	public float SliceJumpTimeScale => GameplayFeedbackRules.GetTransferTimeScale(IsSpeedUpActive);
 	public Sprite SpeedButtonSprite => _gameLoader == null ? null :
 		(IsSpeedUpActive ? _gameLoader.SpeedSprite : _gameLoader.UnSpeedSprite);
@@ -77,8 +81,11 @@ public class GameController : MonoBehaviour
 	private CoreGameplayEngine _engine;
 	private GameplaySceneBuilder _sceneBuilder;
 	private GameplaySceneBuilder Scene => _sceneBuilder ?? (_sceneBuilder = new GameplaySceneBuilder());
-	private readonly HashSet<int> _unlockingGroupIds = new HashSet<int>();
-	private readonly HashSet<GroupColorLockKey> _groupUnlockKeys = new HashSet<GroupColorLockKey>();
+	private GroupLockFlow _groupLocks;
+	private GroupLockFlow GroupLocks => _groupLocks ?? (_groupLocks = new GroupLockFlow(Scene, destroyCancellationToken));
+	private readonly GameplayInput _input = new GameplayInput();
+	private readonly GameplayCameraFlow _cameraFlow = new GameplayCameraFlow();
+	private readonly List<Slice> _sliceBuffer = new List<Slice>();
 	private bool _isGameStart;
 	private float _comboTime;
 	private BoosterFlow _boosterFlow;
@@ -140,16 +147,11 @@ public class GameController : MonoBehaviour
 	public Camera BackgroundCamera => _backgroundCamera;
 	public Canvas BackgroundCanvas => _backgroundCanvas;
 	public GameBg GameBg => _gameBg;
-	private Bounds _cameraBounds;
-	private Rect _cameraViewport;
-	private Rect _cameraPixels;
-	private float _cameraAspect;
-	private bool _cameraLayoutReady;
-	private bool _cameraLayoutPending;
 	private GameObject _uiCanvasInstance;
+	private UICanvas _uiCanvas;
 	private GameLevelPresentationFlow _presentation;
 	private GameLevelPresentationFlow Presentation => _presentation ?? (_presentation =
-		new GameLevelPresentationFlow(this, _gameLoader));
+		new GameLevelPresentationFlow(destroyCancellationToken));
 	private GameBoosterUIFlow _boosterUI;
 	private GameBoosterUIFlow BoosterUI => _boosterUI ?? (_boosterUI = new GameBoosterUIFlow(this));
 	private bool IsBoosterShopOpen => _boosterUI != null && _boosterUI.IsOpen;
@@ -178,8 +180,8 @@ public class GameController : MonoBehaviour
 			_uiCanvasInstance.name = UICanvasObjAsset.name;
 			_uiCanvasInstance.transform.SetParent(null, false);
 			_uiCanvasInstance.SetActive(true);
-			UICanvas ui = _uiCanvasInstance.GetComponent<UICanvas>();
-			if (ui != null) ui.Bind(this);
+			_uiCanvas = _uiCanvasInstance.GetComponent<UICanvas>();
+			if (_uiCanvas != null) _uiCanvas.Bind(this);
 		}
 		GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
 	}
@@ -246,12 +248,10 @@ public class GameController : MonoBehaviour
 		_isTransitioningLevel = false;
 		_gameLoader.LoadAssetsAsync(data);
 		ClearRuntimeObjects();
+		GroupLocks.Reset(data);
 		_gameLoader.PrewarmSlicePool(data);
 		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
-		_cameraLayoutReady = GameplayCameraLayout.TryGetBounds(GameRoot, out _cameraBounds);
-		if (!_cameraLayoutReady) _cameraBounds = GameplayCameraLayout.FallbackBounds(Data, GameRoot);
-		_cameraLayoutReady = true;
-		_cameraLayoutPending = true;
+		_cameraFlow.Reset(Data, GameRoot);
 		UpdateCamera();
 		_isGameStart = Data.PathPoints.Count > 1;
 		IsGameOver = false;
@@ -259,7 +259,9 @@ public class GameController : MonoBehaviour
 		EndState = GameEndState.Playing;
 		GameProgressStore.RecordStarted(CurrentLevelNumber);
 		LevelStarted?.Invoke(CurrentLevelNumber);
-		if (Data == data && EndState == GameEndState.Playing) Presentation.Play(data, _uiCanvasInstance, Scene.Boxes).Forget();
+		if (Data == data && EndState == GameEndState.Playing)
+			Presentation.Play(data, _uiCanvasInstance, Scene.Boxes,
+				_topCamera != null ? _topCamera : _mainCamera, _gameLoader.NewPlayerTutorialPrefab).Forget();
 	}
 
 	private void Update()
@@ -272,7 +274,7 @@ public class GameController : MonoBehaviour
 			GameplayFeedbackRules.AdvanceCombo(ref ComboInCount, ref _comboTime, delta);
 		}
 		Conveyor.Tick(delta, GetTickInterval(false), GetTickInterval(true));
-		if (IsGameplayActive) HandleTouchEvent();
+		if (IsGameplayActive && _input.TryGetClickedBox(_mainCamera, out Box box)) OnClickBox(box);
 	}
 
 	private void ResolveGameplayCameras()
@@ -283,27 +285,14 @@ public class GameController : MonoBehaviour
 
 	private void LateUpdate()
 	{
-		if (!_cameraLayoutReady || Data == null) return;
 		UpdateCamera();
 	}
 
 	public void UpdateCamera()
 	{
-		if (!_cameraLayoutReady || Data == null) return;
+		if (Data == null) return;
 		if (_mainCamera == null) ResolveGameplayCameras();
-		if (_mainCamera == null || !_mainCamera.orthographic) return;
-		if (_cameraLayoutPending) Canvas.ForceUpdateCanvases();
-		UICanvas ui = _uiCanvasInstance == null ? null : _uiCanvasInstance.GetComponent<UICanvas>();
-		Rect pixels = _mainCamera.pixelRect;
-		Rect viewport = ui == null ? GameplayCameraLayout.Viewport(pixels, Screen.safeArea, 0, 0)
-			: ui.GetGameplayViewport(_mainCamera);
-		if (!_cameraLayoutPending && pixels == _cameraPixels && viewport == _cameraViewport &&
-			Mathf.Approximately(_cameraAspect, _mainCamera.aspect)) return;
-		GameplayCameraLayout.Fit(_mainCamera, _topCamera, _cameraBounds, viewport, CurrentLevelNumber);
-		_cameraViewport = viewport;
-		_cameraPixels = pixels;
-		_cameraAspect = _mainCamera.aspect;
-		_cameraLayoutPending = false;
+		_cameraFlow.Update(_mainCamera, _topCamera, _uiCanvas == null ? null : _uiCanvas, CurrentLevelNumber);
 	}
 
 	private void RefreshPathState()
@@ -322,8 +311,7 @@ public class GameController : MonoBehaviour
 
 	private bool IsGroupUnlockAnimationPlaying(Box box)
 	{
-		return box != null && box.Info != null && box.Info.GroupInfo != null &&
-			_unlockingGroupIds.Contains(box.Info.GroupInfo.Id);
+		return _groupLocks != null && _groupLocks.IsUnlocking(box);
 	}
 
 	public void OnClickBox(Box box)
@@ -332,7 +320,7 @@ public class GameController : MonoBehaviour
 			box.Info.State != BoxState.Free || !box.CanPopupSlice()) return;
 		Transfers.Launch(box, _sliceJumpDuration, _sliceJumpHeight);
 		if (_presentation != null && _uiCanvasInstance != null)
-			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvasInstance.GetComponent<UICanvas>()?.CapacityNode);
+			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
 	}
 
 	public void HandleBoxFinished(Box box)
@@ -342,17 +330,7 @@ public class GameController : MonoBehaviour
 		Data.LastFinishBoxTime = Data.Duration;
 		Data.FinishBoxCount = Data.GetFinishBoxCount();
 		Data.UndoData.Clear();
-		foreach (CubeInfo cube in box.Info.CubeInfos)
-		{
-			if (cube.GroupKeyId <= 0) continue;
-			int groupId = cube.GroupKeyId;
-			if (Data.TryUnlockGroupColorLock(groupId))
-			{
-				_unlockingGroupIds.Add(groupId);
-				PlayGroupColorLockKeyUnlockAnim(cube, groupId).Forget();
-			}
-			else TakeGroupColorLockKey(cube)?.DestroySelf();
-		}
+		GroupLocks.HandleFinishedBox(box.Info);
 		for (int i = 0; i < Scene.Boxes.Count; i++)
 			if (Scene.Boxes[i] != null) Scene.Boxes[i].OnBoxFinished(box.Info);
 		TryUnlockAvailableGroupColorLockKeys();
@@ -377,73 +355,7 @@ public class GameController : MonoBehaviour
 
 	public void TryUnlockAvailableGroupColorLockKeys()
 	{
-		if (Data == null) return;
-		for (int i = 0; i < Scene.Boxes.Count; i++)
-		{
-			Box box = Scene.Boxes[i];
-			if (box == null || box.Info == null || box.Info.HasBlockingLock()) continue;
-			List<CubeInfo> topCubes = box.Info.GetTopCubes(false);
-			CubeInfo keyCube = null;
-			for (int cubeIndex = 0; cubeIndex < topCubes.Count; cubeIndex++)
-			{
-				CubeInfo candidate = topCubes[cubeIndex];
-				if (candidate == null || candidate.GroupKeyId <= 0) continue;
-				keyCube = candidate;
-				break;
-			}
-			if (keyCube == null || _unlockingGroupIds.Contains(keyCube.GroupKeyId)) continue;
-
-			int groupId = keyCube.GroupKeyId;
-			if (!Data.TryUnlockGroupColorLock(groupId)) continue;
-			_unlockingGroupIds.Add(groupId);
-			Data.UndoData.Clear();
-			PlayGroupColorLockKeyUnlockAnim(keyCube, groupId).Forget();
-		}
-	}
-
-	private static GroupColorLockKey TakeGroupColorLockKey(CubeInfo cube)
-	{
-		if (cube == null) return null;
-		if (cube.CubeSc != null) return cube.CubeSc.TakeGroupColorLockKey();
-		cube.ClearGroupColorLockKey();
-		return null;
-	}
-
-	private async UniTask PlayGroupColorLockKeyUnlockAnim(CubeInfo cube, int groupId)
-	{
-		GameData data = Data;
-		Scene.TryGetGroupRollDoor(groupId, out GroupRollDoor door);
-		GroupColorLockKey key = TakeGroupColorLockKey(cube);
-		if (key != null) _groupUnlockKeys.Add(key);
-		try
-		{
-			if (key != null && door != null &&
-				door.TryGetKeyInsertPose(out Vector3 position, out Quaternion rotation, out Vector3 direction))
-			{
-				key.DetachFromCube();
-				await key.PlayInsertTo(position, rotation, direction);
-				if (Data != data || door == null) return;
-				door.Unlock();
-				if (key != null) await key.PlayDismiss();
-			}
-			else
-			{
-				if (key != null) key.DestroySelf();
-				if (door != null) door.Unlock();
-			}
-			await UniTask.WaitUntil(() => Data != data || door == null || door.IsUnlockComplete,
-				cancellationToken: destroyCancellationToken);
-		}
-		finally
-		{
-			_groupUnlockKeys.Remove(key);
-			if (key != null) key.DestroySelf();
-			if (Data == data)
-			{
-				_unlockingGroupIds.Remove(groupId);
-				Scene.RemoveGroupRollDoor(groupId, door);
-			}
-		}
+		if (Data != null) GroupLocks.TryUnlockAvailableKeys();
 	}
 
 	public void UpdateCombo()
@@ -459,8 +371,13 @@ public class GameController : MonoBehaviour
 		if (previous != next)
 		{
 			if (GameRoot != null)
-				foreach (Slice slice in GameRoot.GetComponentsInChildren<Slice>())
-					slice.SetJumpTimeScale(SliceJumpTimeScale);
+			{
+				GameRoot.GetComponentsInChildren<Slice>(false, _sliceBuffer);
+				float timeScale = SliceJumpTimeScale;
+				for (int i = 0; i < _sliceBuffer.Count; i++)
+					if (_sliceBuffer[i] != null) _sliceBuffer[i].SetJumpTimeScale(timeScale);
+				_sliceBuffer.Clear();
+			}
 		}
 		if (GameplayFeedbackRules.ShouldPlaySpeedTransition(CurrentLevelNumber, previous, next))
 			PlayBoosterAudio(_gameLoader == null ? null : (next ? _gameLoader.AccClip : _gameLoader.DecClip));
@@ -685,7 +602,7 @@ public class GameController : MonoBehaviour
 	private bool BeginReturnHome()
 	{
 		if (_isTransitioningLevel || GameSceneManager.OnChangeScene) return false;
-		if (!SpecialStreakManager.Ensure().SettlePending()) return false;
+		// Pending wins are saved by OnGameWon; Home presents and settles them.
 		Managers.StreakLine?.SynchronizeTempLevel();
 		CommitAbandonedLevel();
 		_isTransitioningLevel = true;
@@ -769,10 +686,15 @@ public class GameController : MonoBehaviour
 
 	private bool IsGameplaySettled()
 	{
-		return Data != null && Data.OnJumpingCube <= 0 && _unlockingGroupIds.Count == 0 &&
-			!Scene.Boxes.Any(box => box != null && box.IsLockAnimationPlaying) &&
-			!Data.Boxes.Any(box => box != null &&
-				(box.State == BoxState.OnPopup || box.State == BoxState.OnPush));
+		if (Data == null || Data.OnJumpingCube > 0 || (_groupLocks != null && _groupLocks.IsBusy)) return false;
+		for (int i = 0; i < Scene.Boxes.Count; i++)
+			if (Scene.Boxes[i] != null && Scene.Boxes[i].IsLockAnimationPlaying) return false;
+		for (int i = 0; i < Data.Boxes.Count; i++)
+		{
+			BoxInfo box = Data.Boxes[i];
+			if (box != null && (box.State == BoxState.OnPopup || box.State == BoxState.OnPush)) return false;
+		}
+		return true;
 	}
 
 	private void RequestTool(string key, bool canRequest, System.Func<bool> use)
@@ -797,7 +719,7 @@ public class GameController : MonoBehaviour
 	}
 	public void Revive(string way, string route) => TryRevive(way, route);
 
-	public FeatureType IsFeatureTutorial() => Presentation.IsFeatureTutorial();
+	public FeatureType IsFeatureTutorial() => Presentation.IsFeatureTutorial(Data);
 
 	private void CompleteGame(GameEndState state)
 	{
@@ -853,39 +775,6 @@ public class GameController : MonoBehaviour
 		GameEnded?.Invoke(state);
 	}
 
-	private void HandleTouchEvent()
-	{
-		if (Input.GetMouseButtonDown(0) && !IsPointerOverUI()) OnClickBox();
-	}
-
-	private static bool IsPointerOverUI()
-	{
-		EventSystem eventSystem = EventSystem.current;
-		if (eventSystem == null) return false;
-		Vector2 pointerPosition = Input.mousePosition;
-		for (int i = 0; i < Input.touchCount; i++)
-		{
-			Touch touch = Input.GetTouch(i);
-			if (touch.phase != TouchPhase.Began) continue;
-			pointerPosition = touch.position;
-			if (eventSystem.IsPointerOverGameObject(touch.fingerId)) return true;
-			break;
-		}
-
-		var pointer = new PointerEventData(eventSystem) { position = pointerPosition };
-		var hits = new List<RaycastResult>();
-		eventSystem.RaycastAll(pointer, hits);
-		return hits.Any(hit => hit.module is GraphicRaycaster);
-	}
-
-	private void OnClickBox()
-	{
-		if (_mainCamera == null) return;
-		Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-		RaycastHit hit;
-		if (Physics.Raycast(ray, out hit, _mainCamera.farClipPlane)) OnClickBox(hit.collider.GetComponent<Box>());
-	}
-
 	private int WrapPathIndex(int index)
 	{
 		int count = Data == null ? 0 : Data.PathPoints.Count;
@@ -899,14 +788,15 @@ public class GameController : MonoBehaviour
 
 	private void ClearRuntimeObjects()
 	{
-		foreach (GroupColorLockKey key in _groupUnlockKeys.ToArray())
-			if (key != null) key.DestroySelf();
-		_groupUnlockKeys.Clear();
-		_unlockingGroupIds.Clear();
+		_groupLocks?.Clear();
 		// Return active slices before clearing the level so replay/next level reuse them.
 		if (GameRoot != null)
-			foreach (Slice slice in GameRoot.GetComponentsInChildren<Slice>(true))
-				if (slice != null) slice.DismissForUndo();
+		{
+			GameRoot.GetComponentsInChildren<Slice>(true, _sliceBuffer);
+			for (int i = 0; i < _sliceBuffer.Count; i++)
+				if (_sliceBuffer[i] != null) _sliceBuffer[i].DismissForUndo();
+			_sliceBuffer.Clear();
+		}
 		Scene.Clear(GameRoot);
 	}
 
@@ -916,9 +806,7 @@ public class GameController : MonoBehaviour
 		_presentation?.Cancel();
 		_boosterFlow?.Cancel();
 		_sliceTransferFlow?.Cancel();
-		foreach (GroupColorLockKey key in _groupUnlockKeys.ToArray())
-			if (key != null) key.DestroySelf();
-		_groupUnlockKeys.Clear();
+		_groupLocks?.Clear();
 		if (Current == this)
 		{
 			Current = null;
