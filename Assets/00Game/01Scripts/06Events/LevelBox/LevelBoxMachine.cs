@@ -93,7 +93,7 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         KillProgressTweens();
         SetProgressText(stage.Progress);
         if(_progressMaskRect!=null) SetProgressMaskWidth(GetTargetMaskOffsetPosX(stage.Progress,stage.Goal));
-        PlayMachine(manager.IsUnlock ? "idle" : "static",true);
+        PlayMachine(manager.IsUnlock ? "idle" : "static",true,resetPose:true);
     }
     public static float GetTargetMaskOffsetPosX(int progress,int goal) => progress<=0 ? 0 : (goal>5 ? NormalMask : FastMask)[Mathf.Clamp(progress-1,0,goal>5 ? 9 : 4)];
     private void SetProgressMaskWidth(float width)
@@ -136,6 +136,7 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
                 _rewards=rewards;
                 if(_rewards==null) { _busy=false; return; }
                 _rewards.Closed+=OnRewardClosed;
+                _rewards.FocusMachine(transform);
                 manager.OnViewed(); PlayMachine("last",false);
                 if(_rewards.RewardSaved) StartCoroutine(RewardHandoffFallback(_rewards));
             }
@@ -184,12 +185,21 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         if(last!=null) yield return new WaitForSecondsRealtime(last.Duration);
         if(isActiveAndEnabled && _rewards==rewards) rewards.BeginChestAnimation();
     }
-    private void PlayMachine(string name,bool loop)
+    private void PlayMachine(string name,bool loop,bool resetPose=false)
     {
         if(_machineSpine?.SkeletonData?.FindAnimation(name)!=null)
         {
+            if(resetPose)
+            {
+                // The reward animation can leave slots hidden that idle does not key.
+                _machineSpine.AnimationState.ClearTracks();
+                _machineSpine.Skeleton.SetToSetupPose();
+            }
             _machineSpine.AnimationState.SetAnimation(0,name,loop);
             _machineSpine.Update(0);
+            // OnEnable may run before the child SkeletonGraphic.Awake synchronizes its submesh renderers.
+            // Queue the UI rebuild; Spine will update the mesh after its initialization completes.
+            if(resetPose) _machineSpine.SetAllDirty();
         }
     }
     private void OnMachineAnimationRebuilt(ISkeletonAnimation animation) => BindMachineEvents();
