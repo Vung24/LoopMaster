@@ -45,8 +45,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
-	private static Canvas _staticBackgroundCanvas;
-	private static Camera _staticBackgroundCamera;
 	private Canvas _runtimeBackgroundCanvas;
 	private Camera _runtimeBackgroundCamera;
 	private Camera _cachedMainCamera;
@@ -83,6 +81,8 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		ConfigureCanvasCamera();
 		EnsureVisibleLayout();
 		Bind(GameController.Current);
+		if (_runtimeBackgroundCanvas != null) _runtimeBackgroundCanvas.gameObject.SetActive(true);
+		if (_runtimeBackgroundCamera != null) _runtimeBackgroundCamera.gameObject.SetActive(true);
 		if (_bgGame != null && _bgGame.parent != transform) _bgGame.gameObject.SetActive(true);
 	}
 
@@ -95,6 +95,8 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (_pauseDialog != null) { _pauseDialog.gameObject.SetActive(false); Destroy(_pauseDialog.gameObject); }
 		_pauseDialog = null;
 		ActiveCanvases.Remove(this);
+		if (_runtimeBackgroundCanvas != null) _runtimeBackgroundCanvas.gameObject.SetActive(false);
+		if (_runtimeBackgroundCamera != null) _runtimeBackgroundCamera.gameObject.SetActive(false);
 		if (_bgGame != null && _bgGame.parent != transform) _bgGame.gameObject.SetActive(false);
 	}
 
@@ -231,44 +233,43 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private Canvas ResolveOrCreateBackgroundCanvas()
 	{
 		if (_controller != null && _controller.BackgroundCanvas != null) return _controller.BackgroundCanvas;
-		if (_staticBackgroundCanvas != null) return _staticBackgroundCanvas;
 		if (_runtimeBackgroundCanvas != null) return _runtimeBackgroundCanvas;
 
 		Camera bgCamera = _controller != null ? _controller.BackgroundCamera : null;
-		if (bgCamera == null && _staticBackgroundCamera == null && _runtimeBackgroundCamera == null)
+		if (bgCamera == null && _runtimeBackgroundCamera == null)
 		{
 			GameObject camObj = new GameObject("RuntimeBackgroundCamera");
 			camObj.layer = 5;
-			_staticBackgroundCamera = camObj.AddComponent<Camera>();
-			_staticBackgroundCamera.clearFlags = CameraClearFlags.SolidColor;
-			_staticBackgroundCamera.backgroundColor = new Color(0.15f, 0.12f, 0.44f, 1f);
-			_staticBackgroundCamera.cullingMask = 1 << 5;
-			_staticBackgroundCamera.depth = -2;
-			_staticBackgroundCamera.orthographic = true;
-			_staticBackgroundCamera.orthographicSize = 10f;
-			_staticBackgroundCamera.nearClipPlane = 0.3f;
-			_staticBackgroundCamera.farClipPlane = 50f;
+			_runtimeBackgroundCamera = camObj.AddComponent<Camera>();
+			_runtimeBackgroundCamera.clearFlags = CameraClearFlags.SolidColor;
+			_runtimeBackgroundCamera.backgroundColor = new Color(0.15f, 0.12f, 0.44f, 1f);
+			_runtimeBackgroundCamera.cullingMask = 1 << 5;
+			_runtimeBackgroundCamera.depth = -2;
+			_runtimeBackgroundCamera.orthographic = true;
+			_runtimeBackgroundCamera.orthographicSize = 10f;
+			_runtimeBackgroundCamera.nearClipPlane = 0.3f;
+			_runtimeBackgroundCamera.farClipPlane = 50f;
 			camObj.transform.position = new Vector3(0f, 0f, -10f);
-			DontDestroyOnLoad(camObj);
-			bgCamera = _staticBackgroundCamera;
+			UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(camObj, gameObject.scene);
+			bgCamera = _runtimeBackgroundCamera;
 		}
 
 		GameObject canvasObj = new GameObject("RuntimeBackgroundCanvas");
 		canvasObj.layer = 5;
-		_staticBackgroundCanvas = canvasObj.AddComponent<Canvas>();
-		_staticBackgroundCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-		_staticBackgroundCanvas.worldCamera = bgCamera != null ? bgCamera : _staticBackgroundCamera;
-		_staticBackgroundCanvas.planeDistance = 10f;
-		_staticBackgroundCanvas.sortingOrder = 0;
+		_runtimeBackgroundCanvas = canvasObj.AddComponent<Canvas>();
+		_runtimeBackgroundCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+		_runtimeBackgroundCanvas.worldCamera = bgCamera != null ? bgCamera : _runtimeBackgroundCamera;
+		_runtimeBackgroundCanvas.planeDistance = 10f;
+		_runtimeBackgroundCanvas.sortingOrder = 0;
 
 		CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
 		scaler.referenceResolution = new Vector2(750f, 1624f);
 		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
 		scaler.matchWidthOrHeight = 0f;
-		DontDestroyOnLoad(canvasObj);
+		UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(canvasObj, gameObject.scene);
 
-		return _staticBackgroundCanvas;
+		return _runtimeBackgroundCanvas;
 	}
 
 	private void CacheLegacyPrefabReferences()

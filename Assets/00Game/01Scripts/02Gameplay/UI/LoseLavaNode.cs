@@ -15,7 +15,7 @@ public class LoseLavaNode : MonoBehaviour
 		}
 		if (_descText == null)
 		{
-			_descText = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "DescText");
+			_descText = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Desc");
 		}
 	}
 
@@ -35,8 +35,15 @@ public class LoseLavaNode : MonoBehaviour
 
 			if (_descText != null)
 			{
-				string titleKey = Managers.Lava.GetTitleKey();
-				_descText.SetLocalizedString("Language", "Fail-Desc2", new object[] { titleKey });
+				// Native GetTitleI18n resolves EventLava before formatting Language/Fail-Desc2.
+				string title;
+				switch (Managers.Lava.GetTitleKey())
+				{
+					case "Lava-BouncyTitle": title = "BOUNCY RUSH"; break;
+					case "Lava-PillarsTitle": title = "PILLAR JUMPING"; break;
+					default: title = "CUBE JUMPING"; break;
+				}
+				_descText.text = string.Format("You will fail the <color=#C31439>{0}!</color> ", title);
 			}
 		}
 
