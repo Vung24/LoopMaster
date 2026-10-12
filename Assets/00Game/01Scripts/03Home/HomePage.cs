@@ -10,9 +10,6 @@ using UnityEngine.UI;
 public class HomePage : MonoBehaviour
 {
 	[SerializeField]
-	private RectTransform _topNode;
-
-	[SerializeField]
 	private HomeEventController _eventController;
 
 	[SerializeField]
@@ -37,8 +34,6 @@ public class HomePage : MonoBehaviour
 
 	private SpecialStreakProgress _specialStreakProgress;
 	private CancellationTokenSource _cts;
-	private Canvas _headerCanvas;
-	private float _topNodeY;
 	private bool _started;
 	private bool _canSkipAnimations;
 	private bool _isLeavingHome;
@@ -85,29 +80,6 @@ public class HomePage : MonoBehaviour
 			_levelBoxMachine = GetComponentInChildren<LevelBoxMachine>(true);
 		}
 
-		if (_topNode == null)
-		{
-			var topTrans = HierarchyReferenceCache.Child(transform, "TopNode");
-			if (topTrans != null)
-			{
-				_topNode = topTrans as RectTransform;
-			}
-		}
-		if (_topNode != null)
-		{
-			_topNodeY = _topNode.anchoredPosition.y;
-			// SafeArea already moves the header below the notch.
-			if (_topNode.GetComponentInParent<SafeArea>() == null)
-				_headerCanvas = GetComponentInParent<Canvas>();
-		}
-	}
-
-	private void LateUpdate()
-	{
-		if (_topNode == null || _headerCanvas == null) return;
-		Vector2 position = _topNode.anchoredPosition;
-		position.y = _topNodeY - ScreenHelper.GetCanvasNotchHeight(_headerCanvas);
-		_topNode.anchoredPosition = position;
 	}
 
 	private void OnEnable()

@@ -326,7 +326,7 @@ public class PlayButton : MonoBehaviour
 		bool complete = GameProgressStore.IsCampaignComplete;
 		bool available = !complete && catalog != null && catalog.HasLevel(GameProgressStore.NextPlayableLevel);
 		int displayLevel = HomeLevelChangePresentation.HasPending ? HomeLevelChangePresentation.PreviousLevel : GameProgressStore.NextPlayableLevel;
-		_btnText.text = complete ? "ALL LEVELS COMPLETE" : available ? displayLevel.ToString() : "LEVEL DATA MISSING";
+		_btnText.text = complete ? "ALL LEVELS COMPLETE" : available ? $"Level {displayLevel}" : "LEVEL DATA MISSING";
 		_btnText.enableAutoSizing = true;
 		_btnText.fontSizeMin = 18f;
 		if (_btn != null) _btn.interactable = available;

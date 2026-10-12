@@ -548,6 +548,7 @@ public class Box : MonoBehaviour
 				if (square != null)
 				{
 					square.sprite = GameAssetsConfig.GetBoxFinishSprite(combo);
+					if (show && !emoji) GameplayEffects.BringComboToFront(square);
 					Camera view = Camera.main;
 					if (view != null) square.transform.rotation = view.transform.rotation;
 					square.gameObject.SetActive(square.sprite != null);
@@ -558,7 +559,6 @@ public class Box : MonoBehaviour
 			{
 				GameObject comboEffect = Instantiate(_gameLoader.BoxComboEffect, transform);
 				comboEffect.transform.localPosition = new Vector3(0f, 2f, 0f);
-				comboEffect.transform.forward = -transform.up;
 				GameplayEffects.PlayCombo(comboEffect, BoxFinishRules.GetEmojiVariant(combo));
 			}
 		}
