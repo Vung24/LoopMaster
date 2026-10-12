@@ -196,6 +196,9 @@ public class WinDialogContent : DialogContent
 		_result = RESULT_UNKNOWN;
 		_isClaiming = false;
 		_isNavigating = false;
+		_isSkippingAnims = false;
+		_isCanSkipAnims = false;
+		_isAnimsDone = false;
 		_offeredData = _controller == null ? null : _controller.Data;
 
 		_cancelTokenSource?.Cancel();
@@ -220,6 +223,7 @@ public class WinDialogContent : DialogContent
 	public async UniTaskVoid PlayAnim()
 	{
 		if (_isSkippingAnims) return;
+		CancellationToken token = _token;
 
 		_isCanSkipAnims = true;
 		_isAnimsDone = false;
@@ -239,7 +243,7 @@ public class WinDialogContent : DialogContent
 			_seq1.Append(_artTitle.DOScale(1.18f, 0.13f).SetEase(Ease.InSine));
 			_seq1.Append(_artTitle.DOScale(1.24f, 0.13f).SetEase(Ease.OutSine));
 
-			await UniTask.Delay(TimeSpan.FromSeconds(0.4f), cancellationToken: _token).SuppressCancellationThrow();
+			if (await UniTask.Delay(TimeSpan.FromSeconds(0.4f), cancellationToken: token).SuppressCancellationThrow()) return;
 			if (_isSkippingAnims) return;
 
 			_seq2 = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
@@ -248,7 +252,7 @@ public class WinDialogContent : DialogContent
 			_seq2.Append(_artTitle.DOLocalMoveY(_artTitlePosY, 0.27f).SetEase(Ease.OutBack));
 			_seq2.Join(_artTitle.DOScale(1.0f, 0.27f).SetEase(Ease.OutBack));
 
-			await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: _token).SuppressCancellationThrow();
+			if (await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: token).SuppressCancellationThrow()) return;
 			if (_isSkippingAnims) return;
 		}
 
@@ -269,17 +273,7 @@ public class WinDialogContent : DialogContent
 				.SetLink(gameObject);
 		}
 
-		if (_coinsSpine != null)
-		{
-			_coinsSpine.gameObject.SetActive(true);
-			_coinsSpine.UnscaledTime = true;
-			_coinsSpine.Initialize(false);
-			if (_coinsSpine.AnimationState != null)
-			{
-				_coinsSpine.AnimationState.ClearTracks();
-				_coinsSpine.AnimationState.SetAnimation(0, "open", false);
-			}
-		}
+		PlayCoinsOpenAnimation();
 
 		if (_coinShineEffect != null)
 		{
@@ -294,7 +288,7 @@ public class WinDialogContent : DialogContent
 			_coinSparkEffect.Play(true);
 		}
 
-		await UniTask.Delay(TimeSpan.FromSeconds(0.1f), cancellationToken: _token).SuppressCancellationThrow();
+		if (await UniTask.Delay(TimeSpan.FromSeconds(0.1f), cancellationToken: token).SuppressCancellationThrow()) return;
 		if (_isSkippingAnims) return;
 
 		if (_activeClaimButton != null)
@@ -318,9 +312,25 @@ public class WinDialogContent : DialogContent
 		}
 
 		await ShowEventBannerAsync();
+		if (token.IsCancellationRequested) return;
 
-		await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: _token).SuppressCancellationThrow();
+		if (await UniTask.Delay(TimeSpan.FromSeconds(0.2f), cancellationToken: token).SuppressCancellationThrow()) return;
 		SetAnimsDoneState();
+	}
+
+	private void PlayCoinsOpenAnimation()
+	{
+		if (_coinsSpine == null) return;
+		_coinsSpine.gameObject.SetActive(true);
+		_coinsSpine.UnscaledTime = true;
+		_coinsSpine.Initialize(false);
+		if (_coinsSpine.AnimationState == null || _coinsSpine.Skeleton == null) return;
+		_coinsSpine.AnimationState.ClearTracks();
+		// Claim animations leave slots/bones hidden; ClearTracks does not reset their pose.
+		_coinsSpine.Skeleton.SetToSetupPose();
+		_coinsSpine.AnimationState.SetAnimation(0, "open", false);
+		_coinsSpine.Update(0f);
+		_coinsSpine.UpdateMesh();
 	}
 
 	public void OnSkipAnims()
@@ -343,6 +353,7 @@ public class WinDialogContent : DialogContent
 
 	private async UniTask PlaySkipAnims()
 	{
+		CancellationToken token = _token;
 		if (_artTitle != null)
 		{
 			_artTitle.localPosition = new Vector3(_artTitle.localPosition.x, _artTitlePosY, _artTitle.localPosition.z);
@@ -367,17 +378,7 @@ public class WinDialogContent : DialogContent
 				.SetLink(gameObject);
 		}
 
-		if (_coinsSpine != null)
-		{
-			_coinsSpine.gameObject.SetActive(true);
-			_coinsSpine.UnscaledTime = true;
-			_coinsSpine.Initialize(false);
-			if (_coinsSpine.AnimationState != null)
-			{
-				_coinsSpine.AnimationState.ClearTracks();
-				_coinsSpine.AnimationState.SetAnimation(0, "open", false);
-			}
-		}
+		PlayCoinsOpenAnimation();
 
 		if (_coinShineEffect != null) _coinShineEffect.Play(true);
 		if (_coinSparkEffect != null) _coinSparkEffect.Play(true);
@@ -397,6 +398,7 @@ public class WinDialogContent : DialogContent
 		}
 
 		await ShowEventBannerAsync();
+		if (token.IsCancellationRequested) return;
 		SetAnimsDoneState();
 	}
 
@@ -680,6 +682,7 @@ public class WinDialogContent : DialogContent
 
 	public override void Hide()
 	{
+		_cancelTokenSource?.Cancel();
 		_isClaiming = false;
 		_seq1?.Kill();
 		_seq2?.Kill();

@@ -22,6 +22,9 @@ public class WinDialog : MonoBehaviour
 	private Coroutine _presentation;
 	private Tween _maskFade;
 	private bool _canSkip;
+	private SkeletonGraphic[] _fireworkGraphics;
+	private ParticleSystem[] _fireworkParticles;
+	private bool _effectsPrepared;
 	public bool IsEnteringHome { get; private set; }
 
 	private void Awake() { ResolveReferences(); }
@@ -31,6 +34,44 @@ public class WinDialog : MonoBehaviour
 		_controller = controller;
 		ResolveReferences();
 		if (_winDialogContent != null) _winDialogContent.Bind(controller);
+		PrepareEffects();
+	}
+
+	private void PrepareEffects()
+	{
+		if (_effectsPrepared) return;
+		_effectsPrepared = true;
+		Snui.Snui_Text.EnsureFontAssets(transform);
+		var graphics = new System.Collections.Generic.List<SkeletonGraphic>();
+		var particles = new System.Collections.Generic.List<ParticleSystem>();
+		if (_fireworkLeft != null)
+		{
+			graphics.AddRange(_fireworkLeft.GetComponentsInChildren<SkeletonGraphic>(true));
+			particles.AddRange(_fireworkLeft.GetComponentsInChildren<ParticleSystem>(true));
+		}
+		if (_fireworkRight != null)
+		{
+			graphics.AddRange(_fireworkRight.GetComponentsInChildren<SkeletonGraphic>(true));
+			particles.AddRange(_fireworkRight.GetComponentsInChildren<ParticleSystem>(true));
+		}
+		_fireworkGraphics = graphics.ToArray();
+		_fireworkParticles = particles.ToArray();
+		foreach (SkeletonGraphic graphic in _fireworkGraphics)
+		{
+			graphic.UnscaledTime = true;
+			graphic.Initialize(false);
+		}
+		foreach (ParticleSystem effect in _fireworkParticles)
+		{
+			var main = effect.main;
+			main.useUnscaledTime = true;
+			// The dialog owns visibility. A child finishing must not disable the emitter root.
+			main.stopAction = ParticleSystemStopAction.None;
+			effect.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+		}
+		if (_winPopperCheerClip != null && _winPopperCheerClip.loadState == AudioDataLoadState.Unloaded)
+			_winPopperCheerClip.LoadAudioData();
+		StopFireworks();
 	}
 
 	private void ResolveReferences()
@@ -50,7 +91,7 @@ public class WinDialog : MonoBehaviour
 	{
 		CancelPresentation();
 		ResolveReferences();
-		Snui.Snui_Text.EnsureFontAssets(transform);
+		PrepareEffects();
 		if (_winDialogContent != null) _winDialogContent.Hide();
 		if (_logoDialogContent != null) _logoDialogContent.Hide();
 		SetMaskAlpha(0f);
@@ -66,8 +107,7 @@ public class WinDialog : MonoBehaviour
 
 	private IEnumerator PlayPresentation()
 	{
-		PlayFireworks(_fireworkLeft);
-		PlayFireworks(_fireworkRight);
+		PlayFireworks();
 		if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(_winPopperCheerClip, gameObject);
 		if (_logoDialogContent != null)
 		{
@@ -97,8 +137,7 @@ public class WinDialog : MonoBehaviour
 		CancelPresentation();
 		if (_logoDialogContent != null) _logoDialogContent.Hide();
 		if (_winDialogContent != null) _winDialogContent.Hide();
-		StopFireworks(_fireworkLeft);
-		StopFireworks(_fireworkRight);
+		StopFireworks();
 		if (_canvasGroup != null)
 		{
 			_canvasGroup.interactable = false;
@@ -114,35 +153,34 @@ public class WinDialog : MonoBehaviour
 		if (_mask != null) _maskFade = _mask.DOFade(0.85f, 0.15f).SetUpdate(true).SetLink(gameObject);
 	}
 
-	private static void PlayFireworks(Transform root)
+	private void PlayFireworks()
 	{
-		if (root == null) return;
-		root.gameObject.SetActive(true);
-		foreach (SkeletonGraphic graphic in root.GetComponentsInChildren<SkeletonGraphic>(true))
+		if (_fireworkLeft != null) _fireworkLeft.gameObject.SetActive(true);
+		if (_fireworkRight != null) _fireworkRight.gameObject.SetActive(true);
+		foreach (SkeletonGraphic graphic in _fireworkGraphics)
 		{
-			graphic.UnscaledTime = true;
-			graphic.Initialize(false);
+			if (graphic == null) continue;
 			var data = graphic.skeletonDataAsset == null ? null : graphic.skeletonDataAsset.GetSkeletonData(false);
 			if (data == null || data.FindAnimation("animation") == null || graphic.AnimationState == null) continue;
 			graphic.Skeleton.SetToSetupPose();
 			graphic.AnimationState.ClearTracks();
 			graphic.AnimationState.SetAnimation(0, "animation", false);
 		}
-		foreach (ParticleSystem effect in root.GetComponentsInChildren<ParticleSystem>(true))
+		foreach (ParticleSystem effect in _fireworkParticles)
 		{
-			var main = effect.main;
-			main.useUnscaledTime = true;
-			effect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-			effect.Play();
+			if (effect == null) continue;
+			effect.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+			effect.Play(false);
 		}
 	}
 
-	private static void StopFireworks(Transform root)
+	private void StopFireworks()
 	{
-		if (root == null) return;
-		foreach (ParticleSystem effect in root.GetComponentsInChildren<ParticleSystem>(true))
-			effect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-		root.gameObject.SetActive(false);
+		if (_fireworkParticles != null)
+			foreach (ParticleSystem effect in _fireworkParticles)
+				if (effect != null) effect.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+		if (_fireworkLeft != null) _fireworkLeft.gameObject.SetActive(false);
+		if (_fireworkRight != null) _fireworkRight.gameObject.SetActive(false);
 	}
 
 	private void SetMaskAlpha(float alpha)
