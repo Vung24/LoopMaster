@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-public sealed class GameplaySceneBuilder
+public sealed class GameplaySceneBuilder : IGroupLockScene
 {
 	private readonly List<Box> _boxes = new List<Box>();
 	private readonly Dictionary<BoxInfo, Box> _boxesByInfo = new Dictionary<BoxInfo, Box>();
