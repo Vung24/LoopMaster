@@ -353,8 +353,6 @@ public class GameData
 		{
 			BoxInfo box = Boxes[i];
 			if (box.IsFinished()) continue;
-			// Native LAB_0176ce34 disposes the enumerator and rejects the board;
-			// it does not skip an unsorted box and continue counting.
 			if (box.HasSurpriseCube() || box.IsEmpty() || !box.IsSameColorOrEmpty()) return false;
 			int type = box.GetTopType();
 			if (!_speedUpSeenTypes.Add(type)) return false;
@@ -437,8 +435,6 @@ public class GameData
 	{
 		if (IsTransferHaveSpace()) return false;
 		if (TransferSlice.Count == 0) return true;
-		// These predicates only inspect state. Check capacity once per box instead
-		// of re-enumerating the available-box query for every transfer slice.
 		for (int boxIndex = 0; boxIndex < Boxes.Count; boxIndex++)
 		{
 			BoxInfo box = Boxes[boxIndex];
