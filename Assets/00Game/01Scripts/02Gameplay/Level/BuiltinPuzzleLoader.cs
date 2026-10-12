@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using UnityEngine;
 
-public class BuiltinPuzzleLoader : MonoBehaviour
+public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 {
 	[SerializeField] private string _bundleName = "puzzle";
 	[SerializeField] private int _defaultLevel = 1;
@@ -11,6 +11,13 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 	private bool _loading;
 	private string _lastJsonFolder;
 	private BuiltinLevelCatalog _catalog;
+	private string _cachedFolderSetting;
+	private string _cachedProjectFolder;
+	private int _availabilityFrame = -1;
+	private int _availabilityLevel;
+	private bool _availabilityResult;
+	private string _availabilityJsonFolder;
+	private string _availabilityFolderSetting;
 	private BuiltinLevelCatalog Catalog => _catalog != null ? _catalog :
 		(_catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName));
 
@@ -28,19 +35,55 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 
 	public bool LoadExactLevel(int levelNumber, GameController controller = null)
 	{
-		if (levelNumber < 1 || GameProgressStore.IsLevelCompleted(levelNumber)) return false;
-		if (!string.IsNullOrEmpty(_lastJsonFolder) &&
-			LoadJsonLevel(_lastJsonFolder, levelNumber, controller)) return true;
-		return LoadProjectLevel(levelNumber, controller) || LoadPackagedLevel(levelNumber, controller);
+		// Compatibility entry point; navigation uses the data-only factory below.
+		return TryCreateExactLevel(levelNumber, out GameData data) && InitializePrepared(data, controller);
+	}
+
+	public bool TryCreateExactLevel(int levelNumber, out GameData data)
+	{
+		data = null;
+		if (_loading || levelNumber < 1 || GameProgressStore.IsLevelCompleted(levelNumber)) return false;
+		_loading = true;
+		GameData previous = GameData.Current;
+		try
+		{
+			if (!string.IsNullOrEmpty(_lastJsonFolder) && ReadJsonLevel(_lastJsonFolder, levelNumber, out data)) return true;
+			if (!string.IsNullOrEmpty(_levelDataFolder))
+			{
+				string projectFolder = GetProjectLevelFolder();
+				if (!string.Equals(projectFolder, _lastJsonFolder, StringComparison.Ordinal) &&
+					ReadJsonLevel(projectFolder, levelNumber, out data)) return true;
+			}
+			return ReadPackagedLevel(levelNumber, out data);
+		}
+		finally
+		{
+			GameData.SetCurrent(previous);
+			_loading = false;
+		}
 	}
 
 	public bool HasExactLevel(int levelNumber)
 	{
 		if (levelNumber < 1) return false;
-		if (!string.IsNullOrEmpty(_lastJsonFolder) &&
-			File.Exists(Path.Combine(_lastJsonFolder, "Level " + levelNumber + ".json"))) return true;
-		return File.Exists(Path.Combine(GetProjectLevelFolder(), "Level " + levelNumber + ".json")) ||
-			(Catalog != null && Catalog.HasLevel(levelNumber));
+		int frame = Time.frameCount;
+		if (Application.isPlaying && _availabilityFrame == frame && _availabilityLevel == levelNumber &&
+			_availabilityJsonFolder == _lastJsonFolder && _availabilityFolderSetting == _levelDataFolder)
+			return _availabilityResult;
+		// Catalog availability needs no file-system probe. Actual loads still honor JSON overrides first.
+		bool available = Catalog != null && Catalog.HasLevel(levelNumber);
+		if (!available)
+		{
+			string file = "Level " + levelNumber + ".json";
+			available = (!string.IsNullOrEmpty(_lastJsonFolder) && File.Exists(Path.Combine(_lastJsonFolder, file))) ||
+				File.Exists(Path.Combine(GetProjectLevelFolder(), file));
+		}
+		_availabilityFrame = frame;
+		_availabilityLevel = levelNumber;
+		_availabilityJsonFolder = _lastJsonFolder;
+		_availabilityFolderSetting = _levelDataFolder;
+		_availabilityResult = available;
+		return available;
 	}
 
 	public bool LoadPuzzle(int puzzleId, GameController controller = null)
@@ -95,12 +138,28 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 	{
 		if (_loading || string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return false;
 		_loading = true;
+		GameData previous = GameData.Current;
+		GameData data;
 		try
 		{
-			string json = File.ReadAllText(filePath);
-			int levelNumber = ParseLevelNumber(filePath);
-			if (!InitializeJson(json, levelNumber, controller)) return false;
-			_lastJsonFolder = Path.GetDirectoryName(Path.GetFullPath(filePath));
+			if (!ReadJsonFile(filePath, out data)) return false;
+		}
+		finally { GameData.SetCurrent(previous); _loading = false; }
+		return InitializePrepared(data, controller);
+	}
+
+	private bool ReadJsonLevel(string folder, int level, out GameData data) =>
+		ReadJsonFile(Path.Combine(folder, "Level " + level + ".json"), out data);
+
+	private bool ReadJsonFile(string path, out GameData data)
+	{
+		data = null;
+		if (!File.Exists(path)) return false;
+		try
+		{
+			if (!CreateJsonData(File.ReadAllText(path), ParseLevelNumber(path), out data)) return false;
+			_lastJsonFolder = Path.GetDirectoryName(Path.GetFullPath(path));
+			_availabilityFrame = -1;
 			return true;
 		}
 		catch (Exception exception)
@@ -108,20 +167,20 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 			Debug.LogException(exception);
 			return false;
 		}
-		finally { _loading = false; }
 	}
 
-	private bool LoadPackagedLevel(int levelNumber, GameController controller)
+	private bool ReadPackagedLevel(int levelNumber, out GameData data)
 	{
-		if (_loading || Catalog == null || !Catalog.HasLevel(levelNumber)) return false;
+		data = null;
+		if (Catalog == null || !Catalog.HasLevel(levelNumber)) return false;
 		TextAsset asset = null;
-		_loading = true;
 		try
 		{
 			asset = Resources.Load<TextAsset>($"{BuiltinLevelCatalog.ResourceFolder}/Level {levelNumber}");
 			if (asset == null) return false;
-			if (!InitializeJson(asset.text, levelNumber, controller)) return false;
+			if (!CreateJsonData(asset.text, levelNumber, out data)) return false;
 			_lastJsonFolder = null;
+			_availabilityFrame = -1;
 			return true;
 		}
 		catch (Exception exception)
@@ -132,39 +191,51 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 		finally
 		{
 			if (asset != null) Resources.UnloadAsset(asset);
-			_loading = false;
 		}
 	}
 
-	private static bool InitializeJson(string json, int levelNumber, GameController controller)
+	private static bool CreateJsonData(string json, int levelNumber, out GameData data)
 	{
+		data = null;
 		if (GameProgressStore.IsLevelCompleted(levelNumber)) return false;
+		data = GameLevelDataConverter.FromJson(json, levelNumber);
+		if (!GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) return true;
+		data = null;
+		return false;
+	}
+
+	private static bool InitializePrepared(GameData data, GameController controller)
+	{
 		GameData previous = GameData.Current;
-		GameData data = GameLevelDataConverter.FromJson(json, levelNumber);
-		if (GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(previous); return false; }
 		GameController target = controller != null ? controller : GameController.Current;
 		if (target == null)
 		{
 			GameData.SetCurrent(previous);
-			Debug.LogError("No GameController is available to initialize level " + levelNumber + ".");
+			Debug.LogError("No GameController is available to initialize the prepared level.");
 			return false;
 		}
-		target.Initialize(data);
-		return target.Data == data;
-	}
-
-	private bool LoadProjectLevel(int levelNumber, GameController controller)
-	{
-		if (levelNumber < 1 || string.IsNullOrEmpty(_levelDataFolder)) return false;
-		return LoadJsonLevel(GetProjectLevelFolder(), levelNumber, controller);
+		try
+		{
+			target.Initialize(data);
+			return target.Data == data;
+		}
+		catch (Exception exception)
+		{
+			GameData.SetCurrent(previous);
+			Debug.LogException(exception);
+			return false;
+		}
 	}
 
 	private string GetProjectLevelFolder()
 	{
+		if (_cachedProjectFolder != null && _cachedFolderSetting == _levelDataFolder) return _cachedProjectFolder;
 		string relative = (_levelDataFolder ?? string.Empty)
 			.Replace('/', Path.DirectorySeparatorChar)
 			.Replace('\\', Path.DirectorySeparatorChar);
-		return Path.IsPathRooted(relative) ? relative : Path.Combine(Application.dataPath, relative);
+		_cachedFolderSetting = _levelDataFolder;
+		_cachedProjectFolder = Path.GetFullPath(Path.IsPathRooted(relative) ? relative : Path.Combine(Application.dataPath, relative));
+		return _cachedProjectFolder;
 	}
 
 	private bool EnsureBundle()
@@ -216,4 +287,6 @@ public class BuiltinPuzzleLoader : MonoBehaviour
 		if (_bundle != null) _bundle.Unload(false);
 		_bundle = null;
 	}
+
+	private void OnValidate() => _availabilityFrame = -1;
 }

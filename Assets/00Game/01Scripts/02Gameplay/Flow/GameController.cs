@@ -3,14 +3,7 @@ using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
-public enum GameEndState
-{
-	Playing = 0,
-	Won = 1,
-	Failed = 2
-}
-
-public class GameController : MonoBehaviour
+public class GameController : MonoBehaviour, IGameNavigationSession
 {
 	[SerializeField, Min(0.1f)] private float _sliceJumpDuration = GameplayFeedbackRules.SliceJumpDuration;
 	[SerializeField, Min(0.1f)] private float _sliceJumpHeight = GameplayFeedbackRules.SliceJumpHeight;
@@ -64,11 +57,10 @@ public class GameController : MonoBehaviour
 		if (!IsBoosterShopOpen) Boosters.GetRequestState(out undo, out shuffle, out path);
 	}
 	public bool CanRevive => Data != null && Data.PathPoints.Count > 1 &&
-		EndState == GameEndState.Failed && !_isTransitioningLevel;
+		EndState == GameEndState.Failed && !IsTransitioningLevel;
 	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && GamePrefs.GetInt(GamePrefKeys.FailTutorial, 0) == 0;
-	public bool CanReplayLevel => Data != null && !_isTransitioningLevel && EndState != GameEndState.Won && !GameProgressStore.IsLevelCompleted(CurrentLevelNumber);
-	public bool CanLoadNextLevel => EndState == GameEndState.Won && !_isTransitioningLevel &&
-		_levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber);
+	public bool CanReplayLevel => Data != null && Navigation.CanReplayLevel;
+	public bool CanLoadNextLevel => EndState == GameEndState.Won && Navigation.CanLoadNextLevel;
 	public event System.Action GameWon;
 	public event System.Action GameLost;
 	public event System.Action GameRevived;
@@ -93,36 +85,24 @@ public class GameController : MonoBehaviour
 		this, Scene.Boxes, GetBox, () => !IsBoosterShopOpen && _isGameStart && EndState == GameEndState.Playing && !IsLevelIntroPlaying,
 		IsGameplaySettled, RefreshPathState, RefreshGameplayAfterOperation, PlayBoosterAudio));
 	private bool IsUsingBooster => _boosterFlow != null && _boosterFlow.IsBusy;
-	private bool _isTransitioningLevel;
-	private GameData _abandonedStreakData;
-	private GameData _winRewardData;
-	private int _winRewardCoins;
-	private bool _winRewardClaimed;
-	public bool HasClaimedWinReward(GameData data) => data != null &&
-		_winRewardData == data && _winRewardClaimed;
-	public int GetWinRewardCoins(GameData data) => data != null && Data == data &&
-		_winRewardData == data && EndState == GameEndState.Won ? _winRewardCoins : 0;
+	private GameNavigationFlow _navigation;
+	private GameNavigationEffects _navigationEffects;
+	private BuiltinPuzzleLoader _puzzleLoader;
+	private Transform _dialogParent;
+	private GameNavigationFlow Navigation => _navigation ?? CreateNavigation();
+	private bool IsTransitioningLevel => _navigation != null && _navigation.IsTransitioning;
+	private readonly WinRewardFlow _winRewards = new WinRewardFlow(new WinRewardEconomy());
+	public bool HasClaimedWinReward(GameData data) => _winRewards.HasClaimed(data);
+	public int GetWinRewardCoins(GameData data) => EndState == GameEndState.Won ? _winRewards.GetCoins(data) : 0;
 
 	public bool TryClaimWinReward(GameData data, bool doubled, out int coins)
 	{
-		coins = 0;
-		int reward = GetWinRewardCoins(data);
-		if (reward <= 0 || _winRewardClaimed || _isTransitioningLevel) return false;
-		reward *= doubled ? 2 : 1;
-		_winRewardClaimed = true;
-		if (!InventoryManager.Ensure().Add(InventoryKeys.COIN, reward, doubled ? "win_offline_double" : "win"))
-		{
-			if (_winRewardData == data) _winRewardClaimed = false;
-			return false;
-		}
-		coins = reward;
-		return true;
+		return _winRewards.TryClaim(data, doubled, IsTransitioningLevel, out coins);
 	}
-	private GameLevelFlow _levelFlow;
 	private ConveyorFlow _conveyorFlow;
 	private bool IsFailureConveyorActive => Time.timeScale > 0f && Data != null &&
 		EndState == GameEndState.Failed && IsGameFailed && !IsGameOver &&
-		Data != _abandonedStreakData && !_isTransitioningLevel;
+		!Navigation.IsCurrentLevelAbandoned && !IsTransitioningLevel;
 	private bool CanTickConveyor => (IsGameplayActive && !IsGameOver && !IsGameFailed) ||
 		IsFailureConveyorActive;
 	private ConveyorFlow Conveyor => _conveyorFlow ?? (_conveyorFlow = new ConveyorFlow(
@@ -165,9 +145,7 @@ public class GameController : MonoBehaviour
 		InventoryManager.Ensure();
 		_gameLoader = GetComponent<GameLoader>();
 		if (_gameLoader == null) _gameLoader = gameObject.AddComponent<GameLoader>();
-		BuiltinPuzzleLoader puzzleLoader = GetComponent<BuiltinPuzzleLoader>();
-		if (puzzleLoader == null) puzzleLoader = gameObject.AddComponent<BuiltinPuzzleLoader>();
-		_levelFlow = new GameLevelFlow(this, puzzleLoader);
+		ResolvePuzzleLoader();
 		ResolveGameplayCameras();
 		if (GameRoot == null)
 		{
@@ -183,7 +161,38 @@ public class GameController : MonoBehaviour
 			_uiCanvas = _uiCanvasInstance.GetComponent<UICanvas>();
 			if (_uiCanvas != null) _uiCanvas.Bind(this);
 		}
-		GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
+		GameResultUI resultUI = GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
+		_dialogParent = resultUI == null ? null : resultUI.DialogParent;
+		if (_navigationEffects != null) _navigationEffects.DialogParent = _dialogParent;
+	}
+
+	private void ResolvePuzzleLoader()
+	{
+		if (_puzzleLoader != null) return;
+		_puzzleLoader = GetComponent<BuiltinPuzzleLoader>();
+		if (_puzzleLoader == null) _puzzleLoader = gameObject.AddComponent<BuiltinPuzzleLoader>();
+	}
+
+	private GameNavigationFlow CreateNavigation()
+	{
+		ResolvePuzzleLoader();
+		_navigationEffects = new GameNavigationEffects { DialogParent = _dialogParent };
+		_navigation = new GameNavigationFlow(this, new GameLevelFlow(_puzzleLoader),
+			_navigationEffects, destroyCancellationToken);
+		_navigation.LevelReplayed += OnLevelReplayed;
+		_navigation.LevelAdvanced += OnLevelAdvanced;
+		_navigation.NextLevelUnavailable += OnNextLevelUnavailable;
+		return _navigation;
+	}
+
+	private void OnLevelReplayed(int level) => LevelReplayed?.Invoke(level);
+	private void OnLevelAdvanced(int level) => LevelAdvanced?.Invoke(level);
+	private void OnNextLevelUnavailable(int level) => NextLevelUnavailable?.Invoke(level);
+
+	bool IGameNavigationSession.TryStartLevel(GameData data)
+	{
+		Initialize(data);
+		return Data == data && EndState == GameEndState.Playing;
 	}
 
 	private void Start()
@@ -198,13 +207,14 @@ public class GameController : MonoBehaviour
 		if (GameData.Current != null && !GameProgressStore.IsLevelCompleted(GameData.Current.GetPuzzleActualLevel())) Initialize(GameData.Current);
 		else
 		{
-			BuiltinPuzzleLoader puzzleLoader = GetComponent<BuiltinPuzzleLoader>();
-			if (puzzleLoader == null) puzzleLoader = gameObject.AddComponent<BuiltinPuzzleLoader>();
-			if (!puzzleLoader.LoadDefault(this))
+			ResolvePuzzleLoader();
+			if (GameProgressStore.IsCampaignComplete ||
+				!_puzzleLoader.TryCreateExactLevel(GameProgressStore.NextPlayableLevel, out GameData data))
 			{
 				Debug.LogWarning(GameProgressStore.IsCampaignComplete ? "All available levels complete." : "Next level data is missing.", this);
 				TryReturnHome();
 			}
+			else Initialize(data);
 		}
 	}
 
@@ -221,31 +231,19 @@ public class GameController : MonoBehaviour
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
 		StopAllCoroutines();
-		if (Data != data)
-		{
-			_winRewardData = null;
-			_winRewardCoins = 0;
-			_winRewardClaimed = false;
-		}
+		_winRewards.BeginLevel(data);
 		bool enteringEventLevel = Data != data && !editorPlaytest;
 		Data = data;
 		if (enteringEventLevel) Managers.Event?.DispatchEvent("OnEnterGame");
 		Data.ConfigureRoadSpacing(_sliceSpacingScale);
 		Data.DifferentColorSliceSpacing = 1;
-		if (_levelFlow == null)
-		{
-			BuiltinPuzzleLoader loader = GetComponent<BuiltinPuzzleLoader>();
-			if (loader == null) loader = gameObject.AddComponent<BuiltinPuzzleLoader>();
-			_levelFlow = new GameLevelFlow(this, loader);
-		}
-		_levelFlow.Capture(data);
+		Navigation.BeginLevel(data);
 		_engine = new CoreGameplayEngine(data);
 		Conveyor.Reset(data, _engine);
 		Boosters.Reset(data, _engine, _gameLoader, GameRoot);
 		Transfers.Reset(data, _gameLoader, GameRoot);
 		ComboInCount = 0;
 		_comboTime = 0f;
-		_isTransitioningLevel = false;
 		_gameLoader.LoadAssetsAsync(data);
 		ClearRuntimeObjects();
 		GroupLocks.Reset(data);
@@ -480,7 +478,7 @@ public class GameController : MonoBehaviour
 
 	public bool TryCheatLoadLevel(int level)
 	{
-		if (level < 1 || _isTransitioningLevel || IsUsingBooster) return false;
+		if (level < 1 || IsTransitioningLevel || IsUsingBooster) return false;
 		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
 		if (catalog == null || !catalog.HasLevel(level)) return false;
 		TextAsset asset = null;
@@ -508,7 +506,7 @@ public class GameController : MonoBehaviour
 #if UNITY_EDITOR
 	public bool TryDebugForceEndState(GameEndState state)
 	{
-		if (!Application.isPlaying || !IsGameplayActive || _isTransitioningLevel ||
+		if (!Application.isPlaying || !IsGameplayActive || IsTransitioningLevel ||
 			(state != GameEndState.Won && state != GameEndState.Failed)) return false;
 		CompleteGame(state);
 		return EndState == state;
@@ -540,22 +538,7 @@ public class GameController : MonoBehaviour
 
 	public bool TryLoadNextLevel()
 	{
-		if (EndState != GameEndState.Won || Data == null || _isTransitioningLevel) return false;
-		if (!SpecialStreakManager.Ensure().SettlePending()) return false;
-		int nextLevel = CurrentLevelNumber + 1;
-		if (nextLevel < 1) return false;
-		if (_levelFlow == null || !_levelFlow.HasNext(CurrentLevelNumber))
-		{
-			NextLevelUnavailable?.Invoke(nextLevel);
-			return false;
-		}
-
-		_isTransitioningLevel = true;
-		Managers.StreakLine?.SynchronizeTempLevel();
-		bool loaded = _levelFlow.LoadNext(CurrentLevelNumber);
-		if (!loaded) _isTransitioningLevel = false;
-		else LevelAdvanced?.Invoke(nextLevel);
-		return loaded;
+		return Navigation.TryLoadNextLevel();
 	}
 
 	public bool ReplayLevel()
@@ -570,108 +553,30 @@ public class GameController : MonoBehaviour
 
 	public bool TryReplayLevel()
 	{
-		if (!CanReplayLevel) return false;
-		CommitAbandonedLevel();
-		int level = CurrentLevelNumber;
-		if (level < 1) level = Mathf.Max(1, Data.GetPuzzleMainLevel());
-		_isTransitioningLevel = true;
-
-		bool loaded = _levelFlow != null && _levelFlow.Replay(Data, level);
-
-		if (!loaded) _isTransitioningLevel = false;
-		else LevelReplayed?.Invoke(level);
-		return loaded;
+		return Navigation.TryReplayLevel();
 	}
 
 	public void CommitAbandonedLevel()
 	{
-		if (Data != null && Data != _abandonedStreakData && EndState != GameEndState.Won)
-		{
-			_abandonedStreakData = Data;
-			SpecialStreakManager.Ensure().OnGameFailed();
-			Managers.Event?.DispatchEvent("OnGameFail");
-		}
+		Navigation.CommitAbandonedLevel();
 	}
 	public bool TryReturnHome()
 	{
-		if (!BeginReturnHome()) return false;
-		ReturnHomeWithLoading().Forget();
-		return true;
+		return Navigation.TryReturnHome();
 	}
 
-	private bool BeginReturnHome()
-	{
-		if (_isTransitioningLevel || GameSceneManager.OnChangeScene) return false;
-		// Pending wins are saved by OnGameWon; Home presents and settles them.
-		Managers.StreakLine?.SynchronizeTempLevel();
-		CommitAbandonedLevel();
-		_isTransitioningLevel = true;
-		return true;
-	}
-
-	public async UniTask<bool> ReturnHomeAsync(bool withAnimation = true)
-	{
-		if (!BeginReturnHome()) return false;
-		return await LoadHomeAsync(withAnimation);
-	}
-
-	private async UniTaskVoid ReturnHomeWithLoading()
-	{
-		if (!await LoadHomeAsync(withAnimation: true))
-			await LoadingPanel.TryDismiss();
-	}
-
-	private async UniTask<bool> LoadHomeAsync(bool withAnimation)
-	{
-		GameData previousData = GameData.Current;
-		Time.timeScale = 1f;
-		try
-		{
-			if (EndState != GameEndState.Won && Managers.Lava != null && Managers.Lava.ShouldShowFailDialog())
-			{
-				GameResultUI resultUI = GetComponent<GameResultUI>();
-				Transform parent = resultUI == null ? null : resultUI.DialogParent;
-				var dialog = await Snui.Lava.LavaDetailDialog.Show(parent);
-				if (dialog != null)
-				{
-					Snui.RewardDialog.PrepareOverlay(dialog.gameObject, 1400);
-					await dialog.WaitForCloseAsync();
-				}
-			}
-			if (GameSceneManager.OnChangeScene)
-			{
-				_isTransitioningLevel = false;
-				return false;
-			}
-			GameData.ClearCurrent();
-			await GameSceneManager.EnterHome(withAnimation);
-			return true;
-		}
-		catch (System.Exception error)
-		{
-			if (this != null)
-			{
-				GameData.SetCurrent(previousData);
-				_isTransitioningLevel = false;
-			}
-			Debug.LogException(error);
-			return false;
-		}
-	}
+	public UniTask<bool> ReturnHomeAsync(bool withAnimation = true) => Navigation.ReturnHomeAsync(withAnimation);
 
 	public void OnClickNextLevel()
 	{
 		TryLoadNextLevel();
 	}
 
-	public bool ShouldReturnHomeAfterWin => !CanLoadNextLevel ||
-		GameSceneRoutingRules.ReturnHomeAfterWin(GameProgressStore.CurrentPuzzleIndex);
+	public bool ShouldReturnHomeAfterWin => Navigation.ShouldReturnHomeAfterWin;
 
 	public bool TryContinueAfterWin()
 	{
-		if (EndState != GameEndState.Won || !HasClaimedWinReward(Data) || _isTransitioningLevel ||
-			GameSceneManager.OnChangeScene) return false;
-		return ShouldReturnHomeAfterWin ? TryReturnHome() : TryLoadNextLevel();
+		return Navigation.TryContinueAfterWin(HasClaimedWinReward(Data));
 	}
 
 	public void OnClickReplayLevel()
@@ -754,12 +659,7 @@ public class GameController : MonoBehaviour
 			PlayBoosterAudio(_gameLoader == null ? null : _gameLoader.Fail);
 		if (state == GameEndState.Won)
 		{
-			if (_winRewardData != Data)
-			{
-				_winRewardData = Data;
-				_winRewardCoins = Data == null ? 0 : ConfigManager.GetFinishLevelCoinCount(Data.GetHardLevel());
-				_winRewardClaimed = false;
-			}
+			_winRewards.Prepare(Data);
 			LevelBoxManager.EnsureInitialized();
 			SpecialStreakManager.Ensure().OnGameWon(CurrentLevelNumber);
 			if (!GameProgressStore.IsLevelCompleted(CurrentLevelNumber))
@@ -767,7 +667,7 @@ public class GameController : MonoBehaviour
 				{
 					{ GameWinArgs.PassPoints, Data == null ? 1 : Mathf.Clamp((int)Data.GetHardLevel() + 1, 1, 3) }
 				});
-			GameProgressStore.RecordWin(CurrentLevelNumber, _levelFlow != null && _levelFlow.HasNext(CurrentLevelNumber),
+			GameProgressStore.RecordWin(CurrentLevelNumber, Navigation.HasNextLevel,
 				Data == null ? HardLevel.Normal : Data.GetHardLevel());
 			GameWon?.Invoke();
 		}
@@ -802,6 +702,7 @@ public class GameController : MonoBehaviour
 
 	private void OnDestroy()
 	{
+		_navigation?.Dispose();
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
 		_boosterFlow?.Cancel();
