@@ -31,7 +31,7 @@ namespace Snui
 
 		private void PlayClickButtonSound()
 		{
-			if (!EnableClickAudio || !GameAudioSettings.EffectsEnabled) return;
+			if (!isActiveAndEnabled || !EnableClickAudio || !GameAudioSettings.EffectsEnabled) return;
 			if (GameAudioPlayer.Current != null)
 			{
 				GameAudioPlayer.Current.PlayClickAudio();
@@ -47,7 +47,7 @@ namespace Snui
 						source = gameObject.AddComponent<AudioSource>();
 						source.playOnAwake = false;
 					}
-					source.PlayOneShot(clip);
+					if (source.isActiveAndEnabled) source.PlayOneShot(clip);
 				}
 			}
 		}

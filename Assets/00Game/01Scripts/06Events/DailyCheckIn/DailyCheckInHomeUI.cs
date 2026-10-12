@@ -18,7 +18,8 @@ namespace Snui
             _home = home;
             if (!DailyCheckInManager.IsOpen) return;
             if (_entry != null) return;
-            _entry = DailyCheckInUI.Button("DailyCheckInButton", transform, "DAILY\nREWARDS",
+            Transform entryParent = HierarchyReferenceCache.Child(transform, "SafeArea") ?? transform;
+            _entry = DailyCheckInUI.Button("DailyCheckInButton", entryParent, "DAILY\nREWARDS",
                 new Vector2(170, 105), Vector2.zero, new Color(.12f, .28f, .48f));
             var rect = (RectTransform)_entry.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(0, 0);

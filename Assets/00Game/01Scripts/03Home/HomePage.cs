@@ -93,7 +93,13 @@ public class HomePage : MonoBehaviour
 				_topNode = topTrans as RectTransform;
 			}
 		}
-		if (_topNode != null) { _topNodeY = _topNode.anchoredPosition.y; _headerCanvas = GetComponentInParent<Canvas>(); }
+		if (_topNode != null)
+		{
+			_topNodeY = _topNode.anchoredPosition.y;
+			// SafeArea already moves the header below the notch.
+			if (_topNode.GetComponentInParent<SafeArea>() == null)
+				_headerCanvas = GetComponentInParent<Canvas>();
+		}
 	}
 
 	private void LateUpdate()

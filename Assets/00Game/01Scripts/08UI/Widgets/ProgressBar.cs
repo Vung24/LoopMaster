@@ -12,7 +12,7 @@ public class ProgressBar : MonoBehaviour
     public Transform Text;
     public TextStyle Style;
     protected Image barImage;
-    protected UnityEngine.UI.Text legacyText;
+    protected Text legacyText;
     protected TMP_Text tmpText;
     protected int currCount;
     protected int totalCount;
