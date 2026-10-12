@@ -26,12 +26,11 @@ public class LoseStreakLineNode : MonoBehaviour
 
 	public async UniTaskVoid UpdateDesc()
 	{
-		await UniTask.Yield();
-		if (Managers.StreakLine != null && _desc != null)
+		if (_desc != null)
 		{
-			int curr = Managers.StreakLine.GetCurrLevel();
-			_desc.SetLocalizedString("Language", "Fail-Desc2", "StreakLine-Title2");
-			gameObject.SetActive(curr > 0);
+			// English values from Language/Fail-Desc2 and StreakLine-Title2.
+			_desc.text = "You will fail the <color=#C31439>SKY RISE!</color> ";
 		}
+		await UniTask.CompletedTask;
 	}
 }

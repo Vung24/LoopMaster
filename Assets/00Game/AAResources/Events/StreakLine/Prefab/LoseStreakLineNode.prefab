@@ -90,6 +90,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06a23d0b908ed956ca32c19000cc5f7e, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _desc: {fileID: 114785230163769116}
 --- !u!224 &224061454839329924
 RectTransform:
   serializedVersion: 2
@@ -211,7 +212,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: You will lose
+  m_text: 'You will fail the <color=#C31439>SKY RISE!</color> '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 550bd1ef4ca84e04f9d07cfb386b69a2, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: baecc37ce56c484188d8a9b00cc95fd4, type: 2}
