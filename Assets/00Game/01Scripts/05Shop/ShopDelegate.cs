@@ -57,21 +57,16 @@ namespace ShopUI
 				case ShopProductCatalog.GoldenPass:
 					return "Events/PassBundleItem";
 				case ShopProductCatalog.Beginner:
-					return "ShopUI/Prefab/BeginBundleItem.prefab";
+				case "loop.master.bundle":
+				case "loop.mega.bundle":
+				case "loop.ultra.bundle":
+				case "loop.giant.bundle":
+				case "loop.legendary.bundle":
+					return "04Prefabs/Shop/BundleBase.prefab";
 				case ShopProductCatalog.NoAds:
 					return "ShopUI/Prefab/RemoveAdItem.prefab";
 				case ShopProductCatalog.NoAdsPlus:
 					return "ShopUI/Prefab/RemoveAdBundleItem.prefab";
-				case "loop.mega.bundle":
-					return "ShopUI/Prefab/MegaBundleItem.prefab";
-				case "loop.ultra.bundle":
-					return "ShopUI/Prefab/UltraBundleItem.prefab";
-				case "loop.giant.bundle":
-					return "ShopUI/Prefab/GiantBundleItem.prefab";
-				case "loop.master.bundle":
-					return "ShopUI/Prefab/MasterBundleItem.prefab";
-				case "loop.legendary.bundle":
-					return "ShopUI/Prefab/LegendaryBundleItem.prefab";
 				case ShopProductCatalog.MoreOffers:
 					return "ShopUI/Prefabs/MoreOffer.prefab";
 				default:

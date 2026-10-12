@@ -30,7 +30,6 @@ namespace Snui
 			if (_line == null) _line = HierarchyReferenceCache.Child(transform, "Line");
 			if (_icon != null)
 			{
-				_icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
 				if (_normalSprite == null) _normalSprite = _icon.sprite;
 				if (_selectedSprite == null) _selectedSprite = _icon.sprite;
 			}
@@ -91,7 +90,6 @@ namespace Snui
 			if (navigationAnim != NavigationAnim.Default && _text != null)
 				_textTween = _text.DOFade(1f, 0.1f).SetUpdate(true).SetLink(gameObject);
 		}
-		public void SetIconPivot(Vector2 pivot) { if (_icon != null) _icon.rectTransform.pivot = pivot; }
 		private void StopAnimation()
 		{
 			_iconTween?.Kill(); _positionTween?.Kill(); _textTween?.Kill();

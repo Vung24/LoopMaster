@@ -219,9 +219,6 @@ namespace ShopUI
 				if (item == null || item.RectTransform == null) continue;
 
 				var rt = item.RectTransform;
-				rt.pivot = new Vector2(0.5f, 0.5f);
-				rt.anchorMin = new Vector2(0.5f, 1f);
-				rt.anchorMax = new Vector2(0.5f, 1f);
 				float h = rt.rect.height;
 				float x = Padding.left - Padding.right;
 				float y = -Padding.top - currentY - h * 0.5f - Spacing * i;

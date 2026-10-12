@@ -82,8 +82,6 @@ public class MoreHeartDialogContent : DialogContent
 			if (label != null)
 			{
 				label.text = "OK";
-				label.rectTransform.anchorMin = label.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-				label.rectTransform.anchoredPosition = Vector2.zero;
 			}
 		}
 		Snui_Text.EnsureFontAssets(transform);

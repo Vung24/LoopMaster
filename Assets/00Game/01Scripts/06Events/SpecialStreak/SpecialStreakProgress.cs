@@ -40,6 +40,11 @@ public class SpecialStreakProgress : MonoBehaviour
     private SpecialStreakCollectItem _collectItem;
     private Vector3 _rewardCellScale = Vector3.one;
     private float _multiplierSliderShownX;
+    private Image _specialIconImage;
+    private Sprite _unlockedIconSprite;
+    private Vector3 _unlockedIconPosition;
+    private Image _progressBackground;
+    private Sprite _unlockedProgressBackground;
     private Image _tutorialMask;
     private Finger _finger;
     private Transform _originParent;
@@ -61,14 +66,35 @@ public class SpecialStreakProgress : MonoBehaviour
 
     public bool IsAnimating { get; private set; }
     public bool HasDialogOpen => _dialogLoading || _dialog != null;
-    public bool HasAuthoredLayout => _button != null && _progressBar != null;
+    // The exported scene can contain a partially wired widget. Home must replace it
+    // with the complete prefab instead of leaving preview labels and lock art visible.
+    public bool HasAuthoredLayout => _button != null && _progressBar != null &&
+        _rewardCell != null && _completedTickNode != null && _progressBarText != null &&
+        _lockTextNode != null && _multiplierSlider != null && _sliderValueText != null &&
+        _multiplierLabelText != null && _specialIcon != null && _lockIcon != null &&
+        _lockProgressBg != null && _lockIconSprite != null;
 
     private void Awake()
     {
         SpecialStreakPresentation.Prepare(transform, _materials);
         ResolveHierarchyReferences();
+        if (_specialIcon != null)
+        {
+            _specialIconImage = _specialIcon.GetComponent<Image>();
+            _unlockedIconSprite = _specialIconImage != null ? _specialIconImage.sprite : null;
+            _unlockedIconPosition = _specialIcon is RectTransform iconRect
+                ? iconRect.anchoredPosition3D : _specialIcon.localPosition;
+        }
+        if (_progressBar != null)
+        {
+            _progressBackground = _progressBar.GetComponent<Image>();
+            _unlockedProgressBackground = _progressBackground != null ? _progressBackground.sprite : null;
+        }
         if (_multiplierSlider != null)
+        {
             _multiplierSliderShownX = _multiplierSlider.transform.localPosition.x;
+            _multiplierSlider.gameObject.SetActive(false);
+        }
     }
 
     private void Start()
@@ -97,7 +123,6 @@ public class SpecialStreakProgress : MonoBehaviour
         if (_rewardCell == null)
         {
             _rewardCell = HierarchyReferenceCache.DescendantComponent<RewardCell>(transform, "RewardCell");
-            Debug.Log("missing rewardcell");
         }
         if (_completedTickNode == null)
             _completedTickNode = HierarchyReferenceCache.Descendant(transform, "CompletedTickNode") ??
@@ -159,6 +184,11 @@ public class SpecialStreakProgress : MonoBehaviour
 
         SpecialStreakPresentation.SetActive(_lockTextNode, false);
         SpecialStreakPresentation.SetActive(_lockIcon, false);
+        if (_specialIconImage != null) _specialIconImage.sprite = _unlockedIconSprite;
+        if (_specialIcon is RectTransform iconRect) iconRect.anchoredPosition3D = _unlockedIconPosition;
+        else if (_specialIcon != null) _specialIcon.localPosition = _unlockedIconPosition;
+        if (_progressBackground != null) _progressBackground.sprite = _unlockedProgressBackground;
+        SpecialStreakPresentation.SetActive(_multiplierSlider, false);
 
         if (manager.IsCompleted())
         {
@@ -204,12 +234,25 @@ public class SpecialStreakProgress : MonoBehaviour
     private void SetLockState()
     {
         var manager = _manager ?? SpecialStreakManager.Ensure();
+        SpecialStreakPresentation.SetActive(_multiplierSlider, false);
 
         if (_specialIcon != null)
         {
             var img = _specialIcon.GetComponent<Image>();
             if (img != null && _lockIconSprite != null) img.sprite = _lockIconSprite;
-            _specialIcon.localPosition = new Vector3(_specialIcon.localPosition.x, 4f, _specialIcon.localPosition.z);
+            // Home may use a top pivot; local Y would move the icon above the bar.
+            if (_specialIcon is RectTransform iconRect)
+            {
+                var position = iconRect.anchoredPosition3D;
+                position.y = 4f;
+                iconRect.anchoredPosition3D = position;
+            }
+            else
+            {
+                var position = _specialIcon.localPosition;
+                position.y = 4f;
+                _specialIcon.localPosition = position;
+            }
         }
 
         SpecialStreakPresentation.SetActive(_timer, false);
@@ -248,6 +291,10 @@ public class SpecialStreakProgress : MonoBehaviour
     private void SetCompletedState()
     {
         var manager = _manager ?? SpecialStreakManager.Ensure();
+        SpecialStreakPresentation.SetActive(_multiplierSlider, false);
+        if (_multiplierLabelText != null && _multiplierLabelText.transform.parent != null)
+            _multiplierLabelText.transform.parent.gameObject.SetActive(false);
+        SpecialStreakPresentation.SetActive(_timer, false);
         int lastGoal = manager.GetLastGoal();
         _progressBar?.SetPercent(lastGoal, lastGoal);
         SpecialStreakPresentation.SetActive(_completedTickNode, true);
@@ -628,6 +675,8 @@ public class SpecialStreakProgress : MonoBehaviour
         int multiplier = manager.GetMultiplier(_pendingMultiplierIndex);
         if (_multiplierSlider != null)
         {
+            // Initialize before revealing the slider so the prefab's preview value never flashes.
+            _multiplierSlider.Init(_pendingMultiplierIndex - 1);
             _multiplierSlider.gameObject.SetActive(true);
             _multiplierSlider.transform.localPosition = new Vector3(_multiplierSliderShownX - 480f, _multiplierSlider.transform.localPosition.y, _multiplierSlider.transform.localPosition.z);
         }
