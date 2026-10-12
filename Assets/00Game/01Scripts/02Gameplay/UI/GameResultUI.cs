@@ -14,6 +14,8 @@ public sealed class GameResultUI : MonoBehaviour
 	private string _failAddress;
 	private string _failContentAddress;
 	private CancellationTokenSource _resultLoad;
+	private CancellationTokenSource _winLoad;
+	private bool _winPreparing;
 	private int _uiVersion;
 	private bool _retryLoading;
 	[SerializeField] private Canvas _canvas;
@@ -70,7 +72,7 @@ public sealed class GameResultUI : MonoBehaviour
 		}
 		if (_controller != controller)
 		{
-			HideAll();
+			HideAll(releaseWin: true);
 			Unsubscribe();
 			_controller = controller;
 			if (_controller != null)
@@ -92,7 +94,8 @@ public sealed class GameResultUI : MonoBehaviour
 	private async UniTask BuildResultDialog(GameEndState state)
 	{
 		var lifetime = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-		_resultLoad = lifetime;
+		if (state == GameEndState.Won) _winLoad = lifetime;
+		else _resultLoad = lifetime;
 		try
 		{
 			if (state == GameEndState.Won && !string.IsNullOrEmpty(_winAddress))
@@ -139,9 +142,25 @@ public sealed class GameResultUI : MonoBehaviour
 		}
 		finally
 		{
+			if (_winLoad == lifetime) _winLoad = null;
 			if (_resultLoad == lifetime) _resultLoad = null;
 			lifetime.Dispose();
 		}
+	}
+
+	private async UniTask PrepareWinDialog()
+	{
+		if (_winPreparing)
+			await UniTask.WaitUntil(() => !_winPreparing, cancellationToken: this.GetCancellationTokenOnDestroy());
+		if (_winDialog != null || _controller == null || _canvas == null || !isActiveAndEnabled) return;
+		_winPreparing = true;
+		try
+		{
+			await BuildResultDialog(GameEndState.Won);
+			// Fallback overlays are created active too; preparation must stay invisible.
+			if (_winDialog != null) _winDialog.Hide();
+		}
+		finally { _winPreparing = false; }
 	}
 
 	private void BuildFallbackDialogs(bool win, bool fail)
@@ -295,11 +314,10 @@ public sealed class GameResultUI : MonoBehaviour
 	private IEnumerator ShowWinAfterAnimations(GameController controller, GameData data)
 	{
 		int version = _uiVersion;
-		yield return new WaitForSeconds(0.8f);
 		while (controller != null && controller.IsFinishAnimationPlaying) yield return null;
 		if (controller == null || _controller != controller || controller.Data != data ||
 			controller.EndState != GameEndState.Won) yield break;
-		yield return BuildResultDialog(GameEndState.Won).ToCoroutine();
+		yield return PrepareWinDialog().ToCoroutine();
 		_showWinRoutine = null;
 		if (!isActiveAndEnabled || version != _uiVersion || controller == null || controller.Data != data || controller.EndState != GameEndState.Won) yield break;
 		if (_winContent != null)
@@ -311,6 +329,7 @@ public sealed class GameResultUI : MonoBehaviour
 	{
 		if (HudContainer.Current != null) HudContainer.Current.gameObject.SetActive(false);
 		HideAll();
+		PrepareWinDialog().Forget();
 	}
 
 	private void OnNextLevelUnavailable(int level)
@@ -318,7 +337,7 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_winContent != null) _winContent.SetNoMoreLevels();
 	}
 
-	private void HideAll()
+	private void HideAll(bool releaseWin = false)
 	{
 		_uiVersion++;
 		_retryLoading = false;
@@ -337,9 +356,14 @@ public sealed class GameResultUI : MonoBehaviour
 		_showWinRoutine = null;
 		if (_showFailRoutine != null) StopCoroutine(_showFailRoutine);
 		_showFailRoutine = null;
-		if (_winDialog != null && !_winDialog.IsEnteringHome) { _winDialog.Hide(); Destroy(_winDialog.gameObject); }
+		if (releaseWin) { _winLoad?.Cancel(); _winLoad = null; }
+		if (_winDialog != null && !_winDialog.IsEnteringHome)
+		{
+			_winDialog.Hide();
+			if (releaseWin) Destroy(_winDialog.gameObject);
+		}
 		if (_failDialog != null) { _failDialog.Hide(); Destroy(_failDialog.gameObject); }
-		_winDialog = null; _winContent = null;
+		if (releaseWin) { _winDialog = null; _winContent = null; }
 		_failDialog = null; _failContent = null; _preFailContent = null;
 	}
 
@@ -450,6 +474,6 @@ public sealed class GameResultUI : MonoBehaviour
 		_controller.NextLevelUnavailable -= OnNextLevelUnavailable;
 	}
 
-	private void OnDisable() { HideAll(); }
+	private void OnDisable() { HideAll(releaseWin: true); }
 	private void OnDestroy() { Unsubscribe(); }
 }

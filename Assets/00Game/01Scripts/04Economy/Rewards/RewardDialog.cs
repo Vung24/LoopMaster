@@ -29,6 +29,9 @@ namespace Snui
         private bool _levelBoxPresentation;
         private Transform _titleNode;
         private CanvasGroup _titleGroup, _buttonTextGroup;
+        private Canvas _machineCanvas;
+        private bool _machineOverrideSorting;
+        private int _machineSortingLayer, _machineSortingOrder;
         private readonly List<Tween> _presentationTweens=new List<Tween>();
         public event Action Closed;
         public bool RewardSaved => _saved;
@@ -167,7 +170,37 @@ namespace Snui
         public void BeginChestAnimation()
         {
             if(!_saved || _revealed || _closing || !isActiveAndEnabled || _animation!=null) return;
+            RestoreMachineSorting();
             _animation=StartCoroutine(ShowChest());
+        }
+        public void FocusMachine(Transform machine)
+        {
+            if(machine==null || !_saved || _revealed || _closing || _animation!=null || !isActiveAndEnabled) return;
+            RestoreMachineSorting();
+            var overlay=GetComponent<Canvas>();
+            if(overlay==null) return;
+            _machineCanvas=machine.GetComponent<Canvas>();
+            if(_machineCanvas==null)
+                _machineCanvas=machine.gameObject.AddComponent<Canvas>();
+            _machineOverrideSorting=_machineCanvas.overrideSorting;
+            _machineSortingLayer=_machineCanvas.sortingLayerID;
+            _machineSortingOrder=_machineCanvas.sortingOrder;
+            // Keep the machine and its Spine child renderers above the dim until the chest takes over.
+            _machineCanvas.enabled=true;
+            _machineCanvas.overrideSorting=true;
+            _machineCanvas.sortingLayerID=overlay.sortingLayerID;
+            _machineCanvas.sortingOrder=overlay.sortingOrder+1;
+        }
+        private void RestoreMachineSorting()
+        {
+            if(_machineCanvas!=null)
+            {
+                _machineCanvas.overrideSorting=_machineOverrideSorting;
+                _machineCanvas.sortingLayerID=_machineSortingLayer;
+                _machineCanvas.sortingOrder=_machineSortingOrder;
+                // Keep the nested Canvas enabled so Spine submesh renderers continue drawing on Home.
+            }
+            _machineCanvas=null;
         }
         private void SetDescription(string text) { if(_desc!=null) _desc.text=text; }
         private IEnumerator ShowChest()
@@ -202,6 +235,7 @@ namespace Snui
         private void Reveal()
         {
             if(_revealed || _closing || !isActiveAndEnabled) return;
+            RestoreMachineSorting();
             _revealed=true;
             _showing=false;
             if(_chest!=null) _chest.gameObject.SetActive(false);
@@ -287,6 +321,7 @@ namespace Snui
         public void Close() { gameObject.SetActive(false); Destroy(gameObject); }
         private void OnDisable()
         {
+            RestoreMachineSorting();
             _closing=true; StopAllCoroutines(); _animation=null; _coins?.Cancel();
             foreach(var tween in _presentationTweens) tween.Kill();
             _presentationTweens.Clear();

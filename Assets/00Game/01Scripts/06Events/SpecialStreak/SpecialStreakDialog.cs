@@ -20,6 +20,7 @@ public class SpecialStreakDialog : BasePopup
     private readonly List<Material> _materials = new List<Material>();
     private Image _tutorialMask;
     private Transform _infoBtnOriginParent;
+    private int _infoBtnOriginSiblingIndex;
     private GameObject _info;
     private bool _infoLoading;
     private bool _started;
@@ -145,22 +146,28 @@ public class SpecialStreakDialog : BasePopup
         if (_closeBtn != null) _closeBtn.interactable = false;
         if (_infoBtn != null) _infoBtn.interactable = false;
 
-        await UniTask.WaitForSeconds(0.4f);
+        var cancellationToken = this.GetCancellationTokenOnDestroy();
+        await UniTask.WaitForSeconds(0.4f, ignoreTimeScale: true, cancellationToken: cancellationToken);
+        if (_isClosing || !isActiveAndEnabled) return;
 
-        var canvas = GetComponentInParent<Canvas>()?.rootCanvas;
-        _tutorialMask = UiUtils.CreateMask(canvas);
+        // Keep the highlighted Info button above this popup's sorting canvas.
+        _tutorialMask = UiUtils.CreateMask(transform);
         if (_tutorialMask != null)
         {
-            await _tutorialMask.DOFade(0.99f, 0.2f).SetLink(gameObject).AsyncWaitForCompletion();
+            RewardDialog.PrepareOverlay(_tutorialMask.gameObject, 1360);
+            await _tutorialMask.DOFade(0.99f, 0.2f).SetUpdate(true).SetLink(gameObject).AsyncWaitForCompletion();
         }
+        if (this == null || _isClosing || !isActiveAndEnabled) return;
 
         if (_infoBtn != null && _tutorialMask != null)
         {
             _infoBtnOriginParent = _infoBtn.transform.parent;
+            _infoBtnOriginSiblingIndex = _infoBtn.transform.GetSiblingIndex();
             _infoBtn.transform.SetParent(_tutorialMask.transform);
         }
 
-        await UniTask.WaitForSeconds(0.3f);
+        await UniTask.WaitForSeconds(0.3f, ignoreTimeScale: true, cancellationToken: cancellationToken);
+        if (_isClosing || !isActiveAndEnabled) return;
 
         if (_tutorialMask != null)
         {
@@ -185,6 +192,8 @@ public class SpecialStreakDialog : BasePopup
             if (_infoBtnOriginParent != null)
             {
                 _infoBtn.transform.SetParent(_infoBtnOriginParent);
+                _infoBtn.transform.SetSiblingIndex(_infoBtnOriginSiblingIndex);
+                _infoBtnOriginParent = null;
             }
         }
 
@@ -195,26 +204,40 @@ public class SpecialStreakDialog : BasePopup
         }
     }
 
+    private void CleanupTutorialMask()
+    {
+        if (_infoBtn != null && _infoBtnOriginParent != null)
+        {
+            _infoBtn.transform.SetParent(_infoBtnOriginParent);
+            _infoBtn.transform.SetSiblingIndex(_infoBtnOriginSiblingIndex);
+        }
+        _infoBtnOriginParent = null;
+        if (_tutorialMask != null)
+        {
+            _tutorialMask.gameObject.SetActive(false);
+            Destroy(_tutorialMask.gameObject);
+            _tutorialMask = null;
+        }
+    }
+
     private async UniTaskVoid CheckTutorialRewardScroll()
     {
         var manager = SpecialStreakManager.Ensure();
         if (!manager.ShouldShowTutorial()) return;
 
-        if (_tutorialMask != null)
-        {
-            Destroy(_tutorialMask.gameObject);
-            _tutorialMask = null;
-        }
+        CleanupTutorialMask();
 
         if (_scrollAdapter != null && _scrollAdapter.IsInitialized && _scrollAdapter.GetItemsCount() > 0)
         {
             if (_scrollAdapter.GetContentSize() > _scrollAdapter.GetViewportSize())
             {
                 var cancellationToken = this.GetCancellationTokenOnDestroy();
-                await UniTask.WaitForSeconds(0.5f, cancellationToken: cancellationToken);
+                await UniTask.WaitForSeconds(0.5f, ignoreTimeScale: true, cancellationToken: cancellationToken);
+                if (_isClosing || !isActiveAndEnabled) return;
                 _scrollAdapter.SmoothScrollTo(0, 3f, overrideCurrentScrollingAnimation: true);
                 await UniTask.WaitUntil(() => !_scrollAdapter.IsScrollToAnimationRunning(),
                     cancellationToken: cancellationToken);
+                if (_isClosing || !isActiveAndEnabled) return;
             }
         }
 
@@ -241,8 +264,20 @@ public class SpecialStreakDialog : BasePopup
         try
         {
             var instance = await PopupAssets.Instantiate("SpecialStreakInfoDialog", transform.parent, this.GetCancellationTokenOnDestroy());
-            if (this == null || !isActiveAndEnabled) { Destroy(instance); return; }
+            if (this == null || _isClosing || !isActiveAndEnabled) { Destroy(instance); return; }
             _info = instance;
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception error)
+        {
+            if (this != null && !_isClosing && isActiveAndEnabled)
+            {
+                CleanupTutorialMask();
+                if (_closeBtn != null) _closeBtn.interactable = true;
+                if (_infoBtn != null) _infoBtn.interactable = true;
+                Debug.LogException(error, this);
+            }
+            return;
         }
         finally { if (this != null) _infoLoading = false; }
         RewardDialog.PrepareOverlay(_info, 1400);
@@ -267,7 +302,8 @@ public class SpecialStreakDialog : BasePopup
             if (bgImg != null) bgImg.enabled = false;
         }
 
-        await UniTask.WaitUntil(() => _info == null);
+        await UniTask.WaitUntil(() => _info == null, cancellationToken: this.GetCancellationTokenOnDestroy());
+        if (_isClosing || !isActiveAndEnabled) return;
         CheckTutorialRewardScroll().Forget();
     }
 
@@ -293,7 +329,7 @@ public class SpecialStreakDialog : BasePopup
     protected override void OnClosing()
     {
         SpecialStreakManager.Ensure().IsTutorialFinished = true;
-        CheckTutorialMaskDismiss();
+        CleanupTutorialMask();
         CloseInfo();
         base.OnClosing();
     }
@@ -301,6 +337,7 @@ public class SpecialStreakDialog : BasePopup
     protected override void OnDisable()
     {
         if (SpecialStreakManager.Current != null) SpecialStreakManager.Current.Changed -= Refresh;
+        CleanupTutorialMask();
         CloseInfo();
         base.OnDisable();
     }
