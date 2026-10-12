@@ -106,7 +106,7 @@ namespace Snui
 					source = gameObject.AddComponent<AudioSource>();
 					source.playOnAwake = false;
 				}
-				source.PlayOneShot(clip);
+				if (source.isActiveAndEnabled) source.PlayOneShot(clip);
 			}
 		}
 

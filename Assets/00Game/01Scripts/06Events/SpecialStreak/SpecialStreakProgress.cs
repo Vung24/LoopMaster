@@ -95,7 +95,10 @@ public class SpecialStreakProgress : MonoBehaviour
         if (_progressBar == null)
             _progressBar = HierarchyReferenceCache.DescendantComponent<ProgressBar>(transform, "ProgressBar");
         if (_rewardCell == null)
+        {
             _rewardCell = HierarchyReferenceCache.DescendantComponent<RewardCell>(transform, "RewardCell");
+            Debug.Log("missing rewardcell");
+        }
         if (_completedTickNode == null)
             _completedTickNode = HierarchyReferenceCache.Descendant(transform, "CompletedTickNode") ??
                                  HierarchyReferenceCache.Descendant(transform, "Tick");

@@ -41,7 +41,7 @@ public class GameAudioPlayer : MonoBehaviour
 
 	public void PlayOneShot(AudioClip clip)
 	{
-		if (GameAudioSettings.EffectsEnabled && clip != null && _sharedSource != null)
+		if (GameAudioSettings.EffectsEnabled && clip != null && _sharedSource != null && _sharedSource.isActiveAndEnabled)
 		{
 			_sharedSource.pitch = 1f;
 			_sharedSource.PlayOneShot(clip);
@@ -83,7 +83,7 @@ public class GameAudioPlayer : MonoBehaviour
 	{
 		if (!GameAudioSettings.EffectsEnabled || clip == null) return;
 		AudioSource target = source != null ? source : _sharedSource;
-		if (target == null) return;
+		if (target == null || !target.isActiveAndEnabled) return;
 		target.pitch = Mathf.Clamp(pitch, -3f, 3f);
 		target.PlayOneShot(clip);
 	}
