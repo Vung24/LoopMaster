@@ -7,7 +7,7 @@ using UnityEngine.UI;
 using Snui;
 
 [DefaultExecutionOrder(-900)]
-public sealed class UICanvas : MonoBehaviour
+public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 {
 	private static readonly List<UICanvas> ActiveCanvases = new List<UICanvas>();
 	public static UICanvas Current => ActiveCanvases.Count > 0 ? ActiveCanvases[ActiveCanvases.Count - 1] : null;

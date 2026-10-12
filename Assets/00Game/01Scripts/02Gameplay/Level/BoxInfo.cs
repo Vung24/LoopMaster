@@ -52,6 +52,21 @@ public class BoxInfo
 		return result;
 	}
 
+	// Same traversal as GetTopCubes(false), without allocating a temporary list.
+	public CubeInfo GetTopGroupLockKey()
+	{
+		if (CubeInfos.Count == 0) return null;
+		int type = CubeInfos[CubeInfos.Count - 1].Type;
+		for (int i = CubeInfos.Count - 1; i >= 0; i--)
+		{
+			CubeInfo cube = CubeInfos[i];
+			if (cube.Type != type || cube.IsSecret || cube.NumLock > 0) break;
+			if (cube.GroupKeyId > 0) return cube;
+			if (BoxType == BoxType.Single) break;
+		}
+		return null;
+	}
+
 	public IEnumerable<CubeInfo> GetReachableCubes()
 	{
 		for (int i = CubeInfos.Count - 1; i >= 0; i--)

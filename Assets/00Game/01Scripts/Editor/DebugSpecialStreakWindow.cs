@@ -102,8 +102,8 @@ public sealed class DebugSpecialStreakPanel
         }
         using (new EditorGUI.DisabledScope(!Running || controller == null))
         {
-            if (GUILayout.Button("Return Home / Settle Collection"))
-                SetStatus(controller.TryReturnHome() ? "Returning home; gameplay collection settled." : "Could not return home; inspect event error.");
+            if (GUILayout.Button("Return Home / Show Collection"))
+                SetStatus(controller.TryReturnHome() ? "Returning home; pending collection will be shown on arrival." : "Could not return home; inspect event error.");
         }
         using (new EditorGUI.DisabledScope(!Running || home == null || !home.CanOpenSpecialStreak || progress == null || manager == null || manager.IsLocked))
         {
@@ -114,7 +114,7 @@ public sealed class DebugSpecialStreakPanel
             }
         }
         if (GUILayout.Button("Open Debug Level")) DebugLevelWindow.Open();
-        EditorGUILayout.HelpBox("Force Win, then press CLAIM in the Win dialog: coins, SpecialStreak collection, milestone reward popup, then next level. Play Pending Win previews the same streak presentation. Direct Next/Home settles without presentation. Lose keeps multiplier for Revive; Retry/Quit resets it.", MessageType.Info);
+        EditorGUILayout.HelpBox("Force Win, then press CLAIM in the Win dialog: coins, return Home, SpecialStreak collection and milestone reward popup. Direct Next settles without presentation; Return Home presents pending collection on arrival. Lose keeps multiplier for Revive; Retry/Quit resets it.", MessageType.Info);
         EditorGUILayout.HelpBox(_status, MessageType.None);
         EditorGUILayout.EndScrollView();
     }

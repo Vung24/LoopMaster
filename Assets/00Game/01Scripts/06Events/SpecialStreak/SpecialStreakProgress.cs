@@ -312,7 +312,12 @@ public class SpecialStreakProgress : MonoBehaviour
             _pendingMultiplierIndex = manager.MultiplierIndex;
             _pendingCurrCount = manager.CurrCount;
 
-            manager.SettlePending();
+            if (!manager.SettlePending())
+            {
+                IsAnimating = false;
+                RefreshProgress();
+                return;
+            }
 
             await PlayAddCollectionAnim();
             if (ShouldStopAnimations()) { IsAnimating = false; return; }
