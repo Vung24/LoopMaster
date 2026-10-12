@@ -416,9 +416,9 @@ MonoBehaviour:
   PlayOnStart: 1
   EnterAnim: 1
   ExitAnim: 1
-  _bg: {fileID: 0}
-  _title: {fileID: 0}
-  _closeBtn: {fileID: 0}
+  _bg: {fileID: 114885196901615166}
+  _title: {fileID: 114057042528152916}
+  _closeBtn: {fileID: 114199143239579989}
   _confirmButton: {fileID: 114548253485093530}
   _cancelButton: {fileID: 114725482390804592}
   _closeButton: {fileID: 114199143239579989}
@@ -518,6 +518,11 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _ipSpine: {fileID: 114795887074441119}
   _loseBg: {fileID: 224770489567024030}
+  _loseHeartsPrefab: {fileID: 1164486023685645, guid: 65bc9219cc7534747972019d3dfbf2a9, type: 3}
+  _loseLavaPrefab: {fileID: 1471870049548566, guid: 09ad20f5b6b7f9e48a8db1699e395b09, type: 3}
+  _loseSpecialStreakPrefab: {fileID: 1342730281133020, guid: e83790f9ff10fc24d8f443a10ad6051e, type: 3}
+  _loseStarsPrefab: {fileID: 1626464043802371, guid: a820750e6676ffa4ca1dc9b2a079b889, type: 3}
+  _loseStreakLinePrefab: {fileID: 1845796081870218, guid: 7cb7bce634293c84ca4a33b4fc662756, type: 3}
 --- !u!224 &224857316776119966
 RectTransform:
   serializedVersion: 2

@@ -11,6 +11,7 @@ public class PauseConfirmDialogContent : DialogContent
 	[SerializeField] private Button _cancelButton;
 	[SerializeField] private Button _closeButton;
 	[SerializeField] private LoseContainer _loseContainer;
+	private bool _warningsPrepared;
 	protected override void Awake()
 	{
 		base.Awake();
@@ -18,11 +19,20 @@ public class PauseConfirmDialogContent : DialogContent
 		DialogUI.Bind(_cancelButton, OnClickCloseButton);
 		DialogUI.Bind(_closeButton, OnClickCloseButton);
 	}
-	public void OnClickConfirmButton() => Dismiss(RESULT_CONFIRM);
+	public void OnClickConfirmButton()
+	{
+		if (_loseContainer != null && _loseContainer.OnClickSwitchNext()) return;
+		Dismiss(RESULT_CONFIRM);
+	}
 	public override void Show()
 	{
 		base.Show();
 		Snui_Text.EnsureFontAssets(transform);
-		if (_loseContainer != null) _loseContainer.Show();
+		if (_loseContainer != null && !_warningsPrepared)
+		{
+			_warningsPrepared = true;
+			_loseContainer.SetPauseLoseItems(3);
+		}
 	}
+	private void OnDisable() => _warningsPrepared = false;
 }

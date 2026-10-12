@@ -21,6 +21,13 @@ public class LoadingPanel : MonoBehaviour
 	protected virtual void Awake()
 	{
 		Current = this;
+		// Loading stays above the gameplay HUD while either scene is active.
+		Canvas canvas = GetComponent<Canvas>();
+		canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+		canvas.worldCamera = null;
+		canvas.overrideSorting = true;
+		canvas.sortingLayerID = 0;
+		canvas.sortingOrder = short.MaxValue;
 		_canvasGroup = GetComponent<CanvasGroup>();
 		if (_canvasGroup == null)
 		{
