@@ -182,6 +182,35 @@ public class GameLoader : MonoBehaviour
 		return pooled == null ? null : pooled.GetComponent<Slice>();
 	}
 
+	public void PrewarmSlicePool(GameData data)
+	{
+		if (data == null || Slice == null || data.PathPoints.Count < 2) return;
+		int totalSlices = data.TransferSlice.Count;
+		int largestBox = 0;
+		foreach (BoxInfo box in data.Boxes)
+		{
+			if (box == null) continue;
+			int count = Mathf.Max(0, box.GetSliceCount());
+			totalSlices += count;
+			largestBox = Mathf.Max(largestBox, count);
+		}
+		int targetCount = Mathf.Min(totalSlices,
+			Mathf.Max(0, data.GetTransferMaxGroup()) * GameData.SliceCountPerGroup + largestBox);
+		if (!_gameObjectPools.TryGetValue("Slice", out Stack<PooledGameObject> pool))
+		{
+			pool = new Stack<PooledGameObject>(targetCount);
+			_gameObjectPools.Add("Slice", pool);
+		}
+		while (pool.Count < targetCount)
+		{
+			GameObject instance = Instantiate(Slice, transform);
+			PooledSlice item = instance.GetComponent<PooledSlice>();
+			if (item == null) item = instance.AddComponent<PooledSlice>();
+			item.Initialize("Slice", this);
+			item.Recycle();
+		}
+	}
+
 	public T GetPooledGameObject<T>(string key, GameObject prefab, Transform parent) where T : PooledGameObject
 	{
 		if (string.IsNullOrEmpty(key) || prefab == null) return null;
@@ -203,6 +232,7 @@ public class GameLoader : MonoBehaviour
 		}
 		else
 		{
+			item.MarkTakenFromPool();
 			item.transform.SetParent(parent, false);
 			item.gameObject.SetActive(true);
 		}
@@ -257,6 +287,9 @@ public abstract class PooledGameObject : MonoBehaviour
 {
 	protected string _key;
 	protected GameLoader _gameLoader;
+	private bool _isInPool;
+
+	public void MarkTakenFromPool() => _isInPool = false;
 
 	public void Initialize(string key, GameLoader gameLoader)
 	{
@@ -267,6 +300,8 @@ public abstract class PooledGameObject : MonoBehaviour
 
 	public void Recycle()
 	{
+		if (_isInPool) return;
+		_isInPool = true;
 		BeforeRecycle();
 		if (_gameLoader != null) _gameLoader.RecyclePooledGameObject(_key, this);
 		else gameObject.SetActive(false);
@@ -293,6 +328,7 @@ public class PooledSlice : PooledGameObject
 
 	protected override void BeforeRecycle()
 	{
+		if (_slice != null) _slice.ResetForPool();
 		transform.localScale = Vector3.one;
 	}
 }
