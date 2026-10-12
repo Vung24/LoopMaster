@@ -67,10 +67,6 @@ public class HomeController : MonoBehaviour
 		_canvas = HomePage.GetComponentInParent<Canvas>()?.rootCanvas;
 		if (_canvas == null) return;
 		_ready = true;
-		var scaler = _canvas.GetComponent<CanvasScaler>() ?? _canvas.gameObject.AddComponent<CanvasScaler>();
-		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		scaler.referenceResolution = new Vector2(750f, 1624f);
-		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand; scaler.matchWidthOrHeight = 0f;
 		if (_canvas.GetComponent<GraphicRaycaster>() == null) _canvas.gameObject.AddComponent<GraphicRaycaster>();
 		InitializePages();
 		if (_navigationBar == null) _navigationBar = _canvas.GetComponentInChildren<NavigationBar>(true);
@@ -143,10 +139,6 @@ public class HomeController : MonoBehaviour
 			_pages = new[] { GetComponentInScene<ShopPage>()?.transform as RectTransform,
 				GetComponentInScene<RankPage>()?.transform as RectTransform, HomePage.transform as RectTransform,
 				GetComponentInScene<TeamPage>()?.transform as RectTransform };
-		foreach (Behaviour layout in _pageContent.GetComponents<Behaviour>())
-			if (layout is LayoutGroup || layout is ContentSizeFitter) layout.enabled = false;
-		_pageContent.anchorMin = Vector2.zero; _pageContent.anchorMax = new Vector2(0f, 1f);
-		_pageContent.pivot = new Vector2(0f, 0.5f);
 		Canvas.ForceUpdateCanvases();
 		LayoutPages();
 		FinishPageTransition();
@@ -154,20 +146,13 @@ public class HomeController : MonoBehaviour
 	private void LayoutPages()
 	{
 		_pageTween?.Kill(); _pageTween = null;
+		// Scene anchors size the four pages; navigation only changes the visible page.
 		_pageSize = ((RectTransform)_pageContent.parent).rect.size;
-		_pageContent.sizeDelta = new Vector2(_pageSize.x * _pages.Length, 0f);
-		for (int i = 0; i < _pages.Length; i++)
-		{
-			if (_pages[i] == null) continue;
-			var page = _pages[i];
-			page.anchorMin = Vector2.zero; page.anchorMax = new Vector2(0f, 1f); page.pivot = new Vector2(0f, 0.5f);
-			page.sizeDelta = new Vector2(_pageSize.x, 0f); page.anchoredPosition = new Vector2(_pageSize.x * i, 0f);
-		}
 		_pageContent.anchoredPosition = new Vector2(-_pageSize.x * CurrentPageIndex, 0f);
 	}
 	private void LateUpdate()
 	{
-		if (!_ready || _pageContent == null || _pages == null) return;
+		if (!_ready || _pageContent == null) return;
 		if (((RectTransform)_pageContent.parent).rect.size != _pageSize) { LayoutPages(); FinishPageTransition(); }
 	}
 	private void FinishPageTransition()

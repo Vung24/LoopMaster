@@ -253,8 +253,6 @@ public sealed class GameResultUI : MonoBehaviour
 		var prefab = Snui.PrefabLibrary.Current?.LoseSpecialStreakPrefab;
 		if (!manager.ShouldShowLoseItem() || prefab == null) return;
 		_streakWarning = Instantiate(prefab, parent, false);
-		var rect = _streakWarning.transform as RectTransform;
-		if (rect != null) { rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f); rect.anchoredPosition = new Vector2(0, -470); }
 		Snui.Snui_Text.EnsureFontAssets(_streakWarning.transform);
 		var slider = _streakWarning.GetComponentInChildren<SpecialStreakMultiplierSlider>(true);
 		if (slider != null) { slider.Type = SpecialStreakMultiplierSliderType.PreLose; slider.Init(manager.MultiplierIndex); }

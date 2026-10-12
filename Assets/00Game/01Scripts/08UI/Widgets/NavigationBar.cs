@@ -76,10 +76,6 @@ namespace Snui
 			if (CurrIndex < 0 || _cells == null || _cells.Length == 0 || _cellsNode == null) return;
 			RectTransform strip = _cellsNode as RectTransform;
 			if (strip == null || strip.rect.width <= 0f) return;
-			if (!animate && strip.GetComponent<UnityEngine.UI.LayoutGroup>()?.enabled == true)
-				UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(strip);
-			foreach (var layout in strip.GetComponents<UnityEngine.UI.LayoutGroup>()) layout.enabled = false;
-			var fitter = strip.GetComponent<UnityEngine.UI.ContentSizeFitter>(); if (fitter != null) fitter.enabled = false;
 			if (_centerLine != null) _centerLine.gameObject.SetActive(NavigationAnim == Snui.NavigationAnim.Default);
 			float width = strip.rect.width / _cells.Length;
 			float selectedWidth = NavigationAnim == Snui.NavigationAnim.Default ? width : width * Mathf.Max(1f, CursorExpand);
@@ -94,11 +90,6 @@ namespace Snui
 				bool selected = i == CurrIndex;
 				float cellWidth = selected && NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth;
 				cell.DOKill();
-				cell.anchorMin = new Vector2(0.5f, 0f);
-				cell.anchorMax = new Vector2(0.5f, 1f);
-				cell.pivot = new Vector2(0.5f, 0.5f);
-				cell.sizeDelta = new Vector2(cell.sizeDelta.x, 0f);
-				cell.anchoredPosition = new Vector2(cell.anchoredPosition.x, 0f);
 				if (animate)
 				{
 					_cells[i].SetSelected(selected, NavigationAnim);

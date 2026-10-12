@@ -3,6 +3,20 @@ using UnityEngine;
 
 public static class GameplayEffects
 {
+    private const int FirstComboSortingOrder = 2;
+    private static int _nextComboSortingOrder = FirstComboSortingOrder;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetComboSortingOrder() => _nextComboSortingOrder = FirstComboSortingOrder;
+
+    public static void BringComboToFront(Renderer renderer)
+    {
+        if (renderer == null) return;
+        // Ribbons use order 1. New labels must also render above older combos.
+        renderer.sortingOrder = _nextComboSortingOrder++;
+        if (_nextComboSortingOrder > short.MaxValue) _nextComboSortingOrder = FirstComboSortingOrder;
+    }
+
 	public static void PlaySlicePopIn(GameObject effect, Color color)
 	{
 		if (effect == null) return;
@@ -43,12 +57,25 @@ public static class GameplayEffects
             bool selected = child.name == "Combo" + variant;
             child.gameObject.SetActive(selected);
             if (!selected) continue;
+            // Spine uses an XY plane. Align the rendered child to the camera,
+            // overriding the prefab tilt and the box's rotation together.
+            Camera view = Camera.main;
+            if (view != null) child.rotation = view.transform.rotation;
             SkeletonAnimation skeleton = child.GetComponent<SkeletonAnimation>();
             if (skeleton == null) continue;
             skeleton.Initialize(false);
+            if (skeleton.Skeleton == null || skeleton.AnimationState == null) continue;
             var animation = GameUtils.GetSkeletonAnimation(skeleton.Skeleton.Data, "animation");
-            if (skeleton.AnimationState == null || animation == null) continue;
+            if (animation == null) continue;
+            // Awake starts the prefab animation. Discard it instead of mixing into
+            // another copy of the same clip, and apply the initial pose immediately.
+            skeleton.AnimationState.ClearTracks();
+            skeleton.Skeleton.SetToSetupPose();
             var entry = skeleton.AnimationState.SetAnimation(0, animation, false);
+            entry.MixDuration = 0f;
+            BringComboToFront(child.GetComponent<MeshRenderer>());
+            skeleton.Update(0f);
+            skeleton.LateUpdate();
             lifetime = Mathf.Max(lifetime, entry.Animation.Duration);
         }
         Object.Destroy(effect, lifetime + 0.1f);

@@ -47,31 +47,15 @@ namespace ShopUI
 		public bool Matches(string type)
 		{
 			if (string.IsNullOrEmpty(type)) return false;
-			string t = type.Trim();
+			string t = ShopProductCatalog.CanonicalId(type);
 
-			if (string.Equals(_productId, t, StringComparison.OrdinalIgnoreCase)) return true;
-
-			if (_aliases != null)
-			{
-				for (int i = 0; i < _aliases.Count; i++)
-				{
-					if (string.Equals(_aliases[i], t, StringComparison.OrdinalIgnoreCase)) return true;
-				}
-			}
-
-			if (!string.IsNullOrEmpty(_productId) && t.IndexOf(_productId, StringComparison.OrdinalIgnoreCase) >= 0)
-			{
-				return true;
-			}
+			if (string.Equals(ShopProductCatalog.CanonicalId(_productId), t, StringComparison.OrdinalIgnoreCase)) return true;
 
 			if (_aliases != null)
 			{
 				for (int i = 0; i < _aliases.Count; i++)
 				{
-					if (!string.IsNullOrEmpty(_aliases[i]) && t.IndexOf(_aliases[i], StringComparison.OrdinalIgnoreCase) >= 0)
-					{
-						return true;
-					}
+					if (string.Equals(ShopProductCatalog.CanonicalId(_aliases[i]), t, StringComparison.OrdinalIgnoreCase)) return true;
 				}
 			}
 

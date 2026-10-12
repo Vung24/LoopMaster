@@ -32,8 +32,6 @@ namespace Snui
         public GameObject FailTutorialBluePrefab;
         public GameObject ShopCoinItemPrefab;
         public GameObject ShopBundleItemPrefab;
-        public GameObject ShopBeginnerItemPrefab, ShopMasterItemPrefab, ShopMegaItemPrefab;
-        public GameObject ShopUltraItemPrefab, ShopGiantItemPrefab, ShopLegendaryItemPrefab;
         public GameObject ShopNoAdsItemPrefab, ShopNoAdsPlusItemPrefab;
         public GameObject ShopMoreOffersItemPrefab;
         public GameObject ShopRewardItemPrefab;
@@ -74,12 +72,12 @@ namespace Snui
             if (path == "Snui/Common/Prefabs/RewardCell.prefab") return RewardCellPrefab;
             switch (System.IO.Path.GetFileNameWithoutExtension(path))
             {
-                case "BeginBundleItem": return ShopBeginnerItemPrefab;
-                case "MasterBundleItem": return ShopMasterItemPrefab;
-                case "MegaBundleItem": return ShopMegaItemPrefab;
-                case "UltraBundleItem": return ShopUltraItemPrefab;
-                case "GiantBundleItem": return ShopGiantItemPrefab;
-                case "LegendaryBundleItem": return ShopLegendaryItemPrefab;
+                case "BeginBundleItem":
+                case "MasterBundleItem":
+                case "MegaBundleItem":
+                case "UltraBundleItem":
+                case "GiantBundleItem":
+                case "LegendaryBundleItem": return ShopBundleItemPrefab;
                 case "RemoveAdItem": return ShopNoAdsItemPrefab;
                 case "RemoveAdBundleItem": return ShopNoAdsPlusItemPrefab;
             }

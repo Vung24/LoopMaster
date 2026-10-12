@@ -16,6 +16,8 @@ namespace ShopUI
 		[SerializeField] private TMP_Text _ribbonText;
 		[SerializeField] private Transform _rewardsRoot;
 		[SerializeField] private bool _usePrefabDetails;
+		// Existing labels, in the same order as the bundle SO rewards. Their layout and icons stay authored.
+		[SerializeField] private List<TMP_Text> _rewardAmounts = new List<TMP_Text>();
 
 		[BoxGroup("Bundle Config")]
 		[ListDrawerSettings(ShowIndexLabels = true, Expanded = true)]
@@ -68,10 +70,26 @@ namespace ShopUI
 		public override void Init(string type, IShopDelegate shopDelegate)
 		{
 			base.Init(type, shopDelegate);
-			if (_usePrefabDetails) return;
+			if (_usePrefabDetails && _rewardAmounts.Count == 0) return;
 			ResolveBundleConfig(type);
 			ConfigureBundleDetails();
+			if (_usePrefabDetails)
+			{
+				BindPrefabRewardAmounts();
+				return;
+			}
 			PopulateRewards();
+		}
+
+		private void BindPrefabRewardAmounts()
+		{
+			if (_currentBundle == null) return;
+			var rewards = _currentBundle.Rewards;
+			for (int i = 0; i < _rewardAmounts.Count; i++)
+			{
+				if (_rewardAmounts[i] != null && rewards != null && i < rewards.Count && rewards[i] != null)
+					_rewardAmounts[i].text = rewards[i].Amount;
+			}
 		}
 
 		private void ResolveBundleConfig(string type)
@@ -208,7 +226,8 @@ namespace ShopUI
 				_currentBundle = _bundleConfigs[0];
 			}
 			ConfigureBundleDetails();
-			PopulateRewards();
+			if (_usePrefabDetails) BindPrefabRewardAmounts();
+			else PopulateRewards();
 		}
 #endif
 	}
