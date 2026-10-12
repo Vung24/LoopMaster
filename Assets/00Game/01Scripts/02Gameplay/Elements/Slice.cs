@@ -19,6 +19,13 @@ public class Slice : MonoBehaviour
 	private Tween _scaleTween;
 	private bool _isJumping;
 	private bool _scaleJumpWithConveyor;
+	private bool _isRoadMoving;
+	private float _roadMoveElapsed;
+	private float _roadMoveDuration;
+	private Vector3 _roadMoveStartPosition;
+	private Vector3 _roadMoveTargetPosition;
+	private Quaternion _roadMoveStartRotation;
+	private Quaternion _roadMoveTargetRotation;
 	[SerializeField] private Texture _longBoxSignTex;
 
 	public SliceInfo Info => _info;
@@ -121,7 +128,29 @@ public class Slice : MonoBehaviour
 		Vector3 moveDirection = target - transform.position;
 		Quaternion rotation = moveDirection.sqrMagnitude > 0.0001f
 			? Quaternion.LookRotation(moveDirection, Vector3.up) : transform.rotation;
-		StartAnimation(target, rotation, transform.localScale, duration, null);
+		StopMotion();
+		_roadMoveStartPosition = transform.position;
+		_roadMoveTargetPosition = target;
+		_roadMoveStartRotation = transform.rotation;
+		_roadMoveTargetRotation = rotation;
+		_roadMoveElapsed = 0f;
+		_roadMoveDuration = duration;
+		_isRoadMoving = true;
+	}
+
+	private void Update()
+	{
+		if (!_isRoadMoving) return;
+		float delta = (DOTween.useSmoothDeltaTime ? Time.smoothDeltaTime : Time.deltaTime) * DOTween.timeScale;
+		if (delta <= 0f) return;
+		_roadMoveElapsed += delta;
+		float progress = Mathf.Clamp01(_roadMoveElapsed / _roadMoveDuration);
+		// Road position was Linear; rotation was OutQuad. Jump tweens stay separate.
+		float rotationProgress = progress * (2f - progress);
+		transform.SetPositionAndRotation(
+			Vector3.Lerp(_roadMoveStartPosition, _roadMoveTargetPosition, progress),
+			Quaternion.Slerp(_roadMoveStartRotation, _roadMoveTargetRotation, rotationProgress));
+		if (progress >= 1f) _isRoadMoving = false;
 	}
 
 	private void StartAnimation(Vector3 targetPosition, Quaternion targetRotation,
@@ -165,6 +194,7 @@ public class Slice : MonoBehaviour
 
 	private void StopMotion()
 	{
+		_isRoadMoving = false;
 		_positionTween?.Kill();
 		_rotationTween?.Kill();
 		_scaleTween?.Kill();
@@ -184,6 +214,14 @@ public class Slice : MonoBehaviour
 	{
 		StopMotion();
 		Dismiss();
+	}
+
+	public void ResetForPool()
+	{
+		StopMotion();
+		if (_info != null && _info.SliceSc == this) _info.SliceSc = null;
+		_info = null;
+		_scaleJumpWithConveyor = false;
 	}
 
 	private static int WrapPathIndex(int index)

@@ -246,6 +246,7 @@ public class GameController : MonoBehaviour
 		_isTransitioningLevel = false;
 		_gameLoader.LoadAssetsAsync(data);
 		ClearRuntimeObjects();
+		_gameLoader.PrewarmSlicePool(data);
 		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
 		_cameraLayoutReady = GameplayCameraLayout.TryGetBounds(GameRoot, out _cameraBounds);
 		if (!_cameraLayoutReady) _cameraBounds = GameplayCameraLayout.FallbackBounds(Data, GameRoot);
@@ -902,6 +903,10 @@ public class GameController : MonoBehaviour
 			if (key != null) key.DestroySelf();
 		_groupUnlockKeys.Clear();
 		_unlockingGroupIds.Clear();
+		// Return active slices before clearing the level so replay/next level reuse them.
+		if (GameRoot != null)
+			foreach (Slice slice in GameRoot.GetComponentsInChildren<Slice>(true))
+				if (slice != null) slice.DismissForUndo();
 		Scene.Clear(GameRoot);
 	}
 
