@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -9,11 +8,11 @@ public sealed class SliceTransferFlow
 {
 	private sealed class LaunchOperation
 	{
-		public Coroutine Routine;
 		public int Version;
 	}
 
 	private readonly MonoBehaviour _host;
+	private readonly System.Threading.CancellationToken _hostToken;
 	private readonly IReadOnlyList<Box> _boxes;
 	private readonly Func<bool> _isGameRunning;
 	private readonly Func<Box, bool> _isGroupUnlocking;
@@ -38,6 +37,7 @@ public sealed class SliceTransferFlow
 		Action refreshPathState, Action onLaunchFinished, Action checkGameOver, Action<bool> setSpeedUp)
 	{
 		_host = host;
+		_hostToken = host.destroyCancellationToken;
 		_boxes = boxes;
 		_isGameRunning = isGameRunning;
 		_isGroupUnlocking = isGroupUnlocking;
@@ -62,13 +62,11 @@ public sealed class SliceTransferFlow
 		_version++;
 		foreach (Box box in _surprises.ToArray()) if (box != null) box.CancelSurpriseTransformation();
 		_surprises.Clear();
-		foreach (LaunchOperation operation in _launches.ToArray())
-			if (operation.Routine != null && _host != null) _host.StopCoroutine(operation.Routine);
 		_launches.Clear();
 		_arrivalCandidates.Clear();
 	}
 
-	private bool IsCurrent(int version) => version == _version && _isGameRunning();
+	private bool IsCurrent(int version) => version == _version && _host != null && _host.gameObject.activeInHierarchy && _isGameRunning();
 
 	public void BeginArrivalBatch()
 	{
@@ -226,28 +224,28 @@ public sealed class SliceTransferFlow
 		box.PlayClickedAnim(true);
 		var operation = new LaunchOperation { Version = _version };
 		_launches.Add(operation);
-		operation.Routine = _host.StartCoroutine(JumpSliceToTransferRoutine(
-			box, topCubes, jumpDuration, jumpHeight, operation));
+		JumpSliceToTransferAsync(box, topCubes, jumpDuration, jumpHeight, operation).Forget();
 		return;
 	}
 
-	private IEnumerator JumpSliceToTransferRoutine(Box box, List<CubeInfo> topCubes, float jumpDuration, float jumpHeight, LaunchOperation operation)
+	private async UniTask JumpSliceToTransferAsync(Box box, List<CubeInfo> topCubes, float jumpDuration, float jumpHeight, LaunchOperation operation)
 	{
 		try
 		{
-			yield return new WaitForSeconds(GameplayFeedbackRules.SliceLaunchStartDelay);
+			await UniTask.WaitForSeconds(GameplayFeedbackRules.SliceLaunchStartDelay, delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: _hostToken);
+			if (!IsCurrent(operation.Version) || box == null || box.Info == null) return;
 			var created = new List<SliceInfo>();
 			float nextLaunchTime = Time.time;
 			for (int cubeIndex = 0; cubeIndex < topCubes.Count; cubeIndex++)
 			{
 				CubeInfo cube = topCubes[cubeIndex];
 				if (cube == null) continue;
-				if (!IsCurrent(operation.Version)) yield break;
+				if (!IsCurrent(operation.Version)) return;
 				if (!_data.IsTransferHaveSpace()) break;
 				int sliceCount = cube.Size;
 				for (int sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++)
 				{
-					if (!IsCurrent(operation.Version)) yield break;
+					if (!IsCurrent(operation.Version)) return;
 					if (_data == null) break;
 					var info = new SliceInfo(cube.Type, box.Info);
 					if (!_data.AddTransferSlice(info)) continue;
@@ -258,7 +256,7 @@ public sealed class SliceTransferFlow
 					}
 
 					Slice visual = CreateSlice(info, box);
-					if (visual != null) visual.JumpToTransfer(box.Info.PathIndex, jumpDuration, jumpHeight);
+					if (visual != null) visual.JumpToTransfer(box.Info.PathIndex, jumpDuration, jumpHeight).Forget();
 					created.Add(info);
 					_refreshPathState();
 					// Keep the release cadence across frames; a per-slice wait rounds
@@ -266,24 +264,24 @@ public sealed class SliceTransferFlow
 					nextLaunchTime += GameplayFeedbackRules.SliceLaunchInterval;
 					while (Time.time < nextLaunchTime)
 					{
-						if (!IsCurrent(operation.Version)) yield break;
-						yield return null;
+						if (!IsCurrent(operation.Version)) return;
+						await UniTask.NextFrame(PlayerLoopTiming.PreLateUpdate, _hostToken);
 					}
 				}
 			}
 
-			yield return new WaitForSeconds(0.3f);
-			if (!IsCurrent(operation.Version) || box == null || box.Info == null) yield break;
+			await UniTask.WaitForSeconds(0.3f, delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: _hostToken);
+			if (!IsCurrent(operation.Version) || box == null || box.Info == null) return;
 			box.RemoveEmptyCube();
 			box.CheckHiddenSecret();
 
-			while (created.Any(info => info != null && info.SliceSc != null && info.PathIndex < 0 && _data != null && _data.TransferSlice.Contains(info)))
+			while (HasAirborneSlices(created))
 			{
-				if (!IsCurrent(operation.Version)) yield break;
-				yield return null;
+				if (!IsCurrent(operation.Version)) return;
+				await UniTask.NextFrame(PlayerLoopTiming.PreLateUpdate, _hostToken);
 			}
 
-			if (!IsCurrent(operation.Version)) yield break;
+			if (!IsCurrent(operation.Version)) return;
 			if (_data != null)
 			{
 				_data.OnJumpingCube = Mathf.Max(0, _data.OnJumpingCube - topCubes.Count);
@@ -297,12 +295,25 @@ public sealed class SliceTransferFlow
 				}
 			}
 
-			if (!IsCurrent(operation.Version) || box == null || box.Info == null) yield break;
+			if (!IsCurrent(operation.Version) || box == null || box.Info == null) return;
 			box.Info.State = BoxState.Free;
 			_launches.Remove(operation);
 			_onLaunchFinished();
 		}
+		catch (OperationCanceledException) { }
 		finally { _launches.Remove(operation); }
+	}
+
+	private bool HasAirborneSlices(List<SliceInfo> slices)
+	{
+		if (_data == null) return false;
+		for (int i = 0; i < slices.Count; i++)
+		{
+			SliceInfo info = slices[i];
+			if (info != null && info.SliceSc != null && info.PathIndex < 0 && _data.TransferSlice.Contains(info))
+				return true;
+		}
+		return false;
 	}
 
 	private Slice CreateSlice(SliceInfo info, Box box)

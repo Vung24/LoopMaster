@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using System.Collections;
-
+using System.Threading;
 public class Box : MonoBehaviour
 {
 	private const float SlicePositionInterval = 0.08f;
@@ -31,7 +30,10 @@ public class Box : MonoBehaviour
 	private float? _finishPresentationTime;
 	private bool _onUnlockingColorLock;
 	private bool _onDecrementingNumLock;
-	private System.Threading.CancellationTokenSource _surpriseLifetime;
+	private int _routineVersion;
+	private CancellationToken _routineToken;
+	private readonly List<Cube> _addAnimationCubes = new List<Cube>();
+	private CancellationTokenSource _surpriseLifetime;
 	private UniTask _surpriseTask;
 	private readonly List<Cube> _surpriseCubes = new List<Cube>();
 	internal bool IsSurpriseTransformationPlaying => _surpriseLifetime != null;
@@ -40,16 +42,33 @@ public class Box : MonoBehaviour
 	public BoxInfo Info => _info;
 	public GameLoader GameLoader => _gameLoader;
 	public Transform BoxCard => _boxCard != null ? _boxCard : (_boxCard = HierarchyReferenceCache.Child(transform, "BoxCard"));
-	public bool IsLockAnimationPlaying => IsSurpriseTransformationPlaying || _onDecrementingNumLock || _onUnlockingColorLock ||
-		(_adjacentLock != null && _adjacentLock.IsUnlockAnimationPlaying) ||
-		Cubes.Any(cube => cube != null && cube.IsNumLockAnimationPlaying);
-	public bool IsFinishAnimationPlaying => isActiveAndEnabled &&
-		(IsSurpriseTransformationPlaying || _finishAnimationPending || (_finishCube != null && _finishCube.IsFinishAnimationPlaying) ||
-			Cubes.Any(cube => cube != null && cube.IsFinishAnimationPlaying) ||
-			(_anim != null && _anim.IsPlaying("BoxSingleDone")));
+	public bool IsLockAnimationPlaying
+	{
+		get
+		{
+			if (IsSurpriseTransformationPlaying || _onDecrementingNumLock || _onUnlockingColorLock ||
+				(_adjacentLock != null && _adjacentLock.IsUnlockAnimationPlaying)) return true;
+			for (int i = 0; i < Cubes.Count; i++)
+				if (Cubes[i] != null && Cubes[i].IsNumLockAnimationPlaying) return true;
+			return false;
+		}
+	}
+	public bool IsFinishAnimationPlaying
+	{
+		get
+		{
+			if (!isActiveAndEnabled) return false;
+			if (IsSurpriseTransformationPlaying || _finishAnimationPending ||
+				(_finishCube != null && _finishCube.IsFinishAnimationPlaying)) return true;
+			for (int i = 0; i < Cubes.Count; i++)
+				if (Cubes[i] != null && Cubes[i].IsFinishAnimationPlaying) return true;
+			return _anim != null && _anim.IsPlaying("BoxSingleDone");
+		}
+	}
 
 	private void Awake()
 	{
+		_routineToken = destroyCancellationToken;
 		if (Cubes == null) Cubes = new List<Cube>();
 		_audioSource = GetComponent<AudioSource>();
 		if (_audioSource == null)
@@ -62,6 +81,9 @@ public class Box : MonoBehaviour
 
 	public void Init(BoxInfo info, GameLoader gameLoader)
 	{
+		_routineVersion++;
+		_onPlayingAnim = false;
+		_addAnimationCubes.Clear();
 		CancelSurpriseTransformation();
 		_info = info;
 		_gameLoader = gameLoader;
@@ -134,9 +156,10 @@ public class Box : MonoBehaviour
 		if (!_info.IsSurpriseCubeFinished()) return false;
 
 		SurpriseInfo surprise = GameData.Current.GetSurpriseInfo(_info.GetTopType());
-		if (surprise == null || surprise.NormalCubes.Count != _info.CubeInfos.Count ||
-			surprise.NormalCubes.Any(cube => cube == null)) return false;
-		var lifetime = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+		if (surprise == null || surprise.NormalCubes.Count != _info.CubeInfos.Count) return false;
+		for (int i = 0; i < surprise.NormalCubes.Count; i++)
+			if (surprise.NormalCubes[i] == null) return false;
+		var lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
 		_surpriseLifetime = lifetime;
 		var completion = new UniTaskCompletionSource();
 		_surpriseTask = completion.Task;
@@ -145,7 +168,7 @@ public class Box : MonoBehaviour
 	}
 
 	private async UniTask TransformSurpriseAsync(BoxInfo info, GameData data, CubeInfo[] replacements,
-		System.Threading.CancellationTokenSource lifetime)
+		CancellationTokenSource lifetime)
 	{
 		try
 		{
@@ -176,7 +199,7 @@ public class Box : MonoBehaviour
 	}
 
 	private async UniTask TransformMissingSurpriseAsync(BoxInfo info, GameData data, CubeInfo target,
-		CubeInfo replacement, System.Threading.CancellationToken token)
+		CubeInfo replacement, CancellationToken token)
 	{
 		await UniTask.WaitForSeconds(0.5f, false, PlayerLoopTiming.Update, token);
 		if (this == null || _info != info || GameData.Current != data)
@@ -225,18 +248,31 @@ public class Box : MonoBehaviour
 	{
 		if (_onPlayingAnim || !isActiveAndEnabled) return;
 		_onPlayingAnim = true;
+		int version = _routineVersion;
 		try
 		{
-			List<Cube> cubes = Cubes.Where(cube => cube != null && cube.Info != null &&
-				cube.Info.Size == GameData.SliceCountPerGroup).ToList();
-			for (int i = cubes.Count - 1; i >= 0; i--)
+			_addAnimationCubes.Clear();
+			for (int i = 0; i < Cubes.Count; i++)
 			{
-				if (cubes[i] != null) cubes[i].PlayAnim("Skeleton|cube_one");
-				await UniTask.WaitForSeconds(0.02f, cancellationToken: destroyCancellationToken);
+				Cube cube = Cubes[i];
+				if (cube != null && cube.Info != null && cube.Info.Size == GameData.SliceCountPerGroup)
+					_addAnimationCubes.Add(cube);
 			}
-			await UniTask.WaitForSeconds(2f, cancellationToken: destroyCancellationToken);
+			for (int i = _addAnimationCubes.Count - 1; i >= 0; i--)
+			{
+				if (_addAnimationCubes[i] != null) _addAnimationCubes[i].PlayAnim("Skeleton|cube_one");
+				if (!await WaitForRoutine(0.02f, version)) return;
+			}
+			await WaitForRoutine(2f, version);
 		}
-		finally { _onPlayingAnim = false; }
+		finally
+		{
+			if (version == _routineVersion)
+			{
+				_onPlayingAnim = false;
+				_addAnimationCubes.Clear();
+			}
+		}
 	}
 
 	public void PlayShuffleLayout(float duration = 0.6f)
@@ -245,12 +281,12 @@ public class Box : MonoBehaviour
 		_info.State = BoxState.OnUnlocking;
 		foreach (Cube cube in Cubes)
 			if (cube != null && cube.Info != null) cube.PlayShuffleMove(duration);
-		StartCoroutine(FinishShuffleLayout(Mathf.Max(0.01f, duration)));
+		FinishShuffleLayout(Mathf.Max(0.01f, duration), _routineVersion).Forget();
 	}
 
-	private IEnumerator FinishShuffleLayout(float duration)
+	private async UniTask FinishShuffleLayout(float duration, int version)
 	{
-		yield return new WaitForSeconds(duration);
+		if (!await WaitForRoutine(duration, version)) return;
 		if (_info != null) _info.State = BoxState.Free;
 		CheckHiddenSecret();
 	}
@@ -301,32 +337,52 @@ public class Box : MonoBehaviour
 
 	private UniTaskVoid TryCheckNoSolutionRemoveLock()
 	{
-		StartCoroutine(TryCheckNoSolutionRemoveLockRoutine());
+		TryCheckNoSolutionRemoveLockAsync(_routineVersion).Forget();
 		return default;
 	}
 
-	private IEnumerator TryCheckNoSolutionRemoveLockRoutine()
+	private async UniTask TryCheckNoSolutionRemoveLockAsync(int version)
 	{
-		yield return new WaitForSeconds(0.9f);
+		if (!await WaitForRoutine(0.9f, version)) return;
 		CheckNoSolutionRemoveLock();
 	}
 
 	public UniTaskVoid CheckNoSolutionRemoveLock()
 	{
 		if (_info != null && _info.IsAdjacentLocked && _adjacentLock != null)
-			StartCoroutine(CheckNoSolutionRemoveLockRoutine());
+			CheckNoSolutionRemoveLockAsync(_routineVersion).Forget();
 		return default;
 	}
 
-	private IEnumerator CheckNoSolutionRemoveLockRoutine()
+	private async UniTask CheckNoSolutionRemoveLockAsync(int version)
 	{
 		GameData data = GameData.Current;
-		if (data == null) yield break;
-		yield return new WaitUntil(() => data.Boxes.All(box => box != null && box.State == BoxState.Free));
-		if (_info == null || !_info.IsAdjacentLocked) yield break;
-		if (!data.IsNoSolution() && !data.ShouldForceUnlockAdjacentBox(_info)) yield break;
+		if (data == null) return;
+		// WaitUntil checked after Update, including when all boxes were already free.
+		do
+		{
+			if (await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate, _routineToken).SuppressCancellationThrow()) return;
+			if (!IsCurrentRoutine(version) || GameData.Current != data) return;
+		} while (!AreBoxesFree(data));
+		if (_info == null || !_info.IsAdjacentLocked) return;
+		if (!data.IsNoSolution() && !data.ShouldForceUnlockAdjacentBox(_info)) return;
 		_info.IsAdjacentLocked = false;
 		if (_adjacentLock != null) _adjacentLock.UnLock().Forget();
+	}
+
+	private static bool AreBoxesFree(GameData data)
+	{
+		for (int i = 0; i < data.Boxes.Count; i++)
+			if (data.Boxes[i] == null || data.Boxes[i].State != BoxState.Free) return false;
+		return true;
+	}
+
+	private bool IsCurrentRoutine(int version) => this != null && version == _routineVersion && isActiveAndEnabled;
+
+	private async UniTask<bool> WaitForRoutine(float duration, int version)
+	{
+		bool canceled = await UniTask.WaitForSeconds(duration, cancellationToken: _routineToken).SuppressCancellationThrow();
+		return !canceled && IsCurrentRoutine(version);
 	}
 
 	private async UniTaskVoid TryDecNumLock()
@@ -499,19 +555,19 @@ public class Box : MonoBehaviour
 		GameData data = GameData.Current;
 		int combo = data == null ? 0 : (interval <= GameData.BoxEmojiComboTime ? data.BoxEmojiCombo : data.BoxCombo);
 		int finished = data == null ? 1 : data.FinishBoxCount;
-		StartCoroutine(PlayFullAnim(interval, combo, finished));
+		PlayFullAnim(interval, combo, finished, _routineVersion).Forget();
 		return true;
 	}
 
-	private IEnumerator PlayFullAnim(float interval, int combo, int finished)
+	private async UniTask PlayFullAnim(float interval, int combo, int finished, int version)
 	{
 		try
 		{
 			float delay = _finishPresentationTime.HasValue
 				? Mathf.Max(0f, _finishPresentationTime.Value - Time.time)
 				: BoxFinishRules.FinishDelay;
-			if (delay > 0f) yield return new WaitForSeconds(delay);
-			if (_info == null) yield break;
+			if (delay > 0f && !await WaitForRoutine(delay, version)) return;
+			if (!IsCurrentRoutine(version) || _info == null) return;
 			CreateFinishCube(_info.GetTopType());
 
 			foreach (Cube cube in Cubes)
@@ -520,11 +576,14 @@ public class Box : MonoBehaviour
 			if (_gameLoader != null && GameAudioPlayer.Current != null)
 				GameAudioPlayer.Current.PlayBoxAudio(_audioSource, _gameLoader.MatchClip);
 		}
-		finally { _finishAnimationPending = false; }
+		finally { if (version == _routineVersion) _finishAnimationPending = false; }
 	}
 
 	private void OnDisable()
 	{
+		_routineVersion++;
+		_onPlayingAnim = false;
+		_addAnimationCubes.Clear();
 		_finishAnimationPending = false;
 		_finishPresentationTime = null;
 		CancelSurpriseTransformation();

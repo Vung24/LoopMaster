@@ -10,7 +10,6 @@ public static class BezierSampler
 	public static List<Vector3> SampleCubicBezierEquidistant(
 		Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, int n)
 	{
-		// Protect the shared scratch buffer if sampling is called from multiple threads.
 		lock (s_samplingLock)
 		{
 			return AdaptiveSample(p0, p1, p2, p3, n);

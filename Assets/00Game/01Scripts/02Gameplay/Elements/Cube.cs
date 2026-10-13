@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -21,7 +20,8 @@ public class Cube : MonoBehaviour
 	private GameLoader _gameLoader;
 	private float _sizeInterval = 0.1f;
 	private CancellationToken _token;
-	private Coroutine _sizeAnimation;
+	private bool _isSizeAnimating;
+	private int _sizeAnimationVersion;
 	private bool _isDismissing;
 	private bool _secretRevealPending;
 	private SecretBlockMarker _secretMarker;
@@ -37,7 +37,7 @@ public class Cube : MonoBehaviour
 	public int VisibleSize => _info == null ? 0 : _arrivals.VisibleSize(_info.Size);
 	internal bool IsSurpriseTransformationPlaying => _surpriseLifetime != null;
 	public bool IsFinishAnimationPlaying => isActiveAndEnabled &&
-		(IsSurpriseTransformationPlaying || _sizeAnimation != null || (_anim != null && _anim.IsPlaying("Skeleton|cube_all")));
+		(IsSurpriseTransformationPlaying || _isSizeAnimating || (_anim != null && _anim.IsPlaying("Skeleton|cube_all")));
 
 	private void Awake()
 	{
@@ -74,8 +74,7 @@ public class Cube : MonoBehaviour
 	public void Init(CubeInfo info, Box box, GameLoader gameLoader, string anim = "")
 	{
 		CancelSurpriseTransformation();
-		if (_sizeAnimation != null) StopCoroutine(_sizeAnimation);
-		_sizeAnimation = null;
+		CancelSizeAnimation();
 		_isDismissing = false;
 		_arrivals.Reset();
 		if (_info != null && _info != info && _info.CubeSc == this) _info.CubeSc = null;
@@ -380,38 +379,55 @@ public class Cube : MonoBehaviour
 		bool deactivate, bool checkEmpty)
 	{
 		RefreshSquareSprite();
-		if (_sizeAnimation != null) StopCoroutine(_sizeAnimation);
-		_sizeAnimation = StartCoroutine(AnimateSizeRoutine(scale, position, delay, duration, deactivate, checkEmpty));
+		CancelSizeAnimation();
+		_isSizeAnimating = true;
+		AnimateSizeAsync(scale, position, delay, duration, deactivate, checkEmpty, _sizeAnimationVersion).Forget();
 	}
 
-	private IEnumerator AnimateSizeRoutine(Vector3 target, Vector3 position, float delay,
-		float duration, bool deactivate, bool checkEmpty)
+	private void CancelSizeAnimation()
 	{
-		if (delay > 0f) yield return new WaitForSeconds(delay);
-		Vector3 start = transform.localScale;
-		Vector3 startPosition = transform.position;
-		float elapsed = 0f;
-		while (elapsed < duration)
+		_sizeAnimationVersion++;
+		_isSizeAnimating = false;
+	}
+
+	private bool IsCurrentSizeAnimation(int version) =>
+		this != null && version == _sizeAnimationVersion && gameObject.activeInHierarchy;
+
+	private async UniTask AnimateSizeAsync(Vector3 target, Vector3 position, float delay,
+		float duration, bool deactivate, bool checkEmpty, int version)
+	{
+		try
 		{
-			elapsed += Time.deltaTime;
-			float t = Mathf.Clamp01(elapsed / duration);
-			float eased = 1f - (1f - t) * (1f - t);
-			transform.localScale = Vector3.Lerp(start, target, eased);
-			transform.position = Vector3.Lerp(startPosition, position, eased);
-			yield return null;
+			if (delay > 0f)
+				await UniTask.WaitForSeconds(delay, delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: _token);
+			if (!IsCurrentSizeAnimation(version)) return;
+			Vector3 start = transform.localScale;
+			Vector3 startPosition = transform.position;
+			float elapsed = 0f;
+			while (elapsed < duration)
+			{
+				elapsed += Time.deltaTime;
+				float t = Mathf.Clamp01(elapsed / duration);
+				float eased = 1f - (1f - t) * (1f - t);
+				transform.localScale = Vector3.Lerp(start, target, eased);
+				transform.position = Vector3.Lerp(startPosition, position, eased);
+				await UniTask.NextFrame(PlayerLoopTiming.PreLateUpdate, _token);
+				if (!IsCurrentSizeAnimation(version)) return;
+			}
+			transform.localScale = target;
+			transform.position = position;
+			_isSizeAnimating = false;
+			if (deactivate) gameObject.SetActive(false);
+			else if (checkEmpty) CheckEmpty();
 		}
-		transform.localScale = target;
-		transform.position = position;
-		_sizeAnimation = null;
-		if (deactivate) gameObject.SetActive(false);
-		else if (checkEmpty) CheckEmpty();
+		catch (System.OperationCanceledException) { }
+		finally { if (version == _sizeAnimationVersion) _isSizeAnimating = false; }
 	}
 
 	private void OnDisable()
 	{
 		CancelSurpriseTransformation();
-		if (_sizeAnimation != null) StopCoroutine(_sizeAnimation);
-		_sizeAnimation = null;
+		CancelSizeAnimation();
 	}
 
 	private void RefreshSize()
