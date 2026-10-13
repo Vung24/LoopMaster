@@ -242,10 +242,154 @@ public static class LoopLevelAuthoring
         points.Add(points[0].DeepClone());
         return new JObject { ["IsCircle"] = 1, ["ControlPoints"] = points };
     }
-    private static void CheckRoadSize(float width, float depth)
+    public static void ReverseRoad(JObject path, float smoothing = -1f)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count < 2) return;
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        bool closed = Int(path, "IsCircle") > 0 || repeated;
+        int count = points.Count - (repeated ? 1 : 0);
+        var reversed = new List<JObject>();
+        for (int i = count - 1; i >= 0; i--)
+        {
+            var orig = (JObject)points[i];
+            var item = new JObject
+            {
+                ["Position"] = orig["Position"]?.DeepClone(),
+                ["InTangent"] = orig["OutTangent"]?.DeepClone(),
+                ["OutTangent"] = orig["InTangent"]?.DeepClone()
+            };
+            reversed.Add(item);
+        }
+        if (closed)
+        {
+            reversed.Add((JObject)reversed[0].DeepClone());
+        }
+        points.Clear();
+        foreach (var p in reversed) points.Add(p);
+        if (smoothing >= 0f) SmoothRoad(path, smoothing);
+    }
+
+    public static void ToggleRoadClosed(JObject path, float smoothing = 0.6f)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count < 2) return;
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        bool closed = Int(path, "IsCircle") > 0 || repeated;
+        if (closed)
+        {
+            path["IsCircle"] = 0;
+            if (repeated && points.Count > 2) points.RemoveAt(points.Count - 1);
+            if (smoothing >= 0f) SmoothRoad(path, smoothing);
+        }
+        else
+        {
+            if (points.Count < 3) throw new FormatException("Cần ít nhất 3 điểm để khép kín vòng.");
+            path["IsCircle"] = 1;
+            if (!repeated) points.Add(points[0].DeepClone());
+            if (smoothing >= 0f) SmoothRoad(path, smoothing);
+        }
+    }
+
+    public static void CenterRoad(JObject path, Vector3 targetCenter)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count == 0) return;
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        int limit = points.Count - (repeated ? 1 : 0);
+        for (int i = 0; i < limit; i++)
+        {
+            sum += Vector((JObject)points[i], "Position");
+            count++;
+        }
+        if (count == 0) return;
+        Vector3 delta = targetCenter - (sum / count);
+        delta.y = 0;
+        for (int i = 0; i < points.Count; i++)
+        {
+            var p = (JObject)points[i];
+            p["Position"] = Vector(Vector(p, "Position") + delta);
+            p["InTangent"] = Vector(Vector(p, "InTangent") + delta);
+            p["OutTangent"] = Vector(Vector(p, "OutTangent") + delta);
+        }
+    }
+
+    public static int InsertPointAfter(JObject path, int index, Vector3? targetPos = null, float smoothing = 0.6f)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count >= 128) throw new FormatException("Đường đã đạt tối đa 128 điểm.");
+        bool repeated = points.Count > 1 && (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        int maxIndex = points.Count - (repeated ? 2 : 1);
+        int targetIndex = Mathf.Clamp(index, 0, Mathf.Max(0, maxIndex));
+        Vector3 pos;
+        if (targetPos.HasValue)
+        {
+            pos = targetPos.Value;
+        }
+        else
+        {
+            Vector3 cur = Vector((JObject)points[targetIndex], "Position");
+            Vector3 next = (targetIndex + 1 < points.Count) ? Vector((JObject)points[targetIndex + 1], "Position") : cur + Vector3.right * 2f;
+            pos = (cur + next) * 0.5f;
+        }
+        int insertPos = targetIndex + 1;
+        points.Insert(insertPos, Point(pos, pos, pos));
+        if (repeated)
+        {
+            points[points.Count - 1] = points[0].DeepClone();
+        }
+        if (smoothing >= 0f) SmoothRoad(path, smoothing);
+        return insertPos;
+    }
+
+    public static JObject UShapeRoad(Vector3 center, float width, float depth, float smoothing = 0.6f)
+    {
+        CheckRoadSize(width, depth);
+        float hx = width * 0.5f, hz = depth * 0.5f;
+        var list = new[]
+        {
+            center + new Vector3(-hx, 0, hz),
+            center + new Vector3(-hx, 0, -hz),
+            center + new Vector3(0, 0, -hz),
+            center + new Vector3(hx, 0, -hz),
+            center + new Vector3(hx, 0, hz)
+        };
+        return RoadFromPositions(list, false, smoothing);
+    }
+
+    public static JObject Figure8Road(Vector3 center, float width, float depth, float smoothing = 0.6f)
+    {
+        CheckRoadSize(width, depth);
+        float hx = width * 0.5f, hz = depth * 0.5f;
+        var list = new[]
+        {
+            center + new Vector3(0, 0, 0),
+            center + new Vector3(-hx, 0, hz * 0.5f),
+            center + new Vector3(0, 0, hz),
+            center + new Vector3(hx, 0, hz * 0.5f),
+            center + new Vector3(0, 0, 0),
+            center + new Vector3(-hx, 0, -hz * 0.5f),
+            center + new Vector3(0, 0, -hz),
+            center + new Vector3(hx, 0, -hz * 0.5f)
+        };
+        return RoadFromPositions(list, true, smoothing);
+    }
+
+    public static void CheckRoadSize(float width, float depth)
     {
         if (float.IsNaN(width) || float.IsInfinity(width) || float.IsNaN(depth) || float.IsInfinity(depth) || width <= 0 || depth <= 0)
             throw new FormatException("Chiều rộng và sâu của đường phải là số hữu hạn lớn hơn 0.");
+    }
+
+    public static void SetTangent(JArray points, int index, string field, Vector3 position)
+    {
+        if (field != "InTangent" && field != "OutTangent") throw new ArgumentException("Trường tiếp tuyến không hợp lệ.");
+        ((JObject)points[index])[field] = Vector(position);
+        if (points.Count < 2 || (index != 0 && index != points.Count - 1)) return;
+        if ((Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f)
+            ((JObject)points[index == 0 ? points.Count - 1 : 0])[field] = Vector(position);
     }
 
     public static void MovePoint(JArray points, int index, Vector3 position)
