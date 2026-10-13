@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 222517389882205892}
   - component: {fileID: 225694400162857163}
   - component: {fileID: 114734166443456492}
-  - component: {fileID: 114427142517410815}
   - component: {fileID: 114585156776470488}
   m_Layer: 5
   m_Name: PassPurchaseSuccDialog
@@ -895,22 +894,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &114427142517410815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1283910814728521}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c4af13bad635ddff75c783caf3c8acc, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  EnterAnim: 1
-  ExitAnim: 1
-  FadeInOutDuration: 0.03
-  CloseOnContentResult: 1
 --- !u!114 &114585156776470488
 MonoBehaviour:
   m_ObjectHideFlags: 0

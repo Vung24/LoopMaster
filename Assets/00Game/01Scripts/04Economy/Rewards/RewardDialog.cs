@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace Snui
 {
-	public class RewardDialog : MonoBehaviour
+	public class RewardDialog : BasePopup
 	{
         public const string PATH="RewardDialog";
         public GameObject RewardCellPrefab, SpecialSparksPrefab, Fireworks;
@@ -33,7 +33,7 @@ namespace Snui
         private bool _machineOverrideSorting;
         private int _machineSortingLayer, _machineSortingOrder;
         private readonly List<Tween> _presentationTweens=new List<Tween>();
-        public event Action Closed;
+        public override bool IsBusy => _closing;
         public bool RewardSaved => _saved;
         public static async UniTask<RewardDialog> ShowSpecialStreakRewards(List<RewardItem> items, Transform parent)
         {
@@ -128,8 +128,9 @@ namespace Snui
             if(root.GetComponent<GraphicRaycaster>()==null) root.AddComponent<GraphicRaycaster>();
             root.transform.SetAsLastSibling(); Snui_Text.EnsureFontAssets(root.transform); GameResultUI.EnsureEventSystem();
         }
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (_fullBtn == null) _fullBtn = GetComponent<Button>();
             if (_fullBtn == null) _fullBtn = gameObject.AddComponent<Button>();
             _fullBtn.onClick.AddListener(OnClickReceive);
@@ -313,13 +314,11 @@ namespace Snui
                 if(_mask!=null) _mask.color=new Color(0,0,0,.15f);
                 yield return _coins.Play(coins,transform.parent,start,HudContainer.Current.CoinHud,null,1302);
             }
-            Close();
+            ForceClose();
         }
         private void PlaySound(AudioClip clip) { if(clip!=null && AudioManager.Current!=null) AudioManager.Current.PlayOneShot(clip,gameObject); }
-        private void Update() { if(Input.GetKeyDown(KeyCode.Escape)) OnAndroidBackButtonPressed(); }
-        public bool OnAndroidBackButtonPressed() { if(!isActiveAndEnabled) return false; Close(); return true; }
-        public void Close() { gameObject.SetActive(false); Destroy(gameObject); }
-        private void OnDisable()
+        public bool OnAndroidBackButtonPressed() => TryClose();
+        protected override void OnDisable()
         {
             RestoreMachineSorting();
             _closing=true; StopAllCoroutines(); _animation=null; _coins?.Cancel();
@@ -328,8 +327,8 @@ namespace Snui
             if(_chest!=null && _chest.AnimationState!=null) _chest.AnimationState.Event-=OnChestEvent;
             InventoryManager.Current?.ReplayPendingRewardJournal();
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.TryRevertToOriginLayer();
-            Closed?.Invoke(); Closed=null;
+            base.OnDisable();
         }
-        private void OnDestroy() { if(_fullBtn!=null) _fullBtn.onClick.RemoveListener(OnClickReceive); }
+        protected override void OnDestroy() { if(_fullBtn!=null) _fullBtn.onClick.RemoveListener(OnClickReceive); base.OnDestroy(); }
 	}
 }

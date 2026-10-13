@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace Snui.Lava
 {
-	public class LavaDetailDialog : MonoBehaviour
+	public class LavaDetailDialog : BasePopup
 	{
 		public bool IsPlayAnimation { get; protected set; }
 		public bool IsEventDone { get; protected set; }
@@ -18,7 +18,6 @@ namespace Snui.Lava
 		[SerializeField] protected GameObject _playerPrefab;
 		[SerializeField] protected Transform _playerNode;
 		[SerializeField] protected Button _tipBtn;
-		[SerializeField] protected Button _closeBtn;
 		[SerializeField] protected Button _continueBtn;
 		[SerializeField] protected Timer _timer;
 		[SerializeField] protected TMP_Text _playerCountText;
@@ -29,7 +28,7 @@ namespace Snui.Lava
 		[SerializeField] protected Transform _tutorialNode;
 		[SerializeField] protected TMP_Text _titleText;
 
-		protected readonly UniTaskCompletionSource _closeTcs = new UniTaskCompletionSource();
+		public override bool IsBusy => IsPlayAnimation;
 		protected int _record;
 		protected int _remainingPlayers;
 		protected int _losePlayers;
@@ -39,13 +38,9 @@ namespace Snui.Lava
 
 		public static UniTask<LavaDetailDialog> Show(Transform parent) => EventPrefabUI.Show<LavaDetailDialog>(parent, "LavaDetailDialog");
 
-		public async UniTask WaitForCloseAsync()
+		protected override void Awake()
 		{
-			await _closeTcs.Task.AttachExternalCancellation(this.GetCancellationTokenOnDestroy());
-		}
-
-		protected virtual void Awake()
-		{
+			base.Awake();
 			if (_planes.Count == 0)
 			{
 				GetComponentsInChildren(true, _planes);
@@ -93,12 +88,12 @@ namespace Snui.Lava
 			}
 
 			if (_tipBtn != null) _tipBtn.onClick.AddListener(OnClickTipButton);
-			if (_closeBtn != null) _closeBtn.onClick.AddListener(OnClickCloseButton);
 			if (_continueBtn != null) _continueBtn.onClick.AddListener(OnClickContinueButton);
 		}
 
-		protected virtual void Start()
+		protected override void Start()
 		{
+			base.Start();
 			if (Managers.Lava == null) return;
 			Managers.Lava.CheckEventState();
 			_record = Managers.Lava.GetRecord();
@@ -126,6 +121,7 @@ namespace Snui.Lava
 
 		public void UpdateInfo()
 		{
+			base.Start();
 			if (Managers.Lava == null) return;
 
 			if (_titleText != null)
@@ -162,6 +158,7 @@ namespace Snui.Lava
 
 		public void CreatePlayers()
 		{
+			base.Start();
 			if (Managers.Lava == null) return;
 			int record = GetCurrPlaneIndex();
 			if (_players.Count == 0 && _playerPrefab != null && _playerNode != null)
@@ -317,6 +314,7 @@ namespace Snui.Lava
 
 		public virtual async UniTask ShowRecordAddAnim()
 		{
+			base.Start();
 			if (Managers.Lava == null) return;
 			if (_levelCountText != null)
 				AnimateLabel(_levelCountText)
@@ -407,12 +405,6 @@ namespace Snui.Lava
 			LavaTipDialogContent.Show(transform.parent).Forget();
 		}
 
-		private void OnClickCloseButton()
-		{
-			if (IsPlayAnimation) return;
-			ExitDialog();
-		}
-
 		private void OnClickContinueButton()
 		{
 			if (IsPlayAnimation || !(_jumpPending || IsEventDone)) return;
@@ -421,14 +413,8 @@ namespace Snui.Lava
 
 		public void ExitDialog()
 		{
-			gameObject.SetActive(false);
-			_closeTcs?.TrySetResult();
-			Destroy(gameObject);
+			ForceClose();
 		}
 
-		protected virtual void OnDestroy()
-		{
-			_closeTcs.TrySetResult();
-		}
 	}
 }
