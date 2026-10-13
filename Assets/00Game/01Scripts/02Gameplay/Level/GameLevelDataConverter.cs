@@ -24,7 +24,7 @@ public static class GameLevelDataConverter
 
 	private static void Normalize(Puzzle puzzle)
 	{
-		if (puzzle.Version <= 0) puzzle.Version = Puzzle.LegacyVersion;
+		// if (puzzle.Version <= 0) puzzle.Version = Puzzle.LegacyVersion;
 		if (puzzle.PathSectionDistance <= 0f) puzzle.PathSectionDistance = 0.2f;
 		if (puzzle.Boxes == null) puzzle.Boxes = new List<BoxData>();
 		if (puzzle.Paths == null) puzzle.Paths = new List<GamePath>();

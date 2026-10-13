@@ -3,7 +3,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-// Unity/service boundary for navigation; it never holds a GameController.
 public sealed class GameNavigationEffects : IGameNavigationEffects
 {
     public Transform DialogParent { get; set; }
@@ -50,7 +49,6 @@ public sealed class GameNavigationEffects : IGameNavigationEffects
             if (IsSceneChanging) return false;
             GameData.ClearCurrent();
             clearedCurrent = true;
-            // Scene destruction is expected here; don't cancel the scene load with the old scene's token.
             await GameSceneManager.EnterHome(withAnimation);
             return true;
         }

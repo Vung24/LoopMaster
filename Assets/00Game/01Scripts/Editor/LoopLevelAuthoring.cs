@@ -55,12 +55,12 @@ public static class LoopLevelAuthoring
         ["IsEnterOnly"] = 0, ["NumLock"] = 0, ["LimitedColor"] = 0,
         ["IsAdjacentLocked"] = 0, ["MultiColorLock"] = JValue.CreateNull() };
 
-    public static JObject FromTemplate(JObject source, int levelNumber)
+    public static JObject FromTemplate(JObject source, int levelNumber, bool preserveMap = false)
     {
         if (levelNumber < 1) throw new ArgumentOutOfRangeException(nameof(levelNumber));
         JObject draft = (JObject)source.DeepClone();
         draft["level_number"] = levelNumber; draft["puzzle_id"] = levelNumber;
-        Layout(draft).Remove("MapData");
+        if (!preserveMap) Layout(draft).Remove("MapData");
         if (draft["editor_generator"] is JObject proof)
         { proof["verified"] = false; proof.Remove("solution_clicks"); }
         return draft;
@@ -266,16 +266,17 @@ public static class LoopLevelAuthoring
         }
     }
 
-    public static int SplitSegment(JArray points, int index)
+    public static int SplitSegment(JArray points, int index, float progress = .5f)
     {
         if (index < 0 || index >= points.Count - 1) throw new ArgumentOutOfRangeException(nameof(index));
         var a = (JObject)points[index]; var b = (JObject)points[index + 1];
         Vector3 p0 = Vector(a, "Position"), p1 = Vector(a, "OutTangent"),
             p2 = Vector(b, "InTangent"), p3 = Vector(b, "Position");
-        Vector3 q0 = (p0 + p1) * 0.5f, q1 = (p1 + p2) * 0.5f, q2 = (p2 + p3) * 0.5f;
-        Vector3 r0 = (q0 + q1) * 0.5f, r1 = (q1 + q2) * 0.5f;
+        float t = Mathf.Clamp(progress, .001f, .999f);
+        Vector3 q0 = Vector3.Lerp(p0, p1, t), q1 = Vector3.Lerp(p1, p2, t), q2 = Vector3.Lerp(p2, p3, t);
+        Vector3 r0 = Vector3.Lerp(q0, q1, t), r1 = Vector3.Lerp(q1, q2, t);
         a["OutTangent"] = Vector(q0); b["InTangent"] = Vector(q2);
-        points.Insert(index + 1, Point((r0 + r1) * 0.5f, r0, r1));
+        points.Insert(index + 1, Point(Vector3.Lerp(r0, r1, t), r0, r1));
         return index + 1;
     }
 
@@ -423,6 +424,14 @@ public static class LoopLevelAuthoring
             var groupIds = new HashSet<int>();
             foreach (JObject group in Array(layout, "Groups"))
                 if (Int(group, "Id") <= 0 || !groupIds.Add(Int(group, "Id"))) errors.Add("ID nhóm phải lớn hơn 0 và không trùng nhau.");
+            var membership = new HashSet<int>();
+            foreach (JObject group in Array(layout, "Groups"))
+                foreach (JToken index in Array(group, "BoxIndexes"))
+                    if (!membership.Add(index.Value<int>())) errors.Add("Hộp " + index + ": thuộc nhiều nhóm khóa.");
+            foreach (JObject box in boxes)
+                foreach (JObject cube in Array(box, "Cubes"))
+                    if (Int(cube, "GroupKeyId") > 0 && !groupIds.Contains(Int(cube, "GroupKeyId")))
+                        errors.Add("Hộp " + boxes.IndexOf(box) + ": chìa khóa trỏ tới nhóm không tồn tại.");
             foreach (string key in new[] { "Groups", "Covers" })
                 foreach (JObject entry in Array(layout, key))
                 {

@@ -13,6 +13,7 @@ internal static class LoopLevelPlaytest
     internal const string ScenePath = "Assets/00Game/00Scene/GameScene.unity";
     private const string Prefix = "LoopMaster.LevelPlaytest.";
     private const string PendingKey = Prefix + "Json";
+    private const string SnapshotKey = Prefix + "Snapshot";
     private static GameData _requestedData;
     private static JObject _requestedRoot;
     private static double _deadline;
@@ -23,6 +24,8 @@ internal static class LoopLevelPlaytest
     static LoopLevelPlaytest()
     {
         GameController.EditorPlaytestSource = TakePendingDraft;
+        GameController.EditorPlaytestResetSource = ResetDraft;
+        GamePrefs.EditorSandbox = SessionState.GetBool(Prefix + "Sandbox", false);
         EditorApplication.playModeStateChanged += OnPlayModeChanged;
         EditorApplication.update += Update;
         if (!string.IsNullOrEmpty(SessionState.GetString(PendingKey, ""))) BeginWaiting();
@@ -38,6 +41,10 @@ internal static class LoopLevelPlaytest
         if (errors.Count > 0) { error = string.Join("\n", errors); return false; }
         SceneAsset scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
         if (scene == null) { error = "Không tìm thấy scene chơi game: " + ScenePath; return false; }
+        SessionState.SetBool(Prefix + "Sandbox", true);
+        GamePrefs.EditorSandbox = true;
+        GamePrefs.ResetEditorSandbox();
+        SessionState.SetString(SnapshotKey, root.ToString(Formatting.None));
         SessionState.SetString(PendingKey, root.ToString(Formatting.None));
         SetStatus("Đang mở Game View với màn chơi xem trước…");
         BeginWaiting();
@@ -75,6 +82,11 @@ internal static class LoopLevelPlaytest
         try { _requestedRoot = LoopLevelAuthoring.Parse(json); return _requestedData = GameLevelDataConverter.FromJson(json); }
         catch (Exception exception) { Fail(exception.Message); return null; }
     }
+    private static GameData ResetDraft()
+    {
+        string json = SessionState.GetString(SnapshotKey, "");
+        return string.IsNullOrEmpty(json) ? null : GameLevelDataConverter.FromJson(json);
+    }
     private static void BeginWaiting() { _waiting = true; _deadline = EditorApplication.timeSinceStartup + 60; }
     private static void Update()
     {
@@ -100,6 +112,12 @@ internal static class LoopLevelPlaytest
                 SetStatus("Đã dừng chơi thử. Bản nháp và bản xem trước đã sẵn sàng.");
             _waiting = false; _requestedData = null; SessionState.EraseString(PendingKey);
             RestoreStartScene();
+            // Keep the overlay active through OnDisable/OnDestroy while exiting Play Mode.
+            if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                SessionState.SetBool(Prefix + "Sandbox", false); SessionState.EraseString(SnapshotKey);
+                GamePrefs.EditorSandbox = false; GamePrefs.ResetEditorSandbox();
+            }
         }
         else if (state == PlayModeStateChange.EnteredPlayMode && Busy) BeginWaiting();
     }
@@ -115,6 +133,8 @@ internal static class LoopLevelPlaytest
         _waiting = false; _requestedData = null; SessionState.EraseString(PendingKey);
         SetStatus("Chơi thử thất bại: " + error);
         Debug.LogError(Status);
+        if (!EditorApplication.isPlayingOrWillChangePlaymode)
+        { SessionState.SetBool(Prefix + "Sandbox", false); GamePrefs.EditorSandbox = false; GamePrefs.ResetEditorSandbox(); }
     }
     private static void SetStatus(string status)
     {

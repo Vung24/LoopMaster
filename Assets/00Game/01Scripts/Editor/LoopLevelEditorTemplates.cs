@@ -14,6 +14,7 @@ public sealed partial class LoopLevelEditorWindow
     private sealed class TemplateEntry
     {
         public string Path;
+        public JObject Preview;
         public int Number, Boxes, Hidden, Locks, Groups, EnterOnly, Limited, Adjacent;
         public string Summary => Boxes + " hộp | khối ẩn " + Hidden + " | khóa " + Locks + " | nhóm " + Groups;
     }
@@ -23,6 +24,8 @@ public sealed partial class LoopLevelEditorWindow
     private List<TemplateEntry> _templates;
     private JObject _templatePreviewRoot;
     private const int TemplatePageSize = 8;
+    [SerializeField] private bool _templatePreserveMap = true;
+    [SerializeField] private int _templateMinBoxes = 2, _templateMaxBoxes = 24, _templateMechanisms;
 
     private void RefreshTemplates()
     {
@@ -35,6 +38,7 @@ public sealed partial class LoopLevelEditorWindow
                     var boxes = A.Array(layout, "Boxes").OfType<JObject>().ToArray();
                     _templates.Add(new TemplateEntry {
                         Path = path, Number = A.Int(root, "level_number"), Boxes = boxes.Length,
+                        Preview = root,
                         Hidden = boxes.Sum(b => A.Array(b, "Cubes").OfType<JObject>().Count(c => A.Int(c, "IsSecret") > 0)),
                         Locks = boxes.Count(b => A.Int(b, "LockColor") > 0 || A.Int(b, "NumLock") > 0 || A.Int(b, "IsAdjacentLocked") > 0 || A.Array(b, "MultiColorLock").Count > 0),
                         Groups = A.Array(layout, "Groups").Count,
@@ -62,7 +66,17 @@ public sealed partial class LoopLevelEditorWindow
         }
         int filter = EditorGUILayout.Popup("Cơ chế", _templateFilter, new[] { "Tất cả", "Cơ bản", "Khối ẩn", "Khóa hộp", "Nhóm / chìa khóa", "Chỉ nhận vào", "Chỉ nhận màu", "Khóa liền kề" });
         if (filter != _templateFilter) { _templateFilter = filter; _templatePage = 0; }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            _templateMinBoxes = EditorGUILayout.IntField("Hộp từ", _templateMinBoxes);
+            _templateMaxBoxes = EditorGUILayout.IntField("đến", _templateMaxBoxes);
+        }
+        _templateMechanisms = EditorGUILayout.MaskField("Kết hợp cơ chế cần có", _templateMechanisms, new[] { "Khối ẩn", "Khóa", "Nhóm / chìa khóa", "Chỉ nhận vào", "Chỉ nhận màu", "Liền kề" });
         var matches = _templates.Where(t =>
+            t.Boxes >= _templateMinBoxes && t.Boxes <= _templateMaxBoxes &&
+            ((_templateMechanisms & 1) == 0 || t.Hidden > 0) && ((_templateMechanisms & 2) == 0 || t.Locks > 0) &&
+            ((_templateMechanisms & 4) == 0 || t.Groups > 0) && ((_templateMechanisms & 8) == 0 || t.EnterOnly > 0) &&
+            ((_templateMechanisms & 16) == 0 || t.Limited > 0) && ((_templateMechanisms & 32) == 0 || t.Adjacent > 0) &&
             (string.IsNullOrWhiteSpace(_templateSearch) || Path.GetFileName(t.Path).IndexOf(_templateSearch.Trim(), StringComparison.OrdinalIgnoreCase) >= 0) &&
             (_templateFilter == 0 || _templateFilter == 1 && t.Hidden + t.Locks + t.Groups + t.EnterOnly + t.Limited == 0 ||
              _templateFilter == 2 && t.Hidden > 0 || _templateFilter == 3 && t.Locks > 0 || _templateFilter == 4 && t.Groups > 0 ||
@@ -73,6 +87,7 @@ public sealed partial class LoopLevelEditorWindow
         foreach (TemplateEntry entry in matches.Skip(_templatePage * TemplatePageSize).Take(TemplatePageSize))
             using (new EditorGUILayout.HorizontalScope())
             {
+                DrawTemplateDiagram(entry.Preview, GUILayoutUtility.GetRect(85, 64, GUILayout.Width(85)));
                 if (GUILayout.Toggle(_templatePath == entry.Path, "Màn " + entry.Number, "Button", GUILayout.Width(85)) && _templatePath != entry.Path)
                 { _templatePath = entry.Path; _templatePreviewRoot = null; }
                 EditorGUILayout.LabelField(entry.Summary, EditorStyles.miniLabel);
@@ -101,6 +116,7 @@ public sealed partial class LoopLevelEditorWindow
             EditorGUILayout.LabelField("Đã chọn", Path.GetFileName(_templatePath));
             DrawTemplateDiagram(_templatePreviewRoot, GUILayoutUtility.GetRect(100, 220, GUILayout.ExpandWidth(true)));
             _templateTargetNumber = Mathf.Max(1, EditorGUILayout.IntField("Số màn chơi mới", _templateTargetNumber));
+            _templatePreserveMap = EditorGUILayout.ToggleLeft("Sao chép nguyên level (giữ MapData / trang trí)", _templatePreserveMap);
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || HasRawChanges || _drawingRoad || EditorApplication.isCompiling))
                 if (GUILayout.Button("Tạo bản nháp mới từ màn này", GUILayout.Height(30)))
                 { if (TryUseTemplate(_templatePath, _templateTargetNumber)) GUIUtility.ExitGUI(); }
@@ -116,7 +132,7 @@ public sealed partial class LoopLevelEditorWindow
             if (EditorApplication.isPlaying || HasRawChanges || _drawingRoad) return false;
             if (File.Exists(Path.Combine(A.LevelFolder, "Level " + levelNumber + ".json")))
                 throw new FormatException("Số màn này đã tồn tại. Chọn số chưa dùng cho bản nháp mới.");
-            JObject draft = A.FromTemplate(A.Parse(File.ReadAllText(path)), levelNumber);
+            JObject draft = A.FromTemplate(A.Parse(File.ReadAllText(path)), levelNumber, _templatePreserveMap);
             List<string> errors = A.Validate(draft, out _);
             if (errors.Count > 0) throw new FormatException(string.Join("\n", errors.Take(5)));
             if (!ConfirmReplace()) return false;
@@ -127,6 +143,7 @@ public sealed partial class LoopLevelEditorWindow
 
     private void BeginTemplateDraft(JObject draft)
     {
+        CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver(); _canvasFramed = false; _workspace = true;
         CancelRoadSketch(); StopGeneration();
         Undo.IncrementCurrentGroup(); Undo.RecordObject(this, "Tạo màn chơi từ mẫu");
         Commit(draft, "Tạo màn chơi từ mẫu");
@@ -201,19 +218,35 @@ public sealed partial class LoopLevelEditorWindow
                 if (GUILayout.Toggle(_box == b, b + ": " + BoxTypeLabel(A.Int(box, "BoxType")), "Button", GUILayout.Width(90))) _box = b;
                 int first = Math.Max(0, cubes.Count - 8);
                 if (first > 0) GUILayout.Label("...", GUILayout.Width(18));
-                int end = cubes.Count + (cubes.Count < A.CubeCapacity(box) && _cubeBrushMode == 0 ? 1 : 0);
+                int end = cubes.Count + (cubes.Count < A.CubeCapacity(box) && _cubeBrushMode == 0 && (!_workspace || _canvasTool == 2) ? 1 : 0);
                 for (int c = first; c < end; c++)
                 {
                     bool occupied = c < cubes.Count; JObject cube = occupied ? (JObject)cubes[c] : null;
                     string label = occupied ? A.Int(cube, "Type").ToString() : "+";
                     if (occupied && A.Int(cube, "IsSecret") > 0) label += "?";
                     if (occupied && A.Int(cube, "GroupKeyId") > 0) label += "K" + A.Int(cube, "GroupKeyId");
+                    bool concealed = _workspace && _canvasPlayerView && occupied && A.Int(cube, "IsSecret") > 0;
+                    if (concealed) label = "?";
                     Rect cell = GUILayoutUtility.GetRect(34, 28, GUILayout.MaxWidth(48)); Event e = Event.current;
-                    if (occupied && e.type == EventType.MouseDown && e.button == 1 && cell.Contains(e.mousePosition))
+                    int dragControl = GUIUtility.GetControlID("LoopCubeDrag".GetHashCode(), FocusType.Passive, cell);
+                    if (GUI.enabled && _workspace && _canvasTool == 0 && occupied && e.type == EventType.MouseDown && e.button == 0 && cell.Contains(e.mousePosition))
+                    { _box = b; _tableDragBox = b; _tableDragCube = c; _tableDragControl = dragControl; GUIUtility.hotControl = dragControl; e.Use(); }
+                    if (GUI.enabled && _workspace && _canvasTool == 0 && occupied && _tableDragBox == b && e.rawType == EventType.MouseUp && cell.Contains(e.mousePosition))
+                    {
+                        LoopLevelCommands.MoveCube(box, _tableDragCube, c);
+                        _tableDragBox = _tableDragCube = -1; GUIUtility.hotControl = 0; e.Use(); return;
+                    }
+                    if (GUI.enabled && occupied && e.type == EventType.MouseDown && e.button == 1 && cell.Contains(e.mousePosition))
                     { A.RemoveCube(box, c); _box = b; e.Use(); return; }
-                    Color previous = GUI.backgroundColor; GUI.backgroundColor = occupied ? A.ColorFor(A.Int(cube, "Type")) : Color.white;
+                    Color previous = GUI.backgroundColor; GUI.backgroundColor = concealed ? Color.gray : occupied ? A.ColorFor(A.Int(cube, "Type")) : Color.white;
                     bool click = GUI.Button(cell, new GUIContent(label, "Hộp " + b + ", khối " + c)); GUI.backgroundColor = previous;
-                    if (click) { _box = b; A.ApplyCubeBrush(box, c, _brushColor, _cubeBrushMode, _keyBrush); return; }
+                    if (click)
+                    {
+                        _box = b;
+                        if (!_workspace || (_canvasTool >= 2 && _canvasTool <= 4)) A.ApplyCubeBrush(box, c, _brushColor, _cubeBrushMode, _keyBrush);
+                        else if (_canvasTool == 5 && occupied) A.RemoveCube(box, c);
+                        return;
+                    }
                 }
                 GUILayout.FlexibleSpace();
                 string rule = A.Int(box, "LockColor") > 0 ? "M" + A.Int(box, "LockColor") : "";
@@ -224,6 +257,8 @@ public sealed partial class LoopLevelEditorWindow
                 GUILayout.Label(rule, EditorStyles.miniLabel, GUILayout.MaxWidth(105));
             }
         }
+        if (_tableDragBox >= 0 && Event.current.rawType == EventType.MouseUp)
+        { _tableDragBox = _tableDragCube = -1; if (GUIUtility.hotControl == _tableDragControl) GUIUtility.hotControl = 0; }
     }
 
     private void DrawBoxMembership(JObject layout, JObject entry)
