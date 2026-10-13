@@ -177,7 +177,7 @@ public class Cube : MonoBehaviour
 		if (_meshRenderer != null)
 		{
 			Material material = GameAssetsConfig.GetMatByType(type);
-			if (material != null) _meshRenderer.material = material;
+			if (material != null) _meshRenderer.sharedMaterial = material;
 
 			if (_outlinePropBlock == null) _outlinePropBlock = new MaterialPropertyBlock();
 			_meshRenderer.GetPropertyBlock(_outlinePropBlock);
@@ -439,7 +439,7 @@ public class Cube : MonoBehaviour
 	{
 		if (_meshRenderer == null || _info == null) return;
 		Material material = _info.IsSecret ? GameAssetsConfig.GetSecretMat() : GameAssetsConfig.GetMatByType(_info.Type);
-		if (material != null) _meshRenderer.material = material;
+		if (material != null) _meshRenderer.sharedMaterial = material;
 
 		if (_outlinePropBlock == null) _outlinePropBlock = new MaterialPropertyBlock();
 		_meshRenderer.GetPropertyBlock(_outlinePropBlock);

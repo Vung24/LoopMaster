@@ -46,18 +46,19 @@ public class Slice : MonoBehaviour
 		transform.localScale = Vector3.one;
 
 		Material material = GameAssetsConfig.GetSliceMatByType(_info.Type);
-		if (_meshRenderer != null && material != null) _meshRenderer.material = material;
+		if (_meshRenderer != null && material != null) _meshRenderer.sharedMaterial = material;
 		if (_meshRenderer != null)
 		{
 			if (_colorPropBlock == null) _colorPropBlock = new MaterialPropertyBlock();
-			_meshRenderer.GetPropertyBlock(_colorPropBlock);
+			// Rebuild overrides so pooled normal slices do not retain the LongBox texture.
+			_colorPropBlock.Clear();
 			Color color = GameAssetsConfig.GetCubeColor(_info.Type);
 			_colorPropBlock.SetColor("_BaseColor", color);
 			_colorPropBlock.SetColor("_Color", color);
+			if (CubeData.IsLongBoxColor(_info.Type) && _longBoxSignTex != null)
+				_colorPropBlock.SetTexture("_BaseMap", _longBoxSignTex);
 			_meshRenderer.SetPropertyBlock(_colorPropBlock);
 		}
-		if (_meshRenderer != null && CubeData.IsLongBoxColor(_info.Type) && _longBoxSignTex != null)
-			_meshRenderer.material.SetTexture("_BaseMap", _longBoxSignTex);
 	}
 
 	public UniTask JumpToTransfer(int targetPathIndex, float delayTime, float jumpHeight = JumpArcHeight)
@@ -80,7 +81,7 @@ public class Slice : MonoBehaviour
 		return default;
 	}
 
-	public UniTask JumpToBox(Box box, float delayTime, System.Action landed = null, float jumpHeight = JumpArcHeight)
+	public UniTask JumpToBox(Box box, float delayTime, Action landed = null, float jumpHeight = JumpArcHeight)
 	{
 		if (_info == null || box == null) return default;
 		if (GameData.Current != null) GameData.Current.RemoveTransferSlice(_info);
