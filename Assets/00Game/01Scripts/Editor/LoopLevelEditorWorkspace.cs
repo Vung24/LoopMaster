@@ -241,14 +241,29 @@ public sealed partial class LoopLevelEditorWindow
                 Handles.color = new Color(.26f, .37f, .50f); Handles.DrawAAPolyLine(Mathf.Max(3, _canvasScale), sampled.Select(project).ToArray());
                 Handles.color = Color.cyan; Handles.DrawAAPolyLine(1.5f, sampled.Select(project).ToArray());
                 DrawRoadDirectionChevrons(project, sampled);
+
+                var selfHits = A.FindSelfIntersections(sampled);
+                for (int h = 0; h < selfHits.Count; h++)
+                {
+                    Vector3 hitCanvas = project(selfHits[h]);
+                    Handles.color = new Color(1f, 0.35f, 0.1f, 0.85f);
+                    Handles.DrawSolidDisc(hitCanvas, Vector3.forward, 8);
+                    Handles.color = Color.yellow;
+                    Handles.DrawWireDisc(hitCanvas, Vector3.forward, 8);
+                    GUI.Label(new Rect(hitCanvas.x - 7, hitCanvas.y - 11, 16, 16), "⚠️", EditorStyles.boldLabel);
+                    GUI.Label(new Rect(hitCanvas.x + 9, hitCanvas.y - 8, 90, 16), "Giao cắt phẳng!", EditorStyles.whiteMiniLabel);
+                }
+
                 if (_canvasTool != 6) continue;
                 JArray points = A.Array((JObject)paths[p], "ControlPoints");
                 bool repeated = points.Count > 1 && (A.Vector((JObject)points[0], "Position") - A.Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
                 int anchorCount = points.Count - (repeated ? 1 : 0);
                 for (int i = 0; i < anchorCount; i++)
                 {
-                    Vector3 pos = project(A.Vector((JObject)points[i], "Position"));
+                    Vector3 worldPos = A.Vector((JObject)points[i], "Position");
+                    Vector3 pos = project(worldPos);
                     bool isSelected = _path == p && _point == i;
+                    bool isOverpass = worldPos.y > 0.6f;
                     if (isSelected)
                     {
                         Handles.color = new Color(1f, 0.9f, 0.2f, 0.35f);
@@ -256,11 +271,12 @@ public sealed partial class LoopLevelEditorWindow
                         Handles.color = Color.yellow;
                         Handles.DrawWireDisc(pos, Vector3.forward, 11);
                     }
-                    Handles.color = isSelected ? Color.yellow : (i == 0 ? new Color(0.2f, 0.9f, 0.3f) : new Color(0.3f, 0.8f, 1f));
-                    Handles.DrawSolidDisc(pos, Vector3.forward, 5.5f);
+                    Handles.color = isSelected ? Color.yellow : (isOverpass ? new Color(0.9f, 0.4f, 1f) : (i == 0 ? new Color(0.2f, 0.9f, 0.3f) : new Color(0.3f, 0.8f, 1f)));
+                    Handles.DrawSolidDisc(pos, Vector3.forward, isOverpass ? 6.5f : 5.5f);
                     Handles.color = Color.black;
-                    Handles.DrawWireDisc(pos, Vector3.forward, 5.5f);
-                    GUI.Label(new Rect(pos.x + 6, pos.y - 12, 45, 18), (i == 0 ? "1 (Đầu)" : (i + 1).ToString()), EditorStyles.whiteMiniLabel);
+                    Handles.DrawWireDisc(pos, Vector3.forward, isOverpass ? 6.5f : 5.5f);
+                    string ptLabel = (i == 0 ? "1 (Đầu)" : (i + 1).ToString()) + (isOverpass ? " [🌉" + worldPos.y.ToString("F1") + "m]" : "");
+                    GUI.Label(new Rect(pos.x + 6, pos.y - 12, isOverpass ? 85 : 45, 18), ptLabel, EditorStyles.whiteMiniLabel);
                     if (!isSelected || !_showTangents) continue;
                     foreach (string field in new[] { "InTangent", "OutTangent" })
                     {
@@ -1086,6 +1102,36 @@ public sealed partial class LoopLevelEditorWindow
         JArray points = A.Array(path, "ControlPoints");
         bool isClosed = A.Int(path, "IsCircle") > 0;
 
+        Vector3[] sampledRoad = LoopLevelBoardLayout.SampleRoad(path);
+        List<Vector3> flatHits = A.FindSelfIntersections(sampledRoad);
+        if (flatHits.Count > 0)
+        {
+            EditorGUILayout.Space(2);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.HelpBox("⚠️ Phát hiện " + flatHits.Count + " điểm giao cắt phẳng!\nHai nhánh đường cắt nhau trên cùng mặt phẳng (Y=0.2m) làm mesh và khối đâm xuyên nhau.", MessageType.Warning);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button(new GUIContent("🌉 Nâng thành Cầu vượt 3D", "Tự động nâng 1 nhánh tại giao điểm lên Y=1.8m để băng chuyền dưới chui qua lọt")))
+                    {
+                        WorkspaceCommand("Tạo cầu vượt 3D", next =>
+                        {
+                            JObject target = (JObject)A.Array(A.Layout(next), "Paths")[_path];
+                            A.Make3DOverpass(target, 1.8f);
+                        });
+                    }
+                    if (GUILayout.Button(new GUIContent("↔ Tách eo không cắt", "Tách 2 nhánh tại điểm giao nhau sang 2 bên để thành đường thắt eo không cắt nhau")))
+                    {
+                        WorkspaceCommand("Tách eo đường không cắt", next =>
+                        {
+                            JObject target = (JObject)A.Array(A.Layout(next), "Paths")[_path];
+                            A.UntangleRoad(target, 1.8f);
+                        });
+                    }
+                }
+            }
+        }
+
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button(new GUIContent("Làm mượt", "Tính lại tiếp tuyến cong mềm")))
@@ -1143,10 +1189,11 @@ public sealed partial class LoopLevelEditorWindow
                 JObject pt = (JObject)points[i];
                 Vector3 pos = A.Vector(pt, "Position");
                 bool isSelected = _point == i;
+                bool isOverpass = pos.y > 0.6f;
 
                 using (new EditorGUILayout.HorizontalScope(isSelected ? EditorStyles.selectionRect : EditorStyles.helpBox))
                 {
-                    string label = (i == 0 ? "① (Đầu): " : (i + 1) + ": ") + "(" + pos.x.ToString("F1") + ", " + pos.z.ToString("F1") + ")";
+                    string label = (i == 0 ? "① (Đầu): " : (i + 1) + ": ") + "(" + pos.x.ToString("F1") + ", " + pos.z.ToString("F1") + ")" + (isOverpass ? " [🌉 Y:" + pos.y.ToString("F1") + "]" : "");
                     if (GUILayout.Button(label, EditorStyles.label))
                     {
                         _point = i;
@@ -1196,9 +1243,17 @@ public sealed partial class LoopLevelEditorWindow
             Header("Điểm " + (_point + 1) + " đang chọn");
             Vector3 posBefore = A.Vector(selectedPt, "Position");
             Vector2 xz = EditorGUILayout.Vector2Field("Tọa độ (X, Z)", new Vector2(posBefore.x, posBefore.z));
-            if (xz.x != posBefore.x || xz.y != posBefore.z)
+            float newY = EditorGUILayout.FloatField("Độ cao Y (Cầu/Sàn)", posBefore.y);
+            using (new EditorGUILayout.HorizontalScope())
             {
-                Vector3 newPos = new Vector3(xz.x, posBefore.y, xz.y);
+                EditorGUILayout.LabelField("Gán độ cao:", GUILayout.Width(75));
+                if (GUILayout.Button("Sàn (0.2m)", EditorStyles.miniButton)) newY = 0.2f;
+                if (GUILayout.Button("Dốc (1.0m)", EditorStyles.miniButton)) newY = 1.0f;
+                if (GUILayout.Button("Cầu (1.8m)", EditorStyles.miniButton)) newY = 1.8f;
+            }
+            if (xz.x != posBefore.x || xz.y != posBefore.z || Mathf.Abs(newY - posBefore.y) > 0.001f)
+            {
+                Vector3 newPos = new Vector3(xz.x, newY, xz.y);
                 WorkspaceCommand("Sửa tọa độ điểm " + (_point + 1), next =>
                 {
                     JObject targetPath = (JObject)A.Array(A.Layout(next), "Paths")[_path];
@@ -1237,10 +1292,7 @@ public sealed partial class LoopLevelEditorWindow
                         _path = p.Count - 1; _point = 0;
                     });
                 }
-            }
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Đường chữ U (5 điểm)"))
+                if (GUILayout.Button("Chữ U (5 điểm)"))
                 {
                     WorkspaceCommand("Tạo đường chữ U", next =>
                     {
@@ -1249,9 +1301,33 @@ public sealed partial class LoopLevelEditorWindow
                         _path = p.Count - 1; _point = 0;
                     });
                 }
-                if (GUILayout.Button("Đường số 8 (8 điểm)"))
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button(new GUIContent("Số 8 (Thắt eo không cắt)", "2 nhánh uốn lượn song song qua tâm không cắt nhau")))
                 {
-                    WorkspaceCommand("Tạo đường số 8", next =>
+                    WorkspaceCommand("Tạo đường số 8 thắt eo", next =>
+                    {
+                        JArray p = A.Array(A.Layout(next), "Paths");
+                        p.Add(A.HourglassRoad(Vector3.zero, 10f, 6f, 1.8f, _roadSmoothing));
+                        _path = p.Count - 1; _point = 0;
+                    });
+                }
+                if (GUILayout.Button(new GUIContent("Số 8 (Cầu vượt 3D)", "1 nhánh sàn Y=0.2m, 1 nhánh cầu vượt Y=2.0m")))
+                {
+                    WorkspaceCommand("Tạo đường số 8 cầu vượt 3D", next =>
+                    {
+                        JArray p = A.Array(A.Layout(next), "Paths");
+                        p.Add(A.Figure8OverpassRoad(Vector3.zero, 10f, 6f, 1.8f, _roadSmoothing));
+                        _path = p.Count - 1; _point = 0;
+                    });
+                }
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button(new GUIContent("Số 8 (Cắt phẳng)", "Đường số 8 cắt nhau tại tâm phẳng Y=0.2m")))
+                {
+                    WorkspaceCommand("Tạo đường số 8 cắt phẳng", next =>
                     {
                         JArray p = A.Array(A.Layout(next), "Paths");
                         p.Add(A.Figure8Road(Vector3.zero, 10f, 6f, _roadSmoothing));
@@ -1297,6 +1373,32 @@ public sealed partial class LoopLevelEditorWindow
             {
                 JObject p = (JObject)A.Array(A.Layout(next), "Paths")[pathIndex];
                 _point = A.InsertPointAfter(p, pointIndex, null, _autoSmoothPoints ? _roadSmoothing : -1f);
+            });
+        });
+
+        menu.AddSeparator("");
+        menu.AddItem(new GUIContent("Nâng điểm này thành Cầu vượt (Y = 1.8m)"), false, () =>
+        {
+            WorkspaceCommand("Nâng điểm cầu vượt", next =>
+            {
+                JObject p = (JObject)A.Array(A.Layout(next), "Paths")[pathIndex];
+                JArray pts = A.Array(p, "ControlPoints");
+                Vector3 cur = A.Vector((JObject)pts[pointIndex], "Position");
+                cur.y = 1.8f;
+                A.MovePoint(pts, pointIndex, cur);
+                if (_autoSmoothPoints) A.SmoothRoad(p, _roadSmoothing);
+            });
+        });
+        menu.AddItem(new GUIContent("Hạ điểm này xuống mặt Sàn (Y = 0.2m)"), false, () =>
+        {
+            WorkspaceCommand("Hạ điểm xuống sàn", next =>
+            {
+                JObject p = (JObject)A.Array(A.Layout(next), "Paths")[pathIndex];
+                JArray pts = A.Array(p, "ControlPoints");
+                Vector3 cur = A.Vector((JObject)pts[pointIndex], "Position");
+                cur.y = 0.2f;
+                A.MovePoint(pts, pointIndex, cur);
+                if (_autoSmoothPoints) A.SmoothRoad(p, _roadSmoothing);
             });
         });
 
