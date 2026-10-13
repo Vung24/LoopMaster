@@ -52,6 +52,8 @@ public sealed partial class LoopLevelEditorWindow
             s.ColorLocks = EditorGUILayout.IntSlider("Hộp khóa màu", s.ColorLocks, 0, 3);
             s.NumberLocks = EditorGUILayout.IntSlider("Hộp khóa số", s.NumberLocks, 0, 3);
             s.Groups = EditorGUILayout.IntSlider("Nhóm khóa + chìa khóa", s.Groups, 0, 3);
+            s.EnterOnlyBoxes = EditorGUILayout.IntSlider("Hộp chỉ nhận vào", s.EnterOnlyBoxes, 0, 3);
+            s.LimitedColorBoxes = EditorGUILayout.IntSlider("Hộp chỉ nhận màu", s.LimitedColorBoxes, 0, 3);
             EditorGUILayout.HelpBox("Tổng số hộp gồm hộp dự phòng, đơn và dài. Hộp dự phòng có thể được lấp một phần khi trộn màu. Hộp dài cần ít nhất 2 hộp. Mỗi nhóm có chìa khóa nằm ngoài phần bị khóa.", MessageType.None);
             s.VerifySolution = EditorGUILayout.Toggle("Tìm lời giải trước khi dùng", s.VerifySolution);
             _generatorAdvanced = EditorGUILayout.Foldout(_generatorAdvanced, "Thiết lập tạo nâng cao", true);

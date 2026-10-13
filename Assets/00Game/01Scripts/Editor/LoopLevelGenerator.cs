@@ -15,6 +15,7 @@ public sealed class LoopLevelGeneratorSettings
 {
     public int Difficulty = 1, Seed = 12345, BoxCount = 10, ColorCount = 4, EmptyBoxes = 2;
     public int SingleBoxes = 1, LongBoxes, SecretPercent = 20, ColorLocks, NumberLocks, Groups;
+    public int EnterOnlyBoxes, LimitedColorBoxes, AdjacentLocks;
     public int ScrambleMoves = 32, RoadCapacity = 6, RoadShape, MaxStates = 4000, Attempts = 8;
     public float BoxSpacing = 3f, RoadMargin = 2.5f;
     public float BoxGap = .6f, RoadClearance = .75f, BoardAspect = .75f;
@@ -30,6 +31,8 @@ public sealed class LoopLevelGeneratorSettings
         SecretPercent = new[] { 0, 20, 35, 50 }[Difficulty];
         ColorLocks = Difficulty >= 2 ? 1 : 0;
         NumberLocks = Difficulty >= 2 ? 1 : 0; Groups = Difficulty >= 2 ? 1 : 0;
+        EnterOnlyBoxes = Difficulty >= 2 ? 1 : 0; LimitedColorBoxes = Difficulty >= 2 ? 1 : 0;
+        AdjacentLocks = Difficulty >= 3 ? 1 : 0;
         ScrambleMoves = new[] { 16, 32, 50, 80 }[Difficulty];
         RoadCapacity = new[] { 8, 6, 5, 4 }[Difficulty];
     }
@@ -45,6 +48,8 @@ public sealed class LoopLevelGeneratorSettings
         if (ColorCount < 2 || ColorCount > 14 || normalFilled < ColorCount) errors.Add("Mỗi màu thường cần ít nhất một hộp thường đầy, cộng các hộp dự phòng / đơn / dài đã chọn.");
         if (ColorLocks < 0 || ColorLocks > 3 || NumberLocks < 0 || NumberLocks > 3 || Groups < 0 || Groups > 3 || ColorLocks + NumberLocks + Groups > normalFilled - 1)
             errors.Add("Mỗi loại khóa tối đa 3; giữ ít nhất một hộp đầy nằm ngoài mọi khóa.");
+        if (EnterOnlyBoxes < 0 || EnterOnlyBoxes > 3 || LimitedColorBoxes < 0 || LimitedColorBoxes > 3 || AdjacentLocks < 0 || AdjacentLocks > 3)
+            errors.Add("Hộp chỉ nhận vào / nhận màu / khóa liền kề tối đa 3.");
         if (SecretPercent < 0 || SecretPercent > 70 || ScrambleMoves < 4 || ScrambleMoves > 160 || RoadCapacity < 2 || RoadCapacity > 16) errors.Add("Tỉ lệ khối ẩn, số bước trộn hoặc sức chứa đường không hợp lệ.");
         if (MaxStates < 100 || MaxStates > 20000 || Attempts < 1 || Attempts > 16) errors.Add("Số trạng thái tìm phải từ 100–20000, số lần thử từ 1–16.");
         if (!FiniteRange(BoxGap, .35f, 2) || !FiniteRange(RoadClearance, .4f, 3) || !FiniteRange(BoardAspect, .5f, 1.5f) || BoardColumns < 0 || BoardColumns > 24 || BoardLayout < 0 || BoardLayout > 1)
@@ -191,6 +196,101 @@ public static class LoopLevelGenerator
             if (eligible.Count == 0) throw new FormatException("Không đủ hộp cho số khóa số đã chọn.");
             int target = eligible[eligible.Count - 1]; eligible.RemoveAt(eligible.Count - 1); boxes[target]["NumLock"] = 1;
         }
+        for (int n = 0; n < settings.EnterOnlyBoxes; n++)
+        {
+            if (eligible.Count == 0) break;
+            int target = eligible[eligible.Count - 1]; eligible.RemoveAt(eligible.Count - 1);
+            boxes[target]["IsEnterOnly"] = true;
+        }
+        for (int n = 0; n < settings.LimitedColorBoxes; n++)
+        {
+            if (eligible.Count == 0) break;
+            int target = eligible[eligible.Count - 1]; eligible.RemoveAt(eligible.Count - 1);
+            var insideColors = A.Array((JObject)boxes[target], "Cubes").Select(c => c["Type"].Value<int>()).Distinct().ToList();
+            if (insideColors.Count > 0) boxes[target]["LimitedColor"] = insideColors[random.Next(insideColors.Count)];
+        }
+    }
+
+    public static bool AutoFillCubesAndMechanics(JObject root, int colorCount, int secretPercent, int colorLocks, int numberLocks, int groups, int enterOnly, int limitedColor, int seed, out string error)
+    {
+        error = null;
+        JObject layout = A.Layout(root);
+        JArray boxes = A.Array(layout, "Boxes");
+        int count = boxes.Count;
+        if (count < 3)
+        {
+            error = "Cần ít nhất 3 hộp trên bàn chơi để tự động điền màu.";
+            return false;
+        }
+
+        var random = new System.Random(seed);
+        int emptyCount = Math.Max(1, Math.Min(2, count / 5));
+        int filledCount = count - emptyCount;
+        colorCount = Mathf.Clamp(colorCount, 2, Math.Min(14, filledCount));
+
+        A.Array(layout, "Groups").Clear();
+        foreach (JObject b in boxes)
+        {
+            A.Array(b, "Cubes").Clear();
+            b.Remove("LockColor");
+            b.Remove("NumLock");
+            b.Remove("LimitedColor");
+            b.Remove("IsEnterOnly");
+            b.Remove("IsAdjacentLocked");
+        }
+
+        var palette = Enumerable.Range(1, 14).ToList();
+        Shuffle(palette, random);
+
+        for (int i = 0; i < filledCount; i++)
+        {
+            JObject box = (JObject)boxes[i];
+            int boxType = A.Int(box, "BoxType");
+            int cubeCapacity = boxType == 2 ? 6 : 4;
+            int color = palette[i % colorCount];
+            Fill(box, color, cubeCapacity);
+        }
+
+        var settings = new LoopLevelGeneratorSettings
+        {
+            ScrambleMoves = Math.Max(20, count * 4),
+            ColorLocks = colorLocks,
+            NumberLocks = numberLocks,
+            Groups = groups,
+            EnterOnlyBoxes = enterOnly,
+            LimitedColorBoxes = limitedColor,
+            SecretPercent = secretPercent
+        };
+
+        var reverseClicks = new List<int>();
+        Mix(boxes, settings, random, reverseClicks);
+
+        try
+        {
+            AddMechanics(boxes, layout, settings, random);
+        }
+        catch (Exception ex)
+        {
+            error = "Lưu ý đặt khóa: " + ex.Message;
+        }
+
+        foreach (JObject box in boxes)
+        {
+            JArray cubes = A.Array(box, "Cubes");
+            int firstVisible = cubes.Count - 1;
+            while (firstVisible > 0 && A.Int((JObject)cubes[firstVisible - 1], "Type") == A.Int((JObject)cubes[cubes.Count - 1], "Type")) firstVisible--;
+            for (int c = 0; c < firstVisible; c++)
+                if (A.Int((JObject)cubes[c], "GroupKeyId") == 0 && random.Next(100) < secretPercent)
+                    cubes[c]["IsSecret"] = 1;
+        }
+
+        var errors = A.Validate(root, out _);
+        if (errors.Count > 0)
+        {
+            error = string.Join("\n", errors);
+            return false;
+        }
+        return true;
     }
 
     public static GameData DecodeDetached(JObject level)

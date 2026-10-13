@@ -166,7 +166,9 @@ public static class LoopLevelCommands
         JArray arranged = A.Array(temporary, "Boxes");
         for (int n = 0; n < indices.Length; n++)
         {
-            boxes[indices[n]]["Position"] = A.Vector(A.Vector((JObject)arranged[n], "Position") + anchor);
+            Vector3 position = A.Vector((JObject)arranged[n], "Position") + anchor;
+            position.y = A.Vector((JObject)boxes[indices[n]], "Position").y;
+            boxes[indices[n]]["Position"] = A.Vector(position);
             boxes[indices[n]]["Rotation"] = arranged[n]["Rotation"].DeepClone();
         }
     }

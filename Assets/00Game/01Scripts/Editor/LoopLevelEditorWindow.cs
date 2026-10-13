@@ -60,7 +60,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
 
     private void OnEnable()
     {
-        minSize = new Vector2(470, 520);
+        minSize = new Vector2(490, 520);
+        wantsMouseMove = true;
         if (_tabLayoutVersion == 0)
         {
             _tab = _tab == 3 ? 0 : _tab > 3 ? _tab - 1 : _tab;
@@ -77,6 +78,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         Undo.undoRedoPerformed += OnUndoRedo;
         SceneView.duringSceneGui += DuringSceneGUI;
         EditorApplication.update += UpdateGeneration;
+        EditorApplication.playModeStateChanged += OnPlayModeChanged;
         RestoreGeneratedResult();
         SyncDirty();
     }
@@ -91,6 +93,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         Undo.undoRedoPerformed -= OnUndoRedo;
         SceneView.duringSceneGui -= DuringSceneGUI;
         EditorApplication.update -= UpdateGeneration;
+        EditorApplication.playModeStateChanged -= OnPlayModeChanged;
         _roadPreview?.Dispose(); _roadPreview = null;
         _cachedJson = null; _root = null; _roadLines.Clear();
         SceneView.RepaintAll();
@@ -106,6 +109,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         _cachedJson = null; _root = null; _rawText = _rawBase = null;
         _hasValidation = false; SyncDirty(); Repaint(); SceneView.RepaintAll();
     }
+    private void OnPlayModeChanged(PlayModeStateChange _) => Repaint();
     private static int NextLevelNumber()
     {
         int highest = 0;
@@ -204,7 +208,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     public bool TrySave(bool saveAs)
     {
-        if (_canvasGesture != 0) { _status = "Kết thúc hoặc hủy thao tác kéo / tô trước khi lưu."; Repaint(); return false; }
+        if (_canvasGesture != 0 || _tableDragBox >= 0) { _status = "Kết thúc hoặc hủy thao tác kéo / tô trước khi lưu."; Repaint(); return false; }
         if (_canvasProposal != null) { _status = "Áp dụng hoặc hủy bản xem trước trước khi lưu."; Repaint(); return false; }
         if (_drawingRoad) { _status = "Hoàn tất hoặc hủy đường đang vẽ trước khi lưu."; Repaint(); return false; }
         try
@@ -278,8 +282,10 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Hoàn tác", EditorStyles.toolbarButton)) Undo.PerformUndo();
             if (GUILayout.Button("Làm lại", EditorStyles.toolbarButton)) Undo.PerformRedo();
+            GUILayout.Space(6);
+            DrawPlaytestToolbar();
         }
-        EditorGUILayout.LabelField(string.IsNullOrEmpty(_filePath) ? "Chưa có tên — lưu thành Level N.json" : _filePath, EditorStyles.miniLabel);
+        DrawLevelNavigator(Root());
         using (new EditorGUILayout.HorizontalScope())
         {
             _scenePreview = EditorGUILayout.ToggleLeft("Xem ở Scene", _scenePreview, GUILayout.Width(110));
@@ -291,8 +297,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         if (mode != _editorMode) { CancelCanvasGesture(); _editorMode = mode; GUIUtility.ExitGUI(); }
         if (_editorMode == 0)
         {
-            using (new EditorGUI.DisabledScope(HasRawChanges || _drawingRoad || _canvasProposal != null || _canvasGesture != 0 || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
-                if (GUILayout.Button("▶ Chơi thử bản nháp trong Game View")) PlayInGameView(Root());
             bool workspace = GUILayout.Toolbar(_workspace ? 0 : 1, new[] { "Bàn chỉnh sửa 2D", "Các tab nâng cao" }) == 0;
             if (workspace != _workspace) { CancelCanvasGesture(); _workspace = workspace; GUIUtility.ExitGUI(); }
             if (!_workspace) _tab = GUILayout.Toolbar(_tab, Tabs);
@@ -347,8 +351,105 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void PlayInGameView(JObject level)
     {
+        if (level == null) return;
         _status = LoopLevelPlaytest.Play(level, out string error) ? null : error;
         Repaint();
+    }
+
+    private void DrawPlaytestToolbar()
+    {
+        if (EditorApplication.isPlaying)
+        {
+            Color prev = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(1f, 0.55f, 0.55f);
+            if (GUILayout.Button(new GUIContent("■ Dừng", "Dừng chơi thử và quay lại chỉnh sửa"), EditorStyles.toolbarButton))
+                EditorApplication.isPlaying = false;
+            GUI.backgroundColor = prev;
+
+            bool canPlay = CanPlaytest();
+            using (new EditorGUI.DisabledScope(!canPlay))
+            {
+                if (GUILayout.Button(new GUIContent("↻ Chơi lại", "Tải lại bản nháp vào phiên chơi thử hiện tại"), EditorStyles.toolbarButton))
+                    PlayInGameView(GetPlaytestLevel());
+            }
+        }
+        else
+        {
+            bool canPlay = CanPlaytest();
+            using (new EditorGUI.DisabledScope(!canPlay))
+            {
+                Color prev = GUI.backgroundColor;
+                if (canPlay) GUI.backgroundColor = new Color(0.45f, 0.85f, 0.45f);
+                if (GUILayout.Button(new GUIContent("▶ Chơi thử", "Chơi thử bản nháp trong Game View"), EditorStyles.toolbarButton))
+                    PlayInGameView(GetPlaytestLevel());
+                GUI.backgroundColor = prev;
+            }
+        }
+    }
+
+    private bool CanPlaytest()
+    {
+        if (HasRawChanges || _drawingRoad || _canvasProposal != null || _canvasGesture != 0 ||
+            LoopLevelPlaytest.Busy || EditorApplication.isCompiling) return false;
+        if (_editorMode == 1 && _generationJob != null && !_generationJob.Done) return false;
+        return true;
+    }
+
+    private JObject GetPlaytestLevel()
+    {
+        if (_editorMode == 1 && _generationJob?.Result?.Json != null)
+            return _generationJob.Result.Json;
+        return Root();
+    }
+
+    private void DrawLevelNavigator(JObject root)
+    {
+        int currentLevel = A.Int(root, "level_number");
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+        {
+            using (new EditorGUI.DisabledScope(currentLevel <= 1))
+            {
+                if (GUILayout.Button("◄ Màn trước", EditorStyles.miniButtonLeft, GUILayout.Width(78)))
+                    NavigateToLevel(currentLevel - 1);
+            }
+            GUILayout.Label(new GUIContent("Màn " + currentLevel, "Màn chơi đang mở"), EditorStyles.boldLabel, GUILayout.Width(58));
+            if (GUILayout.Button("Màn sau ►", EditorStyles.miniButtonRight, GUILayout.Width(78)))
+                NavigateToLevel(currentLevel + 1);
+
+            GUILayout.Space(8);
+            if (GUILayout.Button(new GUIContent("+ Nhân bản sang Màn mới", "Sao chép màn hiện tại sang số màn cao nhất kế tiếp"), EditorStyles.miniButton, GUILayout.Width(155)))
+                DuplicateToNextLevel(root);
+
+            GUILayout.FlexibleSpace();
+            string displayPath = string.IsNullOrEmpty(_filePath) ? "Bản nháp chưa lưu" : Path.GetFileName(_filePath);
+            if (hasUnsavedChanges) displayPath += " *";
+            EditorGUILayout.LabelField(displayPath, EditorStyles.miniLabel, GUILayout.Width(190));
+        }
+    }
+
+    private void NavigateToLevel(int targetLevel)
+    {
+        string targetFile = Path.Combine(A.LevelFolder, "Level " + targetLevel + ".json");
+        if (File.Exists(targetFile))
+        {
+            if (ConfirmReplace()) TryOpen(targetFile);
+        }
+        else
+        {
+            _status = "Không tìm thấy file Level " + targetLevel + ".json.";
+        }
+    }
+
+    private void DuplicateToNextLevel(JObject root)
+    {
+        if (!ConfirmReplace()) return;
+        int next = NextLevelNumber();
+        JObject clone = (JObject)root.DeepClone();
+        clone["level_number"] = next;
+        clone["puzzle_id"] = next;
+        if (clone["editor_generator"] is JObject metadata) metadata["verified"] = false;
+        SetDocument(clone, null, null);
+        _status = "Đã nhân bản sang bản nháp Màn " + next + ". Bấm Lưu để lưu file.";
     }
     private void DrawLevel(JObject root, JObject layout)
     {
@@ -523,6 +624,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         {
             if (GUILayout.Button("Làm mượt đường")) A.SmoothRoad(path, _roadSmoothing);
             if (GUILayout.Button("Làm thẳng đường")) A.SmoothRoad(path, 0);
+            if (GUILayout.Button("Đảo chiều")) A.ReverseRoad(path, _autoSmoothPoints ? _roadSmoothing : -1f);
+            if (GUILayout.Button("Căn giữa")) A.CenterRoad(path, Vector3.zero);
         }
         if (GUILayout.Button("Xóa đường đang chọn")) { paths.RemoveAt(_path); _point = -1; return; }
         JArray points = A.Array(path, "ControlPoints");
@@ -553,13 +656,19 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             if (_autoSmoothPoints) A.SmoothRoad(path, _roadSmoothing);
         }
         _showTangents = EditorGUILayout.Foldout(_showTangents, "Nâng cao: sửa tiếp tuyến", true);
-        if (_showTangents) { VectorField(point, "InTangent"); VectorField(point, "OutTangent"); }
+        if (_showTangents)
+            foreach (string field in new[] { "InTangent", "OutTangent" })
+            {
+                Vector3 before = A.Vector(point, field); VectorField(point, field);
+                if (before != A.Vector(point, field)) A.SetTangent(points, _point, field, A.Vector(point, field));
+            }
         using (new EditorGUILayout.HorizontalScope())
         {
             if (_showTangents)
             {
-                if (GUILayout.Button("Tiếp tuyến thẳng")) point["InTangent"] = point["OutTangent"] = A.Vector(A.Vector(point, "Position"));
-                if (GUILayout.Button("Đối xứng tiếp tuyến ra → vào")) point["InTangent"] = A.Vector(A.Vector(point, "Position") * 2 - A.Vector(point, "OutTangent"));
+                if (GUILayout.Button("Tiếp tuyến thẳng"))
+                { A.SetTangent(points, _point, "InTangent", A.Vector(point, "Position")); A.SetTangent(points, _point, "OutTangent", A.Vector(point, "Position")); }
+                if (GUILayout.Button("Đối xứng tiếp tuyến ra → vào")) A.SetTangent(points, _point, "InTangent", A.Vector(point, "Position") * 2 - A.Vector(point, "OutTangent"));
             }
             bool seam = points.Count > 1 && (A.Vector((JObject)points[0], "Position") - A.Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
             int anchors = points.Count - (seam ? 1 : 0);
@@ -604,7 +713,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             _showRoadPresets = EditorGUILayout.Foldout(_showRoadPresets, "Hoặc tạo đường từ hình mẫu", true);
             if (_showRoadPresets)
             {
-                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] { "Chữ nhật bo góc", "Bầu dục / tròn" });
+                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] { "Chữ nhật bo góc", "Bầu dục / tròn", "Chữ U (5 điểm)", "Số 8 (8 điểm)" });
                 _roadCenter = EditorGUILayout.Vector3Field("Tâm", _roadCenter);
                 _roadWidth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều rộng (X)", _roadWidth));
                 _roadDepth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều sâu (Z)", _roadDepth));
@@ -612,7 +721,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 using (new EditorGUI.DisabledScope(_drawingRoad))
                     if (GUILayout.Button("Tạo đường theo hình mẫu"))
                     {
-                        paths.Add(_roadPreset == 0 ? A.RoundedRectangleRoad(_roadCenter, _roadWidth, _roadDepth, _cornerRadius) : A.OvalRoad(_roadCenter, _roadWidth, _roadDepth));
+                        JObject newRoad = _roadPreset == 0 ? A.RoundedRectangleRoad(_roadCenter, _roadWidth, _roadDepth, _cornerRadius) :
+                            _roadPreset == 1 ? A.OvalRoad(_roadCenter, _roadWidth, _roadDepth) :
+                            _roadPreset == 2 ? A.UShapeRoad(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing) :
+                            A.Figure8Road(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing);
+                        paths.Add(newRoad);
                         _path = paths.Count - 1; _point = 0; _scenePreview = true;
                     }
             }
@@ -651,7 +764,14 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         if (!CanFinishSketch) { _status = "Đặt thêm điểm trước khi hoàn tất."; return; }
         JObject path = A.RoadFromPositions(_sketchPoints, _sketchClosed, _sketchSmooth ? _roadSmoothing : 0);
         JObject root = Root(); JArray paths = A.Array(A.Layout(root), "Paths");
-        paths.Add(path); _path = paths.Count - 1; _point = 0;
+        if (_workspace && _canvasReplaceRoad && _path >= 0 && _path < paths.Count)
+        {
+            JObject replacement = (JObject)paths[_path].DeepClone();
+            replacement["IsCircle"] = path["IsCircle"].DeepClone(); replacement["ControlPoints"] = path["ControlPoints"].DeepClone();
+            paths[_path] = replacement;
+        }
+        else { paths.Add(path); _path = paths.Count - 1; }
+        _point = 0;
         Undo.IncrementCurrentGroup(); Commit(root, "Draw road"); Undo.IncrementCurrentGroup();
         _autoSmoothPoints = _sketchSmooth;
         CancelRoadSketch(); _status = "Đã tạo đường. Kéo các điểm để chỉnh hình dạng.";
@@ -1078,7 +1198,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                     Handles.DrawDottedLine(position, tangent, 4); Handles.Label(tangent, key);
                     EditorGUI.BeginChangeCheck();
                     Vector3 moved = Handles.FreeMoveHandle(tangent, HandleUtility.GetHandleSize(tangent) * .06f, Vector3.zero, Handles.CubeHandleCap);
-                    if (EditorGUI.EndChangeCheck()) point[key] = A.Vector(moved);
+                    if (EditorGUI.EndChangeCheck()) A.SetTangent(points, i, key, moved);
                 }
             }
         }
