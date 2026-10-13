@@ -16,7 +16,7 @@ public static class PuzzleMessagePackDecoder
 	{
 		var puzzle = new Puzzle
 		{
-			Version = Int(map, "v", Puzzle.Version7),
+			// Version = Int(map, "v", 7),
 			HardLevel = Int(map, "h"),
 			Size = Float(map, "s", 10f),
 			PathLength = Int(map, "l"),

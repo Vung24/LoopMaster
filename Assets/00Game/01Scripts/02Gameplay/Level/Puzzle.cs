@@ -4,7 +4,7 @@ using UnityEngine;
 public class Puzzle
 {
 	public const int LegacyVersion = 4;
-	public int Version;
+	// public int Version;
 	public int HardLevel;
 	public float Size;
 	public int PathLength;

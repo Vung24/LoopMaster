@@ -122,6 +122,14 @@ public static class LoopLevelBoardLayout
             }
         }
     }
+    public static void FitRoadOnly(JObject layout, LoopLevelGeneratorSettings settings)
+    {
+        JArray boxes = A.Array(layout, "Boxes");
+        if (boxes.Count == 0) throw new FormatException("Thêm hộp trước khi chỉnh đường bao.");
+        Bounds content = BoardBounds(layout);
+        layout["Paths"] = new JArray(FitRoad(boxes, content, settings.RoadShape, settings.RoadClearance));
+        Bounds whole = BoardBounds(layout, true); layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1;
+    }
     private static void FitAndBind(JObject layout, LoopLevelGeneratorSettings settings)
     {
         JArray boxes = A.Array(layout, "Boxes"); Bounds content = BoardBounds(layout);

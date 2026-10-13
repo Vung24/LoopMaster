@@ -82,6 +82,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void OnDisable()
     {
+        CancelCanvasGesture(); ClearWorkspaceProposal(); StopDraftSolver();
         CaptureGeneratedResult();
         CancelRoadSketch();
         StopGeneration();
@@ -100,6 +101,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void OnUndoRedo()
     {
+        CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver();
         CancelRoadSketch();
         _cachedJson = null; _root = null; _rawText = _rawBase = null;
         _hasValidation = false; SyncDirty(); Repaint(); SceneView.RepaintAll();
@@ -141,6 +143,10 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void Commit(JObject root, string action = "Sửa màn chơi")
     {
+        if (root.ToString(Formatting.Indented) == _document.Json) return;
+        JObject previousDocument = A.Parse(_document.Json);
+        if (A.Int(previousDocument, "level_number") == A.Int(root, "level_number") && A.Int(previousDocument, "puzzle_id") == A.Int(root, "puzzle_id"))
+            LoopLevelCommands.RemapBindings(previousDocument, root);
         if (root["editor_generator"] is JObject metadata && metadata.Value<bool?>("verified") == true)
         {
             JObject before = A.Parse(_document.Json);
@@ -155,6 +161,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void SetDocument(JObject root, string path, string diskText)
     {
+        CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver(); _canvasFramed = false;
         CancelRoadSketch();
         Undo.ClearUndo(_document);
         _document.Json = root.ToString(Formatting.Indented); _savedJson = _document.Json;
@@ -197,6 +204,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     public bool TrySave(bool saveAs)
     {
+        if (_canvasGesture != 0) { _status = "Kết thúc hoặc hủy thao tác kéo / tô trước khi lưu."; Repaint(); return false; }
+        if (_canvasProposal != null) { _status = "Áp dụng hoặc hủy bản xem trước trước khi lưu."; Repaint(); return false; }
         if (_drawingRoad) { _status = "Hoàn tất hoặc hủy đường đang vẽ trước khi lưu."; Repaint(); return false; }
         try
         {
@@ -278,12 +287,21 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             _showBindings = EditorGUILayout.ToggleLeft("Liên kết hộp", _showBindings, GUILayout.Width(105));
             if (GUILayout.Button("Nhìn từ trên", GUILayout.Width(95))) Frame();
         }
-        _editorMode = GUILayout.Toolbar(_editorMode, new[] { "Chỉnh thủ công", "Tạo tự động", "Mẫu màn chơi" });
+        int mode = GUILayout.Toolbar(_editorMode, new[] { "Chỉnh thủ công", "Tạo tự động", "Mẫu màn chơi" });
+        if (mode != _editorMode) { CancelCanvasGesture(); _editorMode = mode; GUIUtility.ExitGUI(); }
         if (_editorMode == 0)
         {
-            using (new EditorGUI.DisabledScope(HasRawChanges || _drawingRoad || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
+            using (new EditorGUI.DisabledScope(HasRawChanges || _drawingRoad || _canvasProposal != null || _canvasGesture != 0 || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
                 if (GUILayout.Button("▶ Chơi thử bản nháp trong Game View")) PlayInGameView(Root());
-            _tab = GUILayout.Toolbar(_tab, Tabs);
+            bool workspace = GUILayout.Toolbar(_workspace ? 0 : 1, new[] { "Bàn chỉnh sửa 2D", "Các tab nâng cao" }) == 0;
+            if (workspace != _workspace) { CancelCanvasGesture(); _workspace = workspace; GUIUtility.ExitGUI(); }
+            if (!_workspace) _tab = GUILayout.Toolbar(_tab, Tabs);
+        }
+        if (_editorMode == 0 && _workspace)
+        {
+            if (HasRawChanges) EditorGUILayout.HelpBox("Áp dụng hoặc đặt lại thay đổi trong tab JSON trước khi chỉnh trên bàn.", MessageType.Warning);
+            else DrawWorkspace();
+            SyncDirty(); return;
         }
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
         try
@@ -336,7 +354,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     {
         using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || HasRawChanges || _drawingRoad))
             if (GUILayout.Button("Tạo màn chơi mới từ bản nháp này"))
-            { BeginTemplateDraft(A.FromTemplate(root, NextLevelNumber())); GUIUtility.ExitGUI(); }
+            { BeginTemplateDraft(A.FromTemplate(root, NextLevelNumber(), true)); GUIUtility.ExitGUI(); }
         Header("Thiết lập màn chơi");
         Integer(root, "level_number", "Số màn chơi"); Integer(root, "puzzle_id", "ID màn chơi");
         Integer(layout, "Version", "Phiên bản dữ liệu", Puzzle.LegacyVersion);
@@ -356,7 +374,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         if (GUILayout.Button("Liên kết mọi hộp với ô đường gần nhất"))
             foreach (JObject box in A.Array(layout, "Boxes")) box["PathIndexV2"] = A.NearestSlot(box, _slots);
         EditorGUILayout.Space(); Header("Chơi thử");
-        EditorGUILayout.HelpBox("Chơi thử trong Game View dùng bản nháp chưa lưu. Dừng Play Mode để quay lại chỉnh sửa. Thắng màn vẫn ghi tiến trình game; chọn số màn phù hợp để thử.", MessageType.None);
+        EditorGUILayout.HelpBox("Chơi thử dùng bản nháp chưa lưu và bộ lưu tạm riêng. Dừng Play Mode để quay lại chỉnh sửa.", MessageType.None);
     }
     private void DrawBoxes(JObject root, JObject layout)
     {
@@ -368,8 +386,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             if (GUILayout.Button("Thêm hộp")) { boxes.Add(A.NewBox(Vector3.zero)); _box = boxes.Count - 1; }
             using (new EditorGUI.DisabledScope(_box < 0 || _box >= boxes.Count))
             {
-                if (GUILayout.Button("Nhân bản")) { var copy = (JObject)boxes[_box].DeepClone(); copy["Position"] = A.Vector(A.Vector(copy, "Position") + Vector3.right * 2); copy["PathIndexV2"] = 0; boxes.Add(copy); _box = boxes.Count - 1; }
-                if (GUILayout.Button("Xóa")) { A.RemoveBox(root, _box); _box = Math.Min(_box, boxes.Count - 1); }
+                if (GUILayout.Button("Nhân bản")) _box = LoopLevelCommands.Duplicate(root, new[] { _box }, Vector3.right * 2, false)[0];
+                if (GUILayout.Button("Xóa")) { LoopLevelCommands.DeleteBoxes(root, new[] { _box }); _box = Math.Min(_box, boxes.Count - 1); }
             }
         }
         if (_box < 0 || _box >= boxes.Count) return;
@@ -387,7 +405,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             VectorField(box, "Position"); VectorField(box, "Rotation");
             _autoBind = EditorGUILayout.Toggle("Tự liên kết khi di chuyển hộp", _autoBind);
             _snap = Mathf.Max(0, EditorGUILayout.FloatField("Bám lưới trong Scene", _snap));
-            if (_autoBind && (previous != A.Vector(box, "Position") || previousRotation != A.Vector(box, "Rotation"))) box["PathIndexV2"] = A.NearestSlot(box, _slots);
+            if (_autoBind && A.Int(box, "PathIndexV2") > 0 && (previous != A.Vector(box, "Position") || previousRotation != A.Vector(box, "Rotation"))) box["PathIndexV2"] = A.NearestSlot(box, _slots);
             Integer(box, "PathIndexV2", "Liên kết ô đường (từ 1)");
             EditorGUILayout.HelpBox("Giá trị 0 tự tìm ô gần nhất khi chạy game. Di chuyển đường không đổi liên kết đã gán; dùng Liên kết mọi hộp khi cần.", MessageType.None);
             Integer(box, "PathIndex", "Chỉ số đường kiểu cũ");
@@ -746,9 +764,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             JObject group = (JObject)groups[i];
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                Integer(group, "Id", "ID nhóm"); Integer(group, "LockedByColor", "Màu khóa");
+                int id = EditorGUILayout.DelayedIntField("ID nhóm", A.Int(group, "Id"));
+                if (id != A.Int(group, "Id")) LoopLevelCommands.RenameGroup(layout, group, id);
+                Integer(group, "LockedByColor", "Màu khóa");
                 DrawBoxMembership(layout, group);
-                if (GUILayout.Button("Xóa nhóm")) { groups.RemoveAt(i); break; }
+                if (GUILayout.Button("Xóa nhóm")) { LoopLevelCommands.DeleteGroup(layout, A.Int(group, "Id")); break; }
             }
         }
         if (GUILayout.Button("Thêm nhóm")) { groups.Add(new JObject { ["Id"] = groups.OfType<JObject>().Select(g => A.Int(g, "Id")).DefaultIfEmpty().Max() + 1, ["BoxIndexes"] = new JArray(_box >= 0 ? _box : 0), ["LockedByColor"] = 0 }); layout["Groups"] = groups; }
@@ -835,6 +855,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             if (_editorMode == 1) { DrawGeneratedScene(); return; }
             if (_editorMode == 2) return;
             JObject root = Root(), layout = A.Layout(root);
+            if (_workspace)
+            {
+                using (new Handles.DrawingScope(Matrix4x4.identity)) { DrawRoadPreview(); DrawBoxPreview(layout, false); }
+                return;
+            }
             Event e = Event.current;
             if (_drawingRoad && _tab == 2)
             {
@@ -898,7 +923,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         {
             JObject box = A.NewBox(position); box["BoxType"] = _placementType;
             box["Rotation"] = A.Vector(new Vector3(0, _placementYaw, 0));
-            if (_autoBind) box["PathIndexV2"] = A.NearestSlot(box, _slots);
+            box["PathIndexV2"] = 0;
             JArray boxes = A.Array(A.Layout(root), "Boxes"); boxes.Add(box); A.Layout(root)["Boxes"] = boxes;
             _box = boxes.Count - 1; e.Use(); Repaint();
         }
@@ -1024,7 +1049,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             Vector3 next = Handles.PositionHandle(previous, Tools.pivotRotation == PivotRotation.Local ? rotation : Quaternion.identity);
             if (EditorGUI.EndChangeCheck()) obj["Position"] = A.Vector(Snap(next));
         }
-        if (_autoBind && (previous != A.Vector(obj, "Position") || angles != A.Vector(obj, "Rotation"))) obj["PathIndexV2"] = A.NearestSlot(obj, _slots);
+        if (_autoBind && A.Int(obj, "PathIndexV2") > 0 && (previous != A.Vector(obj, "Position") || angles != A.Vector(obj, "Rotation"))) obj["PathIndexV2"] = A.NearestSlot(obj, _slots);
     }
     private void DrawPointHandles(JObject layout)
     {

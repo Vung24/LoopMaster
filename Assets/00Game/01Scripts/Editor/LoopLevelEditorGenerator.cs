@@ -27,6 +27,8 @@ public sealed partial class LoopLevelEditorWindow
         Header("Tạo tự động — chọn thiết lập, tạo và dùng kết quả");
         using (new EditorGUI.DisabledScope(running))
         {
+            if (GUILayout.Button("Thiết lập theo bộ 300 level: hộp thường, không Single / Long"))
+            { s.ApplyDifficulty(1); s.SingleBoxes = s.LongBoxes = 0; }
             int difficulty = EditorGUILayout.Popup("Thiết lập độ khó", s.Difficulty, new[] { "Dễ", "Thường", "Khó", "Rất khó" });
             if (difficulty != s.Difficulty) s.ApplyDifficulty(difficulty);
             using (new EditorGUILayout.HorizontalScope())
@@ -100,7 +102,7 @@ public sealed partial class LoopLevelEditorWindow
             if (GUILayout.Button(candidate.Verified ? "Dùng màn vừa tạo (đã tìm thấy lời giải)" : "Dùng màn vừa tạo (chưa kiểm tra lời giải)")) ApplyGeneratedLevel();
         using (new EditorGUI.DisabledScope(running || changedSettings || _generationJob.Result == null || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
             if (GUILayout.Button("▶ Chơi thử bản vừa tạo trong Game View")) PlayInGameView(_generationJob.Result.Json);
-        EditorGUILayout.HelpBox("Chơi trực tiếp bản xem trước mà chưa cần áp dụng hay lưu. Thắng màn vẫn ghi tiến trình; chọn số màn phù hợp để thử.", MessageType.None);
+        EditorGUILayout.HelpBox("Chơi trực tiếp bản xem trước mà chưa cần áp dụng hay lưu; mọi dữ liệu lưu trong phiên thử được giữ tạm.", MessageType.None);
     }
     private void StartGeneration()
     {
@@ -172,6 +174,7 @@ public sealed partial class LoopLevelEditorWindow
     {
         if (_generationJob?.Result == null || GenerationSettingsChanged || HasRawChanges || EditorApplication.isPlaying) return;
         CancelRoadSketch();
+        CancelCanvasGesture(); ClearCanvasSelection(); StopDraftSolver(); _canvasFramed = false; _workspace = true;
         Undo.IncrementCurrentGroup(); Undo.RecordObject(this, "Dùng màn vừa tạo");
         Commit((JObject)_generationJob.Result.Json.DeepClone(), "Dùng màn vừa tạo");
         _filePath = _diskText = null; _rawText = _rawBase = null;
