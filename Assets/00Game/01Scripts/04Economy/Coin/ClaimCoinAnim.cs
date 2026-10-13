@@ -43,10 +43,10 @@ namespace Snui
 			var anim = host.AddComponent<ClaimCoinAnim>();
 			anim.SetCoinHud(Snui_CoinHud.Current);
 
-			Vector2 targetPos = Snui_CoinHud.Current != null
-				? (Vector2)Snui_CoinHud.Current.GetIconPos()
+			Vector3 targetPos = Snui_CoinHud.Current != null
+				? Snui_CoinHud.Current.GetIconPos()
 				: new Vector2(Screen.width * 0.15f, Screen.height * 0.92f);
-			anim.CoinsFly(count, host.transform, startPos, targetPos, () =>
+			anim.CoinsFly(count, host.transform, new Vector3(startPos.x, startPos.y, targetPos.z), targetPos, () =>
 			{
 				callback?.Invoke();
 				if (host != null) Destroy(host);
@@ -59,14 +59,14 @@ namespace Snui
 			_coinHud = coinHud;
 		}
 
-		public void CoinsFly(int count, Transform parent, Vector2 startPos, Vector2 targetPos, UnityAction callback)
+		public void CoinsFly(int count, Transform parent, Vector3 startPos, Vector3 targetPos, UnityAction callback)
 		{
 			_parent = parent;
 			_onAnimationCompleted = callback;
 			CoinsFlyAsync(count, parent, startPos, targetPos).Forget();
 		}
 
-		private async UniTaskVoid CoinsFlyAsync(int count, Transform parent, Vector2 startPos, Vector2 targetPos)
+		private async UniTaskVoid CoinsFlyAsync(int count, Transform parent, Vector3 startPos, Vector3 targetPos)
 		{
 			int showCount = Mathf.Clamp(count, 1, 8);
 			GameObject coinPrefab = PrefabLibrary.Current != null ? PrefabLibrary.Current.FlyCoinPrefab : null;
@@ -98,7 +98,7 @@ namespace Snui
 			_pendingFlights.Clear();
 		}
 
-		public void CoinFly(int index, GameObject prefab, Sprite[] sprites, int showCount, Vector2 startPos, Vector3 targetPos)
+		public void CoinFly(int index, GameObject prefab, Sprite[] sprites, int showCount, Vector3 startPos, Vector3 targetPos)
 		{
 			if (prefab == null || _parent == null) return;
 			GameObject coin = Instantiate(prefab, _parent, false);
@@ -158,11 +158,22 @@ namespace Snui
 		public IEnumerator Play(int count, Transform parent, Vector3 startWorld, Snui_CoinHud hud, GameObject prefab = null, int sortingOrder = 1101)
 		{
 			Cancel();
+			if (count < 1 || parent == null) yield break;
+			// The caller's canvas can sit below the popup. Give the entire flight
+			// its own layer, rather than spawning coins behind the reward receipt.
+			_flightRoot = new GameObject("RewardCoinFlightRoot", typeof(RectTransform), typeof(Canvas));
+			_flightRoot.transform.SetParent(parent, false);
+			Canvas flightCanvas = _flightRoot.GetComponent<Canvas>();
+			Canvas parentCanvas = parent.GetComponentInParent<Canvas>();
+			flightCanvas.overrideSorting = true;
+			flightCanvas.sortingLayerID = parentCanvas != null ? parentCanvas.sortingLayerID : 0;
+			flightCanvas.sortingOrder = sortingOrder;
 			_coinHud = hud;
 			bool done = false;
-			Vector2 targetPos = hud != null ? (Vector2)hud.GetIconPos() : (Vector2)startWorld;
-			CoinsFly(count, parent, startWorld, targetPos, () => done = true);
+			Vector3 targetPos = hud != null ? hud.GetIconPos() : startWorld;
+			CoinsFly(count, _flightRoot.transform, startWorld, targetPos, () => done = true);
 			while (!done) yield return null;
+			Cancel();
 		}
 
 		public void Cancel()

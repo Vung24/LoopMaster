@@ -23,6 +23,7 @@ namespace Snui
         [SerializeField] private Image _mask;
         private SkeletonGraphic _chest;
         private ClaimCoinAnim _coins;
+        private UniTask _itemFlights;
         private int _milestone;
         private bool _saved, _closing, _showing, _revealed;
         private Coroutine _animation;
@@ -300,21 +301,47 @@ namespace Snui
                 if(_levelBoxPresentation) PrepareLevelBoxPresentation();
                 Reveal(); return;
             }
-            if(_showing) { Reveal(); return; }
+            if(_showing) { if(!_revealed) Reveal(); return; }
             _closing=true; _animation=StartCoroutine(CollectAndClose());
         }
         private IEnumerator CollectAndClose()
         {
+            if(_fullBtn!=null) _fullBtn.interactable=false;
             int coins=0; Vector3 start=transform.position;
-            foreach(var cell in _cells) if(cell!=null) { cell.PlayCollectSound(); if(cell.RewardItem.Type==RewardType.Coin) { coins+=cell.RewardItem.Count; start=cell.transform.position; } }
-            if(coins>0 && HudContainer.Current?.CoinHud!=null)
+            foreach(var cell in _cells)
             {
-                HudContainer.TrySetTop(1301);
-                _coins=gameObject.AddComponent<ClaimCoinAnim>();
-                if(_mask!=null) _mask.color=new Color(0,0,0,.15f);
-                yield return _coins.Play(coins,transform.parent,start,HudContainer.Current.CoinHud,null,1302);
+                if(cell==null || cell.RewardItem?.Type!=RewardType.Coin) continue;
+                coins+=cell.RewardItem.Count; start=cell.transform.position;
+                cell.SetBackLight(false);
+                _presentationTweens.Add(cell.transform.DOScale(Vector3.zero,.2f).SetUpdate(true)
+                    .OnComplete(()=> { if(cell!=null) cell.gameObject.SetActive(false); }));
             }
+            _itemFlights=new RewardItemDismissAnimator().FlyToTarget(_cells,OpenCancellationToken);
+            // Native common claim fades the title, prompt and dim while rewards travel.
+            yield return new WaitForSecondsRealtime(.1f);
+            if(_titleNode==null) _titleNode=HierarchyReferenceCache.Child(_safeArea,"Title");
+            FadeClaimNode(_titleNode);
+            if(_desc!=null) FadeClaimNode(_desc.transform);
+            if(_mask!=null) _presentationTweens.Add(_mask.DOFade(0f,.2f).SetUpdate(true));
+            var hud=HudContainer.Current?.CoinHud ?? Snui_CoinHud.Current;
+            if(coins>0 && hud!=null && hud.isActiveAndEnabled)
+            {
+                int order=GetComponent<Canvas>().sortingOrder;
+                HudContainer.TrySetTop(order+1);
+                hud.SetTop(order+1);
+                _coins=gameObject.AddComponent<ClaimCoinAnim>();
+                yield return _coins.Play(coins,transform,start,hud,null,order+2);
+            }
+            yield return _itemFlights.ToCoroutine();
+            yield return new WaitForSecondsRealtime(.2f);
             ForceClose();
+        }
+        private void FadeClaimNode(Transform node)
+        {
+            if(node==null) return;
+            var group=node.GetComponent<CanvasGroup>();
+            if(group==null) group=node.gameObject.AddComponent<CanvasGroup>();
+            _presentationTweens.Add(group.DOFade(0f,.2f).SetUpdate(true));
         }
         private void PlaySound(AudioClip clip) { if(clip!=null && AudioManager.Current!=null) AudioManager.Current.PlayOneShot(clip,gameObject); }
         public bool OnAndroidBackButtonPressed() => TryClose();
@@ -327,6 +354,7 @@ namespace Snui
             if(_chest!=null && _chest.AnimationState!=null) _chest.AnimationState.Event-=OnChestEvent;
             InventoryManager.Current?.ReplayPendingRewardJournal();
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.TryRevertToOriginLayer();
+            Snui_CoinHud.Current?.RevertToOriginLayer(); Snui_HeartHud.TrySetAutoUpdate(true);
             base.OnDisable();
         }
         protected override void OnDestroy() { if(_fullBtn!=null) _fullBtn.onClick.RemoveListener(OnClickReceive); base.OnDestroy(); }
