@@ -17,7 +17,6 @@ public class HomeController : MonoBehaviour
 	public HomePage HomePage;
 	private Canvas _canvas;
 	private Button _settingButton;
-	private Button _heartButton;
 	private MoreHeartDialogContent _heartDialog;
 	private DailyCheckInHomeUI _dailyCheckIn;
 	public bool HasDailyCheckInOpen => _dailyCheckIn != null && _dailyCheckIn.IsDialogOpen;
@@ -127,8 +126,8 @@ public class HomeController : MonoBehaviour
 		if (hud != null)
 		{
 			hud.CoinHud?.EnableClick();
-			_heartButton = hud.HeartHud == null ? null : hud.HeartHud.GetComponent<Button>();
-			if (_heartButton != null) { _heartButton.interactable = true; _heartButton.onClick.AddListener(OpenHeartDialog); }
+			var heartButton = hud.HeartHud == null ? null : hud.HeartHud.GetComponent<Button>();
+			if (heartButton != null) heartButton.enabled = false;
 		}
 	}
 	private void InitializePages()
@@ -297,7 +296,6 @@ public class HomeController : MonoBehaviour
 		OnDisable();
 		if (_navigationBar != null) _navigationBar.OnClickCell.RemoveListener(OnClickNavigationCell);
 		if (_settingButton != null) _settingButton.onClick.RemoveListener(OpenSettings);
-		if (_heartButton != null) _heartButton.onClick.RemoveListener(OpenHeartDialog);
 		if (Current == this) Current = null;
 	}
 }
