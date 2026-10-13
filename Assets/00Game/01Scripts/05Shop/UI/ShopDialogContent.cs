@@ -19,6 +19,7 @@ namespace ShopUI
 		public bool UploadShowingLog = true;
 		[SerializeField] private ScrollRect _scrollList;
 		[SerializeField] private Image _ribbonImage;
+		[SerializeField] private PassBundleItem _passBundleItemPrefab;
 		private List<ShopItemBase> _items = new List<ShopItemBase>();
 		private IShopDelegate _delegate;
 		private bool _initializing;
@@ -243,10 +244,16 @@ namespace ShopUI
 		private async UniTask AddItems(string type, int index, CancellationToken token)
 		{
 			token.ThrowIfCancellationRequested();
+			bool isPass = ShopProductCatalog.CanonicalId(type) == ShopProductCatalog.GoldenPass;
+			if (isPass && _passBundleItemPrefab == null)
+			{
+				Debug.LogError("Shop Battle Pass prefab is not assigned.", this);
+				return;
+			}
 			string resPath = _delegate != null ? _delegate.GetProductResPath(type) : type;
-			GameObject prefab = null;
+			GameObject prefab = isPass ? _passBundleItemPrefab.gameObject : null;
 
-			if (PrefabLibrary.Current != null && !string.IsNullOrEmpty(resPath))
+			if (prefab == null && PrefabLibrary.Current != null && !string.IsNullOrEmpty(resPath))
 			{
 				prefab = PrefabLibrary.Current.Resolve(resPath);
 			}
