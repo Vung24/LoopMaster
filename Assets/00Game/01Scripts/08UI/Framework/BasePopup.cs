@@ -262,7 +262,6 @@ namespace Snui
         {
             OpenPopups.Remove(this);
             base.OnDisable();
-            // Normal close notifies after SetActive returns, so Closed can reopen safely.
             if (_deactivatingForClose) return;
             _insideDisable = true;
             try { NotifyClosed(); }

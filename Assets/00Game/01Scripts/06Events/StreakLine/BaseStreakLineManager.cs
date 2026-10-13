@@ -88,6 +88,17 @@ namespace Snui.StreakLine
 			return GetClaimableChestCount() > 0 && !IsExpired;
 		}
 
+		public bool ShouldShowRewardMilestonePopup()
+		{
+			if (!IsOngoing || IsExpired || GetTempViewLevel() <= 0) return false;
+			long currentLevel = (long)GetCurrLevel() + GetTempLevel();
+			long previousLevel = Math.Max(0L, currentLevel - GetTempViewLevel());
+			foreach (var chest in GetChests())
+				if (chest != null && chest.Level > previousLevel && chest.Level <= currentLevel &&
+					!IsChestClaimed(chest.Level)) return true;
+			return false;
+		}
+
 		public bool CanClaimChest(int level)
 		{
 			if (_data == null || !IsOngoing || IsExpired || GetChest(level) == null) return false;

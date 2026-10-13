@@ -314,16 +314,12 @@ public class SpecialStreakProgress : MonoBehaviour
     public bool HasNonSkippableAnimation()
     {
         var manager = _manager ?? SpecialStreakManager.Ensure();
-        if (HasDialogOpen || manager.ShouldShowTutorial() || manager.ShouldPopDialog())
+        if (HasDialogOpen)
         {
             return true;
         }
 
-        var curr = manager.GetCurrRewardInfo();
-        if (curr == null) return false;
-
-        int mult = manager.GetMultiplier(manager.MultiplierIndex);
-        return curr.Goal <= manager.CurrCount + mult * manager.TempCount;
+        return manager.HasPendingRewardPopup || manager.WillPendingCollectionClaimReward();
     }
 
     public void OnSkipAnimEvent()
@@ -346,7 +342,7 @@ public class SpecialStreakProgress : MonoBehaviour
         CancelAnimation();
     }
 
-    public async UniTask PlayAnims(bool showTutorial = true)
+    public async UniTask PlayAnims(bool showTutorial = false)
     {
         if (IsAnimating || !isActiveAndEnabled) return;
         var manager = _manager ?? SpecialStreakManager.Ensure();
@@ -390,7 +386,7 @@ public class SpecialStreakProgress : MonoBehaviour
             if (ShouldStopAnimations()) { IsAnimating = false; return; }
         }
 
-        if (showTutorial)
+        if (showTutorial && manager.HasPendingRewardPopup)
         {
             await CheckTutorial();
             if (ShouldStopAnimations()) { IsAnimating = false; return; }
@@ -589,23 +585,24 @@ public class SpecialStreakProgress : MonoBehaviour
     {
         if (IsAnimating || !isActiveAndEnabled) return false;
         var manager = _manager ?? SpecialStreakManager.Ensure();
-        if (!manager.ShouldSettleCollectionResult()) return true;
+        if (!manager.ShouldSettleCollectionResult() && !manager.HasPendingRewardPopup) return true;
         if (parent == null) return false;
         RewardDialog dialog = null;
         try
         {
-            int claimedBefore = manager.ClaimedIndex;
             await PlayAnims(false);
             if (this == null || manager.ShouldSettleCollectionResult()) return false;
-            if (manager.ClaimedIndex > claimedBefore)
+            if (manager.HasPendingRewardPopup)
             {
+                int claimedThrough = manager.ClaimedIndex;
                 var rewards = new List<RewardItem>();
-                for (int stage = claimedBefore; stage < manager.ClaimedIndex; stage++)
+                for (int stage = manager.RewardPopupClaimedIndex; stage < claimedThrough; stage++)
                     rewards.AddRange(manager.GetRewardInfo(stage).Items());
                 dialog = await RewardDialog.ShowSpecialStreakRewards(rewards, parent);
-                if (dialog != null)
-                    await UniTask.WaitUntil(() => dialog == null || !dialog.isActiveAndEnabled,
-                        cancellationToken: this.GetCancellationTokenOnDestroy());
+                if (dialog == null) return false;
+                await UniTask.WaitUntil(() => dialog == null || !dialog.isActiveAndEnabled,
+                    cancellationToken: this.GetCancellationTokenOnDestroy());
+                manager.SetRewardPopupShown(claimedThrough);
             }
             return true;
         }

@@ -33,6 +33,7 @@ namespace Snui
 		private Vector2 _beginDragPos;
 		private Coroutine _preventClickRoutine;
 		private bool _pressed;
+		private bool _isNavigationCell;
 
 		public Button Button
 		{
@@ -55,6 +56,7 @@ namespace Snui
 		private void Awake()
 		{
 			_button = GetComponent<Button>();
+			_isNavigationCell = GetComponent<NavigationCell>() != null;
 			_canvasGroup = GetComponent<CanvasGroup>();
 			_content = transform.childCount > 0 ? transform.GetChild(0) : transform;
 
@@ -112,6 +114,12 @@ namespace Snui
 
 		private void PlayVibration()
 		{
+			if (!isActiveAndEnabled || !EnableVibration) return;
+			if (_isNavigationCell)
+			{
+				GameVibrationHelper.PlayNavigationTap();
+				return;
+			}
 			#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
 			if (EnableVibration && GameVibrationHelper.Enabled && Application.isMobilePlatform)
 				Handheld.Vibrate();
