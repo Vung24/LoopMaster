@@ -359,22 +359,183 @@ public static class LoopLevelAuthoring
         return RoadFromPositions(list, false, smoothing);
     }
 
+    public static JObject HourglassRoad(Vector3 center, float width, float depth, float waist = 1.8f, float smoothing = 0.6f)
+    {
+        CheckRoadSize(width, depth);
+        float hx = width * 0.5f, hz = depth * 0.5f;
+        float hw = waist * 0.5f;
+        var list = new[]
+        {
+            center + new Vector3(-hw, 0.2f, 0),
+            center + new Vector3(-hx, 0.2f, hz * 0.5f),
+            center + new Vector3(0, 0.2f, hz),
+            center + new Vector3(hx, 0.2f, hz * 0.5f),
+            center + new Vector3(hw, 0.2f, 0),
+            center + new Vector3(hx, 0.2f, -hz * 0.5f),
+            center + new Vector3(0, 0.2f, -hz),
+            center + new Vector3(-hx, 0.2f, -hz * 0.5f)
+        };
+        return RoadFromPositions(list, true, smoothing);
+    }
+
+    public static JObject Figure8OverpassRoad(Vector3 center, float width, float depth, float overpassHeight = 1.8f, float smoothing = 0.6f)
+    {
+        CheckRoadSize(width, depth);
+        float hx = width * 0.5f, hz = depth * 0.5f;
+        float ground = center.y + 0.2f;
+        float peak = ground + overpassHeight;
+        float ramp = ground + overpassHeight * 0.5f;
+        var list = new[]
+        {
+            center + new Vector3(0, ground, 0),
+            center + new Vector3(-hx, ground, hz * 0.5f),
+            center + new Vector3(0, ground, hz),
+            center + new Vector3(hx, ramp, hz * 0.5f),
+            center + new Vector3(0, peak, 0),
+            center + new Vector3(-hx, ramp, -hz * 0.5f),
+            center + new Vector3(0, ground, -hz),
+            center + new Vector3(hx, ground, -hz * 0.5f)
+        };
+        return RoadFromPositions(list, true, smoothing);
+    }
+
     public static JObject Figure8Road(Vector3 center, float width, float depth, float smoothing = 0.6f)
     {
         CheckRoadSize(width, depth);
         float hx = width * 0.5f, hz = depth * 0.5f;
         var list = new[]
         {
-            center + new Vector3(0, 0, 0),
-            center + new Vector3(-hx, 0, hz * 0.5f),
-            center + new Vector3(0, 0, hz),
-            center + new Vector3(hx, 0, hz * 0.5f),
-            center + new Vector3(0, 0, 0),
-            center + new Vector3(-hx, 0, -hz * 0.5f),
-            center + new Vector3(0, 0, -hz),
-            center + new Vector3(hx, 0, -hz * 0.5f)
+            center + new Vector3(0, 0.2f, 0),
+            center + new Vector3(-hx, 0.2f, hz * 0.5f),
+            center + new Vector3(0, 0.2f, hz),
+            center + new Vector3(hx, 0.2f, hz * 0.5f),
+            center + new Vector3(0, 0.2f, 0),
+            center + new Vector3(-hx, 0.2f, -hz * 0.5f),
+            center + new Vector3(0, 0.2f, -hz),
+            center + new Vector3(hx, 0.2f, -hz * 0.5f)
         };
         return RoadFromPositions(list, true, smoothing);
+    }
+
+    public static bool SegmentsIntersect2D(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, out Vector2 hit)
+    {
+        hit = Vector2.zero;
+        float d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+        if (Mathf.Abs(d) < 0.00001f) return false;
+        float u = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+        float v = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+        if (u > 0.05f && u < 0.95f && v > 0.05f && v < 0.95f)
+        {
+            hit = p1 + u * (p2 - p1);
+            return true;
+        }
+        return false;
+    }
+
+    public static List<Vector3> FindSelfIntersections(Vector3[] sampled, float yThreshold = 0.6f)
+    {
+        var result = new List<Vector3>();
+        if (sampled == null || sampled.Length < 10) return result;
+        int count = sampled.Length;
+        for (int i = 0; i < count - 1; i += 2)
+        {
+            Vector2 p1 = new Vector2(sampled[i].x, sampled[i].z);
+            Vector2 p2 = new Vector2(sampled[i + 1].x, sampled[i + 1].z);
+            for (int j = i + 4; j < count - 1; j += 2)
+            {
+                if (i == 0 && j >= count - 4) continue;
+                Vector2 p3 = new Vector2(sampled[j].x, sampled[j].z);
+                Vector2 p4 = new Vector2(sampled[j + 1].x, sampled[j + 1].z);
+                if (SegmentsIntersect2D(p1, p2, p3, p4, out Vector2 hit2D))
+                {
+                    float y1 = Mathf.Lerp(sampled[i].y, sampled[i + 1].y, 0.5f);
+                    float y2 = Mathf.Lerp(sampled[j].y, sampled[j + 1].y, 0.5f);
+                    if (Mathf.Abs(y1 - y2) < yThreshold)
+                    {
+                        var pt = new Vector3(hit2D.x, (y1 + y2) * 0.5f, hit2D.y);
+                        if (!result.Any(r => (new Vector2(r.x, r.z) - hit2D).sqrMagnitude < 0.5f))
+                            result.Add(pt);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public static void Make3DOverpass(JObject path, float overpassHeight = 1.8f)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count < 4) return;
+        Vector3[] sampled = LoopLevelBoardLayout.SampleRoad(path);
+        List<Vector3> hits = FindSelfIntersections(sampled);
+        if (hits.Count == 0) return;
+        Vector3 hit = hits[0];
+        
+        int bestIdx = -1; float bestDist = float.PositiveInfinity;
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        int count = points.Count - (repeated ? 1 : 0);
+        int half = count / 2;
+        for (int i = half; i < count; i++)
+        {
+            Vector3 pos = Vector((JObject)points[i], "Position");
+            float d = (new Vector2(pos.x, pos.z) - new Vector2(hit.x, hit.z)).sqrMagnitude;
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
+        }
+        if (bestIdx < 0) return;
+
+        var peakPt = (JObject)points[bestIdx];
+        Vector3 peakPos = Vector(peakPt, "Position");
+        float baseY = peakPos.y;
+        peakPos.y = baseY + overpassHeight;
+        MovePoint(points, bestIdx, peakPos);
+
+        int prevIdx = (bestIdx - 1 + count) % count;
+        int nextIdx = (bestIdx + 1) % count;
+        var prevPt = (JObject)points[prevIdx];
+        var nextPt = (JObject)points[nextIdx];
+        Vector3 prevPos = Vector(prevPt, "Position");
+        Vector3 nextPos = Vector(nextPt, "Position");
+        prevPos.y = baseY + overpassHeight * 0.5f;
+        nextPos.y = baseY + overpassHeight * 0.5f;
+        MovePoint(points, prevIdx, prevPos);
+        MovePoint(points, nextIdx, nextPos);
+        SmoothRoad(path, 0.6f);
+    }
+
+    public static void UntangleRoad(JObject path, float separation = 1.8f)
+    {
+        JArray points = Array(path, "ControlPoints");
+        if (points.Count < 4) return;
+        Vector3[] sampled = LoopLevelBoardLayout.SampleRoad(path);
+        List<Vector3> hits = FindSelfIntersections(sampled);
+        if (hits.Count == 0) return;
+        Vector3 hit = hits[0];
+
+        bool repeated = (Vector((JObject)points[0], "Position") - Vector((JObject)points[points.Count - 1], "Position")).sqrMagnitude < .000001f;
+        int count = points.Count - (repeated ? 1 : 0);
+        
+        int p1 = -1, p2 = -1; float d1 = float.PositiveInfinity, d2 = float.PositiveInfinity;
+        for (int i = 0; i < count / 2; i++)
+        {
+            float d = (new Vector2(Vector((JObject)points[i], "Position").x, Vector((JObject)points[i], "Position").z) - new Vector2(hit.x, hit.z)).sqrMagnitude;
+            if (d < d1) { d1 = d; p1 = i; }
+        }
+        for (int i = count / 2; i < count; i++)
+        {
+            float d = (new Vector2(Vector((JObject)points[i], "Position").x, Vector((JObject)points[i], "Position").z) - new Vector2(hit.x, hit.z)).sqrMagnitude;
+            if (d < d2) { d2 = d; p2 = i; }
+        }
+
+        if (p1 >= 0 && p2 >= 0)
+        {
+            Vector3 pos1 = Vector((JObject)points[p1], "Position");
+            Vector3 pos2 = Vector((JObject)points[p2], "Position");
+            pos1.x -= separation * 0.5f;
+            pos2.x += separation * 0.5f;
+            MovePoint(points, p1, pos1);
+            MovePoint(points, p2, pos2);
+            SmoothRoad(path, 0.6f);
+        }
     }
 
     public static void CheckRoadSize(float width, float depth)
