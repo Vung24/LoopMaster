@@ -150,7 +150,6 @@ public class HomePage : MonoBehaviour
 				Transform parent = canvas == null ? transform : canvas.rootCanvas.transform;
 				await _specialStreakProgress.ShowHomeCollection(parent).AttachExternalCancellation(token);
 				token.ThrowIfCancellationRequested();
-				await _specialStreakProgress.PlayAnims().AttachExternalCancellation(token);
 			}
 			token.ThrowIfCancellationRequested();
 

@@ -113,7 +113,11 @@ namespace Snui
 			}
 
 			Transform node = coin.transform;
-			node.position = startPos;
+			// Burst distances are UI units, not world units. Screen Space Camera
+			// canvases can have a tiny world scale, sending a world-space burst off-screen.
+			Vector3 localStart = _parent.InverseTransformPoint(startPos);
+			Vector3 localTarget = _parent.InverseTransformPoint(targetPos);
+			node.localPosition = localStart;
 			Vector3 scale = node.localScale;
 			node.localScale = Vector3.zero;
 
@@ -122,13 +126,13 @@ namespace Snui
 			seq.Append(node.DOScale(scale * 0.9f, 0.1f).SetEase(Ease.InSine));
 			seq.Append(node.DOScale(scale, 0.1f).SetEase(Ease.OutSine));
 
-			Vector3 burstPos = (Vector3)startPos + new Vector3(UnityEngine.Random.Range(-100f, 100f), UnityEngine.Random.Range(-60f, 60f), 0f);
-			seq.Insert(0f, node.DOMove(burstPos, 0.3f).SetEase(Ease.OutQuad));
+			Vector3 burstPos = localStart + new Vector3(UnityEngine.Random.Range(-100f, 100f), UnityEngine.Random.Range(-60f, 60f), 0f);
+			seq.Insert(0f, node.DOLocalMove(burstPos, 0.3f).SetEase(Ease.OutQuad));
 			_flights.Add(seq);
 
 			Sequence flight = DOTween.Sequence().SetUpdate(true).SetLink(coin).Pause();
 			flight.AppendInterval((index - 1) * 0.02f);
-			flight.Append(node.DOMove(targetPos, 0.45f).SetEase(Ease.InQuad));
+			flight.Append(node.DOLocalMove(localTarget, 0.45f).SetEase(Ease.InQuad));
 			flight.Join(node.DOScale(scale * 0.7f, 0.45f).SetEase(Ease.InCubic));
 			flight.OnComplete(() => OnAnimDone(coin, index, showCount));
 			_flights.Add(flight);

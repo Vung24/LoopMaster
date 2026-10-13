@@ -43,7 +43,7 @@ namespace Snui.StreakLine
 
 		public override bool HasNonSkippableAnimation()
 		{
-			return Managers.StreakLine != null && Managers.StreakLine.GetTempViewLevel() > 0;
+			return Managers.StreakLine != null && Managers.StreakLine.ShouldShowRewardMilestonePopup();
 		}
 
 		public override async UniTask PlayAddAnimation()
@@ -56,8 +56,7 @@ namespace Snui.StreakLine
 
 		public override async UniTask ShowPopupDialog()
 		{
-			if (Managers.StreakLine != null && Managers.StreakLine.IsOngoing && !Managers.StreakLine.IsExpired &&
-				(!Managers.StreakLine.HasPlayedEnterAnim() || Managers.StreakLine.GetTempViewLevel() > 0))
+			if (Managers.StreakLine != null && Managers.StreakLine.ShouldShowRewardMilestonePopup())
 			{
 				var dialog = await StreakLineDialog.Show(transform.root);
 				if (dialog != null)
