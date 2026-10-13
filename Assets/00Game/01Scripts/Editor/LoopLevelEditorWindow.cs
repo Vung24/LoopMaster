@@ -713,7 +713,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             _showRoadPresets = EditorGUILayout.Foldout(_showRoadPresets, "Hoặc tạo đường từ hình mẫu", true);
             if (_showRoadPresets)
             {
-                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] { "Chữ nhật bo góc", "Bầu dục / tròn", "Chữ U (5 điểm)", "Số 8 (8 điểm)" });
+                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] { "Chữ nhật bo góc", "Bầu dục / tròn", "Chữ U (5 điểm)", "Số 8 Thắt eo (không cắt)", "Số 8 Cầu vượt 3D", "Số 8 Cắt phẳng" });
                 _roadCenter = EditorGUILayout.Vector3Field("Tâm", _roadCenter);
                 _roadWidth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều rộng (X)", _roadWidth));
                 _roadDepth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều sâu (Z)", _roadDepth));
@@ -724,6 +724,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                         JObject newRoad = _roadPreset == 0 ? A.RoundedRectangleRoad(_roadCenter, _roadWidth, _roadDepth, _cornerRadius) :
                             _roadPreset == 1 ? A.OvalRoad(_roadCenter, _roadWidth, _roadDepth) :
                             _roadPreset == 2 ? A.UShapeRoad(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing) :
+                            _roadPreset == 3 ? A.HourglassRoad(_roadCenter, _roadWidth, _roadDepth, 1.8f, _roadSmoothing) :
+                            _roadPreset == 4 ? A.Figure8OverpassRoad(_roadCenter, _roadWidth, _roadDepth, 1.8f, _roadSmoothing) :
                             A.Figure8Road(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing);
                         paths.Add(newRoad);
                         _path = paths.Count - 1; _point = 0; _scenePreview = true;
