@@ -221,6 +221,10 @@ namespace ShopUI
 
 				var rt = item.RectTransform;
 				float h = rt.rect.height;
+				Vector2 size = rt.rect.size;
+				rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+				rt.pivot = new Vector2(0.5f, 0.5f);
+				rt.sizeDelta = size;
 				float x = Padding.left - Padding.right;
 				float y = -Padding.top - currentY - h * 0.5f - Spacing * i;
 				rt.anchoredPosition = new Vector2(x, y);
