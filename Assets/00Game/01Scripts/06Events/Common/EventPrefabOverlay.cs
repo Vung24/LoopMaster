@@ -10,6 +10,8 @@ namespace Snui
         private void OnDestroy() { Closed?.Invoke(); Closed = null; }
         private void Update()
         {
+            // BasePopup handles input, busy guards, and the close animation.
+            if (GetComponent<BasePopup>() != null) return;
             if (!Input.GetKeyDown(KeyCode.Escape)) return;
             if (CloseButton != null)
             {

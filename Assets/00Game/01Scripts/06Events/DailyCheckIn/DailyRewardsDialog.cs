@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Snui
 {
-	public class DailyRewardsDialog : MonoBehaviour
+	public class DailyRewardsDialog : BasePopup
 	{
 		[SerializeField] private Transform _content;
 		[SerializeField] private Button _closeButton;
@@ -18,7 +18,7 @@ namespace Snui
 		private bool _hasStarted;
 		private List<DailyRewardCell> _dailyRewardCells = new List<DailyRewardCell>();
 
-		public void Awake()
+		protected override void Awake()
 		{
 			if (_content == null)
 			{
@@ -43,18 +43,18 @@ namespace Snui
 				if (tipTrans != null) _nextTimeTip = tipTrans.gameObject;
 			}
 
+			_closeBtn = _closeButton;
+			base.Awake();
+
 			if (_progress == null)
 			{
 				_progress = HierarchyReferenceCache.DescendantComponent<DailyRewardsProgress>(_content, "Progress");
 			}
 		}
 
-		private void OnEnable()
+		protected override void OnEnable()
 		{
-			if (_closeButton != null)
-			{
-				_closeButton.onClick.AddListener(OnClickCloseBtn);
-			}
+			base.OnEnable();
 
 			if (_claimBtn != null)
 			{
@@ -63,16 +63,17 @@ namespace Snui
 
 			DailyCheckInManager.Instance.OnClaimReward.AddListener(Claim);
 
-			if (_hasStarted) Show();
+			if (_hasStarted) RefreshPresentation();
 		}
 
-		private void Start()
+		protected override void Start()
 		{
+			base.Start();
 			_hasStarted = true;
-			Show();
+			RefreshPresentation();
 		}
 
-		private void Show()
+		private void RefreshPresentation()
 		{
 			Init();
 
@@ -121,11 +122,6 @@ namespace Snui
 				}
 			}
 			if (isActiveAndEnabled) _coroutine = StartCoroutine(IEStartCountDown());
-		}
-
-		private void OnClickCloseBtn()
-		{
-			Dismiss();
 		}
 
 		private void ShowNextTimeTip()
@@ -201,22 +197,15 @@ namespace Snui
 			}
 		}
 
-		private void Dismiss()
-		{
-			gameObject.SetActive(false);
-			Destroy(gameObject);
-		}
-
 		private void StopCountDown()
 		{
 			if (_coroutine != null) StopCoroutine(_coroutine);
 			_coroutine = null;
 		}
 
-		private void OnDisable()
+		protected override void OnDisable()
 		{
 			StopCountDown();
-			if (_closeButton != null) _closeButton.onClick.RemoveListener(OnClickCloseBtn);
 			if (_claimBtn != null) _claimBtn.onClick.RemoveListener(OnClickClaimBtn);
 			DailyCheckInManager.Instance.OnClaimReward.RemoveListener(Claim);
 			if (_isShown)
@@ -224,6 +213,7 @@ namespace Snui
 				_isShown = false;
 				DailyCheckInManager.Instance.CloseDailyCheckInPanel();
 			}
+			base.OnDisable();
 		}
 		public void OnApplicationFocus(bool hasFocus)
 		{

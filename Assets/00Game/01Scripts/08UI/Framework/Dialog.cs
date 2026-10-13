@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Snui
 {
     [RequireComponent(typeof(CanvasGroup))]
-    public class Dialog : Snui_Panel
+    public class Dialog : BasePopup
     {
         public enum EnterAnimType { None, FadeIn }
         public enum ExitAnimType { None, FadeOut }
@@ -18,14 +18,13 @@ namespace Snui
         public ExitAnimType ExitAnim;
         public float FadeInOutDuration = 0.03f;
         public bool CloseOnContentResult = true;
-        protected CanvasGroup _canvasGroup;
         protected Image _bg;
         protected Transform _safeArea;
         protected DialogContent _content;
         private Coroutine fade;
         private Action callback;
-        private bool closing;
         private bool entered;
+        private int animationSession;
 
         public CanvasGroup CanvasGroup
         {
@@ -36,9 +35,9 @@ namespace Snui
             }
         }
 
-        protected virtual void Awake()
+        protected override void Awake()
         {
-            _canvasGroup = GetComponent<CanvasGroup>();
+            base.Awake();
             _bg = GetComponent<Image>();
             SafeArea area = GetComponentInChildren<SafeArea>(true);
             _safeArea = area == null ? transform : area.transform;
@@ -121,7 +120,6 @@ namespace Snui
             this.callback = callback;
             content.transform.SetParent(_safeArea == null ? transform : _safeArea, false);
             content.Dismissed += OnContentDismissed;
-            closing = false;
             content.Show();
         }
 
@@ -135,38 +133,69 @@ namespace Snui
 
         public override void PlayEnterAnimation()
         {
+            if (IsClosing || (IsOpen && entered)) return;
+            base.PlayEnterAnimation();
+        }
+
+        protected override void OnOpened()
+        {
+            base.OnOpened();
+            animationSession++;
             entered = true;
-            gameObject.SetActive(true);
-            closing = false;
             StopFade();
             if (EnterAnim == EnterAnimType.FadeIn && FadeInOutDuration > 0f)
-                fade = StartCoroutine(Fade(0f, 1f, false));
+                fade = StartCoroutine(Fade(0f, 1f));
             else SetVisible(1f, true);
         }
 
-        public override void PlayExitAnimation()
+        // Content owns its close button and result; the frame owns its lifetime.
+        protected override void ResolveCloseButton() { }
+
+        protected override void OnEscapeKeyPressed()
         {
-            if (closing) return;
-            closing = true;
-            StopFade();
-            if (ExitAnim == ExitAnimType.FadeOut && FadeInOutDuration > 0f && gameObject.activeInHierarchy)
-                fade = StartCoroutine(Fade(CanvasGroup == null ? 1f : CanvasGroup.alpha, 0f, true));
-            else Destroy(gameObject);
+            DialogContent content = _content != null ? _content : GetComponent<DialogContent>();
+            if (content != null && content.isActiveAndEnabled) content.HandleBackButton();
+            else
+            {
+                // Composed gameplay frames manage their own result flow.
+                var overlay = GetComponent<EventPrefabOverlay>();
+                var button = overlay == null ? null : overlay.CloseButton;
+                if (button != null && button.isActiveAndEnabled && button.interactable)
+                    button.onClick.Invoke();
+            }
         }
 
-        private IEnumerator Fade(float from, float to, bool destroy)
+        protected override async UniTask PlayCloseAnimationAsync()
+        {
+            int session = animationSession;
+            StopFade();
+            if (ExitAnim == ExitAnimType.FadeOut && FadeInOutDuration > 0f && gameObject.activeInHierarchy)
+            {
+                float from = CanvasGroup.alpha;
+                float elapsed = 0f;
+                while (elapsed < FadeInOutDuration)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    SetVisible(Mathf.Lerp(from, 0f, elapsed / FadeInOutDuration), false);
+                    await UniTask.Yield(PlayerLoopTiming.Update, this.GetCancellationTokenOnDestroy());
+                    if (session != animationSession || !isActiveAndEnabled) return;
+                }
+                SetVisible(0f, false);
+            }
+        }
+
+        private IEnumerator Fade(float from, float to)
         {
             float elapsed = 0f;
-            SetVisible(from, !destroy);
+            SetVisible(from, true);
             while (elapsed < FadeInOutDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                SetVisible(Mathf.Lerp(from, to, elapsed / FadeInOutDuration), !destroy);
+                SetVisible(Mathf.Lerp(from, to, elapsed / FadeInOutDuration), true);
                 yield return null;
             }
-            SetVisible(to, !destroy);
+            SetVisible(to, true);
             fade = null;
-            if (destroy) Destroy(gameObject);
         }
 
         private void SetVisible(float alpha, bool interactable)

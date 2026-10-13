@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 114496150546190950}
   - component: {fileID: 114115453343805528}
   - component: {fileID: 114054075442806880}
+  - component: {fileID: 225987654321001}
   m_Layer: 5
   m_Name: FeatureUnlockDialog
   m_TagString: Untagged
@@ -9331,3 +9332,15 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -33}
   m_SizeDelta: {x: 750, y: 360}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &225987654321001
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000205989405893}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0

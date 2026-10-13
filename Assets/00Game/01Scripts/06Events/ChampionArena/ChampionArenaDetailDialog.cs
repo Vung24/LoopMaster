@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Snui.ChampionArena
 {
-	public class ChampionArenaDetailDialog : MonoBehaviour, ITableViewDataSource
+	public class ChampionArenaDetailDialog : BasePopup, ITableViewDataSource
 	{
 		private const string CELL_ID = "champion_arena_cell";
 
@@ -69,8 +69,6 @@ namespace Snui.ChampionArena
 		[SerializeField]
 		private Button _infoBtn;
 		[SerializeField]
-		private Button _closeBtn;
-		[SerializeField]
 		private Button _claimBtn;
 		[SerializeField]
 		private Button _stageBtn;
@@ -86,8 +84,9 @@ namespace Snui.ChampionArena
 
 		public static UniTask<ChampionArenaDetailDialog> Show(Transform parent) => EventPrefabUI.Show<ChampionArenaDetailDialog>(parent, "ChampionArenaDetailDialog");
 
-		private void Awake()
+		protected override void Awake()
 		{
+			base.Awake();
 			if (_tableView == null) _tableView = GetComponentInChildren<TableView>(true);
 			if (_tableView != null) _tableView.DataSource = this;
 
@@ -96,7 +95,6 @@ namespace Snui.ChampionArena
 				var cb = HierarchyReferenceCache.Descendant(transform, "CloseBtn");
 				if (cb != null) _closeBtn = cb.GetComponent<Button>();
 			}
-			if (_closeBtn != null) _closeBtn.onClick.AddListener(OnCloseButtonClicked);
 
 			if (_infoBtn == null)
 			{
@@ -120,8 +118,9 @@ namespace Snui.ChampionArena
 			if (_claimBtn != null) _claimBtn.onClick.AddListener(ClaimRankRewards);
 		}
 
-		private void Start()
+		protected override void Start()
 		{
+			base.Start();
 			Managers.ChampionArena?.CheckEventState();
 			Managers.ChampionArena?.TryClaimStageRewards();
 			RefreshData();
@@ -197,11 +196,6 @@ namespace Snui.ChampionArena
 				cell.Init(_players[row]);
 			}
 			return cell;
-		}
-
-		private void OnCloseButtonClicked()
-		{
-			Destroy(gameObject);
 		}
 
 		private void OnInfoButtonClicked()

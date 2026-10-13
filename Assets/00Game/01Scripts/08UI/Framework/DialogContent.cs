@@ -88,6 +88,8 @@ namespace Snui
 			return true;
 		}
 
+        public bool HandleBackButton() => isActiveAndEnabled && OnAndroidBackButtonPressed();
+
 		protected virtual void OnClickCloseButton() { Dismiss(RESULT_CLOSE); }
 
 		private static void BindButton(Button button, UnityAction callback)

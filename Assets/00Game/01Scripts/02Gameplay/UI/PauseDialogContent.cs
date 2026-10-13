@@ -5,14 +5,13 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public sealed class PauseDialogContent : MonoBehaviour
+public sealed class PauseDialogContent : Snui.BasePopup
 {
 	[SerializeField] private bool PlayOnStart = true;
 	[SerializeField] private bool EnterAnim = true;
 	[SerializeField] private bool ExitAnim = true;
 	[SerializeField] private Component _bg;
 	[SerializeField] private Component _title;
-	[SerializeField] private Button _closeBtn;
 	[SerializeField] private Toggle _musicTgl;
 	[SerializeField] private Toggle _audioTgl;
 	[SerializeField] private Toggle _vibrateTgl;
@@ -22,22 +21,23 @@ public sealed class PauseDialogContent : MonoBehaviour
 	[SerializeField] private Button _continueBtn;
 
 	private GameController _controller;
-	private CanvasGroup _canvasGroup;
 	private float _timeScaleBeforePause = 1f;
 	private bool _ownsPause;
-	private bool _isClosing;
 	private Coroutine _fadeRoutine;
 	private Snui.Dialog _confirmDialog;
 	private bool _isConfirming;
 	private SettingsDialog _settings;
 	private bool _settingsLoading;
 	private int _modalVersion;
+	private int _animationSession;
 
-	private void Awake()
+	public override bool IsBusy => _isConfirming || _settingsLoading || _settings != null;
+
+	protected override void Awake()
 	{
+		base.Awake();
 		_controller = GameController.Current;
 		_canvasGroup = GetComponent<CanvasGroup>();
-		AddButtonListener(_closeBtn, Resume);
 		AddButtonListener(_continueBtn, Resume);
 		AddButtonListener(_retryBtn, Replay);
 		AddButtonListener(_homeBtn, ReturnHome);
@@ -47,15 +47,16 @@ public sealed class PauseDialogContent : MonoBehaviour
 		AddToggleListener(_vibrateTgl, SetVibration);
 	}
 
-	private void OnEnable()
+	protected override void OnOpened()
 	{
+		base.OnOpened();
+		_animationSession++;
 		if (!PlayOnStart) return;
 		_controller = _controller != null ? _controller : GameController.Current;
 		if (_controller != null) _controller.LevelStarted += OnLevelStarted;
 		_timeScaleBeforePause = Time.timeScale;
 		Time.timeScale = 0f;
 		_ownsPause = true;
-		_isClosing = false;
 		EnableResumeButton(_closeBtn);
 		EnableResumeButton(_continueBtn);
 		if (_canvasGroup != null)
@@ -73,7 +74,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 		RefreshToggles();
 	}
 
-	private void OnDisable()
+	protected override void OnDisable()
 	{
 		if (_controller != null) _controller.LevelStarted -= OnLevelStarted;
 		if (_fadeRoutine != null) StopCoroutine(_fadeRoutine);
@@ -81,6 +82,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 		CancelSettings();
 		_fadeRoutine = null;
 		RestoreTimeScale();
+		base.OnDisable();
 	}
 
 	public void Bind(GameController controller)
@@ -115,17 +117,24 @@ public sealed class PauseDialogContent : MonoBehaviour
 
 	private void Resume()
 	{
-		if (_isClosing || _isConfirming || _settingsLoading || _settings != null) return;
-		if (ExitAnim && _canvasGroup != null)
+		TryClose();
+	}
+
+	protected override async UniTask PlayCloseAnimationAsync()
+	{
+		int session = _animationSession;
+		if (_fadeRoutine != null) StopCoroutine(_fadeRoutine);
+		_fadeRoutine = null;
+		if (!ExitAnim || _canvasGroup == null) return;
+		float from = _canvasGroup.alpha;
+		float elapsed = 0f;
+		while (elapsed < 0.12f)
 		{
-			_isClosing = true;
-			if (_fadeRoutine != null) StopCoroutine(_fadeRoutine);
-			_canvasGroup.interactable = false;
-			_canvasGroup.blocksRaycasts = false;
-			_fadeRoutine = StartCoroutine(CloseAfterFade());
-			return;
+			elapsed += Time.unscaledDeltaTime;
+			_canvasGroup.alpha = Mathf.Lerp(from, 0f, Mathf.Clamp01(elapsed / 0.12f));
+			await UniTask.Yield(PlayerLoopTiming.Update, this.GetCancellationTokenOnDestroy());
+			if (session != _animationSession || !isActiveAndEnabled) return;
 		}
-		CompleteResume();
 	}
 
 	private void Replay()
@@ -220,10 +229,9 @@ public sealed class PauseDialogContent : MonoBehaviour
 		}
 		_settings = null;
 	}
-	private void OnDestroy()
+	protected override void OnDestroy()
 	{
 		CancelSettings();
-		if (_closeBtn != null) _closeBtn.onClick.RemoveListener(Resume);
 		if (_continueBtn != null) _continueBtn.onClick.RemoveListener(Resume);
 		if (_retryBtn != null) _retryBtn.onClick.RemoveListener(Replay);
 		if (_homeBtn != null) _homeBtn.onClick.RemoveListener(ReturnHome);
@@ -231,6 +239,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 		if (_musicTgl != null) _musicTgl.onValueChanged.RemoveListener(SetMusic);
 		if (_audioTgl != null) _audioTgl.onValueChanged.RemoveListener(SetAudio);
 		if (_vibrateTgl != null) _vibrateTgl.onValueChanged.RemoveListener(SetVibration);
+		base.OnDestroy();
 	}
 
 	private void RestoreTimeScale()
@@ -238,13 +247,6 @@ public sealed class PauseDialogContent : MonoBehaviour
 		if (!_ownsPause) return;
 		Time.timeScale = _timeScaleBeforePause;
 		_ownsPause = false;
-	}
-
-	private System.Collections.IEnumerator CloseAfterFade()
-	{
-		yield return FadeCanvas(_canvasGroup.alpha, 0f, 0.12f);
-		_fadeRoutine = null;
-		CompleteResume();
 	}
 
 	private System.Collections.IEnumerator FadeCanvas(float from, float to, float duration)
@@ -263,8 +265,7 @@ public sealed class PauseDialogContent : MonoBehaviour
 	private void CompleteResume()
 	{
 		RestoreTimeScale();
-		gameObject.SetActive(false);
-		Destroy(gameObject);
+		ForceClose();
 	}
 
 	private static void AddButtonListener(Button button, UnityEngine.Events.UnityAction callback)

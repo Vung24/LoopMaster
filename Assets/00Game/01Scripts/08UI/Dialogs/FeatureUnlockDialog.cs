@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Snui;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,7 @@ public enum FeatureType
     LongBox = 256, CubeNumLock = 512, SurpriseCube = 1024
 }
 
-public class FeatureUnlockDialog : MonoBehaviour
+public class FeatureUnlockDialog : BasePopup
 {
     [SerializeField] private TMP_Text _titleText1;
     [SerializeField] private TMP_Text _titleText2;
@@ -34,10 +35,10 @@ public class FeatureUnlockDialog : MonoBehaviour
     [SerializeField] private Sprite _cubeNumLockSprite;
     [SerializeField] private Sprite _surpriseCubeSprite;
     private FeatureType _featureType;
-    private bool _closed;
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         if (!GameAudioSettings.EffectsEnabled || _showClip == null) return;
         if (GameAudioPlayer.Current != null) GameAudioPlayer.Current.PlayOneShot(_showClip);
         else AudioSource.PlayClipAtPoint(_showClip, transform.position);
@@ -46,7 +47,6 @@ public class FeatureUnlockDialog : MonoBehaviour
     public void Init(FeatureType type)
     {
         _featureType = type;
-        _closed = false;
         string title = GetTitle();
         foreach (TMP_Text text in new[] { _titleText1, _titleText2, _titleText3 })
             if (text != null) text.text = title;
@@ -64,16 +64,14 @@ public class FeatureUnlockDialog : MonoBehaviour
 
     private void OnClickContinueButton()
     {
-        if (_closed) return;
-        _closed = true;
-        gameObject.SetActive(false);
-        Destroy(gameObject);
+        TryClose();
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         if (_continueButton != null) _continueButton.onClick.RemoveListener(OnClickContinueButton);
         if (_fullButton != null) _fullButton.onClick.RemoveListener(OnClickContinueButton);
+        base.OnDestroy();
     }
 
     private Sprite GetFeatureSprite()
