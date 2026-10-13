@@ -10,10 +10,9 @@ using UnityEngine.UI;
 
 namespace Snui
 {
-	public class DailyGiftDialog : Snui_Panel
+	public class DailyGiftDialog : BasePopup
 	{
 		[SerializeField] private SkeletonGraphic _spineFlag;
-		[SerializeField] private Button _closeBtn;
 		[SerializeField] private TMP_Text _dayCountText;
 		[SerializeField] private ProgressBar _progressBar;
 		[SerializeField] private List<DailyGiftCardCell> _cardCells = new List<DailyGiftCardCell>();
@@ -25,6 +24,8 @@ namespace Snui
 		private int _weekdayIndex;
 		private int _monthSignDays;
 		private CancellationToken _cancellationTokenOnDestroy;
+		private bool _claiming;
+		public override bool IsBusy => _claiming;
 
 		public static async UniTask<DailyGiftDialog> Show(Transform parent = null)
 		{
@@ -36,8 +37,9 @@ namespace Snui
 			return instance == null ? null : instance.GetComponent<DailyGiftDialog>();
 		}
 
-		private void Awake()
+		protected override void Awake()
 		{
+			base.Awake();
 			_cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy();
 
 			if (_safeArea == null)
@@ -109,11 +111,6 @@ namespace Snui
 				var rewards = Managers.DailyGiftManager.GetRewards();
 				_weekdayRewards = rewards.WeekdayRewards;
 				_monthRewards = rewards.MonthRewards;
-			}
-
-			if (_closeBtn != null)
-			{
-				_closeBtn.onClick.AddListener(OnClickCloseBtn);
 			}
 
 			if (_dayCountText != null)
@@ -216,36 +213,42 @@ namespace Snui
 
 		public async UniTask<bool> TryClaimReward()
 		{
-			if (Managers.DailyGiftManager == null || !Managers.DailyGiftManager.CanClaimToday())
+			if (!IsOpen || _claiming) return false;
+			_claiming = true;
+			try
 			{
-				return false;
+				if (Managers.DailyGiftManager == null || !Managers.DailyGiftManager.CanClaimToday())
+				{
+					return false;
+				}
+
+				int signDay = Managers.DailyGiftManager.GetSignDay();
+				AnalyticsManager.LogEvent("daily_gift_claim", new Dictionary<string, object>
+				{
+					{ "days", signDay + 1 }
+				});
+
+				if (!Managers.DailyGiftManager.TryClaimToday()) return false;
+
+				if (_closeBtn != null)
+				{
+					_closeBtn.enabled = false;
+				}
+
+				_monthSignDays++;
+
+				if (_weekdayIndex >= 0 && _weekdayIndex < _cardCells.Count)
+				{
+					_cardCells[_weekdayIndex].ClaimReward().Forget();
+				}
+
+				await UniTask.WaitForSeconds(1.5f, cancellationToken: _cancellationTokenOnDestroy);
+				await UpdateMonthProgress();
+
+				bool claimedBox = await ClaimBoxReward();
+				return claimedBox;
 			}
-
-			int signDay = Managers.DailyGiftManager.GetSignDay();
-			AnalyticsManager.LogEvent("daily_gift_claim", new Dictionary<string, object>
-			{
-				{ "days", signDay + 1 }
-			});
-
-			if (!Managers.DailyGiftManager.TryClaimToday()) return false;
-
-			if (_closeBtn != null)
-			{
-				_closeBtn.enabled = false;
-			}
-
-			_monthSignDays++;
-
-			if (_weekdayIndex >= 0 && _weekdayIndex < _cardCells.Count)
-			{
-				_cardCells[_weekdayIndex].ClaimReward().Forget();
-			}
-
-			await UniTask.WaitForSeconds(1.5f, cancellationToken: _cancellationTokenOnDestroy);
-			await UpdateMonthProgress();
-
-			bool claimedBox = await ClaimBoxReward();
-			return claimedBox;
+			finally { _claiming = false; }
 		}
 
 		public async UniTask UpdateMonthProgress()
@@ -271,12 +274,12 @@ namespace Snui
 			{
 				HiddenDialog().Forget();
 				await box.PlayClaimAnim();
-				Snui_Panel.DestroyPanel(gameObject);
+				ForceClose();
 				return true;
 			}
 
 			await UniTask.WaitForSeconds(0.5f, cancellationToken: _cancellationTokenOnDestroy);
-			Snui_Panel.DestroyPanel(gameObject);
+			ForceClose();
 
 			if (_closeBtn != null)
 			{
@@ -288,11 +291,20 @@ namespace Snui
 		public async UniTask HiddenDialog()
 		{
 			await UniTask.WaitForSeconds(0.6f, cancellationToken: _cancellationTokenOnDestroy);
-			gameObject.SetActive(false);
+			if (_canvasGroup != null)
+			{
+				_canvasGroup.alpha = 0f;
+				_canvasGroup.interactable = false;
+				_canvasGroup.blocksRaycasts = false;
+			}
 		}
+
+		protected override void OnClickCloseButton() => OnClickCloseBtn();
+		protected override void OnEscapeKeyPressed() => OnClickCloseBtn();
 
 		public void OnClickCloseBtn()
 		{
+			if (!CanClose()) return;
 			if (_closeBtn != null)
 			{
 				_closeBtn.enabled = false;
@@ -303,10 +315,11 @@ namespace Snui
 
 		public async UniTaskVoid OnCloseDialog()
 		{
+			if (!CanClose()) return;
 			bool claimed = await TryClaimReward();
 			if (!claimed)
 			{
-				Snui_Panel.DestroyPanel(gameObject);
+				ForceClose();
 			}
 		}
 

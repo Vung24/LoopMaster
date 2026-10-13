@@ -3,7 +3,7 @@ using Snui;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PassDetailDialog : MonoBehaviour
+public class PassDetailDialog : BasePopup
 {
     public static PassDetailDialog Current;
     public static bool ShouldShowUnlockVipAnim;
@@ -22,23 +22,24 @@ public class PassDetailDialog : MonoBehaviour
     private int _displayPoints;
     public bool IsAnimating => _presenting;
     public static UniTask<PassDetailDialog> Show(Transform parent) => EventPrefabUI.Show<PassDetailDialog>(parent, Managers.Pass.ThemeAddress("PassDetailDialog"));
-    public UniTask WaitForCloseAsync() => UniTask.WaitUntil(() => this == null || _closed);
-    private void Awake()
+    public override bool IsBusy => _presenting;
+    protected override void Awake()
     {
+        base.Awake();
         Current = this;
         _manager = Managers.Pass;
         _scroll = PassUI.Node<ScrollRect>(transform, "TableView");
         if (_adapter == null) _adapter = GetComponentInChildren<PassScrollAdapter>(true);
         if (_adapter == null && _scroll != null) _adapter = _scroll.gameObject.AddComponent<PassScrollAdapter>();
         _star = GetComponentInChildren<PassStarProgressBtn>(true);
-        PassUI.Bind(transform, "CloseButton", Close);
         PassUI.Bind(transform, "InfoButton", () => PassInfoDialog.Show(transform.parent).Forget());
         PassUI.Bind(transform, "ActivateBtn", () => PassPurchaseDialogContent.Show(transform.parent, "pass_detail").Forget());
         PassUI.Active(transform, "BlockMask", false);
         Snui_Text.EnsureFontAssets(transform);
     }
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         if (_manager == null || !_manager.CheckActive()) { Close(); return; }
         _manager.OnProgressChanged.AddListener(Refresh);
         _manager.OnVipChanged.AddListener(OnVipChanged);
@@ -118,13 +119,14 @@ public class PassDetailDialog : MonoBehaviour
             if (this != null && !_closed) { PassUI.Active(transform, "BlockMask", false); Refresh(); }
         }
     }
-    private void Close() { if (_closed) return; _closed = true; gameObject.SetActive(false); Destroy(gameObject); }
-    private void OnDestroy()
+    protected override void OnClosing() { _closed = true; base.OnClosing(); }
+    protected override void OnDestroy()
     {
         _closed = true;
         _manager?.OnProgressChanged.RemoveListener(Refresh);
         _manager?.OnVipChanged.RemoveListener(OnVipChanged);
         _manager?.PurchaseSuccessAnimationEvent.RemoveListener(OnPurchaseConfirmed);
         if (Current == this) Current = null;
+        base.OnDestroy();
     }
 }

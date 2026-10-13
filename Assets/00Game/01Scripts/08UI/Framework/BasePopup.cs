@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -9,6 +10,8 @@ namespace Snui
     [RequireComponent(typeof(CanvasGroup))]
     public abstract class BasePopup : Snui_Panel
     {
+        private static readonly List<BasePopup> OpenPopups = new List<BasePopup>();
+        private static int _escapeHandledFrame = -1;
         [Header("Base Popup Settings")]
         [SerializeField] protected Button _closeBtn;
         [SerializeField] protected bool _closeOnEscape = true;
@@ -50,6 +53,8 @@ namespace Snui
         {
             base.OnEnable();
             if (_destroyScheduled) return;
+            OpenPopups.Remove(this);
+            OpenPopups.Add(this);
 
             if (_notifiedClosed) _closeTcs = new UniTaskCompletionSource();
             _notifiedClosed = false;
@@ -114,10 +119,22 @@ namespace Snui
 
         protected virtual void Update()
         {
-            if (_closeOnEscape && Input.GetKeyDown(KeyCode.Escape))
+            if (_closeOnEscape && Input.GetKeyDown(KeyCode.Escape) &&
+                _escapeHandledFrame != Time.frameCount && IsTopmostPopup())
             {
+                _escapeHandledFrame = Time.frameCount;
                 OnEscapeKeyPressed();
             }
+        }
+
+        private bool IsTopmostPopup()
+        {
+            for (int i = OpenPopups.Count - 1; i >= 0; i--)
+            {
+                BasePopup popup = OpenPopups[i];
+                if (popup != null && popup.isActiveAndEnabled) return popup == this;
+            }
+            return false;
         }
 
         protected virtual void OnEscapeKeyPressed()
@@ -221,7 +238,6 @@ namespace Snui
             if (_notifiedClosed) return;
             _notifiedClosed = true;
 
-            // Capture before callbacks: they may Show() and subscribe for the next session.
             UniTaskCompletionSource completion = _closeTcs;
             Action closed = Closed;
             CancellationTokenSource open = _openCts;
@@ -244,6 +260,7 @@ namespace Snui
 
         protected override void OnDisable()
         {
+            OpenPopups.Remove(this);
             base.OnDisable();
             // Normal close notifies after SetActive returns, so Closed can reopen safely.
             if (_deactivatingForClose) return;

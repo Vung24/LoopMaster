@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 222845317154570257}
   - component: {fileID: 114874280076501761}
   - component: {fileID: 225914764266978687}
-  - component: {fileID: 114482610176942521}
   m_Layer: 5
   m_Name: SpecialStreakDialog
   m_TagString: Untagged
@@ -1238,22 +1237,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &114482610176942521
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1545568488115110}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c4af13bad635ddff75c783caf3c8acc, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  EnterAnim: 1
-  ExitAnim: 1
-  FadeInOutDuration: 0.03
-  CloseOnContentResult: 1
 --- !u!224 &224012975460604885
 RectTransform:
   serializedVersion: 2

@@ -2,25 +2,28 @@ using Cysharp.Threading.Tasks;
 using Snui;
 using UnityEngine;
 
-public class PassFinalBundleRewardDialog : MonoBehaviour
+public class PassFinalBundleRewardDialog : BasePopup
 {
     public AudioClip ChestJumpSound, OpenChestSound;
     private bool _busy;
+    public override bool IsBusy => _busy;
     public static UniTask<PassFinalBundleRewardDialog> Show(Transform parent) => EventPrefabUI.Show<PassFinalBundleRewardDialog>(parent, "PassFinalBonusRewardDialog");
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         PassUI.Bind(transform, "NextBtn", () => Claim().Forget());
         PassUI.Text(transform, "Count", (Managers.Pass?.GetCurrentFinalBundleCoin() ?? 0).ToString());
         Snui_Text.EnsureFontAssets(transform);
     }
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         PassUI.Sound(ChestJumpSound); PassUI.Animate(transform);
         PassUI.Spine(PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "CoinSpine"), "animation", false);
     }
     private async UniTask Claim()
     {
-        if (_busy) return;
+        if (!IsOpen || _busy) return;
         _busy = true;
         try
         {
@@ -28,7 +31,7 @@ public class PassFinalBundleRewardDialog : MonoBehaviour
             if (rewards == null && Managers.Pass.GetCurrentFinalBundleCoin() > 0) return;
             PassUI.Sound(OpenChestSound);
             await PassUI.PresentRewards(rewards, transform);
-            gameObject.SetActive(false); Destroy(gameObject);
+            ForceClose();
         }
         finally { _busy = false; }
     }

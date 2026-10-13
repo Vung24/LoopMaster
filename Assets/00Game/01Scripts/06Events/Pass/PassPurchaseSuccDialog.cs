@@ -3,20 +3,21 @@ using Snui;
 using TMPro;
 using UnityEngine;
 
-public sealed class PassPurchaseSuccDialog : MonoBehaviour
+public sealed class PassPurchaseSuccDialog : BasePopup
 {
     public AudioClip SuccessSound;
     public TMP_Text tmp_title, tmp_desc2, tmp_btn_content;
     public Transform tf_ticket, tf_desc1, tf_reward_icon, tf_reward_heart, tf_reward_box, tf_btn_content;
-    private bool _closed;
     public static UniTask<PassPurchaseSuccDialog> Show(Transform parent) => EventPrefabUI.Show<PassPurchaseSuccDialog>(parent, "PassPurchaseSuccDialog");
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         PassUI.Bind(transform, "ContinueBtn", Close);
         Snui_Text.EnsureFontAssets(transform);
     }
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         PassUI.Sound(SuccessSound);
         PassUI.Text(transform, "Name", "You");
         PassUI.Text(transform, "Desc2", "Golden rewards unlocked for this season. Offline activation — no payment.");
@@ -25,10 +26,9 @@ public sealed class PassPurchaseSuccDialog : MonoBehaviour
         PassUI.Animate(tf_ticket ?? transform);
         foreach (var particle in GetComponentsInChildren<ParticleSystem>()) particle.Play();
     }
-    private void Close()
+    protected override void OnClosed()
     {
-        if (_closed) return;
-        _closed = true; Managers.Pass.NotifyPurchaseSuccessAnimationEnded();
-        gameObject.SetActive(false); Destroy(gameObject);
+        Managers.Pass?.NotifyPurchaseSuccessAnimationEnded();
+        base.OnClosed();
     }
 }
