@@ -12,8 +12,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public static GameController Current;
 #if UNITY_EDITOR
 	public static System.Func<GameData> EditorPlaytestSource;
+	public static System.Func<GameData> EditorPlaytestResetSource;
 	public void InitializeEditorPlaytest(GameData data) => Initialize(data, true);
 #endif
+	public bool IsEditorPlaytest { get; private set; }
 	public GameData Data { get; private set; }
 	public GameObject UICanvasObjAsset;
 	public GameObject UICanvasLightObjAsset;
@@ -59,8 +61,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool CanRevive => Data != null && Data.PathPoints.Count > 1 &&
 		EndState == GameEndState.Failed && !IsTransitioningLevel;
 	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && GamePrefs.GetInt(GamePrefKeys.FailTutorial, 0) == 0;
-	public bool CanReplayLevel => Data != null && Navigation.CanReplayLevel;
-	public bool CanLoadNextLevel => EndState == GameEndState.Won && Navigation.CanLoadNextLevel;
+	public bool CanReplayLevel => Data != null && (IsEditorPlaytest || Navigation.CanReplayLevel);
+	public bool CanLoadNextLevel => !IsEditorPlaytest && EndState == GameEndState.Won && Navigation.CanLoadNextLevel;
 	public event System.Action GameWon;
 	public event System.Action GameLost;
 	public event System.Action GameRevived;
@@ -227,6 +229,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		if (data == null) return;
 		if (!editorPlaytest && GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(Data); return; }
+		IsEditorPlaytest = editorPlaytest;
 		GameData.SetCurrent(data);
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
@@ -538,6 +541,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool TryLoadNextLevel()
 	{
+		if (IsEditorPlaytest) return false;
 		return Navigation.TryLoadNextLevel();
 	}
 
@@ -553,6 +557,14 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool TryReplayLevel()
 	{
+#if UNITY_EDITOR
+		if (IsEditorPlaytest)
+		{
+			GameData snapshot = EditorPlaytestResetSource?.Invoke();
+			if (snapshot == null) return false;
+			InitializeEditorPlaytest(snapshot); return true;
+		}
+#endif
 		return Navigation.TryReplayLevel();
 	}
 
@@ -576,6 +588,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool TryContinueAfterWin()
 	{
+		if (IsEditorPlaytest) return TryReplayLevel();
 		return Navigation.TryContinueAfterWin(HasClaimedWinReward(Data));
 	}
 

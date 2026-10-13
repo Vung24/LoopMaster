@@ -4,18 +4,6 @@ using UnityEngine;
 public class Puzzle
 {
 	public const int LegacyVersion = 4;
-	public const int Version2 = 2;
-	public const int Version3 = 3;
-	public const int Version4 = 4;
-	public const int Version5 = 5;
-	public const int Version6 = 6;
-	public const int Version7 = 7;
-	public const int Version8 = 8;
-	public const int Version9 = 9;
-	public const int Version10 = 10;
-	public const int Version11 = 11;
-	public const int Version12 = 12;
-
 	public int Version;
 	public int HardLevel;
 	public float Size;
@@ -32,7 +20,6 @@ public class Puzzle
 
 	public Puzzle()
 	{
-		Version = Version7;
 		Size = 10f;
 		PathSectionDistance = 0.2f;
 		Boxes = new List<BoxData>();
