@@ -14,9 +14,23 @@ public sealed class LoadingText : MonoBehaviour
         _animStage = 0;
         _timer = 0f;
         if (_animText == null)
-            foreach (TMP_Text label in GetComponentsInChildren<TMP_Text>(true))
-                if (label.name == "AnimText" || label.name == "SubText")
-                { _animText = label; break; }
+        {
+            _animText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "SubText");
+            if (_animText == null)
+                _animText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "AnimText");
+        }
+
+        if (_animText != null)
+        {
+            _animText.horizontalAlignment = HorizontalAlignmentOptions.Left;
+            RectTransform rect = _animText.rectTransform;
+            if (rect != null)
+            {
+                rect.pivot = new Vector2(0f, 0.5f);
+                rect.anchoredPosition = new Vector2(0f, rect.anchoredPosition.y);
+            }
+        }
+
         RefreshText();
     }
 
