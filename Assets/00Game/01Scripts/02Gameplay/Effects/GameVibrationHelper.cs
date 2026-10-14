@@ -24,6 +24,15 @@ public static class GameVibrationHelper
 		else Vibrate(35, 95);
 	}
 
+	public static void PrepareForGameplay()
+	{
+		if (!CanPlayGameVibration()) return;
+		#if UNITY_ANDROID && !UNITY_EDITOR
+		try { InitializeAndroid(); }
+		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
+		#endif
+	}
+
 	public static void PlaySlicePopOut() => Vibrate(7, 27);
 	public static void PlaySlicePopOutFirst() => Vibrate(10, 80);
 	public static void PlaySlicePopIn() => Vibrate(8, 20);

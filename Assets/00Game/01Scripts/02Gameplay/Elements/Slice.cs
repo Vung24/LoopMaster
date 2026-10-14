@@ -45,17 +45,22 @@ public class Slice : MonoBehaviour
 		transform.SetPositionAndRotation(pos, rot);
 		transform.localScale = Vector3.one;
 
-		Material material = GameAssetsConfig.GetSliceMatByType(_info.Type);
+		PrepareVisual(_info.Type);
+	}
+
+	internal void PrepareVisual(int type)
+	{
+		Material material = GameAssetsConfig.GetSliceMatByType(type);
 		if (_meshRenderer != null && material != null) _meshRenderer.sharedMaterial = material;
 		if (_meshRenderer != null)
 		{
 			if (_colorPropBlock == null) _colorPropBlock = new MaterialPropertyBlock();
 			// Rebuild overrides so pooled normal slices do not retain the LongBox texture.
 			_colorPropBlock.Clear();
-			Color color = GameAssetsConfig.GetCubeColor(_info.Type);
+			Color color = GameAssetsConfig.GetCubeColor(type);
 			_colorPropBlock.SetColor("_BaseColor", color);
 			_colorPropBlock.SetColor("_Color", color);
-			if (CubeData.IsLongBoxColor(_info.Type) && _longBoxSignTex != null)
+			if (CubeData.IsLongBoxColor(type) && _longBoxSignTex != null)
 				_colorPropBlock.SetTexture("_BaseMap", _longBoxSignTex);
 			_meshRenderer.SetPropertyBlock(_colorPropBlock);
 		}

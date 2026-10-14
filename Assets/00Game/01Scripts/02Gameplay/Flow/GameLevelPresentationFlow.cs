@@ -38,6 +38,8 @@ public sealed class GameLevelPresentationFlow
 		IsPlaying = true;
 		try
 		{
+			// Keep tutorial/intro animations from running beneath the scene loading cover.
+			await UniTask.WaitUntil(() => LoadingPanel.Current == null, cancellationToken: lifetime.Token);
 			await ShowFeatureTutorial(data, lifetime.Token);
 			lifetime.Token.ThrowIfCancellationRequested();
 			string address = data.GetHardLevel() == HardLevel.Hard ? "LevelHardPanel" :

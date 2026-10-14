@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -17,6 +18,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 #endif
 	public bool IsEditorPlaytest { get; private set; }
 	public GameData Data { get; private set; }
+	public bool IsLevelReady { get; private set; }
+	public System.Exception InitializationError { get; private set; }
 	public GameObject UICanvasObjAsset;
 	public GameObject UICanvasLightObjAsset;
 	public string WinDialogAddress = "WinDialog";
@@ -81,6 +84,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private readonly GameplayCameraFlow _cameraFlow = new GameplayCameraFlow();
 	private readonly List<Slice> _sliceBuffer = new List<Slice>();
 	private bool _isGameStart;
+	private CancellationTokenSource _startupInitialization;
 	private float _comboTime;
 	private BoosterFlow _boosterFlow;
 	private BoosterFlow Boosters => _boosterFlow ?? (_boosterFlow = new BoosterFlow(
@@ -205,7 +209,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		GameData draft = EditorPlaytestSource?.Invoke();
 		if (draft != null) { InitializeEditorPlaytest(draft); return; }
 #endif
-		if (GameData.Current != null && !GameProgressStore.IsLevelCompleted(GameData.Current.GetPuzzleActualLevel())) Initialize(GameData.Current);
+		if (GameData.Current != null && !GameProgressStore.IsLevelCompleted(GameData.Current.GetPuzzleActualLevel())) InitializeOnSceneStart(GameData.Current);
 		else
 		{
 			ResolvePuzzleLoader();
@@ -213,9 +217,48 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 				!_puzzleLoader.TryCreateExactLevel(GameProgressStore.NextPlayableLevel, out GameData data))
 			{
 				Debug.LogWarning(GameProgressStore.IsCampaignComplete ? "All available levels complete." : "Next level data is missing.", this);
+				InitializationError = new System.InvalidOperationException("No playable level data is available.");
 				TryReturnHome();
 			}
-			else Initialize(data);
+			else InitializeOnSceneStart(data);
+		}
+	}
+
+	private void InitializeOnSceneStart(GameData data)
+	{
+		if (LoadingPanel.Current == null) Initialize(data);
+		else InitializeStartupAsync(data).Forget();
+	}
+
+	private async UniTask InitializeStartupAsync(GameData data)
+	{
+		CancellationTokenSource lifetime = null;
+		try
+		{
+			if (!PrepareLevel(data, false)) return;
+			lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+			_startupInitialization = lifetime;
+			var token = lifetime.Token;
+			await UniTask.NextFrame(token);
+			await _gameLoader.LoadAssetsAsync(data, token);
+			GameVibrationHelper.PrepareForGameplay();
+			await _gameLoader.PrewarmSlicePoolAsync(data, token);
+			await Scene.BuildAsync(data, _gameLoader, GameRoot, RefreshPathState, token);
+			_cameraFlow.Reset(data, GameRoot);
+			UpdateCamera();
+			await _gameLoader.WarmupSliceVisualsAsync(data, GameRoot, token);
+			CompleteLevelInitialization(data);
+		}
+		catch (System.OperationCanceledException) when (lifetime != null && lifetime.IsCancellationRequested) { }
+		catch (System.Exception error)
+		{
+			InitializationError = error;
+			throw;
+		}
+		finally
+		{
+			if (_startupInitialization == lifetime) _startupInitialization = null;
+			lifetime?.Dispose();
 		}
 	}
 
@@ -226,8 +269,21 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void Initialize(GameData data, bool editorPlaytest)
 	{
-		if (data == null) return;
-		if (!editorPlaytest && GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(Data); return; }
+		if (!PrepareLevel(data, editorPlaytest)) return;
+		_gameLoader.LoadAssets(data);
+		_gameLoader.PrewarmSlicePool(data);
+		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
+		CompleteLevelInitialization(data);
+	}
+
+	private bool PrepareLevel(GameData data, bool editorPlaytest)
+	{
+		if (data == null) return false;
+		if (!editorPlaytest && GameProgressStore.IsLevelCompleted(data.GetPuzzleActualLevel())) { GameData.SetCurrent(Data); return false; }
+		_startupInitialization?.Cancel();
+		IsLevelReady = false;
+		InitializationError = null;
+		_isGameStart = false;
 		IsEditorPlaytest = editorPlaytest;
 		GameData.SetCurrent(data);
 		_boosterUI?.Cancel();
@@ -246,11 +302,13 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		Transfers.Reset(data, _gameLoader, GameRoot);
 		ComboInCount = 0;
 		_comboTime = 0f;
-		_gameLoader.LoadAssetsAsync(data);
 		ClearRuntimeObjects();
 		GroupLocks.Reset(data);
-		_gameLoader.PrewarmSlicePool(data);
-		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
+		return true;
+	}
+
+	private void CompleteLevelInitialization(GameData data)
+	{
 		_cameraFlow.Reset(Data, GameRoot);
 		UpdateCamera();
 		_isGameStart = Data.PathPoints.Count > 1;
@@ -258,6 +316,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		IsGameFailed = false;
 		EndState = GameEndState.Playing;
 		GameProgressStore.RecordStarted(CurrentLevelNumber);
+		IsLevelReady = true;
 		LevelStarted?.Invoke(CurrentLevelNumber);
 		if (Data == data && EndState == GameEndState.Playing)
 			Presentation.Play(data, _uiCanvasInstance, Scene.Boxes,

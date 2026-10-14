@@ -13,11 +13,6 @@ public class SplashLoadingPanel : LoadingPanel
 		return UniTask.CompletedTask;
 	}
 
-	protected override float GetMinLoadingTime()
-	{
-		return 1.2f;
-	}
-
 	protected override void Awake()
 	{
 		base.Awake();
