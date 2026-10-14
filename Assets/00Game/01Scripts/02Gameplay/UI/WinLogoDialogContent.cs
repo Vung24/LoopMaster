@@ -13,7 +13,8 @@ public class WinLogoDialogContent : DialogContent
 
     protected override void Awake()
     {
-        base.Awake();
+        _canvas = GetComponentInParent<Canvas>();
+        _canvasGroup = GetComponent<CanvasGroup>();
         SetGraphicsActive(false);
     }
 

@@ -7,21 +7,24 @@ namespace Snui
 	public class PassRewardsCell : TableViewCell
 	{
         public static int Height = 250;
-        public Transform TutorialFingerTf;
+        [SerializeField] public Transform TutorialFingerTf;
         public int Stage;
-        private PassNormalItem _normal;
-        private PassGoldenItem _golden;
-        private PassPurchaseItem _purchase;
-        private PassLevelBtn _level;
+        [SerializeField] private PassNormalItem _normal;
+        [SerializeField] private PassGoldenItem _golden;
+        [SerializeField] private PassPurchaseItem _purchase;
+        [SerializeField] private PassLevelBtn _level;
+        [SerializeField] private Transform _tutorialDesc;
         protected override void Awake()
         {
             base.Awake();
-            _normal = HierarchyReferenceCache.ChildComponent<PassNormalItem>(transform, "NormalItem");
-            _golden = GetComponentInChildren<PassGoldenItem>(true);
-            _purchase = GetComponentInChildren<PassPurchaseItem>(true);
-            _level = GetComponentInChildren<PassLevelBtn>(true);
-            PassUI.Active(transform, "TutorialDesc", false);
-            PassUI.Active(transform, "TutorialFinger", false);
+            if (_normal == null) _normal = HierarchyReferenceCache.ChildComponent<PassNormalItem>(transform, "NormalItem");
+            if (_golden == null) _golden = GetComponentInChildren<PassGoldenItem>(true);
+            if (_purchase == null) _purchase = GetComponentInChildren<PassPurchaseItem>(true);
+            if (_level == null) _level = GetComponentInChildren<PassLevelBtn>(true);
+            if (_tutorialDesc == null) _tutorialDesc = HierarchyReferenceCache.Descendant(transform, "TutorialDesc");
+            if (_tutorialDesc != null) _tutorialDesc.gameObject.SetActive(false);
+            if (TutorialFingerTf != null) TutorialFingerTf.gameObject.SetActive(false);
+            else PassUI.Active(transform, "TutorialFinger", false);
         }
         public void Init(int row)
         {

@@ -8,6 +8,8 @@ namespace Snui
 	[RequireComponent(typeof(CanvasGroup))]
 	public class AddNumberToast : MonoBehaviour
 	{
+		[SerializeField] private TMP_Text _label;
+		[SerializeField] private CanvasGroup _canvasGroup;
 		private Sequence _animation;
 
 		public static AddNumberToast Show(Transform parent, string text, Vector2 offset, float duration = 1f, float distance = 48f)
@@ -20,10 +22,9 @@ namespace Snui
 			instance.transform.localPosition = offset;
 			instance.SetActive(true);
 			Snui_Text.EnsureFontAssets(instance.transform);
-			TMP_Text label = instance.GetComponentInChildren<TMP_Text>(true);
+			TMP_Text label = toast._label != null ? toast._label : instance.GetComponentInChildren<TMP_Text>(true);
 			if (label != null) label.SetText(text);
-			foreach (Graphic graphic in instance.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
-			CanvasGroup group = instance.GetComponent<CanvasGroup>();
+			CanvasGroup group = toast._canvasGroup != null ? toast._canvasGroup : instance.GetComponent<CanvasGroup>();
 			group.blocksRaycasts = false;
 			group.interactable = false;
 			group.alpha = 0f;

@@ -17,6 +17,9 @@ public class WinDialogContent : DialogContent
 	[SerializeField] private Button _claimButtonCenter;
 	[SerializeField] private Button _claimButton;
 	[SerializeField] private Button _adButton;
+	[SerializeField] private Snui_Text _claimButtonCenterText;
+	[SerializeField] private Snui_Text _claimButtonText;
+	[SerializeField] private Snui_Text _adButtonText;
 	[SerializeField] private Transform _coinsNode;
 	[SerializeField] private Transform _coinsBgLight;
 	[SerializeField] private ParticleSystem _coinShineEffect;
@@ -61,7 +64,8 @@ public class WinDialogContent : DialogContent
 
 	protected override void Awake()
 	{
-		base.Awake();
+		_canvas = GetComponentInParent<Canvas>();
+		_canvasGroup = GetComponent<CanvasGroup>();
 		_cancelTokenSource = new CancellationTokenSource();
 		_token = _cancelTokenSource.Token;
 		if (_artTitle != null)
@@ -133,6 +137,15 @@ public class WinDialogContent : DialogContent
 	private void SetButtonText(Button button, int coinCount)
 	{
 		if (button == null) return;
+		Snui_Text target = button == _claimButtonCenter ? _claimButtonCenterText :
+			button == _claimButton ? _claimButtonText :
+			button == _adButton ? _adButtonText : null;
+		if (target != null)
+		{
+			target.SetText("+" + coinCount);
+			return;
+		}
+
 		Transform content = HierarchyReferenceCache.Child(button.transform, "Content");
 		if (content == null) content = button.transform;
 
