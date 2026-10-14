@@ -20,8 +20,6 @@ namespace Snui
 		private bool _layoutDirty;
 		private Vector2 _lastSize;
 		private RectTransform _rect;
-		private float _authoredHeight;
-		private Rect _lastSafeArea;
 		public int CurrIndex { get; private set; } = -1;
 		public int PageIndex => CurrIndex;
 		public static float GetNavigationBottomOffset()
@@ -32,7 +30,7 @@ namespace Snui
 		private void Awake()
 		{
 			Current = this;
-			_rect = (RectTransform)transform; _authoredHeight = _rect.sizeDelta.y;
+			_rect = (RectTransform)transform;
 			if (_cursor == null) _cursor = HierarchyReferenceCache.Child(transform, "Cursor") as RectTransform;
 			if (_cellsNode == null) _cellsNode = HierarchyReferenceCache.Child(transform, "Buttons");
 			if (_centerLine == null) _centerLine = HierarchyReferenceCache.Path(transform, "Bg", "Line");
@@ -57,19 +55,8 @@ namespace Snui
 			if (!CanSelect(index)) return;
 			if (animate && CurrIndex == index) return;
 			CurrIndex = index;
-			ApplySafeBottom(); Canvas.ForceUpdateCanvases();
+			Canvas.ForceUpdateCanvases();
 			LayoutCells(animate); MoveCursor(animate); _lastSize = _rect.rect.size; _layoutDirty = false;
-		}
-		private void ApplySafeBottom()
-		{
-			float bottom = ScreenHelper.GetCanvasSafeBottom(GetComponentInParent<Canvas>());
-			_rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _authoredHeight + bottom);
-			if (_cellsNode is RectTransform strip)
-			{
-				strip.offsetMin = new Vector2(strip.offsetMin.x, bottom);
-				strip.offsetMax = new Vector2(strip.offsetMax.x, 0f);
-			}
-			_lastSafeArea = Screen.safeArea;
 		}
 		private void LayoutCells(bool animate)
 		{
@@ -130,9 +117,9 @@ namespace Snui
 		{
 			if (_rect == null || CurrIndex < 0) return;
 			Vector2 size = _rect.rect.size;
-			if (size != _lastSize || _layoutDirty || Screen.safeArea != _lastSafeArea)
+			if (size != _lastSize || _layoutDirty)
 			{
-				ApplySafeBottom(); LayoutCells(false); MoveCursor(false); _lastSize = _rect.rect.size; _layoutDirty = false;
+				LayoutCells(false); MoveCursor(false); _lastSize = _rect.rect.size; _layoutDirty = false;
 			}
 		}
 		private void OnEnable() => _layoutDirty = true;
