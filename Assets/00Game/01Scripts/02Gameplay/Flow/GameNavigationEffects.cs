@@ -5,7 +5,6 @@ using UnityEngine;
 
 public sealed class GameNavigationEffects : IGameNavigationEffects
 {
-    public Transform DialogParent { get; set; }
     public bool IsSceneChanging => GameSceneManager.OnChangeScene;
     public bool ReturnHomeAfterWin => GameSceneRoutingRules.ReturnHomeAfterWin(GameProgressStore.CurrentPuzzleIndex);
     public bool IsLevelCompleted(int level) => GameProgressStore.IsLevelCompleted(level);
@@ -26,26 +25,7 @@ public sealed class GameNavigationEffects : IGameNavigationEffects
         try
         {
             token.ThrowIfCancellationRequested();
-            if (showFailDialog && Managers.Lava != null && Managers.Lava.ShouldShowFailDialog())
-            {
-                var dialog = await Snui.Lava.LavaDetailDialog.Show(DialogParent);
-                if (token.IsCancellationRequested)
-                {
-                    if (dialog != null) UnityEngine.Object.Destroy(dialog.gameObject);
-                    token.ThrowIfCancellationRequested();
-                }
-                if (dialog != null)
-                {
-                    Snui.RewardDialog.PrepareOverlay(dialog.gameObject, 1400);
-                    try { await dialog.WaitForCloseAsync().AttachExternalCancellation(token); }
-                    finally
-                    {
-                        if (token.IsCancellationRequested && dialog != null)
-                            UnityEngine.Object.Destroy(dialog.gameObject);
-                    }
-                }
-            }
-            token.ThrowIfCancellationRequested();
+            // HomePage presents pending Lava results after the scene transition and loading dismissal.
             if (IsSceneChanging) return false;
             GameData.ClearCurrent();
             clearedCurrent = true;
