@@ -3663,6 +3663,8 @@ MonoBehaviour:
   _coinBtn: {fileID: 114767305454766104}
   _coinOnlyBtn: {fileID: 114046921487853035}
   _freeBtn: {fileID: 114013599851498386}
+  _coinNumberTmpText: {fileID: 114031561301803595}
+  _coinNumberText: {fileID: 0}
 --- !u!1 &1873696060497417
 GameObject:
   m_ObjectHideFlags: 0
@@ -4172,6 +4174,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58e8de070830a3acff0908058ce6994d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _safeArea: {fileID: 224759421438915785}
 --- !u!1 &1931456157564853
 GameObject:
   m_ObjectHideFlags: 0
