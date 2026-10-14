@@ -730,6 +730,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void OnDisable()
 	{
+		_sliceTransferFlow?.StopVibrationWindows();
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
 	}
