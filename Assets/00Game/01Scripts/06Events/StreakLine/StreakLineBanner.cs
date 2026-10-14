@@ -21,8 +21,9 @@ namespace Snui.StreakLine
 		protected AudioClip _progressAudio;
 		[SerializeField] protected RectTransform _startNode;
 		[SerializeField] protected RectTransform _endNode;
-		private ProgressBar _progressBar;
-		private TMP_Text _rangeStartText, _rangeEndText;
+		[SerializeField] protected ProgressBar _progressBar;
+		[SerializeField] protected TMP_Text _rangeStartText;
+		[SerializeField] protected TMP_Text _rangeEndText;
 		private (int start, int end)? _animationRange;
 
 		protected int _currentLevel;
@@ -58,10 +59,10 @@ namespace Snui.StreakLine
 			if (_startNode == null) _startNode = HierarchyReferenceCache.DescendantComponent<RectTransform>(transform, "StartNode");
 			if (_endNode == null) _endNode = HierarchyReferenceCache.DescendantComponent<RectTransform>(transform, "EndNode");
 			if (_titleText == null) _titleText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Title");
-			_progressBar = HierarchyReferenceCache.DescendantComponent<ProgressBar>(transform, "MidProgress");
+			if (_progressBar == null) _progressBar = HierarchyReferenceCache.DescendantComponent<ProgressBar>(transform, "MidProgress");
 			if (_progressBar != null) _progressBar.SetFillBounds(_progressBar.GetComponent<RectTransform>());
-			if (_startNode != null) _rangeStartText = _startNode.GetComponentInChildren<TMP_Text>(true);
-			if (_endNode != null) _rangeEndText = _endNode.GetComponentInChildren<TMP_Text>(true);
+			if (_rangeStartText == null && _startNode != null) _rangeStartText = _startNode.GetComponentInChildren<TMP_Text>(true);
+			if (_rangeEndText == null && _endNode != null) _rangeEndText = _endNode.GetComponentInChildren<TMP_Text>(true);
 			if (_titleText != null && string.IsNullOrEmpty(_titleText.text) && Managers.StreakLine != null)
 			{
 				_titleText.text = Managers.StreakLine.GetTitleI18n();

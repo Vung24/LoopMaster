@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Snui.Team
 {
-	public class TeamInfoDialogContent : MonoBehaviour
+	public class TeamInfoDialogContent : DialogContent
 	{
 	}
 }

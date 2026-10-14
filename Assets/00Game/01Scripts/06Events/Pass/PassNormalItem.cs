@@ -13,8 +13,11 @@ namespace Snui
         public UnityEvent OnClickedTutorailHandle = new UnityEvent();
         protected virtual bool VipTrack => false;
         protected int Stage;
-        private Button _claimBtn;
-        private RewardCell _rewardCell;
+        [SerializeField] protected Button _claimBtn;
+        [SerializeField] protected RewardCell _rewardCell;
+        [SerializeField] protected Transform _getMark;
+        [SerializeField] protected Transform _lockMark;
+        [SerializeField] protected Spine.Unity.SkeletonGraphic _lockGraphic;
         private List<RewardItem> _rewards;
         private bool _busy;
         private bool _wasUnlocked, _bound;
@@ -22,15 +25,19 @@ namespace Snui
         protected override void Awake()
         {
             base.Awake();
-            _claimBtn = PassUI.Bind(transform, "ClaimBtn", Claim);
-            _rewardCell = GetComponentInChildren<RewardCell>(true);
+            if (_claimBtn == null) _claimBtn = PassUI.Bind(transform, "ClaimBtn", Claim);
+            else { _claimBtn.onClick.RemoveListener(Claim); _claimBtn.onClick.AddListener(Claim); }
+            if (_rewardCell == null) _rewardCell = GetComponentInChildren<RewardCell>(true);
+            if (_getMark == null) _getMark = HierarchyReferenceCache.Descendant(transform, "Get");
+            if (_lockMark == null) _lockMark = HierarchyReferenceCache.Descendant(transform, "Lock");
+            if (_lockGraphic == null && _lockMark != null) _lockGraphic = _lockMark.GetComponent<Spine.Unity.SkeletonGraphic>();
             if (_button != null) _button.onClick.AddListener(OnClicked);
         }
         public virtual UniTask Init(int row)
         {
             transform.localScale = Vector3.one;
             if (_claimBtn != null) _claimBtn.transform.localScale = Vector3.one;
-            var claimedMark = HierarchyReferenceCache.Descendant(transform, "Get");
+            var claimedMark = _getMark != null ? _getMark : HierarchyReferenceCache.Descendant(transform, "Get");
             if (claimedMark != null) claimedMark.localScale = Vector3.one;
             _bound = false; _displayStage = int.MaxValue;
             Stage = row;
@@ -57,9 +64,15 @@ namespace Snui
             bool claimed = VipTrack ? manager.IsVipRewardClaimed(Stage) : manager.IsFreeRewardClaimed(Stage);
             bool unlocked = manager.IsStageUnlocked(Stage) && Stage < _displayStage && (!VipTrack || manager.IsVip());
             bool locked = VipTrack && !manager.IsVip() && !claimed;
-            PassUI.Active(transform, "Get", claimed);
-            PassUI.Active(transform, "Lock", locked);
-            if (locked) PassUI.Spine(PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock"), "idle", true);
+            if (_getMark != null) _getMark.gameObject.SetActive(claimed);
+            else PassUI.Active(transform, "Get", claimed);
+            if (_lockMark != null) _lockMark.gameObject.SetActive(locked);
+            else PassUI.Active(transform, "Lock", locked);
+            if (locked)
+            {
+                if (_lockGraphic != null) PassUI.Spine(_lockGraphic, "idle", true);
+                else PassUI.Spine(PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock"), "idle", true);
+            }
             if (_claimBtn != null) { _claimBtn.gameObject.SetActive(unlocked && !claimed); _claimBtn.interactable = !_busy; }
             if (_bound && unlocked && !_wasUnlocked && !claimed && _claimBtn != null) PassUI.Animate(_claimBtn.transform);
             _wasUnlocked = unlocked; _bound = true;
@@ -82,7 +95,7 @@ namespace Snui
                 if (rewards != null && rewards.Count > 0)
                 {
                     PassUI.Sound(ClaimedSound);
-                    var mark = HierarchyReferenceCache.Descendant(transform, "Get");
+                    var mark = _getMark != null ? _getMark : HierarchyReferenceCache.Descendant(transform, "Get");
                     if (mark != null)
                     {
                         mark.DOKill(); mark.localScale = Vector3.zero;

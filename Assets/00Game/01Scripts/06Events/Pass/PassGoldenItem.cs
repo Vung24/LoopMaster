@@ -7,12 +7,14 @@ namespace Snui
 	{
         public AudioClip UnlockSound;
         protected override bool VipTrack => true;
+        [SerializeField] protected Transform _particle;
         private bool _unlocking;
         private int _bindingVersion;
         protected override void Awake()
         {
             base.Awake();
-            var effect = HierarchyReferenceCache.Child(transform, "Particle");
+            if (_particle == null) _particle = HierarchyReferenceCache.Child(transform, "Particle");
+            var effect = _particle;
             if (effect != null)
                 foreach (var graphic in effect.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) graphic.raycastTarget = false;
         }
@@ -24,14 +26,18 @@ namespace Snui
         public override void Refresh()
         {
             base.Refresh();
-            if (_unlocking) PassUI.Active(transform, "Lock", true);
+            if (_unlocking)
+            {
+                if (_lockMark != null) _lockMark.gameObject.SetActive(true);
+                else PassUI.Active(transform, "Lock", true);
+            }
         }
         public async UniTask PlayUnlockAnim()
         {
             if (_unlocking || !Managers.Pass.IsVip()) return;
             int version = _bindingVersion;
             _unlocking = true; Refresh(); PassUI.Sound(UnlockSound);
-            var graphic = PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock");
+            var graphic = _lockGraphic != null ? _lockGraphic : PassUI.Node<Spine.Unity.SkeletonGraphic>(transform, "Lock");
             PassUI.Spine(graphic, "unlock", false);
             float duration = graphic?.SkeletonData?.FindAnimation("unlock")?.Duration ?? .4f;
             await UniTask.Delay(System.TimeSpan.FromSeconds(duration), ignoreTimeScale: true, cancellationToken: this.GetCancellationTokenOnDestroy());

@@ -17,11 +17,11 @@ namespace Snui
 		public Texture Rank3Texture;
 		public Texture SelfRankTexture;
 		public Texture OtherRankTexture;
-		protected CanvasGroup _canvasGroup;
-		protected Image _bg;
-		protected RawImage _rank;
-		protected TMP_Text _rankText;
-		protected PlayerInfoWidget _playerInfo;
+		[SerializeField] protected CanvasGroup _canvasGroup;
+		[SerializeField] protected Image _bg;
+		[SerializeField] protected RawImage _rank;
+		[SerializeField] protected TMP_Text _rankText;
+		[SerializeField] protected PlayerInfoWidget _playerInfo;
 		private const float HORIZON_PADDING = 14f;
 		private const float MAX_WIDTH = 878f;
 
