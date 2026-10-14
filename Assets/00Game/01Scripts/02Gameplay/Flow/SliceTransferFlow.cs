@@ -34,8 +34,10 @@ public sealed class SliceTransferFlow
 	private int _version;
 	private float _popInVibrationEndTime;
 	private float _popOutVibrationEndTime;
-	private Coroutine _popInVibration;
-	private Coroutine _popOutVibration;
+	private bool _isPlayingPopInVibration;
+	private bool _isPlayingPopOutVibration;
+	private System.Threading.CancellationTokenSource _vibrationLifetime;
+	private int _vibrationVersion;
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
 		Func<Box, bool> isGroupUnlocking, Action updateCombo,
@@ -74,12 +76,14 @@ public sealed class SliceTransferFlow
 
 	public void StopVibrationWindows()
 	{
-		if (_host != null)
+		_vibrationVersion++;
+		if (_vibrationLifetime != null)
 		{
-			if (_popInVibration != null) _host.StopCoroutine(_popInVibration);
-			if (_popOutVibration != null) _host.StopCoroutine(_popOutVibration);
+			_vibrationLifetime.Cancel();
+			_vibrationLifetime.Dispose();
+			_vibrationLifetime = null;
 		}
-		_popInVibration = _popOutVibration = null;
+		_isPlayingPopInVibration = _isPlayingPopOutVibration = false;
 		_popInVibrationEndTime = _popOutVibrationEndTime = 0f;
 		GameVibrationHelper.Cancel();
 	}
@@ -340,36 +344,52 @@ public sealed class SliceTransferFlow
 	private void ExtendVibrationWindow(bool popOut, bool first = false)
 	{
 		// Native ExtendSlicePop*VibrationWindow: extend by 0.3s, one loop per direction.
+		if (_vibrationLifetime == null)
+			_vibrationLifetime = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(_hostToken);
 		if (popOut)
 		{
 			if (first) GameVibrationHelper.PlaySlicePopOutFirst();
 			_popOutVibrationEndTime = Mathf.Max(_popOutVibrationEndTime, Time.time + 0.3f);
-			if (_popOutVibration == null) _popOutVibration = _host.StartCoroutine(PlayVibrationWindow(true, _version));
+			if (!_isPlayingPopOutVibration)
+			{
+				_isPlayingPopOutVibration = true;
+				PlayVibrationWindow(true, _vibrationVersion, _vibrationLifetime.Token).Forget();
+			}
 		}
 		else
 		{
 			_popInVibrationEndTime = Mathf.Max(_popInVibrationEndTime, Time.time + 0.3f);
-			if (_popInVibration == null) _popInVibration = _host.StartCoroutine(PlayVibrationWindow(false, _version));
+			if (!_isPlayingPopInVibration)
+			{
+				_isPlayingPopInVibration = true;
+				PlayVibrationWindow(false, _vibrationVersion, _vibrationLifetime.Token).Forget();
+			}
 		}
 	}
 
-	private System.Collections.IEnumerator PlayVibrationWindow(bool popOut, int version)
+	private async UniTask PlayVibrationWindow(bool popOut, int version, System.Threading.CancellationToken token)
 	{
-		// GetSliceInterval(false) = 0.05 * 0.5. Pop-out waits before its first tiny pulse.
-		var wait = new WaitForSeconds(0.025f);
-		if (popOut) yield return wait;
-		while (version == _version && _host != null && _host.isActiveAndEnabled &&
-			Time.time < (popOut ? _popOutVibrationEndTime : _popInVibrationEndTime))
+		try
 		{
-			if (_isGameRunning() && Time.timeScale > 0f)
+			// Native uses UniTask at Update (enum 8), not coroutine WaitForSeconds.
+			if (popOut) await UniTask.WaitForSeconds(0.025f, delayTiming: PlayerLoopTiming.Update, cancellationToken: token);
+			while (version == _vibrationVersion && _host != null && _host.isActiveAndEnabled &&
+				Time.time < (popOut ? _popOutVibrationEndTime : _popInVibrationEndTime))
 			{
 				if (popOut) GameVibrationHelper.PlaySlicePopOut();
 				else GameVibrationHelper.PlaySlicePopIn();
+				await UniTask.WaitForSeconds(0.025f, delayTiming: PlayerLoopTiming.Update, cancellationToken: token);
 			}
-			yield return wait;
 		}
-		if (popOut) _popOutVibration = null;
-		else _popInVibration = null;
+		catch (OperationCanceledException) { }
+		finally
+		{
+			if (version == _vibrationVersion)
+			{
+				if (popOut) _isPlayingPopOutVibration = false;
+				else _isPlayingPopInVibration = false;
+			}
+		}
 	}
 
 	private Slice CreateSlice(SliceInfo info, Box box)

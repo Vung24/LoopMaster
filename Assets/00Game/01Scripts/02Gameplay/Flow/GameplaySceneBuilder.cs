@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -28,6 +30,30 @@ public sealed class GameplaySceneBuilder : IGroupLockScene
 		CreateRoad();
 		CreateMap(onMapCreated);
 		CreateBoxes();
+		CreateGroupRollDoors();
+		CreateArrow();
+	}
+
+	public async UniTask BuildAsync(GameData data, GameLoader loader, Transform gameRoot,
+		Action onMapCreated, CancellationToken cancellationToken)
+	{
+		Data = data;
+		_gameLoader = loader;
+		GameRoot = gameRoot;
+		cancellationToken.ThrowIfCancellationRequested();
+		CreateRoad();
+		await UniTask.NextFrame(cancellationToken);
+		CreateMap(onMapCreated);
+		await UniTask.NextFrame(cancellationToken);
+		float frameStartedAt = Time.realtimeSinceStartup;
+		for (int i = 0; i < Data.Boxes.Count; i++)
+		{
+			CreateBox(Data.Boxes[i]);
+			if (Time.realtimeSinceStartup - frameStartedAt < 0.004f) continue;
+			await UniTask.NextFrame(cancellationToken);
+			frameStartedAt = Time.realtimeSinceStartup;
+		}
+		await UniTask.NextFrame(cancellationToken);
 		CreateGroupRollDoors();
 		CreateArrow();
 	}
@@ -71,15 +97,19 @@ public sealed class GameplaySceneBuilder : IGroupLockScene
 	{
 		for (int i = 0; i < Data.Boxes.Count; i++)
 		{
-			BoxInfo info = Data.Boxes[i];
-			GameObject prefab = GetBoxObject(info);
-			if (prefab == null) continue;
-			GameObject boxObject = Object.Instantiate(prefab, GameRoot);
-			Box box = boxObject.GetComponent<Box>() ?? boxObject.AddComponent<Box>();
-			box.Init(info, _gameLoader);
-			_boxes.Add(box);
-			_boxesByInfo[info] = box;
+			CreateBox(Data.Boxes[i]);
 		}
+	}
+
+	private void CreateBox(BoxInfo info)
+	{
+		GameObject prefab = GetBoxObject(info);
+		if (prefab == null) return;
+		GameObject boxObject = Object.Instantiate(prefab, GameRoot);
+		Box box = boxObject.GetComponent<Box>() ?? boxObject.AddComponent<Box>();
+		box.Init(info, _gameLoader);
+		_boxes.Add(box);
+		_boxesByInfo[info] = box;
 	}
 
 	private GameObject GetBoxObject(BoxInfo box)
@@ -94,10 +124,10 @@ public sealed class GameplaySceneBuilder : IGroupLockScene
 
 	private void CreateGroupRollDoors()
 	{
-		if (_gameLoader.GroupColorLock == null) return;
 		foreach (GroupInfo group in Data.Groups)
 		{
 			if (group == null || !group.IsLocked) continue;
+			if (_gameLoader.GroupColorLock == null) continue;
 			var groupBoxes = new List<Box>();
 			for (int i = 0; i < group.BoxIndexes.Count; i++)
 			{

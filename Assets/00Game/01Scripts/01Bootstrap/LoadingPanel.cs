@@ -50,7 +50,7 @@ public class LoadingPanel : MonoBehaviour
 		float elapsed = Time.realtimeSinceStartup - _showStartTime;
 		if (elapsed < minTime)
 		{
-			await UniTask.WaitForSeconds(minTime - elapsed, ignoreTimeScale: false);
+			await UniTask.WaitForSeconds(minTime - elapsed, ignoreTimeScale: true);
 		}
 		await PlayDismissAnim();
 	}
@@ -60,7 +60,7 @@ public class LoadingPanel : MonoBehaviour
 		if (_canvasGroup != null)
 		{
 			_canvasGroup.alpha = 0f;
-			await _canvasGroup.DOFade(1f, 0.3f).SetLink(gameObject).AsyncWaitForCompletion();
+			await _canvasGroup.DOFade(1f, 0.3f).SetUpdate(true).SetLink(gameObject).AsyncWaitForCompletion();
 		}
 	}
 
@@ -68,7 +68,7 @@ public class LoadingPanel : MonoBehaviour
 	{
 		if (_canvasGroup != null)
 		{
-			await _canvasGroup.DOFade(0f, 0.3f).SetLink(gameObject).AsyncWaitForCompletion();
+			await _canvasGroup.DOFade(0f, 0.3f).SetUpdate(true).SetLink(gameObject).AsyncWaitForCompletion();
 		}
 		if (Current == this)
 		{

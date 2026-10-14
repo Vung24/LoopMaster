@@ -327,7 +327,6 @@ public sealed class GameResultUI : MonoBehaviour
 	{
 		if (HudContainer.Current != null) HudContainer.Current.gameObject.SetActive(false);
 		HideAll();
-		PrepareWinDialog().Forget();
 	}
 
 	private void OnNextLevelUnavailable(int level)
