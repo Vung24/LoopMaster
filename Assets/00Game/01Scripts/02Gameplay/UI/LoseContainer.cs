@@ -3,6 +3,7 @@ using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class LoseContainer : MonoBehaviour
 {
@@ -63,6 +64,13 @@ public class LoseContainer : MonoBehaviour
     {
         _currentLoseItem = Instantiate(_loseItemPrefabs[_loseIndex], _loseBg != null ? _loseBg : transform, false);
         _currentLoseItem.transform.localPosition = Vector3.zero;
+        Image icon = HierarchyReferenceCache.ChildComponent<Image>(_currentLoseItem.transform, "Icon")
+            ?? HierarchyReferenceCache.ChildComponent<Image>(_currentLoseItem.transform, "Star");
+        if (icon != null && icon.sprite != null)
+        {
+            icon.preserveAspect = true;
+            icon.SetNativeSize();
+        }
         Snui.Snui_Text.EnsureFontAssets(_currentLoseItem.transform);
         var slider = _currentLoseItem.GetComponentInChildren<SpecialStreakMultiplierSlider>(true);
         if (slider != null)

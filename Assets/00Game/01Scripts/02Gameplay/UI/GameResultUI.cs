@@ -355,7 +355,7 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_showFailRoutine != null) StopCoroutine(_showFailRoutine);
 		_showFailRoutine = null;
 		if (releaseWin) { _winLoad?.Cancel(); _winLoad = null; }
-		if (_winDialog != null && !_winDialog.IsEnteringHome)
+		if (_winDialog != null && !_winDialog.IsEnteringHome && !_winDialog.IsTransitioningNextLevel)
 		{
 			_winDialog.Hide();
 			if (releaseWin) Destroy(_winDialog.gameObject);

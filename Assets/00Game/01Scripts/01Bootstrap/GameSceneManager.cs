@@ -101,8 +101,9 @@ public static class GameSceneManager
 
 			if (sceneType == SceneType.Game && LoadingPanel.Current != null)
 			{
-				await UniTask.NextFrame();
-				await UniTask.NextFrame();
+				float waitStart = Time.realtimeSinceStartup;
+				await UniTask.WaitUntil(() => (GameController.Current != null && GameController.Current.Data != null) || (Time.realtimeSinceStartup - waitStart > 3f));
+				await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
 			}
 
 			await LoadingPanel.TryDismiss();

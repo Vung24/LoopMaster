@@ -120,10 +120,7 @@ namespace Snui
 				GameVibrationHelper.PlayNavigationTap();
 				return;
 			}
-			#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
-			if (EnableVibration && GameVibrationHelper.Enabled && Application.isMobilePlatform)
-				Handheld.Vibrate();
-			#endif
+			GameVibrationHelper.PlayTiny();
 		}
 
 		public void OnPointerDown(PointerEventData eventData)

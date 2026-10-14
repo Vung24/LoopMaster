@@ -1,9 +1,36 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 {
+	private static readonly Dictionary<int, string> _packagedJsonCache = new Dictionary<int, string>();
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ResetCache()
+	{
+		_packagedJsonCache.Clear();
+	}
+
+	public static async UniTask PreloadLevelsAsync(int startLevel, int count, CancellationToken cancellationToken = default)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			int levelNumber = startLevel + i;
+			if (levelNumber < 1 || _packagedJsonCache.ContainsKey(levelNumber)) continue;
+			ResourceRequest request = Resources.LoadAsync<TextAsset>($"{BuiltinLevelCatalog.ResourceFolder}/Level {levelNumber}");
+			await request.WithCancellation(cancellationToken);
+			if (request.asset is TextAsset asset)
+			{
+				_packagedJsonCache[levelNumber] = asset.text;
+				Resources.UnloadAsset(asset);
+			}
+		}
+	}
+
 	[SerializeField] private string _bundleName = "puzzle";
 	[SerializeField] private int _defaultLevel = 1;
 	[SerializeField] private string _levelDataFolder = "00Game/05LevelData/LevelData";
@@ -47,12 +74,15 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 		GameData previous = GameData.Current;
 		try
 		{
-			if (!string.IsNullOrEmpty(_lastJsonFolder) && ReadJsonLevel(_lastJsonFolder, levelNumber, out data)) return true;
-			if (!string.IsNullOrEmpty(_levelDataFolder))
+			if (Application.isEditor)
 			{
-				string projectFolder = GetProjectLevelFolder();
-				if (!string.Equals(projectFolder, _lastJsonFolder, StringComparison.Ordinal) &&
-					ReadJsonLevel(projectFolder, levelNumber, out data)) return true;
+				if (!string.IsNullOrEmpty(_lastJsonFolder) && ReadJsonLevel(_lastJsonFolder, levelNumber, out data)) return true;
+				if (!string.IsNullOrEmpty(_levelDataFolder))
+				{
+					string projectFolder = GetProjectLevelFolder();
+					if (!string.Equals(projectFolder, _lastJsonFolder, StringComparison.Ordinal) &&
+						ReadJsonLevel(projectFolder, levelNumber, out data)) return true;
+				}
 			}
 			return ReadPackagedLevel(levelNumber, out data);
 		}
@@ -72,7 +102,7 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 			return _availabilityResult;
 		// Catalog availability needs no file-system probe. Actual loads still honor JSON overrides first.
 		bool available = Catalog != null && Catalog.HasLevel(levelNumber);
-		if (!available)
+		if (!available && Application.isEditor)
 		{
 			string file = "Level " + levelNumber + ".json";
 			available = (!string.IsNullOrEmpty(_lastJsonFolder) && File.Exists(Path.Combine(_lastJsonFolder, file))) ||
@@ -173,12 +203,23 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 	{
 		data = null;
 		if (Catalog == null || !Catalog.HasLevel(levelNumber)) return false;
+
+		if (_packagedJsonCache.TryGetValue(levelNumber, out string cachedJson))
+		{
+			if (!CreateJsonData(cachedJson, levelNumber, out data)) return false;
+			_lastJsonFolder = null;
+			_availabilityFrame = -1;
+			return true;
+		}
+
 		TextAsset asset = null;
 		try
 		{
 			asset = Resources.Load<TextAsset>($"{BuiltinLevelCatalog.ResourceFolder}/Level {levelNumber}");
 			if (asset == null) return false;
-			if (!CreateJsonData(asset.text, levelNumber, out data)) return false;
+			string json = asset.text;
+			_packagedJsonCache[levelNumber] = json;
+			if (!CreateJsonData(json, levelNumber, out data)) return false;
 			_lastJsonFolder = null;
 			_availabilityFrame = -1;
 			return true;
