@@ -36,11 +36,13 @@ namespace Snui.StreakLine
 		[SerializeField] private Button _rewardButton;
 		[SerializeField] private AudioClip _showButton, _clickButton, _showTick;
 		private readonly List<Image> _lines = new List<Image>();
-		private Image _platformImage, _nextImage;
-		private TMP_Text _endText;
+		[SerializeField] private Image _platformImage;
+		[SerializeField] private Image _nextImage;
+		[SerializeField] private TMP_Text _endText;
 		private Tween _rise, _claimTween, _chestTween;
 		private Vector3 _claimPosition, _chestPosition;
-		private Transform _claimParent, _claimMask;
+		private Transform _claimParent;
+		[SerializeField] private Transform _claimMask;
 		private int _claimSibling;
 		private int _bindingVersion;
 		public event Action<StreakLineProgress> Claimed;

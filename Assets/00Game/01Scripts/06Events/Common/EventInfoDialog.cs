@@ -18,16 +18,17 @@ namespace Snui
 		public Transform tf_bone8;
 		public Transform tf_bone9;
 		public Transform BtnText;
-		private Button _continueBtn;
+		[SerializeField] protected Button _continueBtn;
 
 		protected override void Awake()
 		{
 			base.Awake();
 			if (_continueBtn == null)
 			{
-				var btnTrans = HierarchyReferenceCache.Descendant(transform, "ContinueBtn");
+				var btnTrans = HierarchyReferenceCache.Descendant(transform, "ContinueBtn")
+							 ?? HierarchyReferenceCache.Descendant(transform, "ContinueButton");
 				if (btnTrans != null) _continueBtn = btnTrans.GetComponent<Button>();
-				if (_continueBtn == null) _continueBtn = GetComponentInChildren<Button>(true);
+				if (_continueBtn == null) _continueBtn = _closeBtn ?? GetComponentInChildren<Button>(true);
 			}
 			if (_continueBtn != null)
 			{

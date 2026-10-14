@@ -9,13 +9,14 @@ namespace Snui
 	public class PassToastItemBase : MonoBehaviour
 	{
 		public UnityEvent<PassToastItemBase, string, List<RewardItem>, object[]> ShowToastHandle = new UnityEvent<PassToastItemBase, string, List<RewardItem>, object[]>();
-		public Transform ToastTop, ToastBottom;
-		protected Button _button;
+		[SerializeField] public Transform ToastTop;
+		[SerializeField] public Transform ToastBottom;
+		[SerializeField] protected Button _button;
 		protected virtual void Awake()
 		{
-			_button = GetComponent<Button>();
-			ToastTop = HierarchyReferenceCache.Child(transform, "ToastTop");
-			ToastBottom = HierarchyReferenceCache.Child(transform, "ToastBottom");
+			if (_button == null) _button = GetComponent<Button>();
+			if (ToastTop == null) ToastTop = HierarchyReferenceCache.Child(transform, "ToastTop");
+			if (ToastBottom == null) ToastBottom = HierarchyReferenceCache.Child(transform, "ToastBottom");
 		}
 		protected void Preview(List<RewardItem> rewards)
 		{
