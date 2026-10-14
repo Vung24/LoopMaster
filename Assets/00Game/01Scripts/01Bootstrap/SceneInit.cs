@@ -1,10 +1,11 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 public sealed class SceneInit
 {
-	private const float MinimumLoadingTime = 5f;
+	private const float MinimumLoadingTime = 1.2f;
 
 	public GameAssetsConfig GameplayConfig { get; private set; }
 	public BuiltinLevelCatalog LevelCatalog { get; private set; }
@@ -34,8 +35,14 @@ public sealed class SceneInit
 		HighestCompletedLevel = GameProgressStore.HighestCompletedLevel;
 		EnterGameFromSplash = GameProgressStore.CurrentPuzzleIndex == 0;
 
-		if (EnterGameFromSplash)
-			await GameLoader.PreloadDefaultAssetsAsync(cancellationToken);
+		await GameLoader.PreloadDefaultAssetsAsync(cancellationToken);
+		await BuiltinPuzzleLoader.PreloadLevelsAsync(NextPlayableLevel, 3, cancellationToken);
+
+		Snui.TextFontCatalog.Resolve();
+		SpecialStreakManager.Ensure();
+		LevelBoxManager.EnsureInitialized();
+		Addressables.LoadAssetAsync<GameObject>("WinDialog");
+		Shader.WarmupAllShaders();
 
 		await UniTask.Yield(cancellationToken);
 		EventRuntime.EnsureInitialized();

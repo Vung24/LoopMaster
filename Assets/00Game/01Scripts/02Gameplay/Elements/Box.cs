@@ -449,6 +449,7 @@ public class Box : MonoBehaviour
 	public void PlayClickedAnim(bool isPopup)
 	{
 		if (_onPlayingAnim) return;
+		GameVibrationHelper.PlayBoxTap(isPopup);
 		string clip = isPopup ? "Skeleton|cube_click" : "Skeleton|cube_static";
 		if (_anim != null && _anim.GetClip(clip) != null) _anim.Play(clip);
 		foreach (Cube cube in Cubes)

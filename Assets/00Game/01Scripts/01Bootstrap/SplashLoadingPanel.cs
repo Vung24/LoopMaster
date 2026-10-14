@@ -15,7 +15,7 @@ public class SplashLoadingPanel : LoadingPanel
 
 	protected override float GetMinLoadingTime()
 	{
-		return 3.0f;
+		return 1.2f;
 	}
 
 	protected override void Awake()

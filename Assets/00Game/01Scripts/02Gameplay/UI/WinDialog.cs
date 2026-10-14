@@ -26,6 +26,7 @@ public class WinDialog : MonoBehaviour
 	private ParticleSystem[] _fireworkParticles;
 	private bool _effectsPrepared;
 	public bool IsEnteringHome { get; private set; }
+	public bool IsTransitioningNextLevel { get; private set; }
 
 	private void Awake() { ResolveReferences(); }
 
@@ -232,12 +233,49 @@ public class WinDialog : MonoBehaviour
 	public bool EnterNextScene()
 	{
 		if (!isActiveAndEnabled || _controller == null || _controller.EndState != GameEndState.Won ||
-			!_controller.HasClaimedWinReward(_controller.Data) || IsEnteringHome || GameSceneManager.OnChangeScene)
+			!_controller.HasClaimedWinReward(_controller.Data) || IsEnteringHome || IsTransitioningNextLevel || GameSceneManager.OnChangeScene)
 			return false;
-		if (!_controller.ShouldReturnHomeAfterWin) return _controller.TryLoadNextLevel();
+		if (!_controller.ShouldReturnHomeAfterWin)
+		{
+			if (!_controller.CanLoadNextLevel)
+			{
+				return _controller.TryLoadNextLevel();
+			}
+			IsTransitioningNextLevel = true;
+			FadeOutAndAdvanceLevel().Forget();
+			return true;
+		}
 		IsEnteringHome = true;
 		FadeOutAndEnterHome().Forget();
 		return true;
+	}
+
+	private async UniTaskVoid FadeOutAndAdvanceLevel()
+	{
+		CancelPresentation();
+		if (_logoDialogContent != null) _logoDialogContent.Hide();
+		if (_winDialogContent != null) _winDialogContent.Hide();
+		StopFireworks();
+		SetMaskAlpha(1f);
+
+		bool success = _controller != null && _controller.TryLoadNextLevel();
+		if (!success)
+		{
+			IsTransitioningNextLevel = false;
+			return;
+		}
+
+		await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+
+		if (_mask != null)
+		{
+			_maskFade?.Kill();
+			_maskFade = _mask.DOFade(0f, 0.25f).SetUpdate(true).SetLink(gameObject);
+			await _maskFade.ToUniTask();
+		}
+
+		IsTransitioningNextLevel = false;
+		Hide();
 	}
 
 	private async UniTaskVoid FadeOutAndEnterHome()

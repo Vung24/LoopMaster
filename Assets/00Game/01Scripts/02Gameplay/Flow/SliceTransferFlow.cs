@@ -9,6 +9,7 @@ public sealed class SliceTransferFlow
 	private sealed class LaunchOperation
 	{
 		public int Version;
+		public bool FirstVibration = true;
 	}
 
 	private readonly MonoBehaviour _host;
@@ -31,6 +32,10 @@ public sealed class SliceTransferFlow
 	private GameLoader _loader;
 	private Transform _gameRoot;
 	private int _version;
+	private float _popInVibrationEndTime;
+	private float _popOutVibrationEndTime;
+	private Coroutine _popInVibration;
+	private Coroutine _popOutVibration;
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
 		Func<Box, bool> isGroupUnlocking, Action updateCombo,
@@ -58,12 +63,25 @@ public sealed class SliceTransferFlow
 
 	public void Cancel()
 	{
+		StopVibrationWindows();
 		EndArrivalBatch();
 		_version++;
 		foreach (Box box in _surprises.ToArray()) if (box != null) box.CancelSurpriseTransformation();
 		_surprises.Clear();
 		_launches.Clear();
 		_arrivalCandidates.Clear();
+	}
+
+	public void StopVibrationWindows()
+	{
+		if (_host != null)
+		{
+			if (_popInVibration != null) _host.StopCoroutine(_popInVibration);
+			if (_popOutVibration != null) _host.StopCoroutine(_popOutVibration);
+		}
+		_popInVibration = _popOutVibration = null;
+		_popInVibrationEndTime = _popOutVibrationEndTime = 0f;
+		GameVibrationHelper.Cancel();
 	}
 
 	private bool IsCurrent(int version) => version == _version && _host != null && _host.gameObject.activeInHierarchy && _isGameRunning();
@@ -152,6 +170,7 @@ public sealed class SliceTransferFlow
 				box.Info.State = BoxState.Free;
 			return;
 		}
+		ExtendVibrationWindow(false);
 		_data.RemoveTransferSlice(slice.Info);
 		int effectSliceCount = box.Info.GetSliceCount();
 		Color effectColor = GameAssetsConfig.GetCubeColor(slice.Info.Type);
@@ -256,6 +275,8 @@ public sealed class SliceTransferFlow
 					}
 
 					Slice visual = CreateSlice(info, box);
+					ExtendVibrationWindow(true, operation.FirstVibration);
+					operation.FirstVibration = false;
 					if (visual != null) visual.JumpToTransfer(box.Info.PathIndex, jumpDuration, jumpHeight).Forget();
 					created.Add(info);
 					_refreshPathState();
@@ -314,6 +335,41 @@ public sealed class SliceTransferFlow
 				return true;
 		}
 		return false;
+	}
+
+	private void ExtendVibrationWindow(bool popOut, bool first = false)
+	{
+		// Native ExtendSlicePop*VibrationWindow: extend by 0.3s, one loop per direction.
+		if (popOut)
+		{
+			if (first) GameVibrationHelper.PlaySlicePopOutFirst();
+			_popOutVibrationEndTime = Mathf.Max(_popOutVibrationEndTime, Time.time + 0.3f);
+			if (_popOutVibration == null) _popOutVibration = _host.StartCoroutine(PlayVibrationWindow(true, _version));
+		}
+		else
+		{
+			_popInVibrationEndTime = Mathf.Max(_popInVibrationEndTime, Time.time + 0.3f);
+			if (_popInVibration == null) _popInVibration = _host.StartCoroutine(PlayVibrationWindow(false, _version));
+		}
+	}
+
+	private System.Collections.IEnumerator PlayVibrationWindow(bool popOut, int version)
+	{
+		// GetSliceInterval(false) = 0.05 * 0.5. Pop-out waits before its first tiny pulse.
+		var wait = new WaitForSeconds(0.025f);
+		if (popOut) yield return wait;
+		while (version == _version && _host != null && _host.isActiveAndEnabled &&
+			Time.time < (popOut ? _popOutVibrationEndTime : _popInVibrationEndTime))
+		{
+			if (_isGameRunning() && Time.timeScale > 0f)
+			{
+				if (popOut) GameVibrationHelper.PlaySlicePopOut();
+				else GameVibrationHelper.PlaySlicePopIn();
+			}
+			yield return wait;
+		}
+		if (popOut) _popOutVibration = null;
+		else _popInVibration = null;
 	}
 
 	private Slice CreateSlice(SliceInfo info, Box box)

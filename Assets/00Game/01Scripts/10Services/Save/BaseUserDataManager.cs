@@ -44,11 +44,10 @@ public abstract class BaseUserDataManager : MonoBehaviour, IGameManager
 
 	public bool IsVibrate
 	{
-		get => GetBool(nameof(IsVibrate), true);
+		get => GameVibrationHelper.Enabled;
 		set
 		{
-			SetBool(nameof(IsVibrate), value);
-			GameVibrationHelper.Enabled = value;
+			GameVibrationHelper.SetEnabled(value);
 		}
 	}
 
