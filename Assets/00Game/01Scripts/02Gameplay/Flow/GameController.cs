@@ -165,7 +165,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 		GameResultUI resultUI = GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
 		_dialogParent = resultUI == null ? null : resultUI.DialogParent;
-		if (_navigationEffects != null) _navigationEffects.DialogParent = _dialogParent;
 	}
 
 	private void ResolvePuzzleLoader()
@@ -178,7 +177,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private GameNavigationFlow CreateNavigation()
 	{
 		ResolvePuzzleLoader();
-		_navigationEffects = new GameNavigationEffects { DialogParent = _dialogParent };
+		_navigationEffects = new GameNavigationEffects();
 		_navigation = new GameNavigationFlow(this, new GameLevelFlow(_puzzleLoader),
 			_navigationEffects, destroyCancellationToken);
 		_navigation.LevelReplayed += OnLevelReplayed;

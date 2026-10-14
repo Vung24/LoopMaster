@@ -4,8 +4,8 @@ using UnityEngine.UI;
 
 public class SplashLoadingPanel : LoadingPanel
 {
-	[SerializeField] private Transform _term;
-	[SerializeField] private Transform _privacy;
+	// [SerializeField] private Transform _term;
+	// [SerializeField] private Transform _privacy;
 
 	protected override UniTask PlayShowAnim()
 	{
@@ -21,26 +21,26 @@ public class SplashLoadingPanel : LoadingPanel
 	protected override void Awake()
 	{
 		base.Awake();
-		if (_term == null) _term = HierarchyReferenceCache.Child(transform, "TermBtn");
-		if (_privacy == null) _privacy = HierarchyReferenceCache.Child(transform, "PrivacyBtn");
+		// // if (_term == null) _term = HierarchyReferenceCache.Child(transform, "TermBtn");
+		// // if (_privacy == null) _privacy = HierarchyReferenceCache.Child(transform, "PrivacyBtn");
 
-		if (_term != null)
-		{
-			var btn = _term.GetComponent<Button>();
-			if (btn != null)
-			{
-				btn.onClick.AddListener(OnClickTermButton);
-			}
-		}
+		// // if (_term != null)
+		// {
+		// 	// var btn = _term.GetComponent<Button>();
+		// 	// if (btn != null)
+		// 	// {
+		// 		// btn.onClick.AddListener(OnClickTermButton);
+		// 	}
+		// }
 
-		if (_privacy != null)
-		{
-			var btn = _privacy.GetComponent<Button>();
-			if (btn != null)
-			{
-				btn.onClick.AddListener(OnClickPrivacyButton);
-			}
-		}
+		// if (_privacy != null)
+		// {
+		// 	var btn = _privacy.GetComponent<Button>();
+		// 	if (btn != null)
+		// 	{
+		// 		btn.onClick.AddListener(OnClickPrivacyButton);
+		// 	}
+		// }
 	}
 
 	private void OnClickTermButton()
