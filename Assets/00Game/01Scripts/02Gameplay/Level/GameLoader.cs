@@ -6,49 +6,41 @@ using UnityEngine;
 public class GameLoader : MonoBehaviour
 {
 	private const string ResourceRoot = "CoreGamePrefabs/";
-	private static readonly string[] DefaultPrefabNames =
-	{
-		"Box", "OnlyEnterBox", "LimitedColorBox", "SingleTypeBox", "LongColorBox",
-		"BoxColorLock", "BoxAdjacentLock", "BoxNumLock", "CubeNumLock", "Slice", "Cube",
-		"CubeFinish", "CubeLongFinish", "GameRoad", "BoxArrow", "MapArrow", "MapEnter",
-		"MapExit", "Capacity", "FlyAddPath", "KeyLockBox", "Key", "BoxComboEffect", "PathCombo"
-	};
 	private static readonly Dictionary<string, GameObject> PreloadedPrefabs = new Dictionary<string, GameObject>();
-	private bool _defaultAssetsLoaded;
 	private GameAssetsConfig _config;
 	private readonly Dictionary<string, Stack<PooledGameObject>> _gameObjectPools =
 		new Dictionary<string, Stack<PooledGameObject>>();
 
-	public GameObject Box { get; private set; }
-	public GameObject BoxEnterOnly { get; private set; }
-	public GameObject LimitedColorBox { get; private set; }
-	public GameObject SingleTypeBox { get; private set; }
-	public GameObject LongBox { get; private set; }
-	public GameObject BoxLock { get; private set; }
-	public GameObject AdjacentLock { get; private set; }
-	public GameObject NumLock { get; private set; }
-	public GameObject CubeNumLock { get; private set; }
-	public GameObject Slice { get; private set; }
-	public GameObject Cube { get; private set; }
-	public GameObject FinishCube { get; private set; }
-	public GameObject FinishLongCube { get; private set; }
-	public GameObject GameRoad { get; private set; }
-	public GameObject RoadArrow { get; private set; }
-	public GameObject MapArrow { get; private set; }
-	public GameObject MapEnter { get; private set; }
-	public GameObject MapExit { get; private set; }
-	public GameObject Capacity { get; private set; }
-	public GameObject FlyPath { get; private set; }
-	public GameObject GroupColorLock { get; private set; }
-	public GameObject GroupKey { get; private set; }
+	public GameObject Box => LoadPrefab("Box");
+	public GameObject BoxEnterOnly => LoadPrefab("OnlyEnterBox");
+	public GameObject LimitedColorBox => LoadPrefab("LimitedColorBox");
+	public GameObject SingleTypeBox => LoadPrefab("SingleTypeBox");
+	public GameObject LongBox => LoadPrefab("LongColorBox");
+	public GameObject BoxLock => LoadPrefab("BoxColorLock");
+	public GameObject AdjacentLock => LoadPrefab("BoxAdjacentLock");
+	public GameObject NumLock => LoadPrefab("BoxNumLock");
+	public GameObject CubeNumLock => LoadPrefab("CubeNumLock");
+	public GameObject Slice => LoadPrefab("Slice");
+	public GameObject Cube => LoadPrefab("Cube");
+	public GameObject FinishCube => LoadPrefab("CubeFinish");
+	public GameObject FinishLongCube => LoadPrefab("CubeLongFinish");
+	public GameObject GameRoad => LoadPrefab("GameRoad");
+	public GameObject RoadArrow => LoadPrefab("BoxArrow");
+	public GameObject MapArrow => LoadPrefab("MapArrow");
+	public GameObject MapEnter => LoadPrefab("MapEnter");
+	public GameObject MapExit => LoadPrefab("MapExit");
+	public GameObject Capacity => LoadPrefab("Capacity");
+	public GameObject FlyPath => LoadPrefab("FlyAddPath");
+	public GameObject GroupColorLock => LoadPrefab("KeyLockBox");
+	public GameObject GroupKey => LoadPrefab("Key");
 	public GameObject NewPlayerTutorialPrefab { get; private set; }
 	public GameObject FailTutorialPrefab { get; private set; }
 	public GameObject ToolPathBoxEffect { get; private set; }
 	public GameObject ToolShuffleMask { get; private set; }
 	public GameObject BoxFinishEffect { get; private set; }
 	public GameObject BoxNormalEffect { get; private set; }
-	public GameObject BoxComboEffect { get; private set; }
-	public GameObject PathComboEffect { get; private set; }
+	public GameObject BoxComboEffect => LoadPrefab("BoxComboEffect");
+	public GameObject PathComboEffect => LoadPrefab("PathCombo");
 
 	public AudioClip SlicePopIn { get; private set; }
 	public AudioClip SlicePopOut { get; private set; }
@@ -73,65 +65,15 @@ public class GameLoader : MonoBehaviour
 	public Sprite TopLeftArmHardImage;
 	public Sprite TopLeftArmExpertImage;
 
-	private void Awake()
+	public void LoadAssets(GameData gameData)
 	{
-		_config = GameAssetsConfig.Instance;
-		LoadDefaultAssets();
+		foreach (string name in GameplayAssetPreloadRules.GetRequiredPrefabNames(gameData)) LoadPrefab(name);
+		ConfigureAssets(gameData);
 	}
 
-	public UniTask LoadAssetsAsync(GameData gameData)
+	public async UniTask LoadAssetsAsync(GameData gameData, CancellationToken cancellationToken = default)
 	{
-		LoadDefaultAssets();
-		LoadAudio(gameData);
-		LoadCustomerAssets(gameData);
-		return default;
-	}
-
-	private UniTask LoadDefaultAssets()
-	{
-		if (_defaultAssetsLoaded) return UniTask.CompletedTask;
-		Box = LoadPrefab("Box");
-		BoxEnterOnly = LoadPrefab("OnlyEnterBox");
-		LimitedColorBox = LoadPrefab("LimitedColorBox");
-		SingleTypeBox = LoadPrefab("SingleTypeBox");
-		LongBox = LoadPrefab("LongColorBox");
-		BoxLock = LoadPrefab("BoxColorLock");
-		AdjacentLock = LoadPrefab("BoxAdjacentLock");
-		NumLock = LoadPrefab("BoxNumLock");
-		CubeNumLock = LoadPrefab("CubeNumLock");
-		Slice = LoadPrefab("Slice");
-		Cube = LoadPrefab("Cube");
-		FinishCube = LoadPrefab("CubeFinish");
-		FinishLongCube = LoadPrefab("CubeLongFinish");
-		GameRoad = LoadPrefab("GameRoad");
-		RoadArrow = LoadPrefab("BoxArrow");
-		MapArrow = LoadPrefab("MapArrow");
-		MapEnter = LoadPrefab("MapEnter");
-		MapExit = LoadPrefab("MapExit");
-		Capacity = LoadPrefab("Capacity");
-		FlyPath = LoadPrefab("FlyAddPath");
-		GroupColorLock = LoadPrefab("KeyLockBox");
-		GroupKey = LoadPrefab("Key");
-		BoxComboEffect = LoadPrefab("BoxComboEffect");
-		if (_config == null) _config = GameAssetsConfig.Instance;
-		BoxFinishEffect = _config == null ? null : _config.BoxFinishEffectPrefab;
-		BoxNormalEffect = _config == null ? null : _config.BoxNormalEffectPrefab;
-		PathComboEffect = LoadPrefab("PathCombo");
-		if (_config != null)
-		{
-			SpeedSprite = _config.SpeedImage;
-			UnSpeedSprite = _config.UnSpeedImage;
-		}
-		_defaultAssetsLoaded = true;
-		return default;
-	}
-
-	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-	private static void ResetPreloadedPrefabs() => PreloadedPrefabs.Clear();
-
-	public static async UniTask PreloadDefaultAssetsAsync(CancellationToken cancellationToken)
-	{
-		foreach (string name in DefaultPrefabNames)
+		foreach (string name in GameplayAssetPreloadRules.GetRequiredPrefabNames(gameData))
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			if (PreloadedPrefabs.TryGetValue(name, out GameObject prefab) && prefab != null) continue;
@@ -139,7 +81,47 @@ public class GameLoader : MonoBehaviour
 			await request.WithCancellation(cancellationToken);
 			if (request.asset is GameObject loaded) PreloadedPrefabs[name] = loaded;
 		}
+		ResourceRequest uiRequest = Resources.LoadAsync<Snui.PrefabLibrary>("PrefabLibrary");
+		await uiRequest.WithCancellation(cancellationToken);
+		ConfigureAssets(gameData);
+		await PreloadInteractionAudioAsync(cancellationToken);
 	}
+
+	private async UniTask PreloadInteractionAudioAsync(CancellationToken cancellationToken)
+	{
+		// Loading an AudioClip reference does not load its sample data when preload is off.
+		foreach (AudioClip clip in new[] { SlicePopOut, SlicePopIn })
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			if (clip == null || clip.loadState == AudioDataLoadState.Loaded) continue;
+			if (clip.loadState == AudioDataLoadState.Unloaded && !clip.LoadAudioData())
+			{
+				Debug.LogWarning("Could not preload interaction audio: " + clip.name);
+				continue;
+			}
+			await UniTask.WaitUntil(() => clip == null || clip.loadState != AudioDataLoadState.Loading,
+				cancellationToken: cancellationToken);
+			if (clip != null && clip.loadState != AudioDataLoadState.Loaded)
+				Debug.LogWarning("Interaction audio failed to load: " + clip.name);
+		}
+	}
+
+	private void ConfigureAssets(GameData gameData)
+	{
+		_config = GameAssetsConfig.Instance;
+		BoxFinishEffect = _config == null ? null : _config.BoxFinishEffectPrefab;
+		BoxNormalEffect = _config == null ? null : _config.BoxNormalEffectPrefab;
+		if (_config != null)
+		{
+			SpeedSprite = _config.SpeedImage;
+			UnSpeedSprite = _config.UnSpeedImage;
+		}
+		LoadAudio(gameData);
+		LoadCustomerAssets(gameData);
+	}
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ResetPreloadedPrefabs() => PreloadedPrefabs.Clear();
 
 	private UniTask LoadAudio(GameData gameData)
 	{
@@ -184,7 +166,57 @@ public class GameLoader : MonoBehaviour
 
 	public void PrewarmSlicePool(GameData data)
 	{
-		if (data == null || Slice == null || data.PathPoints.Count < 2) return;
+		Stack<PooledGameObject> pool = GetSlicePrewarmPool(data, out int targetCount);
+		if (pool == null) return;
+		while (pool.Count < targetCount) AddPrewarmedSlice();
+	}
+
+	public async UniTask PrewarmSlicePoolAsync(GameData data, CancellationToken cancellationToken)
+	{
+		Stack<PooledGameObject> pool = GetSlicePrewarmPool(data, out int targetCount);
+		if (pool == null) return;
+		float frameStartedAt = Time.realtimeSinceStartup;
+		while (pool.Count < targetCount)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			AddPrewarmedSlice();
+			if (Time.realtimeSinceStartup - frameStartedAt < 0.004f) continue;
+			await UniTask.NextFrame(cancellationToken);
+			frameStartedAt = Time.realtimeSinceStartup;
+		}
+	}
+
+	public async UniTask WarmupSliceVisualsAsync(GameData data, Transform parent, CancellationToken cancellationToken)
+	{
+		if (data == null || data.PathPoints.Count < 2 || LoadingPanel.Current == null) return;
+		var types = new HashSet<int>();
+		foreach (BoxInfo box in data.Boxes)
+			if (box != null)
+				foreach (CubeInfo cube in box.CubeInfos)
+					if (cube != null) types.Add(cube.Type);
+		foreach (SliceInfo info in data.TransferSlice)
+			if (info != null) types.Add(info.Type);
+		// Draw the real slice materials under the loading cover; inactive pooling
+		// alone does not exercise the first draw on the gameplay cameras.
+		foreach (int type in types)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			PooledSlice pooled = GetPooledGameObject<PooledSlice>("Slice", Slice, parent);
+			if (pooled == null) continue;
+			try
+			{
+				pooled.transform.SetPositionAndRotation(data.PathPoints[0], Quaternion.identity);
+				pooled.GetComponent<Slice>().PrepareVisual(type);
+				await UniTask.NextFrame(cancellationToken);
+			}
+			finally { if (pooled != null) pooled.Recycle(); }
+		}
+	}
+
+	private Stack<PooledGameObject> GetSlicePrewarmPool(GameData data, out int targetCount)
+	{
+		targetCount = 0;
+		if (data == null || Slice == null || data.PathPoints.Count < 2) return null;
 		int totalSlices = data.TransferSlice.Count;
 		int largestBox = 0;
 		foreach (BoxInfo box in data.Boxes)
@@ -194,21 +226,23 @@ public class GameLoader : MonoBehaviour
 			totalSlices += count;
 			largestBox = Mathf.Max(largestBox, count);
 		}
-		int targetCount = Mathf.Min(totalSlices,
+		targetCount = Mathf.Min(totalSlices,
 			Mathf.Max(0, data.GetTransferMaxGroup()) * GameData.SliceCountPerGroup + largestBox);
 		if (!_gameObjectPools.TryGetValue("Slice", out Stack<PooledGameObject> pool))
 		{
 			pool = new Stack<PooledGameObject>(targetCount);
 			_gameObjectPools.Add("Slice", pool);
 		}
-		while (pool.Count < targetCount)
-		{
-			GameObject instance = Instantiate(Slice, transform);
-			PooledSlice item = instance.GetComponent<PooledSlice>();
-			if (item == null) item = instance.AddComponent<PooledSlice>();
-			item.Initialize("Slice", this);
-			item.Recycle();
-		}
+		return pool;
+	}
+
+	private void AddPrewarmedSlice()
+	{
+		GameObject instance = Instantiate(Slice, transform);
+		PooledSlice item = instance.GetComponent<PooledSlice>();
+		if (item == null) item = instance.AddComponent<PooledSlice>();
+		item.Initialize("Slice", this);
+		item.Recycle();
 	}
 
 	public T GetPooledGameObject<T>(string key, GameObject prefab, Transform parent) where T : PooledGameObject
@@ -263,19 +297,10 @@ public class GameLoader : MonoBehaviour
 
 	public GameObject GetMapPrefab(string mapItemName)
 	{
-		if (string.IsNullOrEmpty(mapItemName)) return null;
-		switch (mapItemName.Trim().ToLowerInvariant())
-		{
-			case "arrow":
-			case "maparrow": return MapArrow;
-			case "enter":
-			case "mapenter": return MapEnter;
-			case "exit":
-			case "mapexit": return MapExit;
-			case "capacity": return Capacity;
-			default: return null;
-		}
+		string name = GameplayAssetPreloadRules.GetMapResourceName(mapItemName);
+		return name == null ? null : LoadPrefab(name);
 	}
+
 
 	private void OnDestroy()
 	{

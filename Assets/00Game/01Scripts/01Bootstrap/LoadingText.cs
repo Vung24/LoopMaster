@@ -4,15 +4,15 @@ using UnityEngine;
 public sealed class LoadingText : MonoBehaviour
 {
     private static readonly string[] AnimFrames = { ".", "..", "..." };
-    private const float Interval = 0.5f;
+    private const float Interval = 0.3f;
     [SerializeField] private TMP_Text _animText;
     private int _animStage;
-    private float _timer;
+    private double _animationStartedAt;
 
     private void OnEnable()
     {
         _animStage = 0;
-        _timer = 0f;
+        _animationStartedAt = Time.realtimeSinceStartupAsDouble;
         if (_animText == null)
         {
             _animText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "SubText");
@@ -36,10 +36,9 @@ public sealed class LoadingText : MonoBehaviour
 
     private void Update()
     {
-        _timer += Time.deltaTime;
-        if (_timer < Interval) return;
-        _timer -= Interval;
-        _animStage = (_animStage + 1) % AnimFrames.Length;
+        int stage = (int)(((Time.realtimeSinceStartupAsDouble - _animationStartedAt) / Interval) % AnimFrames.Length);
+        if (stage == _animStage) return;
+        _animStage = stage;
         RefreshText();
     }
 

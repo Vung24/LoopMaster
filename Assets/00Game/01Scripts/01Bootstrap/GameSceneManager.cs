@@ -101,8 +101,12 @@ public static class GameSceneManager
 
 			if (sceneType == SceneType.Game && LoadingPanel.Current != null)
 			{
-				float waitStart = Time.realtimeSinceStartup;
-				await UniTask.WaitUntil(() => (GameController.Current != null && GameController.Current.Data != null) || (Time.realtimeSinceStartup - waitStart > 3f));
+				GameController controller = GameController.Current;
+				if (controller == null) throw new InvalidOperationException("GameScene has no GameController.");
+				await UniTask.WaitUntil(() => controller.IsLevelReady || controller.InitializationError != null,
+					cancellationToken: controller.GetCancellationTokenOnDestroy());
+				if (controller.InitializationError != null)
+					throw new InvalidOperationException("Game level initialization failed.", controller.InitializationError);
 				await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
 			}
 
