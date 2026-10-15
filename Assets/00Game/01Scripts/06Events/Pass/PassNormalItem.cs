@@ -28,8 +28,8 @@ namespace Snui
             if (_claimBtn == null) _claimBtn = PassUI.Bind(transform, "ClaimBtn", Claim);
             else { _claimBtn.onClick.RemoveListener(Claim); _claimBtn.onClick.AddListener(Claim); }
             if (_rewardCell == null) _rewardCell = GetComponentInChildren<RewardCell>(true);
-            if (_getMark == null) _getMark = HierarchyReferenceCache.Descendant(transform, "Get");
-            if (_lockMark == null) _lockMark = HierarchyReferenceCache.Descendant(transform, "Lock");
+            if (_getMark == null) _getMark = HierarchyReferenceCache.Child(transform, "Get") ?? HierarchyReferenceCache.Descendant(transform, "Get");
+            if (_lockMark == null) _lockMark = HierarchyReferenceCache.Child(transform, "Lock") ?? HierarchyReferenceCache.Descendant(transform, "Lock");
             if (_lockGraphic == null && _lockMark != null) _lockGraphic = _lockMark.GetComponent<Spine.Unity.SkeletonGraphic>();
             if (_button != null) _button.onClick.AddListener(OnClicked);
         }
@@ -37,7 +37,7 @@ namespace Snui
         {
             transform.localScale = Vector3.one;
             if (_claimBtn != null) _claimBtn.transform.localScale = Vector3.one;
-            var claimedMark = _getMark != null ? _getMark : HierarchyReferenceCache.Descendant(transform, "Get");
+            var claimedMark = _getMark != null ? _getMark : (_getMark = HierarchyReferenceCache.Child(transform, "Get") ?? HierarchyReferenceCache.Descendant(transform, "Get"));
             if (claimedMark != null) claimedMark.localScale = Vector3.one;
             _bound = false; _displayStage = int.MaxValue;
             Stage = row;
@@ -95,7 +95,7 @@ namespace Snui
                 if (rewards != null && rewards.Count > 0)
                 {
                     PassUI.Sound(ClaimedSound);
-                    var mark = _getMark != null ? _getMark : HierarchyReferenceCache.Descendant(transform, "Get");
+                    var mark = _getMark != null ? _getMark : (_getMark = HierarchyReferenceCache.Child(transform, "Get") ?? HierarchyReferenceCache.Descendant(transform, "Get"));
                     if (mark != null)
                     {
                         mark.DOKill(); mark.localScale = Vector3.zero;
