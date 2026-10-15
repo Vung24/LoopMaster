@@ -83,7 +83,8 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 	}
 
 	public bool IsBoosterUnlocked(string key) => IsBoosterKey(key) &&
-		GameProgressStore.HighestUnlockedLevel >= GetToolUnlockLevel(key);
+		(GameProgressStore.HighestUnlockedLevel >= GetToolUnlockLevel(key) ||
+		 (GameController.Current != null && (GameController.Current.IsEditorPlaytest || GameController.Current.CurrentLevelNumber >= GetToolUnlockLevel(key))));
 	public bool CanUseBooster(string key) => !IsMutationBlocked && IsBoosterUnlocked(key) && GetAmount(key) > 0;
 	public int GetAmount(string key, int def = 0) => IsInventoryKey(key)
 		? Math.Max(0, GamePrefs.GetInt(CountKey(key), def)) : Math.Max(0, def);
