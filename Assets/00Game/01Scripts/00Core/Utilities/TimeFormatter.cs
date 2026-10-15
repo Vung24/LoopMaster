@@ -18,7 +18,7 @@ public class TimeFormatter
 
 		if (days > 0)
 		{
-			return hours > 0 ? $"{days}:{hours}" : $"{days}";
+			return hours > 0 ? $"{days}d:{hours}h" : $"{days}";
 		}
 		if (hours > 0)
 		{
