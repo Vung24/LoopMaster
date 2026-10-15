@@ -111,7 +111,7 @@ public class ToolBase : MonoBehaviour
 		SetActive(_num, !locked && count > 0);
 		if (_count != null) _count.SetText(count.ToString());
 		SetActive(_priceNode, false);
-		if (_button != null) _button.interactable = !locked && _canUse;
+		if (_button != null) _button.interactable = !locked && (count == 0 || _canUse);
 	}
 
 	public void UpdateCanUseState(bool canUse)
