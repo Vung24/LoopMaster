@@ -1,36 +1,14 @@
-using UnityEngine;
-
 public static class HomeLevelChangePresentation
 {
-    private const string PreviousKey = GamePrefKeys.HomePreviousLevel;
-    private const string TargetKey = GamePrefKeys.HomeTargetLevel;
-    private const string HardKey = GamePrefKeys.HomeHardLevel;
-    public static int PreviousLevel => GamePrefs.GetInt(PreviousKey, 0);
-    public static int TargetLevel => GamePrefs.GetInt(TargetKey, 0);
-    public static HardLevel PreviousHardLevel => (HardLevel)GamePrefs.GetInt(HardKey, 0);
-    public static bool HasPending => PreviousLevel > 0 && TargetLevel > PreviousLevel &&
-        TargetLevel == GameProgressStore.NextPlayableLevel && !GameProgressStore.IsCampaignComplete;
+    public static int PreviousLevel => PendingLevelChangeStore.PreviousLevel;
+    public static int TargetLevel => PendingLevelChangeStore.TargetLevel;
+    public static HardLevel PreviousHardLevel => PendingLevelChangeStore.PreviousHardLevel;
+    public static bool HasPending => PendingLevelChangeStore.HasPending;
 
-    public static void Record(int previous, int target, HardLevel hardLevel)
-    {
-        Clear();
-        if (previous < 1 || target <= previous) return;
-        GamePrefs.SetInt(PreviousKey, previous);
-        GamePrefs.SetInt(TargetKey, target);
-        GamePrefs.SetInt(HardKey, (int)hardLevel);
-    }
+    public static void Record(int previous, int target, HardLevel hardLevel) =>
+        PendingLevelChangeStore.Record(previous, target, hardLevel);
 
-    public static void Consume(int target)
-    {
-        if (TargetLevel != target) return;
-        Clear();
-        GamePrefs.Save();
-    }
+    public static void Consume(int target) => PendingLevelChangeStore.Consume(target);
 
-    public static void Clear()
-    {
-        GamePrefs.DeleteKey(PreviousKey);
-        GamePrefs.DeleteKey(TargetKey);
-        GamePrefs.DeleteKey(HardKey);
-    }
+    public static void Clear() => PendingLevelChangeStore.Clear();
 }
