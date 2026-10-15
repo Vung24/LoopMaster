@@ -107,19 +107,27 @@ namespace Snui
 				_progress.InitBoxes();
 			}
 
-			_dailyRewardCells.Clear();
-			for (int i = 0; i < DailyCheckInManager.LOGIN_DAY_COUNT; i++)
+			if (_dailyRewardCells.Count == 0)
 			{
-				Transform cellTrans = HierarchyReferenceCache.Descendant(_content, $"DailyRewardCell{i}");
-				if (cellTrans == null) continue;
-
-				DailyRewardCell cell = cellTrans.GetComponent<DailyRewardCell>();
-				if (cell != null)
+				for (int i = 0; i < DailyCheckInManager.LOGIN_DAY_COUNT; i++)
 				{
-					var rewards = DailyCheckInManager.Instance.DataProvider?.GetDayRewardContents(i);
-					cell.Init(i, rewards);
-					_dailyRewardCells.Add(cell);
+					Transform cellTrans = HierarchyReferenceCache.Child(_content, $"DailyRewardCell{i}")
+						?? HierarchyReferenceCache.Descendant(_content, $"DailyRewardCell{i}");
+					if (cellTrans == null) continue;
+
+					DailyRewardCell cell = cellTrans.GetComponent<DailyRewardCell>();
+					if (cell != null)
+					{
+						_dailyRewardCells.Add(cell);
+					}
 				}
+			}
+
+			for (int i = 0; i < _dailyRewardCells.Count; i++)
+			{
+				var cell = _dailyRewardCells[i];
+				var rewards = DailyCheckInManager.Instance.DataProvider?.GetDayRewardContents(i);
+				cell.Init(i, rewards);
 			}
 			if (isActiveAndEnabled) _coroutine = StartCoroutine(IEStartCountDown());
 		}
