@@ -7,7 +7,7 @@ public static class GameplayFeedbackRules
     public const float SliceJumpHeight = 2.2f;
     public const float SliceLaunchInterval = 0.016f;
     public const float SliceLaunchStartDelay = 0.05f;
-    public const float ConveyorNormalInterval = 0.04f;
+    public const float ConveyorNormalInterval = 0.05f;
     public const float ConveyorFastInterval = 0.032f;
     public const float SpeedUpMultiplier = 1.5f;
     public static float GetTransferTimeScale(bool speedUp) => speedUp ? SpeedUpMultiplier : 1f;

@@ -33,7 +33,7 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 
 	[SerializeField] private string _bundleName = "puzzle";
 	[SerializeField] private int _defaultLevel = 1;
-	[SerializeField] private string _levelDataFolder = "00Game/05LevelData/LevelData";
+	[SerializeField] private string _levelDataFolder = "00Game/Resources/LevelData";
 	private AssetBundle _bundle;
 	private bool _loading;
 	private string _lastJsonFolder;
@@ -62,7 +62,6 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 
 	public bool LoadExactLevel(int levelNumber, GameController controller = null)
 	{
-		// Compatibility entry point; navigation uses the data-only factory below.
 		return TryCreateExactLevel(levelNumber, out GameData data) && InitializePrepared(data, controller);
 	}
 
