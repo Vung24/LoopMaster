@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class LoseContainer : MonoBehaviour
+public class LoseContainer : MonoBehaviour, ILoseItemContainer
 {
     [SerializeField] private SkeletonGraphic _ipSpine;
     [SerializeField] private Transform _loseBg;
@@ -19,41 +19,64 @@ public class LoseContainer : MonoBehaviour
     private Tween _backgroundTween;
     private Tween _mascotFade;
     private Tween _itemTween;
-    private readonly List<GameObject> _loseItemPrefabs = new List<GameObject>();
+    public GameObject LoseStarsPrefab => _loseStarsPrefab;
+    public GameObject LoseHeartsPrefab => _loseHeartsPrefab;
+    public GameObject LoseStreakLinePrefab => _loseStreakLinePrefab;
+    public GameObject LoseLavaPrefab => _loseLavaPrefab;
+    public GameObject LoseSpecialStreakPrefab => _loseSpecialStreakPrefab;
+
+    private readonly struct LoseItemEntry
+    {
+        public readonly ILoseItemProvider Provider;
+        public readonly GameObject Prefab;
+
+        public LoseItemEntry(ILoseItemProvider provider, GameObject prefab)
+        {
+            Provider = provider;
+            Prefab = prefab;
+        }
+    }
+
+    private readonly List<LoseItemEntry> _loseItemEntries = new List<LoseItemEntry>();
     private GameObject _currentLoseItem;
     private Coroutine _switchRoutine;
     private int _loseIndex;
     private int _maxShowLoseCount;
     private bool _isSwitching;
 
+    private void EnsureDefaultProviders()
+    {
+        if (!LoseItemRegistry.HasProvider(StarsLoseItemProvider.ProviderId))
+            LoseItemRegistry.Register(new StarsLoseItemProvider());
+    }
+
     // Ghidra 0x1779FE8: stars, lava, streak line, hearts, special streak.
     public void SetPauseLoseItems(int maxShowCount = 3)
     {
         ClearLoseItems();
         _maxShowLoseCount = Mathf.Max(1, maxShowCount);
-        AddLoseItem(_loseStarsPrefab, true);
-        AddLoseItem(_loseLavaPrefab, Managers.Lava != null && Managers.Lava.IsOngoing() && !Managers.Lava.IsInCd());
-        var streak = Managers.StreakLine;
-        int checkpoint = 0;
-        if (streak != null)
-            foreach (var chest in streak.GetChests())
-                if (chest != null && chest.Level <= streak.GetCurrLevel()) checkpoint = Mathf.Max(checkpoint, chest.Level);
-        AddLoseItem(_loseStreakLinePrefab, streak != null && streak.IsOngoing && streak.GetCurrLevel() > checkpoint);
-        AddLoseItem(_loseHeartsPrefab, Managers.Heart != null && !Managers.Heart.IsInfinite());
-        AddLoseItem(_loseSpecialStreakPrefab, SpecialStreakManager.Ensure().ShouldShowLoseItem());
-        if (_loseItemPrefabs.Count > 0) CreateLoseItem();
-    }
+        EnsureDefaultProviders();
 
-    private void AddLoseItem(GameObject prefab, bool condition)
-    {
-        if (condition && prefab != null) _loseItemPrefabs.Add(prefab);
+        var providers = LoseItemRegistry.GetOrderedProviders();
+        for (int i = 0; i < providers.Count; i++)
+        {
+            var provider = providers[i];
+            if (provider == null || !provider.IsAvailable()) continue;
+            GameObject prefab = provider.GetPrefab(this);
+            if (prefab != null)
+            {
+                _loseItemEntries.Add(new LoseItemEntry(provider, prefab));
+            }
+        }
+
+        if (_loseItemEntries.Count > 0) CreateLoseItem();
     }
 
     // Ghidra 0x177A4C8: consume clicks during switching; dismiss only on the final page.
     public bool OnClickSwitchNext()
     {
         if (_isSwitching) return true;
-        if (_currentLoseItem == null || _loseIndex >= _loseItemPrefabs.Count - 1 ||
+        if (_currentLoseItem == null || _loseIndex >= _loseItemEntries.Count - 1 ||
             _loseIndex >= _maxShowLoseCount - 1) return false;
         _isSwitching = true;
         _switchRoutine = StartCoroutine(SwitchNext());
@@ -62,7 +85,9 @@ public class LoseContainer : MonoBehaviour
 
     private void CreateLoseItem()
     {
-        _currentLoseItem = Instantiate(_loseItemPrefabs[_loseIndex], _loseBg != null ? _loseBg : transform, false);
+        if (_loseIndex < 0 || _loseIndex >= _loseItemEntries.Count) return;
+        var entry = _loseItemEntries[_loseIndex];
+        _currentLoseItem = Instantiate(entry.Prefab, _loseBg != null ? _loseBg : transform, false);
         _currentLoseItem.transform.localPosition = Vector3.zero;
         Image icon = HierarchyReferenceCache.ChildComponent<Image>(_currentLoseItem.transform, "Icon")
             ?? HierarchyReferenceCache.ChildComponent<Image>(_currentLoseItem.transform, "Star");
@@ -72,12 +97,7 @@ public class LoseContainer : MonoBehaviour
             icon.SetNativeSize();
         }
         Snui.Snui_Text.EnsureFontAssets(_currentLoseItem.transform);
-        var slider = _currentLoseItem.GetComponentInChildren<SpecialStreakMultiplierSlider>(true);
-        if (slider != null)
-        {
-            slider.Type = SpecialStreakMultiplierSliderType.PreLose;
-            slider.Init(SpecialStreakManager.Ensure().MultiplierIndex);
-        }
+        entry.Provider.OnItemInstantiated(_currentLoseItem);
     }
 
     private IEnumerator SwitchNext()
@@ -104,7 +124,7 @@ public class LoseContainer : MonoBehaviour
         _itemTween = null;
         _isSwitching = false;
         _loseIndex = 0;
-        _loseItemPrefabs.Clear();
+        _loseItemEntries.Clear();
         if (_currentLoseItem != null)
         {
             _currentLoseItem.SetActive(false);

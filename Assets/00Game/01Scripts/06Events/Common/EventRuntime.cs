@@ -18,6 +18,9 @@ public sealed class EventRuntime : MonoBehaviour
         Managers.Pass = Ensure<BasePassManager, PassManager>(Managers.Pass);
         Managers.StreakLine = Ensure<BaseStreakLineManager, StreakLineManager>(Managers.StreakLine);
         Managers.Lava = Ensure<Snui.Lava.BaseLavaManager, LavaManager>(Managers.Lava);
+        LavaLoseItemProvider.AutoRegister();
+        StreakLineLoseItemProvider.AutoRegister();
+        SpecialStreakLoseItemProvider.AutoRegister();
     }
 
     private static T Ensure<T>(T manager) where T : BaseManager => Ensure<T, T>(manager);
