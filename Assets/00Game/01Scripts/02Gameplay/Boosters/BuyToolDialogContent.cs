@@ -81,11 +81,6 @@ public class BuyToolDialogContent : DialogContent
 			DialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
 		}
 		if (_coinPriceLabel != null) _coinPriceLabel.text = Price.ToString();
-		if (_adBtn != null)
-		{
-			DialogUI.HideNamed(_adBtn.transform, "Ad");
-			DialogUI.Label(_adBtn.transform, "FREE (OFFLINE)");
-		}
 		Snui_Text.EnsureFontAssets(transform);
 	}
 	private bool CanPurchase => !_processing && isActiveAndEnabled && Result == RESULT_UNKNOWN &&

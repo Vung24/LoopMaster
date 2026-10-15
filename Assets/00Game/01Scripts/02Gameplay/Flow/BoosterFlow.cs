@@ -24,13 +24,14 @@ public sealed class BoosterFlow
 	private InventoryManager Inventory => _inventory != null ? _inventory : (_inventory = InventoryManager.Ensure());
 
 	public bool IsBusy { get; private set; }
-	public bool CanRequestUndo => CanUseBooster(true) && _data.CanUndo() && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO);
-	public bool CanRequestShuffle => CanUseBooster(true) &&
-		_boxes.Any(box => box != null && box.Info != null && box.Info.CanShuffle()) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE);
+	public bool CanRequestUndo => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
+		(Inventory.GetAmount(InventoryKeys.TOOL_UNDO) == 0 || (_isGameplaySettled() && _data.CanUndo()));
+	public bool CanRequestShuffle => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE) &&
+		(Inventory.GetAmount(InventoryKeys.TOOL_SHUFFLE) == 0 || (_isGameplaySettled() && _boxes.Any(box => box != null && box.Info != null && box.Info.CanShuffle())));
 	public bool CanRequestPath => CanUseBooster(false) && _engine != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
-	public bool CanUseUndo => CanRequestUndo &&
+	public bool CanUseUndo => CanUseBooster(true) && _data.CanUndo() &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_UNDO);
-	public bool CanUseShuffle => CanRequestShuffle &&
+	public bool CanUseShuffle => CanUseBooster(true) && _boxes.Any(box => box != null && box.Info != null && box.Info.CanShuffle()) &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_SHUFFLE);
 	public bool CanUsePath => CanRequestPath &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_PATH);
@@ -41,15 +42,19 @@ public sealed class BoosterFlow
 		if (!CanUseBooster(false)) return;
 		path = _engine != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
 		// HUD queries share one settled-state scan; action properties remain live.
-		if (!_isGameplaySettled()) return;
-		undo = _data.CanUndo() && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO);
-		for (int i = 0; i < _boxes.Count; i++)
+		bool settled = _isGameplaySettled();
+		undo = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
+			(Inventory.GetAmount(InventoryKeys.TOOL_UNDO) == 0 || (settled && _data.CanUndo()));
+		bool canShuffle = false;
+		if (settled) for (int i = 0; i < _boxes.Count; i++)
 		{
 			Box box = _boxes[i];
 			if (box == null || box.Info == null || !box.Info.CanShuffle()) continue;
-			shuffle = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE);
+			canShuffle = true;
 			break;
 		}
+		shuffle = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE) &&
+			(Inventory.GetAmount(InventoryKeys.TOOL_SHUFFLE) == 0 || canShuffle);
 	}
 
 	public BoosterFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<BoxInfo, Box> getBox,
