@@ -19,31 +19,40 @@ namespace Snui
         [SerializeField] private GameObject _backLight;
         private void Awake()
         {
-            if (_icon == null) _icon = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Icon"));
-            if (_count == null) _count = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Count"));
+            if (_icon == null) 
+                _icon = HierarchyReferenceCache.ChildComponent<Image>(transform, "Icon") 
+                    ?? HierarchyReferenceCache.DescendantComponent<Image>(transform, "Icon");
+            if (_count == null) 
+                _count = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Count") 
+                    ?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Count");
             if (_ribbon == null)
             {
-                var r = HierarchyReferenceCache.Descendant(transform, "Ribbon");
+                var r = HierarchyReferenceCache.Child(transform, "Ribbon") 
+                    ?? HierarchyReferenceCache.Descendant(transform, "Ribbon");
                 if (r != null) _ribbon = r.gameObject;
             }
             if (_ribbon != null)
             {
                 if (_infinityText == null)
-                    _infinityText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_ribbon.transform, "Time"));
+                    _infinityText = HierarchyReferenceCache.ChildComponent<TMP_Text>(_ribbon.transform, "Time") 
+                        ?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(_ribbon.transform, "Time");
                 if (_ribbonIcon == null)
                 {
-                    var ri = HierarchyReferenceCache.Child(_ribbon.transform, "Icon");
+                    var ri = HierarchyReferenceCache.Child(_ribbon.transform, "Icon") 
+                        ?? HierarchyReferenceCache.Descendant(_ribbon.transform, "Icon");
                     if (ri != null) _ribbonIcon = ri.gameObject;
                 }
             }
             if (_infoIcon == null)
             {
-                var info = HierarchyReferenceCache.Descendant(transform, "InfoIcon");
+                var info = HierarchyReferenceCache.Child(transform, "InfoIcon") 
+                    ?? HierarchyReferenceCache.Descendant(transform, "InfoIcon");
                 if (info != null) _infoIcon = info.gameObject;
             }
             if (_backLight == null)
             {
-                var bl = HierarchyReferenceCache.Descendant(transform, "BackLight");
+                var bl = HierarchyReferenceCache.Child(transform, "BackLight") 
+                    ?? HierarchyReferenceCache.Descendant(transform, "BackLight");
                 if (bl != null) _backLight = bl.gameObject;
             }
             foreach (var graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
