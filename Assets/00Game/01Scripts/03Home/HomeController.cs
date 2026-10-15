@@ -273,7 +273,7 @@ public class HomeController : MonoBehaviour
 		if (Managers.Heart != null && !Managers.Heart.IsHeartEnough()) return false;
 		if (_openingGame || CurrentPageIndex != HOME_PAGE_INDEX || HasSettingsOpen || HasDailyCheckInOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled) return false;
 		if (GameProgressStore.IsCampaignComplete || !SpecialStreakManager.Ensure().SettlePending()) return false;
-		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
+		var catalog = BuiltinLevelCatalog.Current;
 		if (catalog == null || !catalog.HasLevel(GameProgressStore.NextPlayableLevel)) { HomePage.RefreshProgress(); return false; }
 		if (HomePage != null && !HomePage.CommitProgressBeforeEnterGame()) return false;
 		_openingGame = true;

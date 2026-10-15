@@ -13,8 +13,8 @@ public static class GameProgressStore
         get
         {
             int next = Mathf.Max(HighestUnlockedLevel, HighestCompletedLevel == int.MaxValue ? int.MaxValue : HighestCompletedLevel + 1);
-            var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
-            int last = catalog == null ? 0 : catalog.GetHighestLevelAtOrBelow(int.MaxValue);
+            var catalog = BuiltinLevelCatalog.Current;
+            int last = catalog == null ? 0 : catalog.HighestLevel;
             return last > 0 && next > last ? last : next;
         }
     }
@@ -22,8 +22,8 @@ public static class GameProgressStore
     {
         get
         {
-            var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
-            int last = catalog == null ? 0 : catalog.GetHighestLevelAtOrBelow(int.MaxValue);
+            var catalog = BuiltinLevelCatalog.Current;
+            int last = catalog == null ? 0 : catalog.HighestLevel;
             return last > 0 && HighestCompletedLevel >= last;
         }
     }

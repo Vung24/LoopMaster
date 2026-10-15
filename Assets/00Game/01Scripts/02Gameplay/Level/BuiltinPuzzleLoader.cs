@@ -37,7 +37,6 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 	private AssetBundle _bundle;
 	private bool _loading;
 	private string _lastJsonFolder;
-	private BuiltinLevelCatalog _catalog;
 	private string _cachedFolderSetting;
 	private string _cachedProjectFolder;
 	private int _availabilityFrame = -1;
@@ -45,8 +44,7 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 	private bool _availabilityResult;
 	private string _availabilityJsonFolder;
 	private string _availabilityFolderSetting;
-	private BuiltinLevelCatalog Catalog => _catalog != null ? _catalog :
-		(_catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName));
+	private BuiltinLevelCatalog Catalog => BuiltinLevelCatalog.Current;
 
 	public string LastJsonFolder => _lastJsonFolder;
 
