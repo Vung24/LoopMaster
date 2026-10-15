@@ -24,8 +24,14 @@ public sealed class TMPSetRealtime : MonoBehaviour
 	[Range(0f, 1f)] public float GlowPower = 0.75f;
 
 	private TMP_Text _textComponent;
+	private bool _hasAppliedInPlayMode;
 
-	private void OnEnable() => ApplyFontSettings();
+	private void OnEnable()
+	{
+		if (Application.isPlaying && _hasAppliedInPlayMode) return;
+		ApplyFontSettings();
+		if (Application.isPlaying) _hasAppliedInPlayMode = true;
+	}
 	private void OnValidate() { if (isActiveAndEnabled) ApplyFontSettings(); }
 
 	public void ApplyFontSettings()
