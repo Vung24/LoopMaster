@@ -2,7 +2,6 @@ using System.Collections.Generic;
 
 public static class GameplayAssetPreloadRules
 {
-	// Select resources from the actual level, including completion effects.
 	public static List<string> GetRequiredPrefabNames(GameData data)
 	{
 		var names = new List<string> { "Box", "Cube", "Slice", "CubeFinish", "BoxComboEffect", "PathCombo" };
