@@ -21,7 +21,7 @@ public class CheatDelegate : MonoBehaviour
     {
         bool enteredFromHome = false;
         if (level < 1 || GameSceneManager.OnChangeScene ||
-            Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName)?.HasLevel(level) != true) return false;
+            BuiltinLevelCatalog.Current?.HasLevel(level) != true) return false;
         if (GameController.Current == null)
         {
             if (!UnityEngine.SceneManagement.SceneManager.GetActiveScene().IsValid() ||

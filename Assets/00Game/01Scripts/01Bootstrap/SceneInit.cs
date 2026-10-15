@@ -18,6 +18,7 @@ public sealed class SceneInit
 			cancellationToken: cancellationToken);
 		GameplayConfig = configRequest.asset as GameAssetsConfig;
 		LevelCatalog = catalogRequest.asset as BuiltinLevelCatalog;
+		BuiltinLevelCatalog.Current = LevelCatalog;
 
 		if (GameplayConfig == null)
 			Debug.LogWarning("[SceneInit] GameAssetsConfig is missing from Resources.");
