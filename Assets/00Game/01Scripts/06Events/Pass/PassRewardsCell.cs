@@ -21,7 +21,7 @@ namespace Snui
             if (_golden == null) _golden = GetComponentInChildren<PassGoldenItem>(true);
             if (_purchase == null) _purchase = GetComponentInChildren<PassPurchaseItem>(true);
             if (_level == null) _level = GetComponentInChildren<PassLevelBtn>(true);
-            if (_tutorialDesc == null) _tutorialDesc = HierarchyReferenceCache.Descendant(transform, "TutorialDesc");
+            if (_tutorialDesc == null) _tutorialDesc = HierarchyReferenceCache.Child(transform, "TutorialDesc") ?? HierarchyReferenceCache.Descendant(transform, "TutorialDesc");
             if (_tutorialDesc != null) _tutorialDesc.gameObject.SetActive(false);
             if (TutorialFingerTf != null) TutorialFingerTf.gameObject.SetActive(false);
             else PassUI.Active(transform, "TutorialFinger", false);
