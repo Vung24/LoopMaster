@@ -217,6 +217,40 @@ namespace ShopUI
 			}
 		}
 
+		private Coffee.UIExtensions.UIParticle[] _cachedUiParticles;
+		private ParticleSystem[] _cachedParticles;
+
+		public override void SetEffectsActive(bool active)
+		{
+			if (_cachedUiParticles == null) _cachedUiParticles = GetComponentsInChildren<Coffee.UIExtensions.UIParticle>(true);
+			for (int i = 0; i < _cachedUiParticles.Length; i++)
+			{
+				if (_cachedUiParticles[i] != null && _cachedUiParticles[i].enabled != active)
+				{
+					_cachedUiParticles[i].enabled = active;
+				}
+			}
+
+			if (_cachedParticles == null) _cachedParticles = GetComponentsInChildren<ParticleSystem>(true);
+			for (int i = 0; i < _cachedParticles.Length; i++)
+			{
+				if (_cachedParticles[i] == null) continue;
+				if (active)
+				{
+					if (!_cachedParticles[i].isPlaying) _cachedParticles[i].Play();
+				}
+				else
+				{
+					if (_cachedParticles[i].isPlaying) _cachedParticles[i].Pause();
+				}
+			}
+		}
+
+		private void OnDisable()
+		{
+			SetEffectsActive(false);
+		}
+
 #if UNITY_EDITOR
 		[Button("Preview Bundle Layout"), BoxGroup("Editor Preview")]
 		private void EditorPreviewBundle()

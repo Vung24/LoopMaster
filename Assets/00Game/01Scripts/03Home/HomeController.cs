@@ -55,7 +55,26 @@ public class HomeController : MonoBehaviour
 		return null;
 	}
 	private void Awake() { Current = this; }
-	private void Start() => Initialize();
+	private void Start()
+	{
+		Initialize();
+		PreloadShopDeferredAsync().Forget();
+	}
+
+	private async UniTaskVoid PreloadShopDeferredAsync()
+	{
+		bool canceled = await UniTask.Delay(2000, cancellationToken: this.GetCancellationTokenOnDestroy()).SuppressCancellationThrow();
+		if (canceled || this == null || !_ready || _openingGame) return;
+
+		var shopPage = _pages != null && _pages.Length > SHOP_PAGE_INDEX && _pages[SHOP_PAGE_INDEX] != null
+			? _pages[SHOP_PAGE_INDEX].GetComponent<ShopPage>()
+			: GetComponentInScene<ShopPage>();
+
+		if (shopPage != null)
+		{
+			await shopPage.PreloadAsync();
+		}
+	}
 	public void Initialize()
 	{
 		EventRuntime.EnsureInitialized();

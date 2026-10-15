@@ -36,12 +36,28 @@ public class ShopPage : MonoBehaviour
 		if (_pageView != null) _pageView.OnEnterPage -= OnEnterPage;
 	}
 
+	public async UniTask PreloadAsync()
+	{
+		if (_loading || (_contentLoaded && _content != null)) return;
+		await LoadContentInternalAsync();
+		if (_content != null)
+		{
+			await _content.EnsureInitializedAsync(this.GetCancellationTokenOnDestroy());
+		}
+	}
+
 	private void OnEnterPage()
 	{
 		LoadContentAsync().Forget();
 	}
 
 	private async UniTaskVoid LoadContentAsync()
+	{
+		if (_loading || (_contentLoaded && _content != null)) return;
+		await LoadContentInternalAsync();
+	}
+
+	private async UniTask LoadContentInternalAsync()
 	{
 		if (_loading || (_contentLoaded && _content != null)) return;
 		_loading = true;
