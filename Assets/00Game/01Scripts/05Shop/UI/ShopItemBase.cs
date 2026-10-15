@@ -60,5 +60,7 @@ namespace ShopUI
 		{
 			OnClickBuyButton?.Invoke(Type);
 		}
+
+		public virtual void SetEffectsActive(bool active) { }
 	}
 }

@@ -89,13 +89,18 @@ namespace ShopUI
 				_closeBtn.onClick.RemoveListener(OnClickCloseButton);
 				_closeBtn.onClick.AddListener(OnClickCloseButton);
 			}
+			if (_scrollList != null)
+			{
+				_scrollList.onValueChanged.RemoveListener(OnScroll);
+				_scrollList.onValueChanged.AddListener(OnScroll);
+			}
 			OfflineShopPurchases.PurchaseFinished += OnPurchaseFinish;
 		}
 
 		protected override void Start()
 		{
 			base.Start();
-			InitAsync(this.GetCancellationTokenOnDestroy()).Forget();
+			EnsureInitializedAsync(this.GetCancellationTokenOnDestroy()).Forget();
 			if (_ribbonImage != null)
 			{
 				var ribbon = _ribbonImage.rectTransform;
@@ -106,12 +111,23 @@ namespace ShopUI
 
 		private void OnEnable()
 		{
-			if (_initialized) RefreshShop();
+			if (_initialized)
+			{
+				RefreshShop();
+				UpdateCulling();
+			}
 		}
 
 		private void OnDisable()
 		{
 			StopItemAnimations(true);
+			if (_items != null)
+			{
+				foreach (var item in _items)
+				{
+					if (item != null) item.SetEffectsActive(false);
+				}
+			}
 		}
 
 		private void StopItemAnimations(bool complete)
@@ -123,6 +139,7 @@ namespace ShopUI
 
 		private void OnDestroy()
 		{
+			if (_scrollList != null) _scrollList.onValueChanged.RemoveListener(OnScroll);
 			OfflineShopPurchases.PurchaseFinished -= OnPurchaseFinish;
 			StopItemAnimations(false);
 			if (_items != null)
@@ -134,7 +151,41 @@ namespace ShopUI
 			}
 		}
 
-		private async UniTask InitAsync(CancellationToken token)
+		private void OnScroll(Vector2 pos)
+		{
+			UpdateCulling();
+		}
+
+		public void UpdateCulling()
+		{
+			if (_scrollList == null || _scrollList.content == null || _items == null || _items.Count == 0) return;
+
+			RectTransform viewport = _scrollList.viewport != null ? _scrollList.viewport : _scrollList.GetComponent<RectTransform>();
+			if (viewport == null) return;
+
+			float viewportHeight = viewport.rect.height;
+			if (viewportHeight <= 0) viewportHeight = Screen.height;
+
+			float scrollY = _scrollList.content.anchoredPosition.y;
+			float viewTop = -scrollY + 200f;
+			float viewBottom = -scrollY - viewportHeight - 200f;
+
+			for (int i = 0; i < _items.Count; i++)
+			{
+				var item = _items[i];
+				if (item == null || item.RectTransform == null) continue;
+
+				float itemCenterY = item.RectTransform.anchoredPosition.y;
+				float halfHeight = item.RectTransform.rect.height * 0.5f;
+				float itemTop = itemCenterY + halfHeight;
+				float itemBottom = itemCenterY - halfHeight;
+
+				bool isVisible = itemTop >= viewBottom && itemBottom <= viewTop;
+				item.SetEffectsActive(isVisible);
+			}
+		}
+
+		public async UniTask EnsureInitializedAsync(CancellationToken token = default)
 		{
 			if (_initialized || _initializing) return;
 			_initializing = true;
@@ -144,24 +195,42 @@ namespace ShopUI
 				var products = _delegate.GetShopProducts();
 				if (products == null) return;
 
-				var tasks = new List<UniTask>();
 				for (int i = 0; i < products.Count; i++)
 				{
+					if (token.IsCancellationRequested) return;
 					string product = products[i];
 					if (!_delegate.IsLimitShowProduct(product))
 					{
-						tasks.Add(AddItems(product, i, token));
+						await AddItemInternal(product, i, token);
+						// Yield to distribute item creation over frames, avoiding main thread hitch
+						await UniTask.Yield(PlayerLoopTiming.Update, token);
 					}
 				}
 
-				await UniTask.WhenAll(tasks);
 				if (token.IsCancellationRequested) return;
 
 				UpdateItemOrder();
 				Relayout();
 				_initialized = true;
-				if (isActiveAndEnabled) PlayItemsEnterAnimation();
-				else foreach (var item in _items) if (item != null) item.gameObject.SetActive(true);
+
+				bool isHomeShop = Route == "home_shop";
+				if (isActiveAndEnabled)
+				{
+					if (isHomeShop)
+					{
+						// In home shop, the page slide already animates the view; activate items directly to avoid canvas rebuild thrashing
+						foreach (var item in _items) if (item != null) item.gameObject.SetActive(true);
+					}
+					else
+					{
+						PlayItemsEnterAnimation();
+					}
+					UpdateCulling();
+				}
+				else
+				{
+					foreach (var item in _items) if (item != null) item.gameObject.SetActive(true);
+				}
 			}
 			finally { _initializing = false; }
 		}
@@ -230,6 +299,7 @@ namespace ShopUI
 				rt.anchoredPosition = new Vector2(x, y);
 				currentY += h;
 			}
+			UpdateCulling();
 		}
 
 		private void UpdateItemOrder()
@@ -245,7 +315,7 @@ namespace ShopUI
 			}
 		}
 
-		private async UniTask AddItems(string type, int index, CancellationToken token)
+		private async UniTask AddItemInternal(string type, int index, CancellationToken token)
 		{
 			token.ThrowIfCancellationRequested();
 			bool isPass = ShopProductCatalog.CanonicalId(type) == ShopProductCatalog.GoldenPass;
@@ -317,9 +387,7 @@ namespace ShopUI
 				item.gameObject.SetActive(false);
 				_items.Add(item);
 			}
-
 			else Debug.LogWarning("Shop prefab is missing for " + type, this);
-			await UniTask.Yield(token);
 		}
 
 		private void OnItemClickBuy(string type)
@@ -360,25 +428,29 @@ namespace ShopUI
 				screenWidth = rect.rect.width;
 			}
 
+			int animCount = Mathf.Min(_items.Count, 4);
 			for (int i = 0; i < _items.Count; i++)
 			{
 				var item = _items[i];
 				if (item == null) continue;
 
 				item.gameObject.SetActive(true);
-				Vector3 pos = item.transform.localPosition;
-				float targetX = pos.x;
-				pos.x -= screenWidth;
-				item.transform.localPosition = pos;
+				if (i < animCount)
+				{
+					Vector3 pos = item.transform.localPosition;
+					float targetX = pos.x;
+					pos.x -= screenWidth;
+					item.transform.localPosition = pos;
 
-				item.transform.DOKill();
-				float delay = item.Index * 0.066f;
-				var seq = DOTween.Sequence();
-				seq.Append(item.transform.DOLocalMoveX(targetX + 74f, 0.37f).SetEase(Ease.OutCubic));
-				seq.Append(item.transform.DOLocalMoveX(targetX, 0.28f).SetEase(Ease.InOutSine));
-				seq.SetDelay(delay);
-				seq.SetLink(gameObject);
-				_itemAnimations.Add(seq);
+					item.transform.DOKill();
+					float delay = item.Index * 0.066f;
+					var seq = DOTween.Sequence();
+					seq.Append(item.transform.DOLocalMoveX(targetX + 74f, 0.37f).SetEase(Ease.OutCubic));
+					seq.Append(item.transform.DOLocalMoveX(targetX, 0.28f).SetEase(Ease.InOutSine));
+					seq.SetDelay(delay);
+					seq.SetLink(gameObject);
+					_itemAnimations.Add(seq);
+				}
 			}
 		}
 	}
