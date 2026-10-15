@@ -52,7 +52,6 @@ public class BoxInfo
 		return result;
 	}
 
-	// Same traversal as GetTopCubes(false), without allocating a temporary list.
 	public CubeInfo GetTopGroupLockKey()
 	{
 		if (CubeInfos.Count == 0) return null;

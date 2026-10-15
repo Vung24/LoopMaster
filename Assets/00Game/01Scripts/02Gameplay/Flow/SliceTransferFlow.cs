@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using System.Threading;
 
 public sealed class SliceTransferFlow
 {
@@ -13,7 +14,7 @@ public sealed class SliceTransferFlow
 	}
 
 	private readonly MonoBehaviour _host;
-	private readonly System.Threading.CancellationToken _hostToken;
+	private readonly CancellationToken _hostToken;
 	private readonly IReadOnlyList<Box> _boxes;
 	private readonly Func<bool> _isGameRunning;
 	private readonly Func<Box, bool> _isGroupUnlocking;
@@ -36,7 +37,7 @@ public sealed class SliceTransferFlow
 	private float _popOutVibrationEndTime;
 	private bool _isPlayingPopInVibration;
 	private bool _isPlayingPopOutVibration;
-	private System.Threading.CancellationTokenSource _vibrationLifetime;
+	private CancellationTokenSource _vibrationLifetime;
 	private int _vibrationVersion;
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,

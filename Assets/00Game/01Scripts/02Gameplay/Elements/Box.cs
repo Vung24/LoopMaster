@@ -239,9 +239,19 @@ public class Box : MonoBehaviour
 	public void PlayCubeAddEffect(Color color, int sliceCount)
 	{
 		if (_gameLoader == null || _gameLoader.BoxNormalEffect == null || _info == null) return;
-		GameObject effect = Instantiate(_gameLoader.BoxNormalEffect, transform);
-		effect.transform.position = GetBoxTargetPos(sliceCount, new Vector3(0f, 0.9f, -1.65f));
-		GameplayEffects.PlaySlicePopIn(effect, color);
+		Vector3 targetPos = GetBoxTargetPos(sliceCount, new Vector3(0f, 0.9f, -1.65f));
+		PooledParticleEffect pooled = _gameLoader.GetPooledGameObject<PooledParticleEffect>(
+			"BoxNormalEffect", _gameLoader.BoxNormalEffect, _gameLoader.transform);
+		if (pooled != null)
+		{
+			pooled.Play(targetPos, transform.rotation, color);
+		}
+		else
+		{
+			GameObject effect = Instantiate(_gameLoader.BoxNormalEffect, transform);
+			effect.transform.position = targetPos;
+			GameplayEffects.PlaySlicePopIn(effect, color);
+		}
 	}
 
 	public async UniTask PlayAddCubeAnim()
@@ -609,7 +619,7 @@ public class Box : MonoBehaviour
 				{
 					square.sprite = GameAssetsConfig.GetBoxFinishSprite(combo);
 					if (show && !emoji) GameplayEffects.BringComboToFront(square);
-					Camera view = Camera.main;
+					Camera view = GameController.Current != null ? GameController.Current.MainCamera : Camera.main;
 					if (view != null) square.transform.rotation = view.transform.rotation;
 					square.gameObject.SetActive(square.sprite != null);
 				}

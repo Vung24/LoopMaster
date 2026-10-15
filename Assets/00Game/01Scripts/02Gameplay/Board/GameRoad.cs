@@ -69,8 +69,6 @@ public class GameRoad : MonoBehaviour
 		if (_hasWallColor && _lastWallColor == color) return;
 		if (_wallPropertyBlock == null) _wallPropertyBlock = new MaterialPropertyBlock();
 		_pathMeshRenderer.GetPropertyBlock(_wallPropertyBlock, 1);
-		// The exported hybrid shader declares _BaseColor as a Vector. Preserve
-		// its material values without SetColor's additional sRGB conversion.
 		_wallPropertyBlock.SetVector("_BaseColor", color);
 		_wallPropertyBlock.SetColor("_Color", color);
 		_pathMeshRenderer.SetPropertyBlock(_wallPropertyBlock, 1);
