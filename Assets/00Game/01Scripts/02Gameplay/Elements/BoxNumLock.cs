@@ -26,17 +26,32 @@ public class BoxNumLock : MonoBehaviour
 			if (node != null) _numLockObj = node.gameObject;
 		}
 		if (_canvas == null) _canvas = HierarchyReferenceCache.Child(transform, "Canvas");
-		if (_countText == null)
+		if (_countText == null && _canvas != null)
 			_countText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Child(_canvas, "Count"));
 		if (_decParticle == null)
 			_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall"));
 		if (_unlockParticle == null)
 			_unlockParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCube"));
+		EnsureDefaultLayer();
+	}
+
+	private void EnsureDefaultLayer()
+	{
+		int targetLayer = gameObject.layer != 5 ? gameObject.layer : 0;
+		if (_canvas != null)
+		{
+			_canvas.gameObject.layer = targetLayer;
+			for (int i = 0; i < _canvas.childCount; i++)
+			{
+				_canvas.GetChild(i).gameObject.layer = targetLayer;
+			}
+		}
 	}
 
 	public void Init(BoxInfo info)
 	{
 		_boxInfo = info;
+		EnsureDefaultLayer();
 		if (_canvas != null && info != null)
 		{
 			Vector3 angles = _canvas.eulerAngles;

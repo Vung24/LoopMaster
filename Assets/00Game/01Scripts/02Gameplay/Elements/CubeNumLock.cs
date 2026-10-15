@@ -19,20 +19,42 @@ public class CubeNumLock : MonoBehaviour
 
 	private void Awake()
 	{
+		EnsureLoaded();
+	}
+
+	private void EnsureLoaded()
+	{
+		if (_isLoaded) return;
 		_token = destroyCancellationToken;
 		if (_canvas == null) _canvas = HierarchyReferenceCache.Child(transform, "Canvas");
-		if (_countText == null)
+		if (_countText == null && _canvas != null)
 			_countText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Child(_canvas, "Count"));
 		if (_decParticle == null)
 			_decParticle = HierarchyReferenceCache.Component<ParticleSystem>(HierarchyReferenceCache.Child(transform, "IceCubeSmall"));
+		EnsureDefaultLayer();
 		_isLoaded = true;
+	}
+
+	private void EnsureDefaultLayer()
+	{
+		int targetLayer = gameObject.layer != 5 ? gameObject.layer : 0;
+		if (_canvas != null)
+		{
+			_canvas.gameObject.layer = targetLayer;
+			for (int i = 0; i < _canvas.childCount; i++)
+			{
+				_canvas.GetChild(i).gameObject.layer = targetLayer;
+			}
+		}
 	}
 
 	public async UniTaskVoid Init(CubeInfo info, BoxInfo boxInfo)
 	{
 		_cubeInfo = info;
 		_boxInfo = boxInfo;
-		await UniTask.WaitUntil(() => _isLoaded, cancellationToken: this.GetCancellationTokenOnDestroy());
+		EnsureLoaded();
+		if (!_isLoaded)
+			await UniTask.WaitUntil(() => _isLoaded, cancellationToken: this.GetCancellationTokenOnDestroy());
 		if (_canvas != null && transform.parent != null)
 		{
 			Vector3 angles = _canvas.eulerAngles;
