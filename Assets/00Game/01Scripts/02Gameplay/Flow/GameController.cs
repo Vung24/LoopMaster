@@ -95,6 +95,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private GameNavigationEffects _navigationEffects;
 	private BuiltinPuzzleLoader _puzzleLoader;
 	private Transform _dialogParent;
+	public Transform DialogParent => _dialogParent != null ? _dialogParent : (_uiCanvas != null ? _uiCanvas.transform : null);
 	private GameNavigationFlow Navigation => _navigation ?? CreateNavigation();
 	private bool IsTransitioningLevel => _navigation != null && _navigation.IsTransitioning;
 	private readonly WinRewardFlow _winRewards = new WinRewardFlow(new WinRewardEconomy());
