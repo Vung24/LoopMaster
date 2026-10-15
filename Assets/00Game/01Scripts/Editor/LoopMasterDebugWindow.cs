@@ -44,6 +44,8 @@ public sealed class LoopMasterDebugWindow : EditorWindow
 
     private void OnGUI()
     {
+        DrawForceWinLose();
+        EditorGUILayout.Space(2f);
         _tab = (Tab)GUILayout.Toolbar((int)_tab, TabLabels);
         EditorGUILayout.Space();
         switch (_tab)
@@ -57,6 +59,59 @@ public sealed class LoopMasterDebugWindow : EditorWindow
                 else DrawLava();
                 EditorGUILayout.EndScrollView();
                 break;
+        }
+    }
+
+    private void DrawForceWinLose()
+    {
+        var controller = EditorApplication.isPlaying ? GameController.Current : null;
+        bool canForce = Running && controller != null && controller.IsGameplayActive;
+
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(!canForce))
+                {
+                    var prevColor = GUI.backgroundColor;
+                    GUI.backgroundColor = canForce ? new Color(0.45f, 0.9f, 0.45f) : Color.white;
+                    if (GUILayout.Button("Force Win", GUILayout.Height(28f)))
+                    {
+                        ForceResult(controller, GameEndState.Won);
+                    }
+
+                    GUI.backgroundColor = canForce ? new Color(0.95f, 0.45f, 0.45f) : Color.white;
+                    if (GUILayout.Button("Force Lose", GUILayout.Height(28f)))
+                    {
+                        ForceResult(controller, GameEndState.Failed);
+                    }
+                    GUI.backgroundColor = prevColor;
+                }
+            }
+
+            if (!Running)
+            {
+                EditorGUILayout.LabelField("Enter Play Mode to test gameplay.", EditorStyles.miniLabel);
+            }
+            else if (controller == null || !controller.IsGameplayActive)
+            {
+                EditorGUILayout.LabelField("Gameplay inactive (open a level to test Win / Lose).", EditorStyles.miniLabel);
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"Active Level: {controller.CurrentLevelNumber} | State: {controller.EndState}", EditorStyles.miniLabel);
+            }
+        }
+    }
+
+    private void ForceResult(GameController controller, GameEndState state)
+    {
+        if (controller == null) return;
+        _level.ForceResult(controller, state);
+        var specialStreakManager = SpecialStreakManager.Current;
+        if (specialStreakManager != null)
+        {
+            _specialStreak.NotifyResult(controller, specialStreakManager, state == GameEndState.Won);
         }
     }
 
@@ -118,7 +173,6 @@ public sealed class LoopMasterDebugWindow : EditorWindow
         }
         EditorGUILayout.HelpBox("Increase uses StreakLine's win logic, settles pending levels and plays the rise in its popup. Activate bypasses the weekly schedule for debugging.", MessageType.None);
         if (!string.IsNullOrEmpty(_streakStatus)) EditorGUILayout.HelpBox(_streakStatus, MessageType.None);
-        if (GUILayout.Button("Test Win / Lose")) Open(Tab.Level);
         _streakRewardsExpanded = EditorGUILayout.Foldout(_streakRewardsExpanded, "Reward milestones", true);
         if (_streakRewardsExpanded) DebugEventRewards.DrawStreakLine(manager);
     }
@@ -174,7 +228,6 @@ public sealed class LoopMasterDebugWindow : EditorWindow
             using (new EditorGUI.DisabledScope(!manager.IsUnlocked() || !manager.IsWaitingStart()))
                 if (GUILayout.Button("Start Event")) manager.StartEvent();
         }
-        if (GUILayout.Button("Test Win / Lose")) Open(Tab.Level);
     }
 }
 
