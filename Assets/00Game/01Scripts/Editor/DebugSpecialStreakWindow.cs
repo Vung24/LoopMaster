@@ -68,12 +68,7 @@ public sealed class DebugSpecialStreakPanel
             if (GUILayout.Button("Play Pending Win Collection / Reward Popup"))
                 PresentCollection(controller.GetComponent<GameResultUI>()?.DialogParent).Forget();
         }
-        using (new EditorGUI.DisabledScope(!Running || controller == null || !controller.IsGameplayActive))
-        using (new EditorGUILayout.HorizontalScope())
-        {
-            if (GUILayout.Button("Force Win")) Force(controller, manager, true);
-            if (GUILayout.Button("Force Lose")) Force(controller, manager, false);
-        }
+
         using (new EditorGUI.DisabledScope(!Running || controller == null || manager == null || !controller.CanRevive))
         {
             if (GUILayout.Button("Revive - Check Multiplier Kept"))
@@ -112,7 +107,6 @@ public sealed class DebugSpecialStreakPanel
                 SetStatus("Requested dialog through the home widget.");
             }
         }
-        if (GUILayout.Button("Open Debug Level")) DebugLevelWindow.Open();
         EditorGUILayout.HelpBox("Force Win, then press CLAIM in the Win dialog: coins, return Home, SpecialStreak collection and milestone reward popup. Direct Next settles without presentation; Return Home presents pending collection on arrival. Lose keeps multiplier for Revive; Retry/Quit resets it.", MessageType.Info);
         EditorGUILayout.HelpBox(_status, MessageType.None);
         EditorGUILayout.EndScrollView();
@@ -155,14 +149,12 @@ public sealed class DebugSpecialStreakPanel
         finally { _presenting = false; }
     }
 
-    private void Force(GameController controller, SpecialStreakManager manager, bool win)
+    internal void NotifyResult(GameController controller, SpecialStreakManager manager, bool win)
     {
-        if (manager == null) return;
+        if (manager == null || controller == null) return;
         int before = manager.TempCount;
         int multiplier = manager.MultiplierIndex;
         bool eligible = manager.IsOngoing && !GameProgressStore.IsLevelCompleted(controller.CurrentLevelNumber);
-        if (!controller.TryDebugForceEndState(win ? GameEndState.Won : GameEndState.Failed))
-        { SetStatus("Could not force result. Wait for gameplay."); return; }
         if (!win) SetStatus(manager.MultiplierIndex == multiplier ? "PASS: Lose kept multiplier pending Revive/Retry/Quit." : "FAIL: Lose changed multiplier early.");
         else if (!eligible) SetStatus("Win completed; event inactive or level already completed, no streak credit expected.");
         else SetStatus(manager.TempCount == before + 1 ? "PASS: Win added one pending collection." : "FAIL: Win did not add expected pending collection.");

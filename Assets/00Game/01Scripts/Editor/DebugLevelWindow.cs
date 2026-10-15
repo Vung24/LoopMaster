@@ -44,26 +44,12 @@ public sealed class DebugLevelPanel
         EditorGUILayout.LabelField("Current level", controller == null ? "Waiting for gameplay" : controller.CurrentLevelNumber.ToString());
         EditorGUILayout.LabelField("State", controller == null ? "-" : controller.EndState.ToString());
 
-        DrawForceResults(controller);
         DrawNavigation(controller);
         DrawProgressControls();
 
         EditorGUILayout.Space();
         EditorGUILayout.HelpBox(_status, MessageType.None);
         EditorGUILayout.EndScrollView();
-    }
-
-    private void DrawForceResults(GameController controller)
-    {
-        EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Force Win / Lose", EditorStyles.boldLabel);
-        using (new EditorGUI.DisabledScope(!IsRunning || controller == null || !controller.IsGameplayActive))
-        using (new EditorGUILayout.HorizontalScope())
-        {
-            if (GUILayout.Button("Force Win", GUILayout.Height(32f))) ForceResult(controller, GameEndState.Won);
-            if (GUILayout.Button("Force Lose", GUILayout.Height(32f))) ForceResult(controller, GameEndState.Failed);
-        }
-        EditorGUILayout.HelpBox("Force Win/Lose runs the normal result flow and opens its dialog. Force Win saves level progress; Force Lose increments the fail count.", MessageType.Info);
     }
 
     private void DrawNavigation(GameController controller)
@@ -123,7 +109,7 @@ public sealed class DebugLevelPanel
         }
     }
 
-    private void ForceResult(GameController controller, GameEndState state)
+    internal void ForceResult(GameController controller, GameEndState state)
     {
         _status = controller.TryDebugForceEndState(state) ?
             "Forced " + state + " through the normal result flow." : "Could not force the result. Wait for gameplay to be active.";
