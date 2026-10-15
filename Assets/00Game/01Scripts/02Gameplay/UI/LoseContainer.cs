@@ -82,14 +82,14 @@ public class LoseContainer : MonoBehaviour
 
     private IEnumerator SwitchNext()
     {
-        _itemTween = _currentLoseItem.transform.DOScale(0f, .16f).SetEase(Ease.OutQuad).SetUpdate(true);
+        _itemTween = _currentLoseItem.transform.DOScale(0f, .16f).SetEase(Ease.OutQuad).SetUpdate(true).SetLink(gameObject);
         yield return _itemTween.WaitForCompletion();
         _currentLoseItem.SetActive(false);
         Destroy(_currentLoseItem);
         _loseIndex++;
         CreateLoseItem();
         _currentLoseItem.transform.localScale = Vector3.zero;
-        _itemTween = _currentLoseItem.transform.DOScale(1f, .16f).SetEase(Ease.OutQuad).SetUpdate(true);
+        _itemTween = _currentLoseItem.transform.DOScale(1f, .16f).SetEase(Ease.OutQuad).SetUpdate(true).SetLink(gameObject);
         yield return _itemTween.WaitForCompletion();
         _itemTween = null;
         _switchRoutine = null;
@@ -122,7 +122,7 @@ public class LoseContainer : MonoBehaviour
         {
             _loseBg.gameObject.SetActive(true);
             _loseBg.localScale = Vector3.zero;
-            _backgroundTween = _loseBg.DOScale(1f, 0.16f).SetEase(Ease.OutQuad).SetUpdate(true);
+            _backgroundTween = _loseBg.DOScale(1f, 0.16f).SetEase(Ease.OutQuad).SetUpdate(true).SetLink(gameObject);
         }
         if (_ipSpine == null) _ipSpine = GetComponentInChildren<SkeletonGraphic>(true);
         if (_ipSpine == null || _ipSpine.skeletonDataAsset == null) return;
@@ -133,7 +133,7 @@ public class LoseContainer : MonoBehaviour
             group.alpha = 0f;
             group.interactable = false;
             group.blocksRaycasts = false;
-            _mascotFade = group.DOFade(1f, 0.1f).SetUpdate(true);
+            _mascotFade = group.DOFade(1f, 0.1f).SetUpdate(true).SetLink(gameObject);
         }
         _ipSpine.UnscaledTime = true;
         _ipSpine.Initialize(false);
@@ -158,8 +158,16 @@ public class LoseContainer : MonoBehaviour
         if (_ipSpine != null && _ipSpine.AnimationState != null) _ipSpine.AnimationState.ClearTracks();
     }
 
+    private void OnDestroy()
+    {
+        ClearLoseItems();
+        CancelTweens();
+    }
+
     private void CancelTweens()
     {
+        _itemTween?.Kill();
+        _itemTween = null;
         _backgroundTween?.Kill();
         _mascotFade?.Kill();
         _backgroundTween = _mascotFade = null;
