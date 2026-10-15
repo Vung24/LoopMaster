@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
@@ -11,17 +12,24 @@ namespace Snui
 {
 	public class ClaimCoinAnim : MonoBehaviour
 	{
-		private const float SpawnInterval = 0.07f;
-		private const float BurstDuration = 0.36f;
-		private const float SpinHoldDuration = 0.2f;
 		public AudioClip ShowSound;
 		public AudioClip CollectSound;
+
+		[SerializeField, Min(0f)] private float _coinScatterRadius = 180f;
+		[SerializeField, Min(0f)] private float _coinScatterForce = 1.6f;
+		[SerializeField, Min(0.01f)] private float _coinScatterDrag = 3.5f;
+		[SerializeField, Min(0f)] private float _coinScatterGravity = 900f;
+		[SerializeField, Min(0.01f)] private float _coinScatterDuration = 0.3f;
+		[SerializeField, Min(0f)] private float _coinScatterHoldDuration = 0.08f;
+		[SerializeField, Min(0f)] private float _coinRewardPauseDuration = 0.25f;
+		[SerializeField, Min(0.01f)] private float _coinFlightDuration = 0.45f;
+
 		private Transform _parent;
 		private UnityAction _onAnimationCompleted;
 		private Snui_CoinHud _coinHud;
 		private readonly List<Sequence> _flights = new List<Sequence>();
-		private readonly List<Sequence> _pendingFlights = new List<Sequence>();
 		private GameObject _flightRoot;
+		private bool _isFlying;
 
 		public static async UniTask Play(int count, Vector2 startPos, UnityAction callback)
 		{
@@ -36,6 +44,8 @@ namespace Snui
 
 			GameObject host = new GameObject("ClaimCoinAnimHost", typeof(RectTransform), typeof(Canvas));
 			host.transform.SetParent(parent, false);
+			host.transform.localPosition = Vector3.zero;
+			host.transform.localScale = Vector3.one;
 			Canvas hostCanvas = host.GetComponent<Canvas>();
 			hostCanvas.overrideSorting = true;
 			hostCanvas.sortingLayerID = canvas != null ? canvas.sortingLayerID : 0;
@@ -45,7 +55,7 @@ namespace Snui
 
 			Vector3 targetPos = Snui_CoinHud.Current != null
 				? Snui_CoinHud.Current.GetIconPos()
-				: new Vector2(Screen.width * 0.15f, Screen.height * 0.92f);
+				: new Vector3(Screen.width * 0.15f, Screen.height * 0.92f, 0f);
 			anim.CoinsFly(count, host.transform, new Vector3(startPos.x, startPos.y, targetPos.z), targetPos, () =>
 			{
 				callback?.Invoke();
@@ -68,7 +78,8 @@ namespace Snui
 
 		private async UniTaskVoid CoinsFlyAsync(int count, Transform parent, Vector3 startPos, Vector3 targetPos)
 		{
-			int showCount = Mathf.Clamp(count, 1, 8);
+			CancellationToken token = this.GetCancellationTokenOnDestroy();
+			int totalCoins = Mathf.Clamp(count, 1, 20);
 			GameObject coinPrefab = PrefabLibrary.Current != null ? PrefabLibrary.Current.FlyCoinPrefab : null;
 			if (coinPrefab == null)
 			{
@@ -77,6 +88,12 @@ namespace Snui
 			}
 
 			Sprite[] sprites = await FlyCoin.LoadSprites(coinPrefab);
+			if (token.IsCancellationRequested || this == null || !isActiveAndEnabled || parent == null) return;
+
+			if (_coinHud != null)
+			{
+				_coinHud.SetAutoUpdate(false);
+			}
 
 			if (AudioManager.Current != null)
 			{
@@ -84,79 +101,120 @@ namespace Snui
 				else AudioManager.Current.PlayOneShot("coin_show", gameObject);
 			}
 
-			for (int i = 0; i < showCount; i++)
+			Vector3 localStart = parent.InverseTransformPoint(startPos);
+			Vector3 localTarget = parent.InverseTransformPoint(targetPos);
+
+			_isFlying = true;
+			List<UniTask> flightTasks = new List<UniTask>();
+			for (int i = 0; i < totalCoins; i++)
 			{
-				CoinFly(i + 1, coinPrefab, sprites, showCount, startPos, targetPos);
-				if (i + 1 < showCount)
-					await UniTask.Delay(TimeSpan.FromSeconds(SpawnInterval), ignoreTimeScale: true,
-						cancellationToken: this.GetCancellationTokenOnDestroy());
+				if (parent == null) break;
+				GameObject coin = Instantiate(coinPrefab, parent, false);
+				coin.SetActive(true);
+				foreach (var img in coin.GetComponentsInChildren<Graphic>(true)) img.raycastTarget = false;
+
+				FlyCoin fly = coin.GetComponent<FlyCoin>();
+				if (fly != null && sprites != null)
+				{
+					// Keep the face sprite still throughout the scatter and flight.
+					fly.SetSprites(sprites);
+				}
+
+				Sequence flight = CreateCoinClaimTween(coin, localStart, localTarget, i, totalCoins);
+				_flights.Add(flight);
+				flightTasks.Add(flight.ToUniTask().AttachExternalCancellation(token));
 			}
-			// Wait for the last coin to finish appearing before releasing the whole batch.
-			await UniTask.Delay(TimeSpan.FromSeconds(BurstDuration + SpinHoldDuration), ignoreTimeScale: true,
-				cancellationToken: this.GetCancellationTokenOnDestroy());
-			foreach (Sequence flight in _pendingFlights) flight.Play();
-			_pendingFlights.Clear();
+
+			if (flightTasks.Count > 0)
+			{
+				try
+				{
+					await UniTask.WhenAll(flightTasks);
+				}
+				catch (OperationCanceledException)
+				{
+					return;
+				}
+			}
+
+			if (token.IsCancellationRequested || this == null || !isActiveAndEnabled) return;
+
+			_isFlying = false;
+			if (_coinHud != null)
+			{
+				_coinHud.SetAutoUpdate(true);
+				_coinHud.PlaySparks();
+				_coinHud.PlayShakeAnimation();
+			}
+			if (AudioManager.Current != null)
+			{
+				if (CollectSound != null) AudioManager.Current.PlayOneShot(CollectSound, gameObject);
+				else AudioManager.Current.PlayOneShot("coin_collect", gameObject);
+			}
+			_onAnimationCompleted?.Invoke();
 		}
 
-		public void CoinFly(int index, GameObject prefab, Sprite[] sprites, int showCount, Vector3 startPos, Vector3 targetPos)
+		private Sequence CreateCoinClaimTween(GameObject coin, Vector3 origin, Vector3 target, int index, int count)
 		{
-			if (prefab == null || _parent == null) return;
-			GameObject coin = Instantiate(prefab, _parent, false);
-			coin.SetActive(true);
-			foreach (var image in coin.GetComponentsInChildren<Graphic>(true)) image.raycastTarget = false;
-
-			FlyCoin fly = coin.GetComponent<FlyCoin>();
-			if (fly != null)
-			{
-				fly.SetSprites(sprites);
-				fly.Play(true);
-			}
-
 			Transform node = coin.transform;
-			// Burst distances are UI units, not world units. Screen Space Camera
-			// canvases can have a tiny world scale, sending a world-space burst off-screen.
-			Vector3 localStart = _parent.InverseTransformPoint(startPos);
-			Vector3 localTarget = _parent.InverseTransformPoint(targetPos);
-			node.localPosition = localStart;
-			Vector3 scale = node.localScale;
-			node.localScale = Vector3.zero;
+			Vector2 spawnOffset = UnityEngine.Random.insideUnitCircle * 20f;
+			Vector3 start = origin + new Vector3(spawnOffset.x, spawnOffset.y, 0f);
+			Vector3 scale = node.localScale * UnityEngine.Random.Range(0.65f, 0.95f);
+			node.localPosition = start;
+			node.localScale = scale * 0.35f;
 
-			Sequence seq = DOTween.Sequence().SetUpdate(true).SetLink(coin);
-			seq.Append(node.DOScale(scale * 1.2f, 0.16f).SetEase(Ease.OutSine));
-			seq.Append(node.DOScale(scale * 0.9f, 0.1f).SetEase(Ease.InSine));
-			seq.Append(node.DOScale(scale, 0.1f).SetEase(Ease.OutSine));
+			// Uneven directions and impulses avoid an evenly spaced expanding ring.
+			float angle = (index + UnityEngine.Random.Range(-0.45f, 0.45f)) / count * Mathf.PI * 2f;
+			float speed = _coinScatterRadius * _coinScatterForce / Mathf.Max(0.01f, _coinScatterDuration);
+			speed *= UnityEngine.Random.Range(0.65f, 1.25f);
+			Vector3 velocity = new Vector3(Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed + speed * 0.22f, 0f);
+			Vector3 gravity = Vector3.down * _coinScatterGravity;
+			float drag = Mathf.Max(0.01f, _coinScatterDrag);
+			float scatterTime = Mathf.Max(0.01f, _coinScatterDuration) * UnityEngine.Random.Range(0.85f, 1.15f)
+				+ _coinScatterHoldDuration + UnityEngine.Random.Range(0f, 0.12f);
+			Vector3 launch = CoinScatterPosition(start, velocity, gravity, drag, scatterTime);
+			Vector3 launchVelocity = velocity * Mathf.Exp(-drag * scatterTime)
+				+ gravity * ((1f - Mathf.Exp(-drag * scatterTime)) / drag);
+			float flightTime = Mathf.Max(0.01f, _coinFlightDuration) * UnityEngine.Random.Range(0.9f, 1.15f);
+			float pauseTime = Mathf.Max(0f, _coinRewardPauseDuration);
+			Vector3 flightStart = launch + launchVelocity * (pauseTime / 3f);
 
-			Vector3 burstPos = localStart + new Vector3(UnityEngine.Random.Range(-100f, 100f), UnityEngine.Random.Range(-60f, 60f), 0f);
-			seq.Insert(0f, node.DOLocalMove(burstPos, 0.3f).SetEase(Ease.OutQuad));
-			_flights.Add(seq);
+			// Let coins settle briefly before accelerating into the HUD.
+			Vector3 control1 = pauseTime > 0f ? flightStart : launch + launchVelocity * (flightTime / 3f);
+			Vector3 toTarget = target - flightStart;
+			Vector3 side = new Vector3(-toTarget.y, toTarget.x, 0f).normalized;
+			Vector3 control2 = Vector3.Lerp(flightStart, target, 0.3f) + side * UnityEngine.Random.Range(-45f, 45f);
 
-			Sequence flight = DOTween.Sequence().SetUpdate(true).SetLink(coin).Pause();
-			flight.AppendInterval((index - 1) * 0.02f);
-			flight.Append(node.DOLocalMove(localTarget, 0.45f).SetEase(Ease.InQuad));
-			flight.Join(node.DOScale(scale * 0.7f, 0.45f).SetEase(Ease.InCubic));
-			flight.OnComplete(() => OnAnimDone(coin, index, showCount));
-			_flights.Add(flight);
-			_pendingFlights.Add(flight);
+			Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(coin);
+			sequence.Append(DOVirtual.Float(0f, scatterTime, scatterTime, time =>
+			{
+				if (node != null) node.localPosition = CoinScatterPosition(start, velocity, gravity, drag, time);
+			}).SetEase(Ease.Linear));
+			sequence.Insert(0f, node.DOScale(scale, 0.12f).SetEase(Ease.OutCubic));
+			if (pauseTime > 0f)
+				sequence.Append(node.DOLocalMove(flightStart, pauseTime).SetEase(Ease.OutCubic));
+			sequence.Append(DOVirtual.Float(0f, 1f, flightTime, progress =>
+			{
+				if (node == null) return;
+				float remaining = 1f - progress;
+				node.localPosition = remaining * remaining * remaining * flightStart
+					+ 3f * remaining * remaining * progress * control1
+					+ 3f * remaining * progress * progress * control2
+					+ progress * progress * progress * target;
+			}).SetEase(Ease.Linear));
+			sequence.Join(node.DOScale(scale * 0.55f, flightTime).SetEase(Ease.InCubic));
+			sequence.OnComplete(() =>
+			{
+				if (coin != null) Destroy(coin);
+			});
+			return sequence;
 		}
 
-		public void OnAnimDone(GameObject coin, int index, int showCount)
+		private static Vector3 CoinScatterPosition(Vector3 start, Vector3 velocity, Vector3 gravity, float drag, float time)
 		{
-			if (coin != null) Destroy(coin);
-			if (index == showCount)
-			{
-				if (_coinHud != null)
-				{
-					_coinHud.SetAutoUpdate(true);
-					_coinHud.PlaySparks();
-					_coinHud.PlayShakeAnimation();
-				}
-				if (AudioManager.Current != null)
-				{
-					if (CollectSound != null) AudioManager.Current.PlayOneShot(CollectSound, gameObject);
-					else AudioManager.Current.PlayOneShot("coin_collect", gameObject);
-				}
-				_onAnimationCompleted?.Invoke();
-			}
+			// Analytic drag/gravity keeps the impulse consistent across frame rates.
+			float travel = (1f - Mathf.Exp(-drag * time)) / drag;
+			return start + velocity * travel + gravity * ((time - travel) / drag);
 		}
 
 		public IEnumerator Play(int count, Transform parent, Vector3 startWorld, Snui_CoinHud hud, GameObject prefab = null, int sortingOrder = 1101)
@@ -167,11 +225,14 @@ namespace Snui
 			// its own layer, rather than spawning coins behind the reward receipt.
 			_flightRoot = new GameObject("RewardCoinFlightRoot", typeof(RectTransform), typeof(Canvas));
 			_flightRoot.transform.SetParent(parent, false);
+			_flightRoot.transform.localPosition = Vector3.zero;
+			_flightRoot.transform.localScale = Vector3.one;
 			Canvas flightCanvas = _flightRoot.GetComponent<Canvas>();
 			Canvas parentCanvas = parent.GetComponentInParent<Canvas>();
+			Canvas hudCanvas = hud != null ? hud.GetComponent<Canvas>() : null;
 			flightCanvas.overrideSorting = true;
-			flightCanvas.sortingLayerID = parentCanvas != null ? parentCanvas.sortingLayerID : 0;
-			flightCanvas.sortingOrder = sortingOrder;
+			flightCanvas.sortingLayerID = hudCanvas != null ? hudCanvas.sortingLayerID : (parentCanvas != null ? parentCanvas.sortingLayerID : 0);
+			flightCanvas.sortingOrder = sortingOrder > 0 ? sortingOrder : (hudCanvas != null ? hudCanvas.sortingOrder + 1 : 1101);
 			_coinHud = hud;
 			bool done = false;
 			Vector3 targetPos = hud != null ? hud.GetIconPos() : startWorld;
@@ -184,12 +245,21 @@ namespace Snui
 		{
 			foreach (Sequence flight in _flights) flight.Kill();
 			_flights.Clear();
-			_pendingFlights.Clear();
 			if (_flightRoot != null) Destroy(_flightRoot);
 			_flightRoot = null;
+			_isFlying = false;
 		}
 
-		private void OnDisable() => Cancel();
-		private void OnDestroy() => Cancel();
+		private void OnDisable()
+		{
+			if (_isFlying && _coinHud != null) _coinHud.SetAutoUpdate(true);
+			Cancel();
+		}
+
+		private void OnDestroy()
+		{
+			if (_isFlying && _coinHud != null) _coinHud.SetAutoUpdate(true);
+			Cancel();
+		}
 	}
 }

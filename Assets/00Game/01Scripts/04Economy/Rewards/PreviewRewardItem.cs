@@ -16,8 +16,8 @@ namespace Snui
 
 		private void Awake()
 		{
-			if (_icon == null) _icon = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform, "Icon"));
-			if (_count == null) _count = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform, "Count"));
+			if (_icon == null) _icon = HierarchyReferenceCache.ChildComponent<Image>(transform, "Icon");
+			if (_count == null) _count = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Count");
 			if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
 			if (_canvasGroup == null) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
 		}
