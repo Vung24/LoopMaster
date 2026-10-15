@@ -8,7 +8,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 {
 	[SerializeField, Min(0.1f)] private float _sliceJumpDuration = GameplayFeedbackRules.SliceJumpDuration;
 	[SerializeField, Min(0.1f)] private float _sliceJumpHeight = GameplayFeedbackRules.SliceJumpHeight;
-	[SerializeField, Min(0.02f)] private float _conveyorTickInterval = 0.08f;
+	[SerializeField, Min(0.02f)] private float _conveyorTickInterval = GameplayFeedbackRules.ConveyorNormalInterval;
 	[SerializeField, Range(0.4f, 1f)] private float _sliceSpacingScale = 1f;
 	public static GameController Current;
 #if UNITY_EDITOR
