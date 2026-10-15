@@ -20,12 +20,12 @@ namespace Snui
             base.Awake();
             if (_claimBtn == null) _claimBtn = PassUI.Bind(transform, "ClaimBtn", Purchase);
             else { _claimBtn.onClick.RemoveListener(Purchase); _claimBtn.onClick.AddListener(Purchase); }
-            if (_getMark == null) _getMark = HierarchyReferenceCache.Descendant(transform, "Get");
-            if (_lockMark == null) _lockMark = HierarchyReferenceCache.Descendant(transform, "Lock");
+            if (_getMark == null) _getMark = HierarchyReferenceCache.Child(transform, "Get") ?? HierarchyReferenceCache.Descendant(transform, "Get");
+            if (_lockMark == null) _lockMark = HierarchyReferenceCache.Child(transform, "Lock") ?? HierarchyReferenceCache.Descendant(transform, "Lock");
             if (_lockGraphic == null && _lockMark != null) _lockGraphic = _lockMark.GetComponent<Spine.Unity.SkeletonGraphic>();
-            if (_heartNode == null) _heartNode = HierarchyReferenceCache.Descendant(transform, "Heart");
-            if (_boxNode == null) _boxNode = HierarchyReferenceCache.Descendant(transform, "Box");
-            if (_countText == null) _countText = HierarchyReferenceCache.DescendantComponent<TMPro.TMP_Text>(transform, "Count");
+            if (_heartNode == null) _heartNode = HierarchyReferenceCache.Child(transform, "Heart") ?? HierarchyReferenceCache.Descendant(transform, "Heart");
+            if (_boxNode == null) _boxNode = HierarchyReferenceCache.Child(transform, "Box") ?? HierarchyReferenceCache.Descendant(transform, "Box");
+            if (_countText == null) _countText = HierarchyReferenceCache.ChildComponent<TMPro.TMP_Text>(transform, "Count") ?? HierarchyReferenceCache.DescendantComponent<TMPro.TMP_Text>(transform, "Count");
             if (_heartImage == null && _heartNode != null) _heartImage = _heartNode.GetComponent<UnityEngine.UI.Image>();
             if (_button != null) _button.onClick.AddListener(Purchase);
         }

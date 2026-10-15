@@ -11,10 +11,13 @@ namespace Snui
     internal static class PassUI
     {
         public static T Node<T>(Transform root, string name) where T : Component
-            => HierarchyReferenceCache.DescendantComponent<T>(root, name);
+            => HierarchyReferenceCache.ChildComponent<T>(root, name)
+               ?? HierarchyReferenceCache.DescendantComponent<T>(root, name);
+
         public static void Active(Transform root, string name, bool active)
         {
-            var node = HierarchyReferenceCache.Descendant(root, name);
+            var node = HierarchyReferenceCache.Child(root, name)
+                       ?? HierarchyReferenceCache.Descendant(root, name);
             if (node != null) node.gameObject.SetActive(active);
         }
         public static void Text(Transform root, string name, string value)
