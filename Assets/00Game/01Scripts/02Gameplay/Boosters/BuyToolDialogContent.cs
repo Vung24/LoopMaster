@@ -15,23 +15,30 @@ public class BuyToolDialogContent : DialogContent
 	private bool _processing;
 	public int Price { get; private set; }
 	public string ToolKey => _toolKey;
-	protected override void Awake()
+	private void EnsureReferences()
 	{
-		base.Awake();
 		_adBtn = _adBtn != null ? _adBtn : DialogUI.ResolveButton(transform, "AdBtn");
 		_coinBtn = _coinBtn != null ? _coinBtn : DialogUI.ResolveButton(transform, "CoinBtn");
-		_closeBtn = _closeBtn != null ? _closeBtn : DialogUI.ResolveButton(transform, "CloseButton");
+		_closeBtn = _closeBtn != null ? _closeBtn : (DialogUI.ResolveButton(transform, "CloseButton") ?? DialogUI.ResolveButton(transform, "CloseBtn"));
 		if (_titleText == null) _titleText = HierarchyReferenceCache.Descendant(transform, "Title");
 		if (_desc == null) _desc = HierarchyReferenceCache.Descendant(transform, "Desc");
-		if (_icon == null) _icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh");
+		if (_icon == null) _icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh") ?? HierarchyReferenceCache.Descendant(transform, "ToolBackLight");
 		if (_coinPriceLabel == null && _coinBtn != null)
 			_coinPriceLabel = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"));
 		DialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
 		DialogUI.Bind(_coinBtn, OnClickCoinBtn);
 		DialogUI.Bind(_closeBtn, OnClickCloseButton);
 	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		EnsureReferences();
+	}
+
 	public void Init(string toolKey, Func<bool> isValid = null)
 	{
+		EnsureReferences();
 		_toolKey = toolKey;
 		_isValid = isValid;
 		_processing = false;
@@ -40,10 +47,18 @@ public class BuyToolDialogContent : DialogContent
 		DialogUI.Label(_desc, toolKey == InventoryKeys.TOOL_UNDO ? "Undo the last move" :
 			toolKey == InventoryKeys.TOOL_SHUFFLE ? "Shuffle the colors in available boxes" : "Add space to the belt");
 		if (_icon != null)
+		{
 			foreach (Transform child in _icon)
-				if (InventoryManager.IsBoosterKey(child.name)) child.gameObject.SetActive(child.name == toolKey);
+			{
+				if (InventoryManager.IsBoosterKey(child.name))
+					child.gameObject.SetActive(string.Equals(child.name, toolKey, StringComparison.OrdinalIgnoreCase));
+			}
+		}
+		if (_coinBtn != null)
+		{
+			DialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
+		}
 		if (_coinPriceLabel != null) _coinPriceLabel.text = Price.ToString();
-		else if (_coinBtn != null) DialogUI.Label(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"), Price.ToString());
 		if (_adBtn != null)
 		{
 			DialogUI.HideNamed(_adBtn.transform, "Ad");
