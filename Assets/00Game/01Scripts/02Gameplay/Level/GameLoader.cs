@@ -245,6 +245,25 @@ public class GameLoader : MonoBehaviour
 		item.Recycle();
 	}
 
+	public void PrewarmEffectPool(int targetCount = 10)
+	{
+		if (BoxNormalEffect == null) return;
+		if (!_gameObjectPools.TryGetValue("BoxNormalEffect", out Stack<PooledGameObject> pool))
+		{
+			pool = new Stack<PooledGameObject>(targetCount);
+			_gameObjectPools.Add("BoxNormalEffect", pool);
+		}
+		while (pool.Count < targetCount)
+		{
+			GameObject instance = Instantiate(BoxNormalEffect, transform);
+			instance.name = "BoxNormalEffect_Pooled";
+			PooledParticleEffect item = instance.GetComponent<PooledParticleEffect>();
+			if (item == null) item = instance.AddComponent<PooledParticleEffect>();
+			item.Initialize("BoxNormalEffect", this);
+			item.Recycle();
+		}
+	}
+
 	public T GetPooledGameObject<T>(string key, GameObject prefab, Transform parent) where T : PooledGameObject
 	{
 		if (string.IsNullOrEmpty(key) || prefab == null) return null;

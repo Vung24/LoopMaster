@@ -272,6 +272,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		if (!PrepareLevel(data, editorPlaytest)) return;
 		_gameLoader.LoadAssets(data);
 		_gameLoader.PrewarmSlicePool(data);
+		_gameLoader.PrewarmEffectPool(10);
 		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
 		CompleteLevelInitialization(data);
 	}

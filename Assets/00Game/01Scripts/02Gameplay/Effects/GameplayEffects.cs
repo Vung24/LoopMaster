@@ -20,6 +20,12 @@ public static class GameplayEffects
 	public static void PlaySlicePopIn(GameObject effect, Color color)
 	{
 		if (effect == null) return;
+		PooledParticleEffect pooled = effect.GetComponent<PooledParticleEffect>();
+		if (pooled != null)
+		{
+			pooled.Play(effect.transform.position, effect.transform.rotation, color);
+			return;
+		}
 		foreach (ParticleSystem particle in effect.GetComponentsInChildren<ParticleSystem>(true))
 			particle.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
 		PlayParticles(effect, color);
@@ -59,7 +65,7 @@ public static class GameplayEffects
             if (!selected) continue;
             // Spine uses an XY plane. Align the rendered child to the camera,
             // overriding the prefab tilt and the box's rotation together.
-            Camera view = Camera.main;
+            Camera view = GameController.Current != null ? GameController.Current.MainCamera : Camera.main;
             if (view != null) child.rotation = view.transform.rotation;
             SkeletonAnimation skeleton = child.GetComponent<SkeletonAnimation>();
             if (skeleton == null) continue;
