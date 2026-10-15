@@ -43,7 +43,53 @@ public class PlayButton : MonoBehaviour
 		if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
 		if (_btn == null) _btn = GetComponent<Button>();
 		if (_animation == null) _animation = GetComponent<Animation>();
+		if (_snuiButton == null) _snuiButton = GetComponent<Snui.Snui_Button>();
 		_homePage = HomeController.Current != null ? HomeController.Current.HomePage : GetComponentInParent<HomePage>(true);
+
+		// Clean up any duplicate Button components on this GameObject
+		var allButtons = GetComponents<Button>();
+		for (int i = 0; i < allButtons.Length; i++)
+		{
+			if (allButtons[i] != null && allButtons[i] != _btn)
+			{
+				Destroy(allButtons[i]);
+			}
+		}
+
+		// Ensure Button does not swap to dark sprite or tint gray (keep bright green like reference)
+		if (_btn != null)
+		{
+			_btn.transition = Selectable.Transition.None;
+			var colors = _btn.colors;
+			colors.normalColor = Color.white;
+			colors.highlightedColor = Color.white;
+			colors.pressedColor = Color.white;
+			colors.selectedColor = Color.white;
+			colors.disabledColor = Color.white;
+			_btn.colors = colors;
+		}
+
+		// Enforce whole-button scale animation: button & text scale together as one piece, no offset, no gray
+		if (_snuiButton != null)
+		{
+			_snuiButton.AnimateWholeButton = true;
+			_snuiButton.UsePressDownEffect = false;
+			_snuiButton.DownOffset = 0f;
+			_snuiButton.ClickScale = 0.95f;
+			_snuiButton.ClickAlpha = 1f;
+			_snuiButton.DisableAlpha = 1f;
+		}
+
+		// Ensure child texts and icons do not intercept separate raycasts from the main button
+		var graphics = GetComponentsInChildren<Graphic>(true);
+		for (int i = 0; i < graphics.Length; i++)
+		{
+			if (graphics[i] != null && graphics[i].gameObject != gameObject)
+			{
+				graphics[i].raycastTarget = false;
+			}
+		}
+
 		if (_btnText != null)
 		{
 			var realtime = _btnText.GetComponent<TMPSetRealtime>();

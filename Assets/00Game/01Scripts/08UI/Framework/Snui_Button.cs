@@ -9,6 +9,7 @@ namespace Snui
 	[RequireComponent(typeof(Button))]
 	[RequireComponent(typeof(CanvasGroup))]
 	public class Snui_Button : MonoBehaviour, IPointerDownHandler, IPointerUpHandler,
+		IPointerEnterHandler, IPointerExitHandler,
 		IBeginDragHandler, IDragHandler, IEndDragHandler
 	{
 		[HideInInspector] public UnityEvent OnPointerDownEvent = new UnityEvent();
@@ -22,6 +23,7 @@ namespace Snui
 		[Range(0f, 1f)] public float ClickScale = 1f;
 		[Range(0f, 1f)] public float ClickAlpha = 0.3f;
 		[Range(0f, 1f)] public float DisableAlpha = 1f;
+		public bool AnimateWholeButton = false;
 
 		private Transform _content;
 		private Button _button;
@@ -58,13 +60,17 @@ namespace Snui
 			_button = GetComponent<Button>();
 			_isNavigationCell = GetComponent<NavigationCell>() != null;
 			_canvasGroup = GetComponent<CanvasGroup>();
-			_content = transform.childCount > 0 ? transform.GetChild(0) : transform;
+			_content = AnimateWholeButton ? transform : (transform.childCount > 0 ? transform.GetChild(0) : transform);
 
 			if (_content != transform)
 			{
 				_contentCanvasGroup = _content.GetComponent<CanvasGroup>();
 				if (_contentCanvasGroup == null)
 					_contentCanvasGroup = _content.gameObject.AddComponent<CanvasGroup>();
+			}
+			else
+			{
+				_contentCanvasGroup = _canvasGroup;
 			}
 
 			if (EventSystem.current != null)
@@ -138,24 +144,44 @@ namespace Snui
 
 		public void OnPointerUp(PointerEventData eventData)
 		{
-			ReleasePressedVisual(true);
+			bool isInside = eventData.pointerCurrentRaycast.gameObject == gameObject;
+			ReleasePressedVisual(isInside);
+		}
+
+		public void OnPointerExit(PointerEventData eventData)
+		{
+			if (_pressed)
+			{
+				ReleasePressedVisual(false);
+			}
+		}
+
+		public void OnPointerEnter(PointerEventData eventData)
+		{
+			if (eventData.dragging && eventData.pointerPress == gameObject && Button != null && Button.IsInteractable())
+			{
+				_pressed = true;
+				ApplyPressedVisual();
+			}
 		}
 
 		public void OnBeginDrag(PointerEventData eventData)
 		{
 			_beginDragPos = eventData.position;
-			ReleasePressedVisual(false);
+			if (GetComponentInParent<ScrollRect>() != null)
+				ReleasePressedVisual(false);
 		}
 
 		public void OnDrag(PointerEventData eventData)
 		{
-			if (Vector2.Distance(_beginDragPos, eventData.position) > _dragThreshold)
+			if (GetComponentInParent<ScrollRect>() != null && Vector2.Distance(_beginDragPos, eventData.position) > _dragThreshold)
 				ReleasePressedVisual(false);
 		}
 
 		public void OnEndDrag(PointerEventData eventData)
 		{
-			ReleasePressedVisual(false);
+			if (GetComponentInParent<ScrollRect>() != null)
+				ReleasePressedVisual(false);
 		}
 
 		public void DisableButton()
@@ -206,6 +232,8 @@ namespace Snui
 			}
 			if (restoreAlpha && _contentCanvasGroup != null)
 				_contentCanvasGroup.alpha = Button != null && !Button.interactable ? DisableAlpha : 1f;
+			if (Button != null && Button.targetGraphic is Image img)
+				img.overrideSprite = null;
 			if (invokeEvent && wasPressed) OnPointerUpEvent?.Invoke();
 		}
 

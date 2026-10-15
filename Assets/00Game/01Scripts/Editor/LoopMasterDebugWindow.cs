@@ -187,30 +187,7 @@ internal static class DebugEventRewards
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Reward milestones", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(note + " Receipt = reward transaction saved to inventory. Updates automatically.", MessageType.None);
-        if (!InventoryManager.TryDebugReadRewardReceipts(out _receipts, out string error))
-            EditorGUILayout.HelpBox("Cannot verify inventory receipts: " + error, MessageType.Error);
-    }
-
-    internal static void DrawSpecialStreak(SpecialStreakManager manager)
-    {
-        Header("Goals are per stage. Pending collection is counted separately from claimed rewards.");
-        var stages = manager.GetRewardInfosConfig();
-        if (stages == null) return;
-        long pending = manager.DebugPendingCollectionCount;
-        for (int i = 0; i < stages.Count; i++)
-        {
-            var stage = stages[i];
-            if (stage == null) continue;
-            bool claimed = i < manager.ClaimedIndex;
-            string status = claimed ? "Claimed" : !string.IsNullOrEmpty(manager.LastError) ? "Check event error" : manager.IsLocked ? "Locked" :
-                pending >= stage.Goal ? "Pending collection / reward" : "Not reached";
-            var rewards = new List<RewardItem>();
-            if (stage.Rewards != null)
-                foreach (var reward in stage.Rewards)
-                    if (reward != null) rewards.Add(new RewardItem(RewardType.FromString(reward.type), reward.count));
-            DrawRow(i + 1, stage.Goal, rewards, status, claimed, SpecialStreakManager.ClaimId(i));
-            if (!claimed) pending -= stage.Goal;
-        }
+        if (!InventoryManager.TryDebugReadRewardReceipts(out _receipts, out string error));
     }
 
     internal static void DrawStreakLine(Snui.StreakLine.BaseStreakLineManager manager)

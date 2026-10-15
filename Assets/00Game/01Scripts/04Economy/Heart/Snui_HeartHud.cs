@@ -20,10 +20,6 @@ namespace Snui
 		{
 			base.Awake();
 			Current = this;
-			if (_timeLabel == null)
-				_timeLabel = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform, "TimeText"));
-			if (_fullLabel == null)
-				_fullLabel = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform, "FullText"));
 			if (_infiniteGo == null)
 			{
 				Transform infinite = HierarchyReferenceCache.Descendant(transform, "InfiniteIcon");
