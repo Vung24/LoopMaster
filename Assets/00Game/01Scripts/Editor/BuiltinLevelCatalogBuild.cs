@@ -63,6 +63,7 @@ public sealed class BuiltinLevelCatalogBuild : IPreprocessBuildWithReport
 		catalog.LevelIds = levels.Keys.ToArray();
 		EditorUtility.SetDirty(catalog);
 		AssetDatabase.SaveAssets();
+		BuiltinLevelCatalog.Invalidate();
 		Debug.Log("Packaged " + levels.Count + " built-in JSON levels for player builds.");
 	}
 }

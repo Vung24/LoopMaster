@@ -368,7 +368,7 @@ public class PlayButton : MonoBehaviour
 	public void RefreshLevelLabel()
 	{
 		if (_btnText == null) return;
-		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
+		var catalog = BuiltinLevelCatalog.Current;
 		bool complete = GameProgressStore.IsCampaignComplete;
 		bool available = !complete && catalog != null && catalog.HasLevel(GameProgressStore.NextPlayableLevel);
 		int displayLevel = HomeLevelChangePresentation.HasPending ? HomeLevelChangePresentation.PreviousLevel : GameProgressStore.NextPlayableLevel;

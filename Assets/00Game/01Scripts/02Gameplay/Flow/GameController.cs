@@ -542,7 +542,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool TryCheatLoadLevel(int level)
 	{
 		if (level < 1 || IsTransitioningLevel || IsUsingBooster) return false;
-		var catalog = Resources.Load<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
+		var catalog = BuiltinLevelCatalog.Current;
 		if (catalog == null || !catalog.HasLevel(level)) return false;
 		TextAsset asset = null;
 		GameData previous = GameData.Current;

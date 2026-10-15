@@ -72,7 +72,6 @@ public class LoseContainer : MonoBehaviour, ILoseItemContainer
         if (_loseItemEntries.Count > 0) CreateLoseItem();
     }
 
-    // Ghidra 0x177A4C8: consume clicks during switching; dismiss only on the final page.
     public bool OnClickSwitchNext()
     {
         if (_isSwitching) return true;
