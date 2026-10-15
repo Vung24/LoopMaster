@@ -4,7 +4,7 @@ using UnityEngine;
 public sealed class BuiltinLevelCatalog : ScriptableObject
 {
 	public const string ResourceName = "BuiltinLevelCatalog";
-	public const string SourceFolder = "00Game/05LevelData/LevelData";
+	public const string SourceFolder = "00Game/Resources/LevelData";
 	public const string ResourceFolder = "LevelData";
 	public int[] LevelIds = Array.Empty<int>();
 

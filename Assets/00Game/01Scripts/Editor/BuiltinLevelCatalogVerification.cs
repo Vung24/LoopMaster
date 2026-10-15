@@ -7,7 +7,7 @@ using UnityEngine;
 
 public static class BuiltinLevelCatalogVerification
 {
-    private const string Source = "Assets/00Game/05LevelData/LevelData";
+    private const string Source = "Assets/00Game/Resources/LevelData";
     private const string Packaged = "Assets/00Game/Resources/LevelData";
 
     public static void Run()
