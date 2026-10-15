@@ -10,6 +10,7 @@ public class BuyToolDialogContent : DialogContent
 	private string _toolKey;
 	[SerializeField] private Button _adBtn, _coinBtn;
 	[SerializeField] private Transform _titleText, _desc, _icon;
+	[SerializeField] private Transform _undoIcon, _shuffleIcon, _pathIcon;
 	[SerializeField] private TMP_Text _coinPriceLabel;
 	private Func<bool> _isValid;
 	private bool _processing;
@@ -23,6 +24,9 @@ public class BuyToolDialogContent : DialogContent
 		if (_titleText == null) _titleText = HierarchyReferenceCache.Descendant(transform, "Title");
 		if (_desc == null) _desc = HierarchyReferenceCache.Descendant(transform, "Desc");
 		if (_icon == null) _icon = HierarchyReferenceCache.Descendant(transform, "ToolBackLigh") ?? HierarchyReferenceCache.Descendant(transform, "ToolBackLight");
+		if (_undoIcon == null) _undoIcon = HierarchyReferenceCache.Descendant(transform, InventoryKeys.TOOL_UNDO);
+		if (_shuffleIcon == null) _shuffleIcon = HierarchyReferenceCache.Descendant(transform, InventoryKeys.TOOL_SHUFFLE);
+		if (_pathIcon == null) _pathIcon = HierarchyReferenceCache.Descendant(transform, InventoryKeys.TOOL_PATH);
 		if (_coinPriceLabel == null && _coinBtn != null)
 			_coinPriceLabel = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(_coinBtn.transform, "Count"));
 		DialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
@@ -48,8 +52,26 @@ public class BuyToolDialogContent : DialogContent
 			toolKey == InventoryKeys.TOOL_SHUFFLE ? "Shuffle the colors in available boxes" : "Add space to the belt");
 		if (_icon != null)
 		{
+			_icon.gameObject.SetActive(true);
 			foreach (Transform child in _icon)
 			{
+				if (InventoryManager.IsBoosterKey(child.name))
+					child.gameObject.SetActive(string.Equals(child.name, toolKey, StringComparison.OrdinalIgnoreCase));
+			}
+		}
+		if (_undoIcon != null)
+			_undoIcon.gameObject.SetActive(string.Equals(toolKey, InventoryKeys.TOOL_UNDO, StringComparison.OrdinalIgnoreCase));
+		if (_shuffleIcon != null)
+			_shuffleIcon.gameObject.SetActive(string.Equals(toolKey, InventoryKeys.TOOL_SHUFFLE, StringComparison.OrdinalIgnoreCase));
+		if (_pathIcon != null)
+			_pathIcon.gameObject.SetActive(string.Equals(toolKey, InventoryKeys.TOOL_PATH, StringComparison.OrdinalIgnoreCase));
+
+		Transform iconContainer = _icon != null && _icon.parent != null ? _icon.parent : transform;
+		if (iconContainer != null)
+		{
+			for (int i = 0; i < iconContainer.childCount; i++)
+			{
+				Transform child = iconContainer.GetChild(i);
 				if (InventoryManager.IsBoosterKey(child.name))
 					child.gameObject.SetActive(string.Equals(child.name, toolKey, StringComparison.OrdinalIgnoreCase));
 			}
