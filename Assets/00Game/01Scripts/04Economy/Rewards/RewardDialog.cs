@@ -46,15 +46,25 @@ namespace Snui
             PrepareOverlay(instance, 1350);
             dialog._saved = true;
             var layout = RewardLayoutHelper.GetRewardsLayoutPos(items.Count);
+            bool hasCoins = false;
             for (int i = 0; i < items.Count; i++)
             {
+                if (items[i] != null && items[i].Type == RewardType.Coin) hasCoins = true;
                 var cell = RewardCell.Show(items[i], dialog._safeArea, true, true).GetAwaiter().GetResult();
                 if (cell == null) continue;
                 cell.transform.localPosition = new Vector3(layout.Item2[i].x, layout.Item2[i].y, 0f);
                 cell.transform.localScale = Vector3.one * layout.Item1;
                 dialog._cells.Add(cell);
             }
-            HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
+            if (hasCoins)
+            {
+                HudContainer.Current?.CoinHud?.SetAutoUpdate(false);
+                Snui_CoinHud.TrySetAutoUpdate(false);
+            }
+            else
+            {
+                HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
+            }
             Snui_HeartHud.TrySetAutoUpdate(true);
             dialog.Reveal();
             return dialog;
@@ -86,11 +96,13 @@ namespace Snui
             {
                 dialog._desc.text = title;
             }
+            bool hasCoins = false;
             if (items != null)
             {
                 var layout = RewardLayoutHelper.GetRewardsLayoutPos(items.Count);
                 for (int i = 0; i < items.Count; i++)
                 {
+                    if (items[i] != null && items[i].Type == RewardType.Coin) hasCoins = true;
                     var cell = await RewardCell.Show(items[i], dialog._safeArea, true, true);
                     if (cell != null)
                     {
@@ -99,6 +111,11 @@ namespace Snui
                         dialog._cells.Add(cell);
                     }
                 }
+            }
+            if (hasCoins)
+            {
+                HudContainer.Current?.CoinHud?.SetAutoUpdate(false);
+                Snui_CoinHud.TrySetAutoUpdate(false);
             }
             if (chest != null)
             {
@@ -135,9 +152,9 @@ namespace Snui
             if (_fullBtn == null) _fullBtn = GetComponent<Button>();
             if (_fullBtn == null) _fullBtn = gameObject.AddComponent<Button>();
             _fullBtn.onClick.AddListener(OnClickReceive);
-            if (_safeArea == null) _safeArea = HierarchyReferenceCache.Descendant(transform,"SafeArea") ?? transform;
-            if (_desc == null) _desc = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Descendant(transform,"Text"));
-            if (_mask == null) _mask = HierarchyReferenceCache.Component<Image>(HierarchyReferenceCache.Descendant(transform,"Mask"));
+            if (_safeArea == null) _safeArea = HierarchyReferenceCache.Child(transform, "SafeArea") ?? HierarchyReferenceCache.Descendant(transform, "SafeArea") ?? transform;
+            if (_desc == null) _desc = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Text") ?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Text");
+            if (_mask == null) _mask = HierarchyReferenceCache.ChildComponent<Image>(transform, "Mask") ?? HierarchyReferenceCache.DescendantComponent<Image>(transform, "Mask");
         }
         private void Initialize(int milestone,bool saved,SkeletonGraphic sourceChest,bool waitForMachine,bool receiveImmediately)
         {
@@ -145,14 +162,24 @@ namespace Snui
             _levelBoxPresentation=!receiveImmediately;
             var layout=RewardLayoutHelper.GetRewardsLayoutPos(LevelBoxManager.Ensure().GetMilestoneRewards(milestone).Count);
             int index=0;
+            bool hasCoins = false;
             foreach(var item in LevelBoxManager.Ensure().GetMilestoneRewards(milestone))
             {
+                if (item != null && item.Type == RewardType.Coin) hasCoins = true;
                 var cell=RewardCell.Show(item,_safeArea,true,true).GetAwaiter().GetResult();
                 if(cell==null) continue;
                 cell.transform.localPosition=new Vector3(layout.Item2[index].x,layout.Item2[index].y,0);
                 cell.transform.localScale=Vector3.one*layout.Item1; _cells.Add(cell); index++;
             }
-            HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
+            if (hasCoins)
+            {
+                HudContainer.Current?.CoinHud?.SetAutoUpdate(false);
+                Snui_CoinHud.TrySetAutoUpdate(false);
+            }
+            else
+            {
+                HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
+            }
             Snui_HeartHud.TrySetAutoUpdate(true);
             if(!saved) { SetDescription("REWARD NOT SAVED — TAP TO RETRY"); return; }
             if(receiveImmediately) { Reveal(); return; }

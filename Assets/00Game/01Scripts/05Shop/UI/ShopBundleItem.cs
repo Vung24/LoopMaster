@@ -40,20 +40,17 @@ namespace ShopUI
 			base.Awake();
 			if (_desc == null)
 			{
-				_desc = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Desc")
-					?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Desc");
+				_desc = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Desc");
 			}
 
 			if (_priceOld == null)
 			{
-				_priceOld = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "PriceOld")
-					?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "PriceOld");
+				_priceOld = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "PriceOld");
 			}
 
 			if (_ribbonText == null)
 			{
-				var ribbon = HierarchyReferenceCache.Child(transform, "Ribbon")
-					?? HierarchyReferenceCache.Descendant(transform, "Ribbon");
+				var ribbon = HierarchyReferenceCache.Child(transform, "Ribbon");
 				if (ribbon != null)
 				{
 					_ribbonText = ribbon.GetComponentInChildren<TMP_Text>(true);
@@ -62,8 +59,7 @@ namespace ShopUI
 
 			if (_rewardsRoot == null)
 			{
-				_rewardsRoot = HierarchyReferenceCache.Child(transform, "Rewards")
-					?? HierarchyReferenceCache.Descendant(transform, "Rewards");
+				_rewardsRoot = HierarchyReferenceCache.Child(transform, "Rewards");
 			}
 		}
 
@@ -200,8 +196,7 @@ namespace ShopUI
 				UnityEditor.Undo.RegisterCreatedObjectUndo(go, "Preview Bundle Rewards");
 			}
 #endif
-			var icon = HierarchyReferenceCache.ChildComponent<Image>(go.transform, "Icon")
-				?? HierarchyReferenceCache.DescendantComponent<Image>(go.transform, "Icon");
+			var icon = HierarchyReferenceCache.ChildComponent<Image>(go.transform, "Icon");
 			if (icon != null)
 			{
 				icon.sprite = sprite;
@@ -209,8 +204,7 @@ namespace ShopUI
 				icon.enabled = sprite != null;
 			}
 
-			var txt = HierarchyReferenceCache.ChildComponent<TMP_Text>(go.transform, "Text")
-				?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(go.transform, "Text");
+			var txt = HierarchyReferenceCache.ChildComponent<TMP_Text>(go.transform, "Text");
 			if (txt != null)
 			{
 				txt.text = amount;
