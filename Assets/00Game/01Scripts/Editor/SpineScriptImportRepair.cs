@@ -10,12 +10,10 @@ using UnityEngine.SceneManagement;
 
 // Package MonoScripts can retain a null class binding after a package migration.
 // Repair the imports without replacing components or losing their serialized data.
-[InitializeOnLoad]
 public static class SpineScriptImportRepair
 {
     private const string PackageRoot = "Packages/com.esotericsoftware.spine.spine-unity/Runtime/spine-unity/";
     private const string ReportPath = "ReverseEngineering/SpineScriptImportRepair/unity-validation.txt";
-    private const string RequestPath = "ReverseEngineering/SpineScriptImportRepair/repair.request";
     private static readonly Dictionary<string, Type> Bindings = new Dictionary<string, Type>
     {
         { "Components/SkeletonRenderer.cs", typeof(SkeletonRenderer) },
@@ -23,30 +21,6 @@ public static class SpineScriptImportRepair
         { "Asset Types/SpineAtlasAsset.cs", typeof(SpineAtlasAsset) },
         { "Asset Types/SkeletonDataAsset.cs", typeof(SkeletonDataAsset) }
     };
-    private static bool pending = true;
-
-    static SpineScriptImportRepair() { EditorApplication.update += CheckImports; }
-
-    private static void CheckImports()
-    {
-        if (!pending || EditorApplication.isCompiling || EditorApplication.isUpdating ||
-            EditorApplication.isPlayingOrWillChangePlaymode) return;
-        pending = false;
-        EditorApplication.update -= CheckImports;
-        if (File.Exists(RequestPath))
-        {
-            File.Delete(RequestPath);
-            Repair();
-            return;
-        }
-        foreach (var binding in Bindings)
-        {
-            MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(PackageRoot + binding.Key);
-            if (script != null && script.GetClass() == binding.Value) continue;
-            Repair();
-            return;
-        }
-    }
 
     [MenuItem("Tools/LoopMaster/Repair Spine Script Imports")]
     public static void Repair()

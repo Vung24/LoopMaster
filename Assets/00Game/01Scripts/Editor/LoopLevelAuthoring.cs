@@ -10,7 +10,7 @@ using UnityEngine;
 
 public static class LoopLevelAuthoring
 {
-    public const string LevelFolder = "Assets/00Game/05LevelData/LevelData";
+    public const string LevelFolder = "Assets/00Game/Resources/LevelData";
     public const int MaximumSlots = 50000;
 
     public static JObject Parse(string json)

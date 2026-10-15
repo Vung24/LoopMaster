@@ -9,48 +9,11 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-[InitializeOnLoad]
 public static class UguiScriptImportRepair
 {
     private const string Folder = "ReverseEngineering/UguiRepair";
-    private const string Request = Folder + "/repair.request";
     private const string Package = "Packages/com.unity.ugui/Runtime";
     private static readonly Regex ScriptGuid = new Regex(@"m_Script: \{fileID: 11500000, guid: ([a-f0-9]{32}), type: 3\}");
-    private static bool autoCheckPending = true;
-
-    static UguiScriptImportRepair() { EditorApplication.update += RunRequested; }
-
-    private static void RunRequested()
-    {
-        if (EditorApplication.isCompiling || EditorApplication.isUpdating ||
-            EditorApplication.isPlayingOrWillChangePlaymode) return;
-        if (File.Exists(Request))
-        {
-            autoCheckPending = false;
-            File.Delete(Request);
-            Repair();
-        }
-        else if (autoCheckPending)
-        {
-            autoCheckPending = false;
-            var lines = new List<string>();
-            var repairedGuids = new HashSet<string>();
-            try
-            {
-                int errors = RepairScriptBindings(lines, repairedGuids, out int checkedScripts);
-                RefreshPrefabs(repairedGuids, lines);
-                if (errors > 0 || repairedGuids.Count > 0)
-                {
-                    Directory.CreateDirectory(Folder);
-                    File.WriteAllLines(Folder + "/automatic-validation.txt", lines);
-                    string summary = "uGUI automatic import check: checked=" + checkedScripts +
-                        ", reimported=" + repairedGuids.Count + ", errors=" + errors;
-                    if (errors > 0) Debug.LogWarning(summary); else Debug.Log(summary);
-                }
-            }
-            catch (Exception error) { Debug.LogWarning("uGUI automatic import check failed: " + error); }
-        }
-    }
 
     [MenuItem("Tools/LoopMaster/Repair uGUI Script Imports")]
     public static void Repair()
