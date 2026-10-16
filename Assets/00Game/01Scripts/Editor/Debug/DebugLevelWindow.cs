@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -22,6 +23,10 @@ public sealed class DebugLevelPanel
     private string _status = "Ready. Enter Play Mode and open a level.";
     private Vector2 _scrollPosition;
     [SerializeField] private int _targetLevelInput = 1;
+    [SerializeField] private int _undoCount = 3;
+    [SerializeField] private int _shuffleCount = 3;
+    [SerializeField] private int _pathCount = 3;
+    private bool _applyingLevel;
 
     private static GameController Controller
     {
@@ -46,6 +51,7 @@ public sealed class DebugLevelPanel
 
         DrawNavigation(controller);
         DrawProgressControls();
+        DrawBoosterControls();
 
         EditorGUILayout.Space();
         EditorGUILayout.HelpBox(_status, MessageType.None);
@@ -56,14 +62,14 @@ public sealed class DebugLevelPanel
     {
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Navigation", EditorStyles.boldLabel);
-        using (new EditorGUI.DisabledScope(!IsRunning || controller == null || !controller.CanReplayLevel))
+        using (new EditorGUI.DisabledScope(_applyingLevel || !IsRunning || controller == null || !controller.CanReplayLevel))
         {
             if (GUILayout.Button("Replay Level"))
             {
                 _status = controller.TryReplayLevel() ? "Level replayed. Ready to test again." : "Could not replay this level.";
             }
         }
-        using (new EditorGUI.DisabledScope(!IsRunning || controller == null || !controller.CanLoadNextLevel))
+        using (new EditorGUI.DisabledScope(_applyingLevel || !IsRunning || controller == null || !controller.CanLoadNextLevel))
         {
             if (GUILayout.Button("Next Level"))
             {
@@ -84,14 +90,14 @@ public sealed class DebugLevelPanel
         using (new EditorGUILayout.HorizontalScope())
         {
             _targetLevelInput = EditorGUILayout.IntField("Set Level", _targetLevelInput);
+            using (new EditorGUI.DisabledScope(_applyingLevel || EditorApplication.isPlayingOrWillChangePlaymode && !IsRunning || GameSceneManager.OnChangeScene))
             if (GUILayout.Button("Apply", GUILayout.Width(70f)))
             {
-                int lvl = Mathf.Max(1, _targetLevelInput);
-                GameProgressStore.SetProgress(lvl);
-                _status = "Saved progress set to Level " + lvl + ".";
-                Debug.Log("[Debug Level] " + _status);
+                ApplyLevel().Forget();
             }
         }
+        EditorGUILayout.LabelField("Apply saves progress; in Play Mode it also starts the selected level.", EditorStyles.wordWrappedMiniLabel);
+        using (new EditorGUI.DisabledScope(_applyingLevel || GameSceneManager.OnChangeScene))
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button("Reset Progress (Level 1)"))
@@ -105,6 +111,73 @@ public sealed class DebugLevelPanel
             {
                 BuiltinLevelCatalogBuild.RefreshCatalog();
                 _status = "BuiltinLevelCatalog refreshed.";
+            }
+        }
+    }
+
+    private async UniTask ApplyLevel()
+    {
+        if (_applyingLevel) return;
+        int level = Mathf.Max(1, _targetLevelInput);
+        _targetLevelInput = level;
+        if (BuiltinLevelCatalog.Current?.HasLevel(level) != true)
+        {
+            _status = "Level " + level + " is unavailable. Check the level catalog.";
+            return;
+        }
+        _applyingLevel = true;
+        try
+        {
+            if (EditorApplication.isPlaying)
+            {
+                _status = "Loading Level " + level + "...";
+                if (!await Snui.CheatManager.Ensure().Commands.LoadLevel(level))
+                {
+                    _status = "Could not load Level " + level + ". Wait for the current gameplay action to finish.";
+                    return;
+                }
+            }
+            GameProgressStore.SetProgress(level);
+            _status = EditorApplication.isPlaying ? "Playing Level " + level + "; progress saved." :
+                "Saved progress set to Level " + level + ".";
+            Debug.Log("[Debug Level] " + _status);
+        }
+        catch (OperationCanceledException) { _status = "Level loading cancelled."; }
+        catch (Exception exception)
+        {
+            _status = "Level loading failed: " + exception.Message;
+            Debug.LogException(exception);
+        }
+        finally { _applyingLevel = false; }
+    }
+
+    private void DrawBoosterControls()
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Booster Inventory", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Set the total count (0 or higher). Changes are saved immediately.", EditorStyles.wordWrappedMiniLabel);
+        var inventory = EditorApplication.isPlaying ? InventoryManager.Current : null;
+        using (new EditorGUI.DisabledScope(!IsRunning || _applyingLevel || GameSceneManager.OnChangeScene || inventory == null))
+        {
+            DrawBooster(inventory, "Undo", InventoryKeys.TOOL_UNDO, ref _undoCount);
+            DrawBooster(inventory, "Shuffle", InventoryKeys.TOOL_SHUFFLE, ref _shuffleCount);
+            DrawBooster(inventory, "Path", InventoryKeys.TOOL_PATH, ref _pathCount);
+        }
+        if (inventory == null) EditorGUILayout.HelpBox("Enter Play Mode and wait for inventory to initialize.", MessageType.Info);
+    }
+
+    private void DrawBooster(InventoryManager inventory, string label, string key, ref int target)
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            int current = inventory == null ? 0 : inventory.GetAmount(key);
+            target = EditorGUILayout.IntField(label + " (current: " + current + ")", target);
+            using (new EditorGUI.DisabledScope(target < 0))
+            if (GUILayout.Button("Set", GUILayout.Width(70f)))
+            {
+                bool changed = target >= current ? inventory.Add(key, target - current, "debug") :
+                    inventory.Use(key, current - target, "debug");
+                _status = changed ? label + " count set to " + target + "." : "Inventory is busy; try again.";
             }
         }
     }
