@@ -48,8 +48,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 	}
 	public float SliceJumpTimeScale => GameplayFeedbackRules.GetTransferTimeScale(IsSpeedUpActive);
-	public Sprite SpeedButtonSprite => _gameLoader == null ? null :
-		(IsSpeedUpActive ? _gameLoader.SpeedSprite : _gameLoader.UnSpeedSprite);
 	public bool CanUseUndoTool => Boosters.CanUseUndo;
 	public bool CanUseShuffleTool => Boosters.CanUseShuffle;
 	public bool CanUsePathTool => Boosters.CanUsePath;
