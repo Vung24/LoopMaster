@@ -55,3 +55,23 @@ Verification Checklist
 - For gameplay state changes, verify representative happy paths and edge cases, including restart/reload and object disable/destruction where relevant.
 - Review the diff for accidental scene/prefab/.meta changes, unexpected package edits, and newly introduced null-sensitive references.
 - If Unity Editor is unavailable, report that limitation and provide specific in-Editor checks instead of reporting success.
+## Readable Control Flow: Minimize Lambdas & Complex If/Else
+
+- Prefer named methods over lambda expressions (=>)
+  for gameplay logic and multi-step operations.
+
+- Use lambdas only for short, simple callbacks
+  when they clearly improve readability.
+
+- Avoid lambdas that capture local variables
+  inside Update, FixedUpdate, or hot paths.
+
+- Prefer early return and guard clauses
+  over deeply nested if/else blocks.
+
+- Avoid nested ternary operators (? :)
+  and overly compact conditional expressions.
+
+- Use explicit if/else for non-trivial logic.
+
+- Preserve existing behavior when simplifying code.
