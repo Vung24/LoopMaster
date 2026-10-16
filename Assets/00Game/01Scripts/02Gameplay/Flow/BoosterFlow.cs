@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using DG.Tweening;
 
 public sealed class BoosterFlow
 {
@@ -21,18 +22,31 @@ public sealed class BoosterFlow
 	private InventoryManager _inventory;
 	private Coroutine _completion;
 	private int _operationVersion;
+	private Sequence _undoPresentation;
+	private readonly List<GameObject> _undoVisuals = new List<GameObject>();
 	private InventoryManager Inventory => _inventory != null ? _inventory : (_inventory = InventoryManager.Ensure());
 
 	public bool IsBusy { get; private set; }
 	public bool CanRequestUndo => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
 		(Inventory.GetAmount(InventoryKeys.TOOL_UNDO) == 0 || (_isGameplaySettled() && _data.CanUndo()));
 	public bool CanRequestShuffle => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE) &&
-		(Inventory.GetAmount(InventoryKeys.TOOL_SHUFFLE) == 0 || (_isGameplaySettled() && _boxes.Any(box => box != null && box.Info != null && box.Info.CanShuffle())));
+		(Inventory.GetAmount(InventoryKeys.TOOL_SHUFFLE) == 0 || (_isGameplaySettled() && HasAnyShuffleableBox()));
 	public bool CanRequestPath => CanUseBooster(false) && _engine != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
 	public bool CanUseUndo => CanUseBooster(true) && _data.CanUndo() &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_UNDO);
-	public bool CanUseShuffle => CanUseBooster(true) && _boxes.Any(box => box != null && box.Info != null && box.Info.CanShuffle()) &&
+	public bool CanUseShuffle => CanUseBooster(true) && HasAnyShuffleableBox() &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_SHUFFLE);
+
+	private bool HasAnyShuffleableBox()
+	{
+		for (int i = 0; i < _boxes.Count; i++)
+		{
+			Box box = _boxes[i];
+			if (box != null && box.Info != null && box.Info.CanShuffle())
+				return true;
+		}
+		return false;
+	}
 	public bool CanUsePath => CanRequestPath &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_PATH);
 
@@ -85,6 +99,7 @@ public sealed class BoosterFlow
 		_operationVersion++;
 		if (_completion != null && _host != null) _host.StopCoroutine(_completion);
 		_completion = null;
+		ClearUndoPresentation();
 		IsBusy = false;
 	}
 
@@ -113,14 +128,36 @@ public sealed class BoosterFlow
 
 		UndoData undo = _data.UndoData;
 		Box source = _getBox(undo.PopupBox);
-		var destinations = undo.BoxData
-			.Where(item => item != null && item.Box != null)
-			.Select(item => _getBox(item.Box))
-			.Where(box => box != null).Distinct().ToList();
-		var roadVisuals = undo.Slices
-			.Where(slice => slice != null && _data.TransferSlice.Contains(slice) && slice.SliceSc != null)
-			.Select(slice => slice.SliceSc).ToList();
+		var destinations = new List<Box>();
+		var seenDestinations = new HashSet<Box>();
+		for (int i = 0; i < undo.BoxData.Count; i++)
+		{
+			UndoBox item = undo.BoxData[i];
+			if (item == null || item.Box == null) continue;
+			Box box = _getBox(item.Box);
+			if (box != null && seenDestinations.Add(box))
+				destinations.Add(box);
+		}
+		var roadVisuals = new List<Slice>();
+		for (int i = 0; i < undo.Slices.Count; i++)
+		{
+			SliceInfo slice = undo.Slices[i];
+			if (slice != null && _data.TransferSlice.Contains(slice) && slice.SliceSc != null)
+				roadVisuals.Add(slice.SliceSc);
+		}
 		int restoredType = undo.Type;
+		// Capture visual origins before the engine clears undo history and restores the data.
+		var returnOrigins = new List<(Vector3 position, Quaternion rotation, Vector3 scale)>();
+		foreach (Slice slice in roadVisuals)
+			returnOrigins.Add((slice.transform.position, slice.transform.rotation, slice.transform.localScale));
+		foreach (UndoBox item in undo.BoxData)
+		{
+			Box destination = item == null || item.Box == null ? null : _getBox(item.Box);
+			if (destination == null || item.Size <= 0) continue;
+			for (int i = 0; i < item.Size; i++)
+				returnOrigins.Add((destination.GetTopSlicePos() - destination.transform.forward * (0.08f * i),
+					destination.transform.rotation, Vector3.one));
+		}
 
 		IsBusy = true;
 		if (!_engine.UndoLastMove())
@@ -131,16 +168,49 @@ public sealed class BoosterFlow
 
 		foreach (Slice slice in roadVisuals)
 			if (slice != null) slice.DismissForUndo();
+		if (source != null && _loader != null && _loader.Slice != null && returnOrigins.Count > 0)
+		{
+			_undoPresentation = DOTween.Sequence();
+			for (int i = 0; i < returnOrigins.Count; i++)
+			{
+				var origin = returnOrigins[i];
+				GameObject visual = UnityEngine.Object.Instantiate(_loader.Slice, origin.position, origin.rotation, _gameRoot);
+				_undoVisuals.Add(visual);
+				visual.transform.localScale = origin.scale;
+				Slice slice = visual.GetComponent<Slice>();
+				if (slice != null) slice.PrepareVisual(restoredType);
+				visual.SetActive(true);
+				float delay = returnOrigins.Count <= 1 ? 0f : 0.08f * i / (returnOrigins.Count - 1);
+				_undoPresentation.Insert(delay, visual.transform.DOJump(source.GetTopSlicePos(), 0.8f, 1, 0.32f).SetEase(Ease.OutQuad));
+				_undoPresentation.Insert(delay, visual.transform.DORotateQuaternion(source.transform.rotation, 0.32f));
+				_undoPresentation.Insert(delay, visual.transform.DOScale(Vector3.one, 0.32f));
+			}
+			_undoPresentation.OnComplete(ClearUndoPresentation);
+		}
 		foreach (Box destination in destinations) destination.RefreshAfterUndo(false, restoredType);
-		if (source != null) source.RefreshAfterUndo(true, restoredType);
+		if (source != null) source.RefreshAfterUndo(true, restoredType, _undoPresentation != null ? 0.4f : 0f);
 
-		var affected = destinations.Select(box => box.Info).Where(info => info != null).ToList();
+		var affected = new List<BoxInfo>();
+		for (int i = 0; i < destinations.Count; i++)
+		{
+			if (destinations[i].Info != null)
+				affected.Add(destinations[i].Info);
+		}
 		if (source != null && source.Info != null) affected.Add(source.Info);
 		foreach (BoxInfo info in affected) info.State = BoxState.OnUnlocking;
 		_playAudio(_loader == null ? null : _loader.UndoClip);
 		_refreshPathState();
 		_completion = _host.StartCoroutine(FinishBoosterUse(0.6f, affected));
 		return true;
+	}
+
+	private void ClearUndoPresentation()
+	{
+		_undoPresentation?.Kill();
+		_undoPresentation = null;
+		foreach (GameObject visual in _undoVisuals)
+			if (visual != null) UnityEngine.Object.Destroy(visual);
+		_undoVisuals.Clear();
 	}
 
 	private bool ApplyToolShuffle()

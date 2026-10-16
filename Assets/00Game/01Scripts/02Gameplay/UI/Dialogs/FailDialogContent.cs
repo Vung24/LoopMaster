@@ -111,16 +111,29 @@ public class FailDialogContent : DialogContent
 	{
 		if (!OfferValid) return;
 		_isResolved = true;
-		bool success = useCoins ? InventoryManager.Ensure().TrySpendCoins(RevivePrice,
-			() => _controller.TryRevive(way, ReviveRoute)) : _controller.TryRevive(way, ReviveRoute);
+		bool success;
+		if (useCoins)
+		{
+			bool ExecuteRevive() => _controller.TryRevive(way, ReviveRoute);
+			success = InventoryManager.Ensure().TrySpendCoins(RevivePrice, ExecuteRevive);
+		}
+		else
+		{
+			success = _controller.TryRevive(way, ReviveRoute);
+		}
 		if (!success)
 		{
 			_isResolved = false;
 			SetTitle(useCoins ? "NEED 900 COINS" : "TRY AGAIN");
 			return;
 		}
-		if (_isFreeRevive) { GamePrefs.SetInt(GamePrefKeys.FreeRevive, 1); GamePrefs.Save(); }
-		Dismiss(way == "coin" ? 1 : way == "free" ? 3 : 2);
+		if (_isFreeRevive)
+		{
+			GamePrefs.SetInt(GamePrefKeys.FreeRevive, 1);
+			GamePrefs.Save();
+		}
+		int dismissResult = way == "coin" ? 1 : (way == "free" ? 3 : 2);
+		Dismiss(dismissResult);
 	}
 	private void UpdateButtons()
 	{
