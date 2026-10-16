@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Snui;
 using DG.Tweening;
-
+using UnityEngine.EventSystems;
 [DefaultExecutionOrder(-900)]
 public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 {
@@ -49,10 +49,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
-	private Camera _cachedMainCamera;
-	private CameraClearFlags _cachedMainCameraClearFlags;
-	private int _cachedMainCameraCullingMask;
-	private bool _hasCachedMainCameraState;
 
 	public SafeArea SafeArea => _safeArea;
 
@@ -100,11 +96,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private void OnDestroy()
 	{
 		ActiveCanvases.Remove(this);
-		if (_hasCachedMainCameraState && _cachedMainCamera != null)
-		{
-			_cachedMainCamera.clearFlags = _cachedMainCameraClearFlags;
-			_cachedMainCamera.cullingMask = _cachedMainCameraCullingMask;
-		}
 	}
 
 	private void Start()
@@ -155,30 +146,12 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
 			if (shadowBackground == null) shadowBackground = gameObject.AddComponent<GameBackgroundController>();
 			shadowBackground.Bind(mainCam);
-			if (!_hasCachedMainCameraState)
-			{
-				_cachedMainCamera = mainCam;
-				_cachedMainCameraClearFlags = mainCam.clearFlags;
-				_cachedMainCameraCullingMask = mainCam.cullingMask;
-				_hasCachedMainCameraState = true;
-			}
-			mainCam.clearFlags = CameraClearFlags.Depth;
-			mainCam.cullingMask &= ~(1 << 5);
 		}
 
 		// Ensure duplicate _bgGame inside UICanvas remains inactive so it does not overlap UI.
 		if (_bgGame != null)
 		{
 			_bgGame.gameObject.SetActive(false);
-		}
-
-		GameBg gameBg = _controller != null ? _controller.GameBg : null;
-		if (gameBg != null)
-		{
-			foreach (SpriteRenderer sr in gameBg.GetComponentsInChildren<SpriteRenderer>(true))
-			{
-				sr.enabled = false;
-			}
 		}
 	}
 

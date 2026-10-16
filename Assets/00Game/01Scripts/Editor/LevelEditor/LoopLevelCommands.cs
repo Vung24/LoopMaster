@@ -9,6 +9,57 @@ using A = LoopLevelAuthoring;
 // Commands preserve JSON tokens and never reorder the box array for display/layout.
 public static class LoopLevelCommands
 {
+    public static int ColorTargetCapacity(int color)
+    {
+        if (color <= 0 || color >= 201 && color <= 299) return 0;
+        if (BottleRules.IsColorCompatible(BoxType.Long, color)) return GameData.LongBoxCubeCapacity;
+        return GameData.NormalCubeCapacity;
+    }
+
+    public static int CountInitialMoves(GameData data)
+    {
+        if (data == null) throw new ArgumentNullException(nameof(data));
+        return LoopLevelGenerator.InSimulation(data, CountCurrentInitialMoves);
+    }
+
+    private static int CountCurrentInitialMoves()
+    {
+        GameData data = GameData.Current;
+        if (!data.CanCubeJumpToTransfer()) return 0;
+        int count = 0;
+        foreach (BoxInfo box in data.Boxes)
+        {
+            if (box.State != BoxState.Free || box.IsEmpty() || !box.CanPopup()) continue;
+            if (box.GetTopCubes(false).Count > 0) count++;
+        }
+        return count;
+    }
+
+    public static bool IsCapacity(JObject layout, int index)
+    {
+        JArray map = A.Array(layout, "MapData");
+        return index >= 0 && index < map.Count && map[index] is JObject item && item.Value<string>("Name") == "Capacity";
+    }
+
+    public static int AddCapacity(JObject root)
+    {
+        JObject layout = A.Layout(root);
+        JArray map = layout["MapData"] as JArray;
+        if (map == null && layout["MapData"] != null && layout["MapData"].Type != JTokenType.Null)
+            throw new FormatException("MapData phải là mảng trước khi thêm Capacity. Dữ liệu hiện có được giữ nguyên.");
+        if (map == null) { map = new JArray(); layout["MapData"] = map; }
+        for (int i = 0; i < map.Count; i++)
+            if (IsCapacity(layout, i)) return i;
+        Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, true);
+        map.Add(new JObject
+        {
+            ["Name"] = "Capacity",
+            ["Position"] = A.Vector(new Vector3(bounds.center.x, .2f, bounds.max.z + 1.5f)),
+            ["Rotation"] = A.Vector(Vector3.zero), ["Scale"] = A.Vector(Vector3.one)
+        });
+        return map.Count - 1;
+    }
+
     public static int[] Selection(JObject root, IEnumerable<int> selection) => selection
         .Where(i => i >= 0 && i < A.Array(A.Layout(root), "Boxes").Count).Distinct().OrderBy(i => i).ToArray();
 

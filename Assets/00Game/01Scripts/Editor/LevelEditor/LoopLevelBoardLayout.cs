@@ -8,6 +8,7 @@ using A = LoopLevelAuthoring;
 
 public static class LoopLevelBoardLayout
 {
+    private const float RoadSamplingPadding = .005f;
     public static Bounds LocalBounds(int type)
     {
         if (type == 1) return new Bounds(new Vector3(0, .9f, 0), new Vector3(2.2f, 1.8f, 2.4f));
@@ -161,7 +162,10 @@ public static class LoopLevelBoardLayout
     private static JObject FitRoad(JArray boxes, Bounds content, int shape, float clearance)
     {
         Vector3 center = new Vector3(content.center.x, .2f, content.center.z);
-        float width = content.size.x + 2 * (clearance + .5f), depth = content.size.z + 2 * (clearance + .5f);
+        // Chords near a sampled corner can cut slightly inside the exact curve.
+        // A small margin avoids expanding both dimensions by 2.5% for that error.
+        float padding = clearance + .5f + RoadSamplingPadding;
+        float width = content.size.x + 2 * padding, depth = content.size.z + 2 * padding;
         if (shape == 2) width = depth = Mathf.Max(width, depth);
         for (int attempt = 0; attempt < 100; attempt++)
         {

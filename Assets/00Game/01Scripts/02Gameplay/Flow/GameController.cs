@@ -141,17 +141,9 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp));
 	[SerializeField] private Camera _mainCamera;
 	[SerializeField] private Camera _topCamera;
-	[SerializeField] private Camera _uiCamera;
-	[SerializeField] private Camera _backgroundCamera;
-	[SerializeField] private Canvas _backgroundCanvas;
-	[SerializeField] private GameBg _gameBg;
 
 	public Camera MainCamera => _mainCamera;
 	public Camera TopCamera => _topCamera;
-	public Camera UICamera => _uiCamera;
-	public Camera BackgroundCamera => _backgroundCamera;
-	public Canvas BackgroundCanvas => _backgroundCanvas;
-	public GameBg GameBg => _gameBg;
 	private GameObject _uiCanvasInstance;
 	private UICanvas _uiCanvas;
 	private GameLevelPresentationFlow _presentation;
@@ -358,7 +350,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void ResolveGameplayCameras()
 	{
-		if (_mainCamera != null && _topCamera != null) return;
 		if (_mainCamera == null) _mainCamera = Camera.main;
 	}
 
