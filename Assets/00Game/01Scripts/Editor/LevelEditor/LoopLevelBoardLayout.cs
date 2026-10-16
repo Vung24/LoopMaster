@@ -41,12 +41,20 @@ public static class LoopLevelBoardLayout
             if (!any) { bounds = item; any = true; } else bounds.Encapsulate(item);
         }
         if (includeRoad)
+        {
             foreach (JObject road in A.Array(layout, "Paths"))
                 foreach (Vector3 point in SampleRoad(road))
                 {
                     var item = new Bounds(point, new Vector3(1, .5f, 1));
                     if (!any) { bounds = item; any = true; } else bounds.Encapsulate(item);
                 }
+            foreach (JObject mapItem in A.Array(layout, "MapData"))
+            {
+                if (mapItem["Name"]?.Value<string>() != "Capacity") continue;
+                var item = new Bounds(A.Vector(mapItem, "Position"), new Vector3(2, 1, 1));
+                if (!any) { bounds = item; any = true; } else bounds.Encapsulate(item);
+            }
+        }
         return any ? bounds : new Bounds(Vector3.zero, Vector3.one * 8);
     }
     public static void Arrange(JObject layout, LoopLevelGeneratorSettings settings, int seed)
@@ -157,7 +165,10 @@ public static class LoopLevelBoardLayout
         if (shape == 2) width = depth = Mathf.Max(width, depth);
         for (int attempt = 0; attempt < 100; attempt++)
         {
-            JObject road = shape == 0 ? A.RoundedRectangleRoad(center, width, depth, 1.2f) : A.OvalRoad(center, width, depth);
+            // Keep the corner arc inside the padding so a box at a corner does
+            // not force both straight sides farther away from every other box.
+            float radius = Mathf.Min(1.2f, (clearance + .5f) * .9f);
+            JObject road = shape == 0 ? A.RoundedRectangleRoad(center, width, depth, radius) : A.OvalRoad(center, width, depth);
             Vector3[] samples = SampleRoad(road);
             if (boxes.Cast<JObject>().All(box => Corners(box).All(point => ContainsWithClearance(samples, point, clearance + .5f)))) return road;
             width *= 1.025f; depth *= 1.025f;

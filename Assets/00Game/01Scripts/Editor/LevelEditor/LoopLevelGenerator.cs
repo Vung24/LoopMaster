@@ -18,9 +18,10 @@ public sealed class LoopLevelGeneratorSettings
     public int EnterOnlyBoxes, LimitedColorBoxes, AdjacentLocks;
     public int ScrambleMoves = 32, RoadCapacity = 6, RoadShape, MaxStates = 4000, Attempts = 8;
     public float BoxSpacing = 3f, RoadMargin = 2.5f;
-    public float BoxGap = .6f, RoadClearance = .75f, BoardAspect = .75f;
+    public float BoxGap = .4f, RoadClearance = .2f, BoardAspect = .75f;
     public int BoardColumns, BoardLayout;
     public bool VerifySolution = true;
+    public bool AddCapacity = true;
     public void ApplyDifficulty(int difficulty)
     {
         Difficulty = Mathf.Clamp(difficulty, 0, 3);
@@ -52,8 +53,8 @@ public sealed class LoopLevelGeneratorSettings
             errors.Add("Hộp chỉ nhận vào / nhận màu / khóa liền kề tối đa 3.");
         if (SecretPercent < 0 || SecretPercent > 70 || ScrambleMoves < 4 || ScrambleMoves > 160 || RoadCapacity < 2 || RoadCapacity > 16) errors.Add("Tỉ lệ khối ẩn, số bước trộn hoặc sức chứa đường không hợp lệ.");
         if (MaxStates < 100 || MaxStates > 20000 || Attempts < 1 || Attempts > 16) errors.Add("Số trạng thái tìm phải từ 100–20000, số lần thử từ 1–16.");
-        if (!FiniteRange(BoxGap, .35f, 2) || !FiniteRange(RoadClearance, .4f, 3) || !FiniteRange(BoardAspect, .5f, 1.5f) || BoardColumns < 0 || BoardColumns > 24 || BoardLayout < 0 || BoardLayout > 1)
-            errors.Add("Khoảng cách hộp: 0,35–2; khoảng hở đường: 0,4–3; tỉ lệ rộng/sâu: 0,5–1,5; số cột: 0 (tự động) hoặc 1–24.");
+        if (!FiniteRange(BoxGap, .35f, 2) || !FiniteRange(RoadClearance, .05f, 3) || !FiniteRange(BoardAspect, .5f, 1.5f) || BoardColumns < 0 || BoardColumns > 24 || BoardLayout < 0 || BoardLayout > 1)
+            errors.Add("Khoảng cách hộp: 0,35–2; khoảng hở đường: 0,05–3; tỉ lệ rộng/sâu: 0,5–1,5; số cột: 0 (tự động) hoặc 1–24.");
         return errors;
     }
     private static bool FiniteRange(float value, float min, float max) => !float.IsNaN(value) && !float.IsInfinity(value) && value >= min && value <= max;
@@ -119,6 +120,19 @@ public static class LoopLevelGenerator
                 { cubes[c]["IsSecret"] = 1; result.HiddenCubes++; }
         }
         LoopLevelBoardLayout.Arrange(layout, settings, seed);
+        if (settings.AddCapacity)
+        {
+            Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, true);
+            layout["MapData"] = new JArray(new JObject
+            {
+                ["Name"] = "Capacity",
+                ["Position"] = A.Vector(new Vector3(bounds.center.x, .2f, bounds.max.z + 1.5f)),
+                ["Rotation"] = A.Vector(Vector3.zero),
+                ["Scale"] = A.Vector(Vector3.one)
+            });
+            bounds = LoopLevelBoardLayout.BoardBounds(layout, true);
+            layout["Size"] = Mathf.Max(bounds.size.x, bounds.size.z) + 1;
+        }
         var usedSettings = settings.Copy(); usedSettings.Seed = seed;
         result.Json["editor_generator"] = new JObject { ["version"] = 2, ["seed"] = seed, ["difficulty"] = settings.Difficulty,
             ["settings"] = JObject.FromObject(usedSettings), ["verified"] = false };
