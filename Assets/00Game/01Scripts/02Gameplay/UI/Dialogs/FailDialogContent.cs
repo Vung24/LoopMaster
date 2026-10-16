@@ -17,9 +17,6 @@ public class FailDialogContent : DialogContent
 	public string ReviveRoute;
 
 	private GameController _controller;
-	private Text _fallbackTitle;
-	private Text _fallbackReason;
-	private Button _fallbackReplayButton;
 	private GameData _offeredData;
 	private bool _isResolved;
 	private System.Action _declined;
@@ -67,7 +64,6 @@ public class FailDialogContent : DialogContent
 		BindButton(_adBtn, OnClickOfflineFreeButton);
 		BindButton(_coinBtn, OnClickCoinButton);
 		BindButton(_coinOnlyBtn, OnClickCoinButton);
-		BindButton(_fallbackReplayButton, OnClickReplayLevel);
 
 		UpdateButtons();
 	}
@@ -77,13 +73,6 @@ public class FailDialogContent : DialogContent
 		_isFreeRevive = freeRevive;
 		_declined = declined;
 		UpdateButtons();
-	}
-	public void BindFallbackOffers()
-	{
-		_adBtn = _adBtn != null ? _adBtn : DialogUI.ResolveButton(transform, "AdButton");
-		_coinBtn = _coinBtn != null ? _coinBtn : DialogUI.ResolveButton(transform, "CoinButton");
-		DialogUI.Bind(_adBtn, OnClickOfflineFreeButton);
-		DialogUI.Bind(_coinBtn, OnClickCoinButton);
 	}
 	public override void Show()
 	{
@@ -164,21 +153,9 @@ public class FailDialogContent : DialogContent
 		if (_addPathNode != null) _addPathNode.gameObject.SetActive(true);
 	}
 
-	public void Bind(GameController controller, Text title, Text reason, Button replayButton)
-	{
-		_fallbackTitle = title;
-		_fallbackReason = reason;
-		_fallbackReplayButton = replayButton;
-		Bind(controller);
-	}
-
 	public void SetLevel(int level, string failReason)
 	{
-		string title = "LEVEL " + level + " FAILED";
-		string reason = failReason == "roadsfull" || failReason == "road_full" ? "THE ROAD IS FULL" : "NO AVAILABLE MOVE";
 		SetTitle("CONTINUE?");
-		if (_fallbackTitle != null) _fallbackTitle.text = title;
-		if (_fallbackReason != null) _fallbackReason.text = reason;
 	}
 
 	public void OnClickReplayLevel()

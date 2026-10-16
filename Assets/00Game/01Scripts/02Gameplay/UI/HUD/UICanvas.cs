@@ -207,7 +207,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	{
 		if (_inputInitialized) return;
 		_inputInitialized = true;
-		GameResultUI.EnsureEventSystem();
 		GraphicRaycaster raycaster = GetComponent<GraphicRaycaster>();
 		if (raycaster == null) raycaster = gameObject.AddComponent<GraphicRaycaster>();
 		raycaster.enabled = true;
