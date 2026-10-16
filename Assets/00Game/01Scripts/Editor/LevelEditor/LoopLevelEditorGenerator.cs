@@ -43,8 +43,9 @@ public sealed partial class LoopLevelEditorWindow
             s.RoadShape = EditorGUILayout.Popup("Hình đường", s.RoadShape, new[] { "Chữ nhật bo góc", "Bầu dục", "Tròn" });
             s.BoardLayout = EditorGUILayout.Popup("Cách xếp hộp", s.BoardLayout, new[] { "Hai dãy hướng ra đường", "Các hàng cân đối" });
             s.BoxGap = EditorGUILayout.Slider("Khoảng cách giữa mép hộp", s.BoxGap, .35f, 2);
-            s.RoadClearance = EditorGUILayout.Slider("Khoảng cách tới thành đường", s.RoadClearance, .4f, 3);
+            s.RoadClearance = EditorGUILayout.Slider("Khoảng cách tới thành đường", s.RoadClearance, .05f, 3);
             s.RoadCapacity = EditorGUILayout.IntSlider("Sức chứa đường (nhóm)", s.RoadCapacity, 2, 16);
+            s.AddCapacity = EditorGUILayout.Toggle("Tạo bảng Capacity", s.AddCapacity);
             Header("Cơ chế đặc biệt");
             s.SingleBoxes = EditorGUILayout.IntSlider("Hộp đơn (hàng đợi)", s.SingleBoxes, 0, 3);
             s.LongBoxes = EditorGUILayout.IntSlider("Hộp dài", s.LongBoxes, 0, 6);
@@ -164,6 +165,14 @@ public sealed partial class LoopLevelEditorWindow
             if (_roadPreviewMode != 1)
                 foreach (Vector3[] line in _generatorPreview.Lines) { Handles.color = Color.cyan; Handles.DrawAAPolyLine(2, line); }
             DrawBoxPreview(A.Layout(_generationJob.Candidate.Json), false, _generatedSlots);
+            foreach (JObject item in A.Array(A.Layout(_generationJob.Candidate.Json), "MapData"))
+            {
+                if (item["Name"]?.Value<string>() != "Capacity") continue;
+                Handles.color = Color.green;
+                Vector3 position = A.Vector(item, "Position");
+                Handles.DrawWireCube(position, new Vector3(2, .5f, 1));
+                Handles.Label(position + Vector3.up * .5f, "Capacity 0/" + A.Int(A.Layout(_generationJob.Candidate.Json), "PathLength"));
+            }
             if (_showSlots)
                 for (int i = 0; i < _generatedSlots.Count; i += Math.Max(1, _generatedSlots.Count / 500))
                 { Handles.color = Color.yellow; Handles.Label(_generatedSlots[i] + Vector3.up * .1f, (i + 1).ToString()); }

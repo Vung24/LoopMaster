@@ -58,8 +58,6 @@ public class GameLoader : MonoBehaviour
 	public AudioClip OnlyEnterRockBlast { get; private set; }
 	public AudioClip ColorLockOpen { get; private set; }
 
-	public Sprite SpeedSprite;
-	public Sprite UnSpeedSprite;
 	public Sprite LevelTitleBgHardImage;
 	public Sprite LevelTitleBgExpertImage;
 	public Sprite TopLeftArmHardImage;
@@ -111,11 +109,6 @@ public class GameLoader : MonoBehaviour
 		_config = GameAssetsConfig.Instance;
 		BoxFinishEffect = _config == null ? null : _config.BoxFinishEffectPrefab;
 		BoxNormalEffect = _config == null ? null : _config.BoxNormalEffectPrefab;
-		if (_config != null)
-		{
-			SpeedSprite = _config.SpeedImage;
-			UnSpeedSprite = _config.UnSpeedImage;
-		}
 		LoadAudio(gameData);
 		LoadCustomerAssets(gameData);
 	}
