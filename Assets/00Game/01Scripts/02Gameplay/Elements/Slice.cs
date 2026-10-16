@@ -55,7 +55,6 @@ public class Slice : MonoBehaviour
 		if (_meshRenderer != null)
 		{
 			if (_colorPropBlock == null) _colorPropBlock = new MaterialPropertyBlock();
-			// Rebuild overrides so pooled normal slices do not retain the LongBox texture.
 			_colorPropBlock.Clear();
 			Color color = GameAssetsConfig.GetCubeColor(type);
 			_colorPropBlock.SetColor("_BaseColor", color);
