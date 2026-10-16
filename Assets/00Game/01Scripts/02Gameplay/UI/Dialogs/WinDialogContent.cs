@@ -64,9 +64,6 @@ public class WinDialogContent : DialogContent
 	private bool _canAdvance = true;
 	private bool _isClaiming;
 	private bool _isNavigating;
-	private Text _fallbackTitle;
-	private Button _fallbackNextButton;
-	private Button _fallbackReplayButton;
 	private readonly List<Sequence> _coinClaimTweens = new List<Sequence>();
 	private GameObject _coinFlightRoot;
 
@@ -119,17 +116,6 @@ public class WinDialogContent : DialogContent
 			SetButtonText(_adButton, _coinCount * 2);
 			_adButton.onClick.RemoveListener(OnAdButtonClick);
 			_adButton.onClick.AddListener(OnAdButtonClick);
-		}
-
-		if (_fallbackNextButton != null)
-		{
-			_fallbackNextButton.onClick.RemoveListener(OnClickNextLevel);
-			_fallbackNextButton.onClick.AddListener(OnClickNextLevel);
-		}
-		if (_fallbackReplayButton != null)
-		{
-			_fallbackReplayButton.onClick.RemoveListener(OnClickDoubleReward);
-			_fallbackReplayButton.onClick.AddListener(OnClickDoubleReward);
 		}
 	}
 
@@ -757,27 +743,15 @@ public class WinDialogContent : DialogContent
 		InitButtons();
 	}
 
-	public void Bind(GameController controller, Text title, Button nextButton, Button replayButton)
-	{
-		_fallbackTitle = title;
-		_fallbackNextButton = nextButton;
-		_fallbackReplayButton = replayButton;
-		Bind(controller);
-	}
-
 	public void SetLevel(int level, bool canLoadNext)
 	{
 		_canAdvance = canLoadNext;
-		if (_fallbackTitle != null)
-			_fallbackTitle.text = GameProgressStore.IsCampaignComplete && !canLoadNext ? "ALL LEVELS COMPLETE" : "LEVEL " + level + " COMPLETE";
 		InitButtons();
 	}
 
 	public void SetNoMoreLevels()
 	{
 		_canAdvance = false;
-		if (_fallbackTitle != null)
-			_fallbackTitle.text = GameProgressStore.IsCampaignComplete ? "ALL LEVELS COMPLETE" : "LEVEL COMPLETE";
 		InitButtons();
 	}
 
