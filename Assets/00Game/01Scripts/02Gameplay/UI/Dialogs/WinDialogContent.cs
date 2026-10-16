@@ -660,11 +660,7 @@ public class WinDialogContent : DialogContent
 			sequence.Append(node.DOLocalMove(flightStart, pauseTime).SetEase(Ease.OutCubic));
 		sequence.Append(DOVirtual.Float(0f, 1f, flightTime, progress =>
 		{
-			float remaining = 1f - progress;
-			node.localPosition = remaining * remaining * remaining * flightStart
-				+ 3f * remaining * remaining * progress * control1
-				+ 3f * remaining * progress * progress * control2
-				+ progress * progress * progress * target;
+			node.localPosition = EvaluateCubicBezier(flightStart, control1, control2, target, progress);
 		}).SetEase(Ease.Linear));
 		sequence.Join(node.DOScale(scale * 0.55f, flightTime).SetEase(Ease.InCubic));
 		sequence.OnComplete(() =>
@@ -672,6 +668,12 @@ public class WinDialogContent : DialogContent
 			if (coin != null) Destroy(coin);
 		});
 		return sequence;
+	}
+
+	private static Vector3 EvaluateCubicBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+	{
+		float u = 1f - t;
+		return (u * u * u * p0) + (3f * u * u * t * p1) + (3f * u * t * t * p2) + (t * t * t * p3);
 	}
 
 	private static Vector3 CoinScatterPosition(Vector3 start, Vector3 velocity, Vector3 gravity, float drag, float time)

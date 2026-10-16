@@ -180,12 +180,14 @@ public sealed class SliceTransferFlow
 		int effectSliceCount = box.Info.GetSliceCount();
 		Color effectColor = GameAssetsConfig.GetCubeColor(slice.Info.Type);
 		int version = _version;
-		slice.JumpToBox(box, jumpDuration, () =>
+		void OnSliceJumpCompleted()
 		{
 			if (version != _version || _data == null || box == null || box.Info == null) return;
 			if (mergedWithTopCube) box.PlayCubeAddEffect(effectColor, effectSliceCount);
 			FinishJumpSliceToBox(box, destination, version);
-		}, jumpHeight);
+		}
+
+		slice.JumpToBox(box, jumpDuration, OnSliceJumpCompleted, jumpHeight);
 		return;
 	}
 

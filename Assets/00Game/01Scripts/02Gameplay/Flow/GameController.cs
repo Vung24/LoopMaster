@@ -87,8 +87,11 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private CancellationTokenSource _startupInitialization;
 	private float _comboTime;
 	private BoosterFlow _boosterFlow;
+	private bool CanRunBoosterOperations() =>
+		!IsBoosterShopOpen && _isGameStart && EndState == GameEndState.Playing && !IsLevelIntroPlaying;
+
 	private BoosterFlow Boosters => _boosterFlow ?? (_boosterFlow = new BoosterFlow(
-		this, Scene.Boxes, GetBox, () => !IsBoosterShopOpen && _isGameStart && EndState == GameEndState.Playing && !IsLevelIntroPlaying,
+		this, Scene.Boxes, GetBox, CanRunBoosterOperations,
 		IsGameplaySettled, RefreshPathState, RefreshGameplayAfterOperation, PlayBoosterAudio));
 	private bool IsUsingBooster => _boosterFlow != null && _boosterFlow.IsBusy;
 	private GameNavigationFlow _navigation;
@@ -112,14 +115,31 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		!Navigation.IsCurrentLevelAbandoned && !IsTransitioningLevel;
 	private bool CanTickConveyor => (IsGameplayActive && !IsGameOver && !IsGameFailed) ||
 		IsFailureConveyorActive;
+	private bool IsConveyorTickingAllowed() => CanTickConveyor;
+
+	private bool HandleConveyorSliceArrival(Slice slice)
+	{
+		if (!IsGameplayActive) return false;
+		return Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight);
+	}
+
+	private void HandleConveyorArrivalBatchChanged(bool active)
+	{
+		if (active) Transfers.BeginArrivalBatch();
+		else Transfers.EndArrivalBatch();
+	}
+
 	private ConveyorFlow Conveyor => _conveyorFlow ?? (_conveyorFlow = new ConveyorFlow(
 		Scene.Boxes, Scene.Roads, Scene.PathArrows,
-		() => CanTickConveyor,
-		slice => IsGameplayActive && Transfers.CheckInBox(slice, _sliceJumpDuration, _sliceJumpHeight), CheckGameOver,
-		active => { if (active) Transfers.BeginArrivalBatch(); else Transfers.EndArrivalBatch(); }));
+		IsConveyorTickingAllowed,
+		HandleConveyorSliceArrival, CheckGameOver,
+		HandleConveyorArrivalBatchChanged));
+
+	private bool IsGameStartActive() => _isGameStart;
+
 	private SliceTransferFlow _sliceTransferFlow;
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
-		this, Scene.Boxes, () => _isGameStart,
+		this, Scene.Boxes, IsGameStartActive,
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp));
 	[SerializeField] private Camera _mainCamera;
 	[SerializeField] private Camera _topCamera;
@@ -456,7 +476,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool TryUseToolPath()
 	{
-		return Boosters.TryUsePath();
+		if (!Boosters.TryUsePath()) return false;
+		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
+		if (canvas != null) canvas.PlayPathExtension();
+		return true;
 	}
 
 	public void OnClickToolUndo()
