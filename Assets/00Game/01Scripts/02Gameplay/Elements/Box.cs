@@ -301,21 +301,24 @@ public class Box : MonoBehaviour
 		CheckHiddenSecret();
 	}
 
-	public void RefreshAfterUndo(bool restoredToSource, int restoredType)
+	public void RefreshAfterUndo(bool restoredToSource, int restoredType) =>
+		RefreshAfterUndo(restoredToSource, restoredType, 0f);
+
+	public void RefreshAfterUndo(bool restoredToSource, int restoredType, float restoreDelay)
 	{
 		if (_info == null) return;
 		foreach (Cube cube in Cubes.ToList())
 		{
 			if (cube == null || cube.Info == null) continue;
 			if (cube.Info.Size <= 0 || !_info.CubeInfos.Contains(cube.Info))
-				cube.PlayDescAnim(0.02f);
+				cube.PlayDescAnim(0.18f);
 			else if (restoredToSource && cube.Info.Type == restoredType)
-				cube.PlayAddAnim(0f, 0.1f);
+				cube.PlayAddAnim(restoreDelay, 0.18f);
 		}
 
 		foreach (CubeInfo info in _info.CubeInfos)
 			if (info != null && info.Size > 0 && info.CubeSc == null)
-				CreateCube(info, restoredToSource ? 0.02f : 0f, "");
+				CreateCube(info, restoredToSource ? Mathf.Max(0.02f, restoreDelay) : 0f, "");
 	}
 
 	public void AddCube(int type, float delay = 0f)

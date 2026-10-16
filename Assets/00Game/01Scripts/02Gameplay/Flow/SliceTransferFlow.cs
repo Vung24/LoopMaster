@@ -285,8 +285,6 @@ public sealed class SliceTransferFlow
 					if (visual != null) visual.JumpToTransfer(box.Info.PathIndex, jumpDuration, jumpHeight).Forget();
 					created.Add(info);
 					_refreshPathState();
-					// Keep the release cadence across frames; a per-slice wait rounds
-					// every interval up to a frame and spreads the airborne train out.
 					nextLaunchTime += GameplayFeedbackRules.SliceLaunchInterval;
 					while (Time.time < nextLaunchTime)
 					{
@@ -346,7 +344,7 @@ public sealed class SliceTransferFlow
 	{
 		// Native ExtendSlicePop*VibrationWindow: extend by 0.3s, one loop per direction.
 		if (_vibrationLifetime == null)
-			_vibrationLifetime = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(_hostToken);
+			_vibrationLifetime = CancellationTokenSource.CreateLinkedTokenSource(_hostToken);
 		if (popOut)
 		{
 			if (first) GameVibrationHelper.PlaySlicePopOutFirst();
@@ -368,7 +366,7 @@ public sealed class SliceTransferFlow
 		}
 	}
 
-	private async UniTask PlayVibrationWindow(bool popOut, int version, System.Threading.CancellationToken token)
+	private async UniTask PlayVibrationWindow(bool popOut, int version, CancellationToken token)
 	{
 		try
 		{
@@ -407,7 +405,6 @@ public sealed class SliceTransferFlow
 	{
 		if (_data == null || !_data.IsGameCanSpeedUp()) return;
 		_data.IsNearOver = true;
-		// Native CheckNearOver (RVA 0x15CF6A4) also enables the controller's speed flag.
 		_setSpeedUp(true);
 	}
 }

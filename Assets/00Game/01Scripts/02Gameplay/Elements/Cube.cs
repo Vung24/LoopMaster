@@ -22,6 +22,9 @@ public class Cube : MonoBehaviour
 	private CancellationToken _token;
 	private bool _isSizeAnimating;
 	private int _sizeAnimationVersion;
+	private bool _isShuffleAnimating;
+	private Vector3 _shuffleTargetPosition;
+	private Vector3 _shuffleTargetScale;
 	private bool _isDismissing;
 	private bool _secretRevealPending;
 	private SecretBlockMarker _secretMarker;
@@ -372,20 +375,28 @@ public class Cube : MonoBehaviour
 	{
 		if (_info == null || _box == null || _isDismissing) return;
 		AnimateSize(GetTargetScale(), _box.GetCubePos(_info, visibleSize: VisibleSize), 0f,
-			Mathf.Max(0.01f, duration), false, false);
+			Mathf.Max(0.01f, duration), false, false, true);
 	}
 
 	private void AnimateSize(Vector3 scale, Vector3 position, float delay, float duration,
-		bool deactivate, bool checkEmpty)
+		bool deactivate, bool checkEmpty, bool shuffle = false)
 	{
 		RefreshSquareSprite();
 		CancelSizeAnimation();
 		_isSizeAnimating = true;
-		AnimateSizeAsync(scale, position, delay, duration, deactivate, checkEmpty, _sizeAnimationVersion).Forget();
+		_isShuffleAnimating = shuffle;
+		if (shuffle) { _shuffleTargetPosition = position; _shuffleTargetScale = scale; }
+		AnimateSizeAsync(scale, position, delay, duration, deactivate, checkEmpty, _sizeAnimationVersion, shuffle).Forget();
 	}
 
 	private void CancelSizeAnimation()
 	{
+		if (_isShuffleAnimating)
+		{
+			transform.position = _shuffleTargetPosition;
+			transform.localScale = _shuffleTargetScale;
+			_isShuffleAnimating = false;
+		}
 		_sizeAnimationVersion++;
 		_isSizeAnimating = false;
 	}
@@ -394,7 +405,7 @@ public class Cube : MonoBehaviour
 		this != null && version == _sizeAnimationVersion && gameObject.activeInHierarchy;
 
 	private async UniTask AnimateSizeAsync(Vector3 target, Vector3 position, float delay,
-		float duration, bool deactivate, bool checkEmpty, int version)
+		float duration, bool deactivate, bool checkEmpty, int version, bool shuffle)
 	{
 		try
 		{
@@ -403,6 +414,10 @@ public class Cube : MonoBehaviour
 			if (!IsCurrentSizeAnimation(version)) return;
 			Vector3 start = transform.localScale;
 			Vector3 startPosition = transform.position;
+			int index = shuffle && _box != null && _box.Info != null ? _box.Info.CubeInfos.IndexOf(_info) : 0;
+			Vector3 shuffleOffset = shuffle
+				? Vector3.up * (0.6f + 0.12f * index) + _box.transform.right * (index % 2 == 0 ? 0.3f : -0.3f)
+				: Vector3.zero;
 			float elapsed = 0f;
 			while (elapsed < duration)
 			{
@@ -410,12 +425,13 @@ public class Cube : MonoBehaviour
 				float t = Mathf.Clamp01(elapsed / duration);
 				float eased = 1f - (1f - t) * (1f - t);
 				transform.localScale = Vector3.Lerp(start, target, eased);
-				transform.position = Vector3.Lerp(startPosition, position, eased);
+				transform.position = Vector3.Lerp(startPosition, position, eased) + shuffleOffset * Mathf.Sin(t * Mathf.PI);
 				await UniTask.NextFrame(PlayerLoopTiming.PreLateUpdate, _token);
 				if (!IsCurrentSizeAnimation(version)) return;
 			}
 			transform.localScale = target;
 			transform.position = position;
+			_isShuffleAnimating = false;
 			_isSizeAnimating = false;
 			if (deactivate) gameObject.SetActive(false);
 			else if (checkEmpty) CheckEmpty();
