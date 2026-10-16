@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Snui;
+using DG.Tweening;
 
 [DefaultExecutionOrder(-900)]
 public sealed class UICanvas : MonoBehaviour, IGameplayViewport
@@ -38,6 +39,9 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private int _displayedLevel = -1;
 	private int _displayedCapacityUsed = -1;
 	private int _displayedCapacityMaximum = -1;
+	private GameObject _pathFlightItem;
+	private Sequence _pathFlightTween;
+	private Tween _capacityExtensionTween;
 	private PauseDialogContent _pauseDialog;
 	private bool _visibilityInitialized;
 	private bool _inputInitialized;
@@ -45,8 +49,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
-	private Canvas _runtimeBackgroundCanvas;
-	private Camera _runtimeBackgroundCamera;
 	private Camera _cachedMainCamera;
 	private CameraClearFlags _cachedMainCameraClearFlags;
 	private int _cachedMainCameraCullingMask;
@@ -81,13 +83,11 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		ConfigureCanvasCamera();
 		EnsureVisibleLayout();
 		Bind(GameController.Current);
-		if (_runtimeBackgroundCanvas != null) _runtimeBackgroundCanvas.gameObject.SetActive(true);
-		if (_runtimeBackgroundCamera != null) _runtimeBackgroundCamera.gameObject.SetActive(true);
-		if (_bgGame != null && _bgGame.parent != transform) _bgGame.gameObject.SetActive(true);
 	}
 
 	private void OnDisable()
 	{
+		CancelPathPresentation();
 		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
 		if (shadowBackground != null) shadowBackground.enabled = false;
 		_pauseVersion++;
@@ -95,9 +95,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (_pauseDialog != null) { _pauseDialog.gameObject.SetActive(false); Destroy(_pauseDialog.gameObject); }
 		_pauseDialog = null;
 		ActiveCanvases.Remove(this);
-		if (_runtimeBackgroundCanvas != null) _runtimeBackgroundCanvas.gameObject.SetActive(false);
-		if (_runtimeBackgroundCamera != null) _runtimeBackgroundCamera.gameObject.SetActive(false);
-		if (_bgGame != null && _bgGame.parent != transform) _bgGame.gameObject.SetActive(false);
 	}
 
 	private void OnDestroy()
@@ -107,16 +104,6 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		{
 			_cachedMainCamera.clearFlags = _cachedMainCameraClearFlags;
 			_cachedMainCamera.cullingMask = _cachedMainCameraCullingMask;
-		}
-		if (_runtimeBackgroundCanvas != null)
-		{
-			Destroy(_runtimeBackgroundCanvas.gameObject);
-			_runtimeBackgroundCanvas = null;
-		}
-		if (_runtimeBackgroundCamera != null)
-		{
-			Destroy(_runtimeBackgroundCamera.gameObject);
-			_runtimeBackgroundCamera = null;
 		}
 	}
 
@@ -139,6 +126,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 	public void Bind(GameController controller)
 	{
+		CancelPathPresentation();
 		// Rebinding (including re-enable) must render the current values again.
 		_displayedLevel = -1;
 		_displayedCapacityUsed = -1;
@@ -178,98 +166,20 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			mainCam.cullingMask &= ~(1 << 5);
 		}
 
-		Canvas bgCanvas = _controller != null ? _controller.BackgroundCanvas : null;
-		if (bgCanvas != null)
+		// Ensure duplicate _bgGame inside UICanvas remains inactive so it does not overlap UI.
+		if (_bgGame != null)
 		{
-			// BackgroundCanvas is pre-configured in the scene/prefab.
-			// Ensure duplicate _bgGame inside UICanvas remains inactive so it does not overlap UI.
-			if (_bgGame != null && _bgGame.parent == transform)
-			{
-				_bgGame.gameObject.SetActive(false);
-			}
-
-			GameBg gameBg = _controller != null ? _controller.GameBg : null;
-			if (gameBg != null)
-			{
-				foreach (SpriteRenderer sr in gameBg.GetComponentsInChildren<SpriteRenderer>(true))
-				{
-					sr.enabled = false;
-				}
-			}
-			return;
+			_bgGame.gameObject.SetActive(false);
 		}
 
-		if (_bgGame == null) return;
-
-		Image bgImage = _bgGame.GetComponent<Image>();
-		if (bgImage != null)
+		GameBg gameBg = _controller != null ? _controller.GameBg : null;
+		if (gameBg != null)
 		{
-			bgImage.raycastTarget = false;
-		}
-
-		bgCanvas = ResolveOrCreateBackgroundCanvas();
-
-		if (bgCanvas != null && _bgGame.parent != bgCanvas.transform)
-		{
-			_bgGame.SetParent(bgCanvas.transform, false);
-			_bgGame.gameObject.SetActive(true);
-			_bgGame.anchorMin = Vector2.zero;
-			_bgGame.anchorMax = Vector2.one;
-			_bgGame.anchoredPosition = Vector2.zero;
-			_bgGame.sizeDelta = Vector2.zero;
-			_bgGame.localScale = Vector3.one;
-		}
-
-		GameBg fallbackBg = _controller != null ? _controller.GameBg : null;
-		if (fallbackBg != null)
-		{
-			foreach (SpriteRenderer sr in fallbackBg.GetComponentsInChildren<SpriteRenderer>(true))
+			foreach (SpriteRenderer sr in gameBg.GetComponentsInChildren<SpriteRenderer>(true))
 			{
 				sr.enabled = false;
 			}
 		}
-	}
-
-	private Canvas ResolveOrCreateBackgroundCanvas()
-	{
-		if (_controller != null && _controller.BackgroundCanvas != null) return _controller.BackgroundCanvas;
-		if (_runtimeBackgroundCanvas != null) return _runtimeBackgroundCanvas;
-
-		Camera bgCamera = _controller != null ? _controller.BackgroundCamera : null;
-		if (bgCamera == null && _runtimeBackgroundCamera == null)
-		{
-			GameObject camObj = new GameObject("RuntimeBackgroundCamera");
-			camObj.layer = 5;
-			_runtimeBackgroundCamera = camObj.AddComponent<Camera>();
-			_runtimeBackgroundCamera.clearFlags = CameraClearFlags.SolidColor;
-			_runtimeBackgroundCamera.backgroundColor = new Color(0.15f, 0.12f, 0.44f, 1f);
-			_runtimeBackgroundCamera.cullingMask = 1 << 5;
-			_runtimeBackgroundCamera.depth = -2;
-			_runtimeBackgroundCamera.orthographic = true;
-			_runtimeBackgroundCamera.orthographicSize = 10f;
-			_runtimeBackgroundCamera.nearClipPlane = 0.3f;
-			_runtimeBackgroundCamera.farClipPlane = 50f;
-			camObj.transform.position = new Vector3(0f, 0f, -10f);
-			UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(camObj, gameObject.scene);
-			bgCamera = _runtimeBackgroundCamera;
-		}
-
-		GameObject canvasObj = new GameObject("RuntimeBackgroundCanvas");
-		canvasObj.layer = 5;
-		_runtimeBackgroundCanvas = canvasObj.AddComponent<Canvas>();
-		_runtimeBackgroundCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-		_runtimeBackgroundCanvas.worldCamera = bgCamera != null ? bgCamera : _runtimeBackgroundCamera;
-		_runtimeBackgroundCanvas.planeDistance = 10f;
-		_runtimeBackgroundCanvas.sortingOrder = 0;
-
-		CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		scaler.referenceResolution = new Vector2(750f, 1624f);
-		scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-		scaler.matchWidthOrHeight = 0f;
-		UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(canvasObj, gameObject.scene);
-
-		return _runtimeBackgroundCanvas;
 	}
 
 	private void CacheLegacyPrefabReferences()
@@ -420,6 +330,91 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			if (_undoTool != null) _undoTool.UpdateCanUseState(undo);
 			if (_shuffleTool != null) _shuffleTool.UpdateCanUseState(shuffle);
 			if (_pathTool != null) _pathTool.UpdateCanUseState(path);
+		}
+	}
+
+	internal void PlayPathExtension()
+	{
+		if (!isActiveAndEnabled) return;
+		CancelPathPresentation();
+		RectTransform source = _pathButton == null ? null : _pathButton.transform as RectTransform;
+		GameLoader loader = _controller == null ? null : _controller.GetComponent<GameLoader>();
+		GameObject prefab = loader == null ? null : loader.FlyPath;
+		Image artwork = prefab == null ? null : HierarchyReferenceCache.ChildComponent<Image>(prefab.transform, "Icon");
+		if (source == null || _capacityLabel == null || artwork == null || artwork.sprite == null)
+		{
+			Debug.LogWarning("Path flight needs the Path button, capacity label and FlyAddPath/Icon sprite.", this);
+			return;
+		}
+
+		// Copy only the item artwork: no particle objects or behaviours from the effect prefab.
+		_pathFlightItem = new GameObject("FlyAddPath", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+		_pathFlightItem.layer = gameObject.layer;
+		RectTransform item = (RectTransform)_pathFlightItem.transform;
+		item.SetParent(transform, false);
+		item.SetAsLastSibling();
+		Image icon = item.GetComponent<Image>();
+		icon.sprite = artwork.sprite;
+		icon.preserveAspect = true;
+		icon.raycastTarget = false;
+		item.sizeDelta = artwork.rectTransform.rect.size;
+		Vector3 start = transform.InverseTransformPoint(source.TransformPoint(source.rect.center));
+		Vector3 center = ((RectTransform)transform).rect.center;
+		float sourceWidth = transform.InverseTransformVector(source.TransformVector(Vector3.right * source.rect.width)).magnitude;
+		Vector3 scale = Vector3.one * (sourceWidth / Mathf.Max(1f, item.rect.width));
+		item.localPosition = start;
+		item.localScale = scale;
+		Vector3 target = transform.InverseTransformPoint(_capacityLabel.rectTransform.TransformPoint(
+			_capacityLabel.rectTransform.rect.center));
+		Vector3 control = (center + target) * 0.5f + new Vector3(-60f, 60f, 0f);
+		float flightProgress = 0f;
+		_pathFlightTween = DOTween.Sequence().SetLink(gameObject)
+			.Append(item.DOLocalMove(center, 0.35f).SetEase(Ease.OutCubic))
+			.Append(item.DOScale(scale * 2.2f, 0.4f).SetEase(Ease.OutQuad))
+			.AppendInterval(0.12f)
+			.Append(DOTween.To(() => flightProgress, progress =>
+			{
+				flightProgress = progress;
+				item.localPosition = EvaluateQuadraticBezier(center, control, target, progress);
+			}, 1f, 0.5f).SetEase(Ease.InQuad))
+			.Join(item.DOScale(scale * 0.25f, 0.5f).SetEase(Ease.InQuad))
+			.OnComplete(OnPathFlightCompleted);
+	}
+
+	private void OnPathFlightCompleted()
+	{
+		_pathFlightTween = null;
+		if (_pathFlightItem != null)
+		{
+			Destroy(_pathFlightItem);
+			_pathFlightItem = null;
+		}
+		_capacityExtensionTween = Capacity.AnimateExtension(_capacityLabel)
+			.OnComplete(OnCapacityExtensionCompleted);
+	}
+
+	private void OnCapacityExtensionCompleted()
+	{
+		_capacityExtensionTween = null;
+	}
+
+	private static Vector3 EvaluateQuadraticBezier(Vector3 p0, Vector3 p1, Vector3 p2, float t)
+	{
+		float u = 1f - t;
+		return (u * u * p0) + (2f * u * t * p1) + (t * t * p2);
+	}
+
+	private void CancelPathPresentation()
+	{
+		_pathFlightTween?.Kill();
+		_pathFlightTween = null;
+		_capacityExtensionTween?.Kill();
+		_capacityExtensionTween = null;
+		if (_pathFlightItem != null)
+		{
+			_pathFlightItem.SetActive(false);
+			Destroy(_pathFlightItem);
+			_pathFlightItem = null;
 		}
 	}
 

@@ -214,7 +214,16 @@ public class BoxInfo
 		return result;
 	}
 
-	private bool HasUnFinishedCube() => CubeInfos.Any(cube => cube.Size != 0 && cube.Size < 10);
+	private bool HasUnFinishedCube()
+	{
+		for (int i = 0; i < CubeInfos.Count; i++)
+		{
+			CubeInfo cube = CubeInfos[i];
+			if (cube != null && cube.Size != 0 && cube.Size < 10)
+				return true;
+		}
+		return false;
+	}
 
 	public bool CanJumpSlice(int type)
 	{
@@ -242,8 +251,17 @@ public class BoxInfo
 	public bool IsLongBoxTypeIncompatible(int type) =>
 		CubeData.IsLongBoxColor(type) != (BoxType == BoxType.Long);
 	private bool IsLimitedColorLimited(int type) => LimitedColor > 0 && LimitedColor != type;
-	private bool CheckLimitedColorPopup() => LimitedColor > 0 &&
-		!CubeInfos.Any(cube => cube.Type == LimitedColor && !cube.IsSecret);
+	private bool CheckLimitedColorPopup()
+	{
+		if (LimitedColor <= 0) return false;
+		for (int i = 0; i < CubeInfos.Count; i++)
+		{
+			CubeInfo cube = CubeInfos[i];
+			if (cube != null && cube.Type == LimitedColor && !cube.IsSecret)
+				return false;
+		}
+		return true;
+	}
 	public bool HasBlockingLock() => LockColor > 0 || NumLock > 0 || IsGroupLocked() || IsAdjacentLocked;
 	public bool HasBlockingLockExceptNumLock() => LockColor > 0 || IsGroupLocked() || IsAdjacentLocked;
 	public bool IsGroupLocked() => GroupInfo != null && GroupInfo.IsLocked;
