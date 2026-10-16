@@ -144,7 +144,7 @@ namespace Snui
         {
             var canvas=root.GetComponent<Canvas>(); if(canvas==null) canvas=root.AddComponent<Canvas>(); canvas.overrideSorting=true; canvas.sortingOrder=order;
             if(root.GetComponent<GraphicRaycaster>()==null) root.AddComponent<GraphicRaycaster>();
-            root.transform.SetAsLastSibling(); Snui_Text.EnsureFontAssets(root.transform); GameResultUI.EnsureEventSystem();
+            root.transform.SetAsLastSibling(); Snui_Text.EnsureFontAssets(root.transform);
         }
         protected override void Awake()
         {

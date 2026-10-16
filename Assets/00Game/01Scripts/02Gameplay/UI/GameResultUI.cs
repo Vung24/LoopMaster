@@ -3,9 +3,6 @@ using System.Threading;
 using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public sealed class GameResultUI : MonoBehaviour
 {
@@ -31,20 +28,6 @@ public sealed class GameResultUI : MonoBehaviour
 	public Transform DialogParent => _canvas == null ? null : _canvas.transform;
 	private Coroutine _showWinRoutine;
 	private Coroutine _showFailRoutine;
-	private static EventSystem _eventSystem;
-
-	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-	private static void InstallEventSystemRepair()
-	{
-		_eventSystem = null;
-		SceneManager.sceneLoaded -= OnSceneLoaded;
-		SceneManager.sceneLoaded += OnSceneLoaded;
-	}
-
-	private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-	{
-		EnsureEventSystem(scene);
-	}
 
 	public static GameResultUI Ensure(GameController controller, string winAddress,
 		string failAddress, string failContentAddress)
@@ -86,7 +69,6 @@ public sealed class GameResultUI : MonoBehaviour
 
 		if (_controller != null)
 		{
-			EnsureEventSystem();
 			_canvas.gameObject.SetActive(true);
 		}
 	}
@@ -129,7 +111,6 @@ public sealed class GameResultUI : MonoBehaviour
 				else { Destroy(root); _failDialog = null; }
 			}
 			lifetime.Token.ThrowIfCancellationRequested();
-			BuildFallbackDialogs(state == GameEndState.Won, state == GameEndState.Failed);
 		}
 		catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
 		catch (Exception error)
@@ -137,8 +118,6 @@ public sealed class GameResultUI : MonoBehaviour
 			Debug.LogWarning("Result dialog unavailable: " + error.Message);
 			if (_winDialog != null && _winContent == null) { Destroy(_winDialog.gameObject); _winDialog = null; }
 			if (_failDialog != null && _failContent == null) { Destroy(_failDialog.gameObject); _failDialog = null; _preFailContent = null; }
-			if (this != null && !lifetime.IsCancellationRequested)
-				BuildFallbackDialogs(state == GameEndState.Won, state == GameEndState.Failed);
 		}
 		finally
 		{
@@ -157,45 +136,9 @@ public sealed class GameResultUI : MonoBehaviour
 		try
 		{
 			await BuildResultDialog(GameEndState.Won);
-			// Fallback overlays are created active too; preparation must stay invisible.
 			if (_winDialog != null) _winDialog.Hide();
 		}
 		finally { _winPreparing = false; }
-	}
-
-	private void BuildFallbackDialogs(bool win, bool fail)
-	{
-		if (win && _winDialog == null)
-		{
-			GameObject root = CreateOverlay("WinDialogFallback", _canvas.transform);
-			_winDialog = root.AddComponent<WinDialog>();
-			_winDialog.Bind(_controller);
-			RectTransform panel = CreatePanel(root.transform, new Color(0.08f, 0.18f, 0.22f, 0.98f));
-			Text title = CreateText("Title", panel, new Vector2(0f, 95f), new Vector2(580f, 100f), 42);
-			Button next = CreateButton("NextButton", panel, "NEXT LEVEL", new Vector2(0f, -35f));
-			Button replay = CreateButton("ReplayButton", panel, "REPLAY", new Vector2(0f, -135f));
-			_winContent = panel.gameObject.AddComponent<WinDialogContent>();
-			_winContent.Bind(_controller, title, next, replay);
-		}
-
-		if (fail && _failDialog == null)
-		{
-			GameObject root = CreateOverlay("FailDialogFallback", _canvas.transform);
-			_failDialog = root.AddComponent<FailDialog>();
-			_failDialog.Bind(_controller);
-			RectTransform panel = CreatePanel(root.transform, new Color(0.24f, 0.09f, 0.10f, 0.98f));
-			Text title = CreateText("Title", panel, new Vector2(0f, 110f), new Vector2(580f, 90f), 40);
-			Text reason = CreateText("Reason", panel, new Vector2(0f, 25f), new Vector2(580f, 65f), 25);
-			Button replay = CreateButton("ReplayButton", panel, "REPLAY LEVEL", new Vector2(0f, -105f));
-			_failContent = panel.gameObject.AddComponent<FailDialogContent>();
-			_failContent.Bind(_controller, title, reason, replay);
-			Button adButton = CreateButton("AdButton", panel, "FREE", new Vector2(-130f, -40f));
-			Button coinOffer = CreateButton("CoinButton", panel, "900 COINS", new Vector2(130f, -40f));
-			coinOffer.GetComponentInChildren<Text>().gameObject.name = "Number";
-			((RectTransform)adButton.transform).sizeDelta = new Vector2(240f, 65f);
-			((RectTransform)coinOffer.transform).sizeDelta = new Vector2(240f, 65f);
-			_failContent.BindFallbackOffers();
-		}
 	}
 
 	private void OnGameEnded(GameEndState state)
@@ -362,104 +305,6 @@ public sealed class GameResultUI : MonoBehaviour
 		if (_failDialog != null) { _failDialog.Hide(); Destroy(_failDialog.gameObject); }
 		if (releaseWin) { _winDialog = null; _winContent = null; }
 		_failDialog = null; _failContent = null; _preFailContent = null;
-	}
-
-	private static GameObject CreateOverlay(string name, Transform parent)
-	{
-		GameObject result = new GameObject(name, typeof(RectTransform), typeof(Image));
-		result.transform.SetParent(parent, false);
-		RectTransform rect = (RectTransform)result.transform;
-		rect.anchorMin = Vector2.zero;
-		rect.anchorMax = Vector2.one;
-		rect.offsetMin = Vector2.zero;
-		rect.offsetMax = Vector2.zero;
-		result.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.72f);
-		return result;
-	}
-
-	private static RectTransform CreatePanel(Transform parent, Color color)
-	{
-		GameObject result = new GameObject("Panel", typeof(RectTransform), typeof(Image));
-		result.transform.SetParent(parent, false);
-		RectTransform rect = (RectTransform)result.transform;
-		rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-		rect.sizeDelta = new Vector2(680f, 480f);
-		result.GetComponent<Image>().color = color;
-		return rect;
-	}
-
-	private static Text CreateText(string name, Transform parent, Vector2 position,
-		Vector2 size, int fontSize)
-	{
-		GameObject result = new GameObject(name, typeof(RectTransform), typeof(Text));
-		result.transform.SetParent(parent, false);
-		RectTransform rect = (RectTransform)result.transform;
-		rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-		rect.anchoredPosition = position;
-		rect.sizeDelta = size;
-		Text text = result.GetComponent<Text>();
-		text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-		text.fontSize = fontSize;
-		text.alignment = TextAnchor.MiddleCenter;
-		text.color = Color.white;
-		text.horizontalOverflow = HorizontalWrapMode.Wrap;
-		text.verticalOverflow = VerticalWrapMode.Overflow;
-		return text;
-	}
-
-	private static Button CreateButton(string name, Transform parent, string label, Vector2 position)
-	{
-		GameObject result = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
-		result.transform.SetParent(parent, false);
-		RectTransform rect = (RectTransform)result.transform;
-		rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-		rect.anchoredPosition = position;
-		rect.sizeDelta = new Vector2(430f, 78f);
-		Image image = result.GetComponent<Image>();
-		image.color = new Color(0.15f, 0.68f, 0.52f, 1f);
-		Button button = result.GetComponent<Button>();
-		ColorBlock colors = button.colors;
-		colors.highlightedColor = new Color(0.22f, 0.82f, 0.64f, 1f);
-		colors.pressedColor = new Color(0.10f, 0.52f, 0.40f, 1f);
-		colors.disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.75f);
-		button.colors = colors;
-		Text text = CreateText("Text", result.transform, Vector2.zero, rect.sizeDelta, 28);
-		text.text = label;
-		return button;
-	}
-
-	public static EventSystem EnsureEventSystem()
-	{
-		Scene scene = GameController.Current != null
-			? GameController.Current.gameObject.scene : SceneManager.GetActiveScene();
-		return EnsureEventSystem(scene);
-	}
-
-	private static EventSystem EnsureEventSystem(Scene scene)
-	{
-		EventSystem current = EventSystem.current;
-		if (current == null) current = _eventSystem;
-		if (current == null && scene.IsValid() && scene.isLoaded)
-		{
-			foreach (GameObject root in scene.GetRootGameObjects())
-			{
-				current = root.GetComponentInChildren<EventSystem>(true);
-				if (current != null) break;
-			}
-		}
-		if (current == null)
-		{
-			GameObject eventSystem = new GameObject("RuntimeEventSystem");
-			current = eventSystem.AddComponent<EventSystem>();
-		}
-		current.gameObject.SetActive(true);
-		current.enabled = true;
-		BaseInputModule inputModule = current.GetComponent<BaseInputModule>();
-		if (inputModule == null)
-			inputModule = current.gameObject.AddComponent<StandaloneInputModule>();
-		inputModule.enabled = true;
-		_eventSystem = current;
-		return current;
 	}
 
 	private void Unsubscribe()

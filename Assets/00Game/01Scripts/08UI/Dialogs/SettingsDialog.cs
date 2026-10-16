@@ -29,7 +29,6 @@ public class SettingsDialog : BasePopup
 		canvas.sortingOrder = Mathf.Max(1200, parentCanvas == null ? 1200 : parentCanvas.sortingOrder + 1);
 		if (instance.GetComponent<GraphicRaycaster>() == null) instance.AddComponent<GraphicRaycaster>();
 		Snui_Text.EnsureFontAssets(instance.transform);
-		GameResultUI.EnsureEventSystem();
 		settings.PlayEnterAnimation();
 		return settings;
 	}
