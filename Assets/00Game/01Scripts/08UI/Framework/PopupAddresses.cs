@@ -6,14 +6,10 @@ namespace Snui
         {
             switch (Resolve(key))
             {
-                case "AboutDialog": return true;
                 case "BadgeTokenDialog": return true;
                 case "BlackFridayBundleDialog": return true;
                 case "BuyToolDialog": return true;
                 case "BuyToolDialogContent": return true;
-                case "ChallengeBundleDetailDialog": return true;
-                case "ChallengeBundleQuitDialog": return true;
-                case "ChallengeBundleUnlockDialog": return true;
                 case "ChangeNameDialogContent": return true;
                 case "CheatDialog": return true;
                 case "ChristmasBundleDialog": return true;
@@ -24,9 +20,6 @@ namespace Snui
                 case "DialogTips": return true;
                 case "EditLogoDialogContent": return true;
                 case "EditTeamDialogContent": return true;
-                case "EggShellPanel": return true;
-                case "EndlessDialog": return true;
-                case "ErrorDialogContent": return true;
                 case "FailDialog": return true;
                 case "FailDialogContent": return true;
                 case "FeatureUnlockDialog": return true;
@@ -48,7 +41,6 @@ namespace Snui
                 case "LevelHardPanel": return true;
                 case "LogPanel": return true;
                 case "LoopDialogContentBase": return true;
-                case "LoopErrorDialogContent": return true;
                 case "MoreHeartDialogContent": return true;
                 case "NetErrorDialogContent": return true;
                 case "PassDetailDialog": return true;
@@ -70,7 +62,6 @@ namespace Snui
                 case "PushLevelDialogContent": return true;
                 case "QuitLevelDialogContent": return true;
                 case "RateDialogContent": return true;
-                case "RateUsDialogContent": return true;
                 case "RemoveAdDialog": return true;
                 case "RemoveAdsSuccessDialogContent": return true;
                 case "ReplayDialogContent": return true;
@@ -89,12 +80,6 @@ namespace Snui
                 case "StreakLineInfoDialog": return true;
                 case "TeamInfoDialogContent": return true;
                 case "TeamMasterInfoDialog": return true;
-                case "UnicornDetailDialog": return true;
-                case "UnicornFailDialogContent": return true;
-                case "UnicornInfoDialog": return true;
-                case "UnicornOpenDialog": return true;
-                case "UnicornOpenDialogContent": return true;
-                case "UnicornSearchingDialog": return true;
                 case "UpdateDialogContent": return true;
                 case "UserMasterInfoDialog": return true;
                 case "WinDialog": return true;

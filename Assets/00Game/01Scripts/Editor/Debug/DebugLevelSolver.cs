@@ -134,8 +134,8 @@ public sealed class DebugLevelSolver
         data.OnJumpingCube = top.Count;
         int cubeIndex = 0, remaining = 0, lastLaunch = 0, quiet = 0;
         bool launching = true, released = false;
-        const int jumpTicks = 16;
-        int quietLimit = data.PathPoints.Count * 2 + jumpTicks;
+        const int jumpTicks = 2;
+        int quietLimit = Math.Max(20, data.PathPoints.Count + 4);
         int limit = (data.TransferSlice.Count + top.Sum(cube => cube.Size) + 2) * quietLimit;
         for (int tick = 0; tick < limit; tick++)
         {
@@ -166,7 +166,7 @@ public sealed class DebugLevelSolver
                     lastLaunch = tick;
                 }
             }
-            if (!launching && !released && landing.Count == 0 && tick >= lastLaunch + jumpTicks + 15)
+            if (!launching && !released && landing.Count == 0 && tick >= lastLaunch + jumpTicks)
             {
                 source.ClearCubes();
                 engine.RevealTopSecretRun(source);

@@ -149,7 +149,7 @@ public static class LoopLevelBoardLayout
         layout["Paths"] = new JArray(fitted);
         Bounds whole = BoardBounds(layout, true); layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1;
         List<Vector3> slots = A.Slots(new JObject { ["layout"] = layout.DeepClone() });
-        var used = new HashSet<int>();
+        HashSet<int> used = new HashSet<int>();
         foreach (JObject box in boxes)
         {
             Quaternion rotation = A.Int(box, "BoxType") == 1 ? Quaternion.identity : Quaternion.Euler(A.Vector(box, "Rotation"));

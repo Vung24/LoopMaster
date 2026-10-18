@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -12,6 +13,8 @@ public sealed partial class LoopLevelEditorWindow
     [SerializeField] private int _editorMode, _generatedLevelNumber;
     [SerializeField] private LoopLevelGeneratorSettings _generatorSettings = new LoopLevelGeneratorSettings();
     [SerializeField] private bool _generatorAdvanced;
+    [SerializeField] private int _batchStartLevel = 301, _batchCount = 20;
+    [SerializeField] private bool _batchAutoDifficulty = true, _showBatchSection = true;
     private LoopLevelGenerationJob _generationJob;
     private LoopLevelRoadPreview _generatorPreview;
     private string _generatedPreviewJson;
@@ -37,9 +40,9 @@ public sealed partial class LoopLevelEditorWindow
                 if (GUILayout.Button("Seed mới", GUILayout.Width(90))) s.Seed = Guid.NewGuid().GetHashCode() & int.MaxValue;
             }
             _generatedLevelNumber = Mathf.Max(1, EditorGUILayout.IntField("Số màn chơi", _generatedLevelNumber));
-            s.BoxCount = EditorGUILayout.IntSlider("Tổng số hộp", s.BoxCount, 5, 24);
+            s.BoxCount = EditorGUILayout.IntSlider("Tổng số hộp", s.BoxCount, 3, 24);
             s.ColorCount = EditorGUILayout.IntSlider("Số màu thường", s.ColorCount, 2, 14);
-            s.EmptyBoxes = EditorGUILayout.IntSlider("Số hộp trống dự phòng", s.EmptyBoxes, 1, 4);
+            s.EmptyBoxes = EditorGUILayout.IntSlider("Số hộp trống dự phòng", s.EmptyBoxes, 0, 4);
             s.RoadShape = EditorGUILayout.Popup("Hình đường", s.RoadShape, new[] { "Chữ nhật bo góc", "Bầu dục", "Tròn" });
             s.BoardLayout = EditorGUILayout.Popup("Cách xếp hộp", s.BoardLayout, new[] { "Hai dãy hướng ra đường", "Các hàng cân đối" });
             s.BoxGap = EditorGUILayout.Slider("Khoảng cách giữa mép hộp", s.BoxGap, .35f, 2);
@@ -55,7 +58,7 @@ public sealed partial class LoopLevelEditorWindow
             s.Groups = EditorGUILayout.IntSlider("Nhóm khóa + chìa khóa", s.Groups, 0, 3);
             s.EnterOnlyBoxes = EditorGUILayout.IntSlider("Hộp chỉ nhận vào", s.EnterOnlyBoxes, 0, 3);
             s.LimitedColorBoxes = EditorGUILayout.IntSlider("Hộp chỉ nhận màu", s.LimitedColorBoxes, 0, 3);
-            EditorGUILayout.HelpBox("Tổng số hộp gồm hộp dự phòng, đơn và dài. Hộp dự phòng có thể được lấp một phần khi trộn màu. Hộp dài cần ít nhất 2 hộp. Mỗi nhóm có chìa khóa nằm ngoài phần bị khóa.", MessageType.None);
+            EditorGUILayout.HelpBox("Trong LoopMaster, băng chuyền đóng vai trò bộ đệm nên số hộp trống dự phòng chuẩn là 0 (hoặc 1–2 nếu muốn dễ hơn). Mỗi màu thường tương ứng 1 hộp 4 khối.", MessageType.None);
             s.VerifySolution = EditorGUILayout.Toggle("Tìm lời giải trước khi dùng", s.VerifySolution);
             _generatorAdvanced = EditorGUILayout.Foldout(_generatorAdvanced, "Thiết lập tạo nâng cao", true);
             if (_generatorAdvanced)
@@ -78,6 +81,30 @@ public sealed partial class LoopLevelEditorWindow
                 if (GUILayout.Button("Tạo bản xem trước")) StartGeneration();
             using (new EditorGUI.DisabledScope(!running))
                 if (GUILayout.Button("Hủy")) StopGeneration();
+        }
+        EditorGUILayout.Space(6);
+        _showBatchSection = EditorGUILayout.Foldout(_showBatchSection, "Tạo danh sách level hàng loạt (Batch Generator)", true, EditorStyles.foldoutHeader);
+        if (_showBatchSection)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Tạo và lưu tự động nhiều level liên tiếp theo chuẩn bộ 300 level.", EditorStyles.wordWrappedMiniLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    _batchStartLevel = Mathf.Max(1, EditorGUILayout.IntField("Level bắt đầu", _batchStartLevel));
+                    _batchCount = Mathf.Clamp(EditorGUILayout.IntField("Số lượng level", _batchCount), 1, 200);
+                }
+                _batchAutoDifficulty = EditorGUILayout.ToggleLeft("Tự động tăng dần độ khó (Dễ → Thường → Khó) theo dải level", _batchAutoDifficulty);
+                EditorGUILayout.LabelField($"Sẽ tạo từ Level {_batchStartLevel} đến Level {_batchStartLevel + _batchCount - 1}.", EditorStyles.miniLabel);
+
+                using (new EditorGUI.DisabledScope(running || EditorApplication.isPlaying || _drawingRoad || EditorApplication.isCompiling))
+                {
+                    if (GUILayout.Button($"⚡ Tạo và Lưu {_batchCount} level mới (Level {_batchStartLevel}..{_batchStartLevel + _batchCount - 1})", GUILayout.Height(30)))
+                    {
+                        GenerateBatchLevels();
+                    }
+                }
+            }
         }
         if (_generationJob == null) return;
         EditorGUILayout.HelpBox(_generationJob.Status ?? "Đang chuẩn bị tạo…", running ? MessageType.Info : _generationJob.Result != null ? MessageType.Info : MessageType.Warning);
@@ -102,7 +129,12 @@ public sealed partial class LoopLevelEditorWindow
             _generatorPreview?.DrawInspector(rect, 0, true, 0, _previewOrbit, _previewZoom, -1);
         EditorGUILayout.HelpBox("Scene hiển thị bàn vừa tạo. Dùng kết quả sẽ mở bản nháp chưa lưu; Lưu thành để ghi JSON. Chơi thử để đánh giá độ khó.", MessageType.None);
         using (new EditorGUI.DisabledScope(running || changedSettings || _generationJob.Result == null || HasRawChanges || EditorApplication.isPlaying))
-            if (GUILayout.Button(candidate.Verified ? "Dùng màn vừa tạo (đã tìm thấy lời giải)" : "Dùng màn vừa tạo (chưa kiểm tra lời giải)")) ApplyGeneratedLevel();
+        {
+            string applyLabel = (candidate.Solution != null && candidate.Solution.Count > 0)
+                ? $"Dùng màn vừa tạo (đã tìm thấy lời giải: {candidate.Solution.Count} lần bấm)"
+                : "Dùng màn vừa tạo (chuẩn 300 level, luồng khóa DAG hợp lệ)";
+            if (GUILayout.Button(applyLabel)) ApplyGeneratedLevel();
+        }
         using (new EditorGUI.DisabledScope(running || changedSettings || _generationJob.Result == null || LoopLevelPlaytest.Busy || EditorApplication.isCompiling))
             if (GUILayout.Button("▶ Chơi thử bản vừa tạo trong Game View")) PlayInGameView(_generationJob.Result.Json);
         EditorGUILayout.HelpBox("Chơi trực tiếp bản xem trước mà chưa cần áp dụng hay lưu; mọi dữ liệu lưu trong phiên thử được giữ tạm.", MessageType.None);
@@ -196,5 +228,71 @@ public sealed partial class LoopLevelEditorWindow
     }
     private string SettingsSignature() => _generatedLevelNumber + ":" + JObject.FromObject(_generatorSettings).ToString(Formatting.None);
     private bool GenerationSettingsChanged => _generationSettingsJson != SettingsSignature();
+
+    private void GenerateBatchLevels()
+    {
+        if (_batchCount <= 0 || _batchStartLevel <= 0) return;
+        string title = "Đang tạo danh sách level...";
+        int createdCount = 0;
+        try
+        {
+            for (int i = 0; i < _batchCount; i++)
+            {
+                int levelNum = _batchStartLevel + i;
+                float progress = (float)i / _batchCount;
+                if (EditorUtility.DisplayCancelableProgressBar(title, $"Đang tạo Level {levelNum} ({i + 1}/{_batchCount})...", progress))
+                {
+                    _status = $"Đã dừng tạo hàng loạt tại Level {levelNum}. Đã tạo {createdCount} level.";
+                    break;
+                }
+
+                var settings = _generatorSettings.Copy();
+                if (_batchAutoDifficulty)
+                {
+                    float ratio = (float)i / Math.Max(1, _batchCount - 1);
+                    int diff = ratio < 0.25f ? 0 : ratio < 0.65f ? 1 : ratio < 0.9f ? 2 : 3;
+                    settings.ApplyDifficulty(diff);
+                }
+                settings.Seed = unchecked((int)(DateTime.UtcNow.Ticks & 0x7FFFFFFF) + levelNum * 7919);
+                settings.VerifySolution = false; // Fast batch generation with guaranteed DAG locks
+
+                LoopGeneratedLevel level = LoopLevelGenerator.Generate(settings, levelNum, settings.Seed);
+                if (level?.Json != null)
+                {
+                    string fileName = $"Level {levelNum}.json";
+                    string jsonText = level.Json.ToString(Formatting.Indented);
+
+                    string targetFolder = Path.GetFullPath(A.LevelFolder);
+                    if (!Directory.Exists(targetFolder))
+                    {
+                        Directory.CreateDirectory(targetFolder);
+                    }
+                    File.WriteAllText(Path.Combine(targetFolder, fileName), jsonText);
+
+                    createdCount++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            EditorUtility.DisplayDialog("Lỗi tạo hàng loạt", ex.Message, "Đóng");
+        }
+        finally
+        {
+            EditorUtility.ClearProgressBar();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            try
+            {
+                BuiltinLevelCatalogBuild.RefreshCatalog();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[BatchGenerator] RefreshCatalog: " + ex.Message);
+            }
+            _status = $"Hoàn tất tạo hàng loạt: Đã tạo và lưu {createdCount} level (từ Level {_batchStartLevel} đến Level {_batchStartLevel + createdCount - 1}). Catalog đã được cập nhật!";
+            _generatedLevelNumber = _batchStartLevel + createdCount;
+            Repaint();
+        }
+    }
 }
 #endif
