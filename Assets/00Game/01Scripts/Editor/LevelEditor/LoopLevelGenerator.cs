@@ -42,16 +42,92 @@ public sealed class LoopLevelGeneratorSettings
         RoadCapacity = new[] { 7, 6, 6, 5 }[Difficulty];
         AutoBinding = true;
     }
+    public void ApplyOfficial30Rules(int level)
+    {
+        level = Mathf.Clamp(level, 1, 30);
+        SingleBoxes = 0;
+        LongBoxes = 0;
+        NumberLocks = 0;
+        Groups = 0;
+        EnterOnlyBoxes = 0;
+        LimitedColorBoxes = 0;
+        AdjacentLocks = 0;
+        EmptyBoxes = 0;
+        AutoBinding = true;
+        AddCapacity = true;
+        VerifySolution = false;
+
+        bool isOpenRoad = level == 1 || level == 12 || level == 13 || level == 16 || level == 17 || level == 20 || level == 29 || level == 30;
+        if (isOpenRoad)
+        {
+            RoadShape = level == 1 ? 3 : (level % 2 == 0 ? 4 : 5);
+        }
+        else
+        {
+            RoadShape = 0;
+        }
+
+        if (level <= 5)
+        {
+            Difficulty = 0;
+            BoxCount = level == 1 ? 2 : (level <= 3 ? 3 : 4);
+            ColorCount = BoxCount;
+            SecretPercent = 0;
+            ColorLocks = 0;
+            RoadCapacity = 5;
+            ScrambleMoves = 12;
+        }
+        else if (level <= 15)
+        {
+            Difficulty = 1;
+            BoxCount = level <= 8 ? 4 : (level <= 12 ? 5 : 6);
+            ColorCount = BoxCount;
+            SecretPercent = level <= 10 ? 15 : 25;
+            ColorLocks = 0;
+            RoadCapacity = 6;
+            ScrambleMoves = 20;
+        }
+        else if (level <= 20)
+        {
+            Difficulty = 2;
+            BoxCount = level <= 18 ? 6 : 7;
+            ColorCount = BoxCount;
+            SecretPercent = 30;
+            ColorLocks = 0;
+            RoadCapacity = 6;
+            ScrambleMoves = 28;
+        }
+        else if (level <= 24)
+        {
+            Difficulty = 2;
+            BoxCount = 6;
+            ColorCount = BoxCount;
+            SecretPercent = 0;
+            ColorLocks = level <= 22 ? 1 : 2;
+            RoadCapacity = 6;
+            ScrambleMoves = 28;
+        }
+        else
+        {
+            Difficulty = 3;
+            BoxCount = level <= 28 ? 7 : 8;
+            ColorCount = BoxCount;
+            SecretPercent = 25;
+            ColorLocks = level <= 28 ? 2 : 3;
+            RoadCapacity = 6;
+            ScrambleMoves = 36;
+        }
+    }
     public LoopLevelGeneratorSettings Copy() => (LoopLevelGeneratorSettings)MemberwiseClone();
     public List<string> Validate()
     {
         var errors = new List<string>();
-        if (Difficulty < 0 || Difficulty > 3 || RoadShape < 0 || RoadShape > 2) errors.Add("Chọn độ khó và hình đường hợp lệ.");
-        if (BoxCount < 3 || BoxCount > 24) errors.Add("Tổng số hộp phải từ 3–24.");
+        if (Difficulty < 0 || Difficulty > 3 || RoadShape < 0 || RoadShape > 5) errors.Add("Chọn độ khó và hình đường hợp lệ.");
+        if (BoxCount < 2 || BoxCount > 24) errors.Add("Tổng số hộp phải từ 2–24.");
         if (EmptyBoxes < 0 || EmptyBoxes > 4 || SingleBoxes < 0 || SingleBoxes > 3 || LongBoxes < 0 || LongBoxes > 6 || LongBoxes == 1)
             errors.Add("Dùng 0–4 hộp dự phòng thường, 0–3 hộp đơn và 0 hoặc 2–6 hộp dài.");
         int normalFilled = BoxCount - EmptyBoxes - SingleBoxes - LongBoxes;
-        if (ColorCount < 2 || ColorCount > 14 || normalFilled < ColorCount) errors.Add("Số màu thường phải từ 2–14 và không vượt quá số hộp đầy.");
+        if (ColorCount < 1 || ColorCount > 14 || normalFilled < ColorCount) errors.Add("Số màu thường phải từ 1–14 và không vượt quá số hộp đầy.");
         if (ColorLocks < 0 || ColorLocks > 3 || NumberLocks < 0 || NumberLocks > 3 || Groups < 0 || Groups > 3 || ColorLocks + NumberLocks + Groups > normalFilled - 1)
             errors.Add("Mỗi loại khóa tối đa 3; giữ ít nhất một hộp đầy nằm ngoài mọi khóa.");
         if (EnterOnlyBoxes < 0 || EnterOnlyBoxes > 3 || LimitedColorBoxes < 0 || LimitedColorBoxes > 3 || AdjacentLocks < 0 || AdjacentLocks > 3)
@@ -133,15 +209,8 @@ public static class LoopLevelGenerator
         LoopLevelBoardLayout.Arrange(layout, settings, seed);
         if (settings.AddCapacity)
         {
+            LoopLevelCommands.AddCapacity(result.Json);
             Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, true);
-            layout["MapData"] = new JArray(new JObject
-            {
-                ["Name"] = "Capacity",
-                ["Position"] = A.Vector(new Vector3(bounds.center.x, .2f, bounds.max.z + 1.5f)),
-                ["Rotation"] = A.Vector(Vector3.zero),
-                ["Scale"] = A.Vector(Vector3.one)
-            });
-            bounds = LoopLevelBoardLayout.BoardBounds(layout, true);
             layout["Size"] = Mathf.Max(bounds.size.x, bounds.size.z) + 1;
         }
         var usedSettings = settings.Copy(); usedSettings.Seed = seed;

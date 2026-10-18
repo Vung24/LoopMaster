@@ -14,7 +14,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     [SerializeField] private LoopLevelDocument _document;
     [SerializeField] private string _filePath, _savedJson, _diskText;
     [SerializeField] private string _rawText, _rawBase;
-    [SerializeField] private int _tab, _box = -1, _path, _point = -1, _tabLayoutVersion;
+    [SerializeField] private int _tab, _box = -1, _path, _point = -1, _tabLayoutVersion, _jumpLevel;
     [SerializeField] private bool _scenePreview = true, _showSlots, _showBindings = true, _autoBind = true;
     [SerializeField] private float _snap = 0.25f;
     [SerializeField] private Vector2 _scroll;
@@ -104,6 +104,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void OnUndoRedo()
     {
+        _linkedFirstBox = _linkedFirstCube = -1;
         CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver();
         CancelRoadSketch();
         _cachedJson = null; _root = null; _rawText = _rawBase = null;
@@ -165,6 +166,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void SetDocument(JObject root, string path, string diskText)
     {
+        _linkedFirstBox = _linkedFirstCube = -1;
         CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver(); _canvasFramed = false;
         CancelRoadSketch();
         Undo.ClearUndo(_document);
@@ -416,6 +418,12 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             if (GUILayout.Button("Màn sau ►", EditorStyles.miniButtonRight, GUILayout.Width(78)))
                 NavigateToLevel(currentLevel + 1);
 
+            GUILayout.Space(6);
+            EditorGUILayout.LabelField("Nhảy tới:", GUILayout.Width(50));
+            _jumpLevel = EditorGUILayout.IntField(_jumpLevel <= 0 ? currentLevel : _jumpLevel, GUILayout.Width(45));
+            if (GUILayout.Button("Đi", EditorStyles.miniButton, GUILayout.Width(30)))
+                NavigateToLevel(_jumpLevel);
+
             GUILayout.Space(8);
             if (GUILayout.Button(new GUIContent("+ Nhân bản sang Màn mới", "Sao chép màn hiện tại sang số màn cao nhất kế tiếp"), EditorStyles.miniButton, GUILayout.Width(155)))
                 DuplicateToNextLevel(root);
@@ -472,8 +480,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 LoopLevelBoardLayout.Arrange(layout, _generatorSettings ?? new LoopLevelGeneratorSettings(), A.Int(root, "puzzle_id"));
                 _status = "Đã xếp hộp, chỉnh đường và liên kết. Giữ nguyên các khối và chỉ số hộp. Hoàn tác để khôi phục bàn chơi cũ.";
             }
-        if (GUILayout.Button("Liên kết mọi hộp với ô đường gần nhất"))
-            foreach (JObject box in A.Array(layout, "Boxes")) box["PathIndexV2"] = A.NearestSlot(box, _slots);
+        if (GUILayout.Button("⚡ Liên kết mọi hộp với ô đường gần nhất (Auto-Bind)"))
+        {
+            LoopLevelBoardLayout.AutoBindBoxesToRoad(layout);
+            _status = "Đã tự động liên kết tất cả các hộp với ô đường gần nhất.";
+        }
         EditorGUILayout.Space(); Header("Chơi thử");
         EditorGUILayout.HelpBox("Chơi thử dùng bản nháp chưa lưu và bộ lưu tạm riêng. Dừng Play Mode để quay lại chỉnh sửa.", MessageType.None);
     }
@@ -511,6 +522,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             EditorGUILayout.HelpBox("Giá trị 0 tự tìm ô gần nhất khi chạy game. Di chuyển đường không đổi liên kết đã gán; dùng Liên kết mọi hộp khi cần.", MessageType.None);
             Integer(box, "PathIndex", "Chỉ số đường kiểu cũ");
             Indices(box, "MultiColorLock", "ID màu khóa nhiều màu", true);
+            if (GUILayout.Button("⚡ Tự động gắn ô đường cho tất cả hộp"))
+            {
+                LoopLevelBoardLayout.AutoBindBoxesToRoad(layout);
+                _status = "Đã tự động liên kết tất cả hộp với ô đường gần nhất.";
+            }
         }
         Header("Khối — từ dưới lên trên");
         DrawCubeStrip(box);
@@ -532,6 +548,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 }
                 Flag(cube, "IsSecret", "Ẩn"); Flag(cube, "IsFixed", "Cố định");
                 Integer(cube, "GroupKeyId", "ID chìa khóa nhóm"); Integer(cube, "NumLock", "Khóa số");
+                DrawLinkedCubeControls(box, cube, i);
             }
         }
         using (new EditorGUI.DisabledScope(cubes.Count >= capacity))
@@ -618,14 +635,22 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         _path = Mathf.Clamp(_path, 0, paths.Count - 1);
         _path = EditorGUILayout.Popup("Đường đang chọn", _path, Enumerable.Range(0, paths.Count).Select(i => "Đường " + i).ToArray());
         DrawPathInspectorPreview();
-        JObject path = (JObject)paths[_path]; Flag(path, "IsCircle", "Vòng kín");
+        JObject path = (JObject)paths[_path];
+        bool isCircle = A.Int(path, "IsCircle") > 0;
+        bool nextIsCircle = EditorGUILayout.Toggle("Vòng kín (IsCircle)", isCircle);
+        if (nextIsCircle != isCircle)
+        {
+            path["IsCircle"] = nextIsCircle ? 1 : 0;
+            A.SyncEnterExitGates(layout);
+        }
         _autoSmoothPoints = EditorGUILayout.Toggle(new GUIContent("Tự làm mượt khi di chuyển điểm", "Tính lại tiếp tuyến sau khi di chuyển, thêm hoặc xóa điểm."), _autoSmoothPoints);
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button("Làm mượt đường")) A.SmoothRoad(path, _roadSmoothing);
             if (GUILayout.Button("Làm thẳng đường")) A.SmoothRoad(path, 0);
-            if (GUILayout.Button("Đảo chiều")) A.ReverseRoad(path, _autoSmoothPoints ? _roadSmoothing : -1f);
+            if (GUILayout.Button("Đảo chiều")) { A.ReverseRoad(path, _autoSmoothPoints ? _roadSmoothing : -1f); A.SyncEnterExitGates(layout); }
             if (GUILayout.Button("Căn giữa")) A.CenterRoad(path, Vector3.zero);
+            if (GUILayout.Button("Đồng bộ cổng")) A.SyncEnterExitGates(layout);
         }
         if (GUILayout.Button("Xóa đường đang chọn")) { paths.RemoveAt(_path); _point = -1; return; }
         JArray points = A.Array(path, "ControlPoints");
@@ -713,7 +738,11 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             _showRoadPresets = EditorGUILayout.Foldout(_showRoadPresets, "Hoặc tạo đường từ hình mẫu", true);
             if (_showRoadPresets)
             {
-                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] { "Chữ nhật bo góc", "Bầu dục / tròn", "Chữ U (5 điểm)", "Số 8 Thắt eo (không cắt)", "Số 8 Cầu vượt 3D", "Số 8 Cắt phẳng" });
+                _roadPreset = EditorGUILayout.Popup("Hình mẫu", _roadPreset, new[] {
+                    "Chữ nhật bo góc (Đóng)", "Bầu dục / tròn (Đóng)", "Chữ U (5 điểm, Đóng)",
+                    "Số 8 Thắt eo (không cắt)", "Số 8 Cầu vượt 3D", "Số 8 Cắt phẳng",
+                    "Băng chuyền thẳng mở (Enter/Exit)", "Chữ S mở (Enter/Exit)", "Uốn lượn mở (Enter/Exit)"
+                });
                 _roadCenter = EditorGUILayout.Vector3Field("Tâm", _roadCenter);
                 _roadWidth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều rộng (X)", _roadWidth));
                 _roadDepth = Mathf.Max(.5f, EditorGUILayout.FloatField("Chiều sâu (Z)", _roadDepth));
@@ -726,9 +755,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                             _roadPreset == 2 ? A.UShapeRoad(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing) :
                             _roadPreset == 3 ? A.HourglassRoad(_roadCenter, _roadWidth, _roadDepth, 1.8f, _roadSmoothing) :
                             _roadPreset == 4 ? A.Figure8OverpassRoad(_roadCenter, _roadWidth, _roadDepth, 1.8f, _roadSmoothing) :
-                            A.Figure8Road(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing);
+                            _roadPreset == 5 ? A.Figure8Road(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing) :
+                            _roadPreset == 6 ? A.StraightRoadCentered(_roadCenter, _roadWidth, true) :
+                            _roadPreset == 7 ? A.SCurveRoad(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing) :
+                            A.OpenWindingRoad(_roadCenter, _roadWidth, _roadDepth, _roadSmoothing);
                         paths.Add(newRoad);
                         _path = paths.Count - 1; _point = 0; _scenePreview = true;
+                        A.SyncEnterExitGates(Root());
                     }
             }
         }
@@ -911,6 +944,17 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button("Áp dụng JSON")) ApplyRaw();
+            if (GUILayout.Button("Định dạng đẹp (Format)"))
+            {
+                try
+                {
+                    _rawText = JToken.Parse(_rawText).ToString(Formatting.Indented);
+                }
+                catch (Exception ex)
+                {
+                    _status = "JSON không hợp lệ: " + ex.Message;
+                }
+            }
             if (GUILayout.Button("Đặt lại theo bản nháp")) { _rawText = _rawBase = _document.Json; SyncDirty(); }
         }
     }
@@ -1007,6 +1051,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 else if (_tab == 1 && _boxTool == 0 && _box >= 0 && _box < A.Array(layout, "Boxes").Count)
                     TransformHandle((JObject)A.Array(layout, "Boxes")[_box]);
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+                DrawLinkedCubePreview(layout);
                 if (_tab == 1 && _boxTool == 1) PlaceSceneBox(view, root);
                 else if (_tab == 1 && (_boxTool == 2 || _boxTool == 3)) DrawSceneCubeButtons(layout);
             }
