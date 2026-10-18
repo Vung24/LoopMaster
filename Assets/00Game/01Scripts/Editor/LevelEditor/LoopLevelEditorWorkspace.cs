@@ -17,6 +17,8 @@ public sealed partial class LoopLevelEditorWindow
     [SerializeField] private Vector2 _canvasCenter, _inspectorScroll, _tableScroll;
     [SerializeField] private float _canvasScale = 25;
     [SerializeField] private int _canvasTool, _swapColor = 2, _variantSeed = 12345, _solverBudget = 10000;
+    [SerializeField] private bool _showScaffoldWizard;
+    [SerializeField] private int _scaffoldBoxCount = 4, _scaffoldRoadShape, _scaffoldContentMode, _scaffoldSeed = 12345;
     [SerializeField] private bool _showAutoFill;
     [SerializeField] private int _autoFillColors = 4, _autoFillSecret = 20, _autoFillColorLocks, _autoFillNumLocks, _autoFillGroups, _autoFillEnterOnly, _autoFillSeed = 12345;
     [SerializeField] private string _draftSolverJson, _draftSolverStatus;
@@ -119,6 +121,7 @@ public sealed partial class LoopLevelEditorWindow
             }
             _canvasSelection = LoopLevelCommands.Selection(root, _canvasSelection).ToList();
             if (_box >= 0 && _box < A.Array(layout, "Boxes").Count && !_canvasSelection.Contains(_box)) SetCanvasSelection(new[] { _box });
+            DrawScaffoldWizard(root);
             EditorGUILayout.Space(3);
             int tool = GUILayout.Toolbar(_canvasTool, new[] { "Chọn / kéo", "Đặt hộp", "Tô màu", "Ẩn / hiện", "Chìa khóa", "Xóa khối", "Đường" });
             if (tool != _canvasTool) { CancelCanvasGesture(); _canvasTool = tool; GUIUtility.ExitGUI(); }
@@ -173,6 +176,78 @@ public sealed partial class LoopLevelEditorWindow
         finally { EditorGUILayout.EndScrollView(); }
     }
 
+    private void DrawScaffoldWizard(JObject root)
+    {
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        bool emptyOrFew = boxes.Count <= 1;
+        string title = emptyOrFew
+            ? "🛠️ Khởi tạo nhanh khung bàn chơi (Bắt đầu với bố cục chuẩn)"
+            : "🛠️ Khởi tạo lại khung bàn chơi (Scaffold Wizard)";
+
+        _showScaffoldWizard = EditorGUILayout.Foldout(_showScaffoldWizard || emptyOrFew, title, true, EditorStyles.foldoutHeader);
+        if (!_showScaffoldWizard && !emptyOrFew) return;
+
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+            EditorGUILayout.LabelField("Dựng nhanh toàn bộ khung bàn chơi chuẩn gồm: Số hộp, Bố cục đường, Cổng Vào/Ra, Sức chứa và Chia màu có lời giải.", EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.Space(2);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Số hộp:", GUILayout.Width(75));
+                for (int b = 2; b <= 8; b++)
+                {
+                    Color prevBg = GUI.backgroundColor;
+                    if (_scaffoldBoxCount == b) GUI.backgroundColor = new Color(0.35f, 0.75f, 1f);
+                    if (GUILayout.Button(b.ToString(), EditorStyles.miniButton, GUILayout.Width(28)))
+                    {
+                        _scaffoldBoxCount = b;
+                    }
+                    GUI.backgroundColor = prevBg;
+                }
+                _scaffoldBoxCount = EditorGUILayout.IntSlider(_scaffoldBoxCount, 2, 12);
+            }
+
+            _scaffoldRoadShape = EditorGUILayout.Popup("Hình dáng đường", _scaffoldRoadShape, new[]
+            {
+                "🔄 Vòng khép kín bo góc (Chữ nhật bo góc)",
+                "⭕ Vòng khép kín bầu dục (Oval)",
+                "⚪ Vòng tròn (Circle)",
+                "➖ Băng chuyền thẳng mở (Kèm cổng Vào & Ra)",
+                "〰️ Băng chuyền chữ S mở (Kèm cổng Vào & Ra)",
+                "🔀 Băng chuyền uốn lượn mở (Kèm cổng Vào & Ra)"
+            });
+
+            _scaffoldContentMode = EditorGUILayout.Popup("Nội dung khối màu", _scaffoldContentMode, new[]
+            {
+                "🟢 Bộ 4 màu chuẩn (Có lời giải, 1 hộp chờ, 0 khóa, 0 ẩn)",
+                "📦 Hộp rỗng (Để tự thiết kế & thả khối)",
+                "🔒 Kèm khóa màu (Có lời giải, chìa nằm ở hộp mở)",
+                "❓ Kèm khối ẩn đáy (Có lời giải, 25% ẩn đáy)"
+            });
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _scaffoldSeed = EditorGUILayout.IntField("Hạt giống (Seed)", _scaffoldSeed == 0 ? 12345 : _scaffoldSeed);
+                if (GUILayout.Button("Seed mới", GUILayout.Width(80))) _scaffoldSeed = Guid.NewGuid().GetHashCode() & int.MaxValue;
+
+                Color prevBg = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.35f, 0.85f, 0.45f);
+                if (GUILayout.Button("⚡ Khởi tạo khung bàn ngay (1-Click)", GUILayout.Height(24), GUILayout.Width(220)))
+                {
+                    WorkspaceCommand("Khởi tạo khung bàn chơi", next =>
+                    {
+                        LoopLevelCommands.SetupScaffoldBoard(next, _scaffoldBoxCount, _scaffoldRoadShape, _scaffoldContentMode, _scaffoldSeed);
+                        _status = $"Đã khởi tạo khung bàn thành công: {_scaffoldBoxCount} hộp, đường {(_scaffoldRoadShape >= 3 ? "mở (có cổng)" : "đóng")}. Bàn chơi đã sẵn sàng!";
+                    });
+                    _canvasFramed = false;
+                    _showScaffoldWizard = false;
+                }
+                GUI.backgroundColor = prevBg;
+            }
+        }
+    }
+
     private void DrawWorkspacePalette(JObject layout)
     {
         int columns = position.width < 700 ? 7 : 14;
@@ -200,6 +275,52 @@ public sealed partial class LoopLevelEditorWindow
             {
                 _placementType = EditorGUILayout.Popup("Loại hộp", _placementType, new[] { "Thường", "Đơn", "Dài" });
                 _placementYaw = EditorGUILayout.FloatField("Góc Y", _placementYaw);
+            }
+        }
+        if (_canvasTool == 6)
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Đường:", GUILayout.Width(45));
+                if (GUILayout.Button(new GUIContent("🔄 Đảo chiều", "Đảo ngược thứ tự điểm của băng chuyền")))
+                {
+                    WorkspaceCommand("Đảo chiều đường", next =>
+                    {
+                        JArray paths = A.Array(A.Layout(next), "Paths");
+                        if (paths.Count > 0)
+                        {
+                            A.ReverseRoad((JObject)paths[0], 0.6f);
+                            A.SyncEnterExitGates(A.Layout(next));
+                        }
+                    });
+                }
+                if (GUILayout.Button(new GUIContent("Đóng ⇄ Mở", "Chuyển giữa vòng kín và đường mở kèm cổng Vào/Ra")))
+                {
+                    WorkspaceCommand("Đổi Đóng ⇄ Mở đường", next =>
+                    {
+                        JArray paths = A.Array(A.Layout(next), "Paths");
+                        if (paths.Count > 0)
+                        {
+                            A.ToggleRoadClosed(A.Layout(next), (JObject)paths[0], 0.6f);
+                        }
+                    });
+                }
+                if (GUILayout.Button(new GUIContent("🚪 Đồng bộ cổng", "Khớp cổng Vào/Ra với đầu/cuối đường")))
+                {
+                    WorkspaceCommand("Đồng bộ cổng Vào/Ra", next => A.SyncEnterExitGates(A.Layout(next)));
+                }
+                if (GUILayout.Button(new GUIContent("⚡ Làm mượt", "Làm cong mượt các góc nhọn của đường")))
+                {
+                    WorkspaceCommand("Làm mượt đường", next =>
+                    {
+                        JArray paths = A.Array(A.Layout(next), "Paths");
+                        if (paths.Count > 0) A.SmoothRoad((JObject)paths[0], 0.6f);
+                    });
+                }
+                if (GUILayout.Button(new GUIContent("📐 Bo quanh hộp", "Tự động bo đường bao quanh vị trí các hộp")))
+                {
+                    WorkspaceCommand("Bo đường quanh hộp", next => LoopLevelBoardLayout.FitRoadOnly(A.Layout(next), _generatorSettings ?? new LoopLevelGeneratorSettings()));
+                }
             }
         }
     }
@@ -362,7 +483,7 @@ public sealed partial class LoopLevelEditorWindow
                     { Handles.color = Color.yellow; Handles.DrawDottedLine(project(exit), project(slots[binding - 1]), 3); }
                 }
             }
-            DrawCanvasCapacities(rect, layout);
+            DrawCanvasMapItems(rect, layout);
             if (_drawingRoad)
             {
                 if (_sketchPoints.Count > 0)
@@ -641,8 +762,8 @@ public sealed partial class LoopLevelEditorWindow
                     e.Use();return;
                 }
             }
-            if ((e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) && LoopLevelCommands.IsCapacity(A.Layout(root), _canvasMap))
-            { WorkspaceCommand("Xóa Capacity", DeleteSelectedCapacity); e.Use(); return; }
+            if ((e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) && LoopLevelCommands.IsMapItem(A.Layout(root), _canvasMap))
+            { WorkspaceCommand("Xóa MapData", DeleteSelectedMapItem); e.Use(); return; }
             if(e.keyCode==KeyCode.Delete||e.keyCode==KeyCode.Backspace){WorkspaceCommand("Xóa hộp đã chọn",next=>{LoopLevelCommands.DeleteBoxes(next,_canvasSelection);ClearCanvasSelection();});e.Use();return;}
             if((e.control||e.command)&&e.keyCode==KeyCode.A){SetCanvasSelection(Enumerable.Range(0,A.Array(A.Layout(root),"Boxes").Count));e.Use();GUIUtility.ExitGUI();return;}
             if((e.control||e.command)&&e.keyCode==KeyCode.D){DuplicateWorkspace(false);e.Use();return;}
@@ -726,7 +847,7 @@ public sealed partial class LoopLevelEditorWindow
                 WorkspaceCommand("Đặt hộp",next=> {JObject box=A.NewBox(position);box["BoxType"]=_placementType;box["Rotation"]=A.Vector(new Vector3(0,_placementYaw,0));JArray boxes=A.Array(A.Layout(next),"Boxes");boxes.Add(box);SetCanvasSelection(new[]{boxes.Count-1});});e.Use();return;
             }
             if(_canvasTool>=2&&_canvasTool<=5){BeginCanvasGesture(4,root,rect,e.mousePosition);PaintCanvas(rect,e.mousePosition);e.Use();Repaint();GUIUtility.ExitGUI();return;}
-            int mapHit = HitCanvasCapacity(rect, A.Layout(root), e.mousePosition);
+            int mapHit = HitCanvasMapItem(rect, A.Layout(root), e.mousePosition);
             if (mapHit >= 0)
             {
                 ClearCanvasSelection(); _canvasMap = mapHit;
@@ -756,7 +877,7 @@ public sealed partial class LoopLevelEditorWindow
             {
                 _canvasDraft = A.Parse(_canvasBase);
                 JObject layout = A.Layout(_canvasDraft);
-                if (LoopLevelCommands.IsCapacity(layout, _canvasMap))
+                if (LoopLevelCommands.IsMapItem(layout, _canvasMap))
                 {
                     JObject item = (JObject)A.Array(layout, "MapData")[_canvasMap];
                     Vector3 delta = CanvasWorld(rect, e.mousePosition) - _canvasWorldDown;
@@ -799,9 +920,9 @@ public sealed partial class LoopLevelEditorWindow
             DrawWorkspaceRoadInspector(root, layout, paths, boxes);
             return;
         }
-        if (LoopLevelCommands.IsCapacity(layout, _canvasMap))
+        if (LoopLevelCommands.IsMapItem(layout, _canvasMap))
         {
-            DrawCapacityInspector(root);
+            DrawMapItemInspector(root);
             return;
         }
         Header(_canvasSelection.Count+" hộp được chọn");
@@ -849,37 +970,139 @@ public sealed partial class LoopLevelEditorWindow
     private void DrawWorkspaceOperations(JObject root)
     {
         DrawWorkspaceLayout(root);
-        using(new EditorGUILayout.HorizontalScope())
+        EditorGUILayout.Space(2);
+        using (new EditorGUILayout.HorizontalScope())
         {
-            using(new EditorGUI.DisabledScope(_canvasSelection.Count==0||_canvasGesture!=0||_drawingRoad))
+            EditorGUILayout.LabelField("Thêm hộp:", GUILayout.Width(68));
+            if (GUILayout.Button("+ Hộp thường (2x2)"))
+                WorkspaceCommand("Thêm hộp thường", next => {
+                    int idx = LoopLevelCommands.AddBox(next, 0, _placementYaw);
+                    SetCanvasSelection(new[] { idx });
+                });
+            if (GUILayout.Button("+ Hộp đơn (1x1)"))
+                WorkspaceCommand("Thêm hộp đơn", next => {
+                    int idx = LoopLevelCommands.AddBox(next, 1, _placementYaw);
+                    SetCanvasSelection(new[] { idx });
+                });
+            if (GUILayout.Button("+ Hộp dài (1x4)"))
+                WorkspaceCommand("Thêm hộp dài", next => {
+                    int idx = LoopLevelCommands.AddBox(next, 2, _placementYaw);
+                    SetCanvasSelection(new[] { idx });
+                });
+        }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Bố cục:", GUILayout.Width(68));
+            if (GUILayout.Button("2 Cột hướng ra"))
+                WorkspaceCommand("Xếp 2 cột hướng ra ngoài", next => LoopLevelBoardLayout.ArrangeTwoColumnsFacingOutward(A.Array(A.Layout(next), "Boxes"), _canvasSelection), true);
+            if (GUILayout.Button("2 Hàng đối diện"))
+                WorkspaceCommand("Xếp 2 hàng đối diện", next => LoopLevelBoardLayout.ArrangeTwoBanks(A.Array(A.Layout(next), "Boxes"), _canvasSelection), true);
+            if (GUILayout.Button("1 Hàng"))
+                WorkspaceCommand("Xếp 1 hàng ngang", next => LoopLevelBoardLayout.ArrangeSingleRow(A.Array(A.Layout(next), "Boxes"), _canvasSelection), true);
+            if (GUILayout.Button("1 Cột"))
+                WorkspaceCommand("Xếp 1 cột dọc", next => LoopLevelBoardLayout.ArrangeSingleColumn(A.Array(A.Layout(next), "Boxes"), _canvasSelection), true);
+            if (GUILayout.Button("Lưới"))
+                WorkspaceCommand("Xếp dạng lưới", next => LoopLevelBoardLayout.ArrangeGrid(A.Array(A.Layout(next), "Boxes"), _canvasSelection, 2), true);
+        }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Căn chỉnh:", GUILayout.Width(68));
+            if (GUILayout.Button("Căn X")) WorkspaceCommand("Căn thẳng hàng X", next => LoopLevelBoardLayout.AlignBoxes(A.Array(A.Layout(next), "Boxes"), _canvasSelection, false), true);
+            if (GUILayout.Button("Căn Z")) WorkspaceCommand("Căn thẳng hàng Z", next => LoopLevelBoardLayout.AlignBoxes(A.Array(A.Layout(next), "Boxes"), _canvasSelection, true), true);
+            if (GUILayout.Button("Giãn đều X")) WorkspaceCommand("Giãn đều X", next => LoopLevelCommands.Align(next, _canvasSelection, true, true), true);
+            if (GUILayout.Button("Giãn đều Z")) WorkspaceCommand("Giãn đều Z", next => LoopLevelCommands.Align(next, _canvasSelection, false, true), true);
+        }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Xoay hướng:", GUILayout.Width(68));
+            if (GUILayout.Button("0° (Bắc)")) WorkspaceCommand("Xoay 0°", next => LoopLevelBoardLayout.RotateBoxes(A.Array(A.Layout(next), "Boxes"), _canvasSelection, 0f), true);
+            if (GUILayout.Button("90° (Đông)")) WorkspaceCommand("Xoay 90°", next => LoopLevelBoardLayout.RotateBoxes(A.Array(A.Layout(next), "Boxes"), _canvasSelection, 90f), true);
+            if (GUILayout.Button("180° (Nam)")) WorkspaceCommand("Xoay 180°", next => LoopLevelBoardLayout.RotateBoxes(A.Array(A.Layout(next), "Boxes"), _canvasSelection, 180f), true);
+            if (GUILayout.Button("270° (Tây)")) WorkspaceCommand("Xoay 270°", next => LoopLevelBoardLayout.RotateBoxes(A.Array(A.Layout(next), "Boxes"), _canvasSelection, 270f), true);
+            if (GUILayout.Button("Hướng tâm")) WorkspaceCommand("Xoay hướng tâm", next => LoopLevelBoardLayout.RotateBoxesTowardsCenter(A.Array(A.Layout(next), "Boxes"), _canvasSelection), true);
+        }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            using (new EditorGUI.DisabledScope(_canvasSelection.Count == 0 || _canvasGesture != 0 || _drawingRoad))
             {
-                if(GUILayout.Button("Nhân bản"))DuplicateWorkspace(false);
-                if(GUILayout.Button("Nhân bản nhóm + chìa"))DuplicateWorkspace(true);
-                if(GUILayout.Button("Xóa hộp")){WorkspaceCommand("Xóa hộp",next=>{LoopLevelCommands.DeleteBoxes(next,_canvasSelection);ClearCanvasSelection();});}
-                if(GUILayout.Button("Xoay cụm 90°"))WorkspaceCommand("Xoay cụm",next=>LoopLevelCommands.Rotate(next,_canvasSelection,90),true);
-                if(GUILayout.Button("Phản chiếu X"))PreviewWorkspaceCommand("Phản chiếu cụm",next=>LoopLevelCommands.Mirror(next,_canvasSelection),true);
+                if (GUILayout.Button("Nhân bản")) DuplicateWorkspace(false);
+                if (GUILayout.Button("Nhân bản nhóm + chìa")) DuplicateWorkspace(true);
+                if (GUILayout.Button("Xóa hộp")) { WorkspaceCommand("Xóa hộp", next => { LoopLevelCommands.DeleteBoxes(next, _canvasSelection); ClearCanvasSelection(); }); }
+                if (GUILayout.Button("Phản chiếu X")) PreviewWorkspaceCommand("Phản chiếu cụm", next => LoopLevelCommands.Mirror(next, _canvasSelection), true);
+            }
+            if (GUILayout.Button("⚡ Tự động gắn ô đường (Auto-Bind)", GUILayout.Height(22)))
+                WorkspaceCommand("Tự động liên kết ô đường gần nhất", next => LoopLevelBoardLayout.AutoBindBoxesToRoad(A.Layout(next)));
+        }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Đường & Cổng:", GUILayout.Width(68));
+            if (GUILayout.Button("🔄 Đảo chiều"))
+                WorkspaceCommand("Đảo chiều đường", next => {
+                    JArray paths = A.Array(A.Layout(next), "Paths");
+                    if (paths.Count > 0) { A.ReverseRoad((JObject)paths[0], 0.6f); A.SyncEnterExitGates(A.Layout(next)); }
+                });
+            if (GUILayout.Button("Đổi Đóng ⇄ Mở"))
+                WorkspaceCommand("Đổi Đóng ⇄ Mở đường", next => {
+                    JArray paths = A.Array(A.Layout(next), "Paths");
+                    if (paths.Count > 0) A.ToggleRoadClosed(A.Layout(next), (JObject)paths[0], 0.6f);
+                });
+            if (GUILayout.Button("🚪 Đồng bộ cổng"))
+                WorkspaceCommand("Đồng bộ cổng Vào/Ra", next => A.SyncEnterExitGates(A.Layout(next)));
+            if (GUILayout.Button("⚡ Bo đường"))
+                WorkspaceCommand("Bo đường quanh hộp", next => LoopLevelBoardLayout.FitRoadOnly(A.Layout(next), _generatorSettings ?? new LoopLevelGeneratorSettings()));
+        }
+        EditorGUILayout.Space(2);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Khối & Đố:", GUILayout.Width(68));
+            Color prevBg = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.35f, 0.85f, 0.45f);
+            if (GUILayout.Button(new GUIContent("⚡ Cân bằng bộ 4 (Solvable)", "Tự động bù/bớt khối để tất cả các màu chia hết cho 4")))
+            {
+                WorkspaceCommand("Cân bằng bộ 4", next =>
+                {
+                    LoopLevelCommands.BalanceCubesToSetsOfFour(next, out _, out string report);
+                    _status = report;
+                });
+            }
+            GUI.backgroundColor = prevBg;
+            if (GUILayout.Button("Đổ 4 khối"))
+                WorkspaceCommand("Đổ đầy 4 khối màu cọ", next => LoopLevelCommands.FillSelectedBoxes(next, _canvasSelection, _brushColor));
+            if (GUILayout.Button("Xóa khối"))
+                WorkspaceCommand("Xóa khối các hộp đã chọn", next => LoopLevelCommands.ClearSelectedBoxes(next, _canvasSelection));
+            if (GUILayout.Button(new GUIContent("⚡ Chia màu thông minh", "Sinh các bộ 4 khối ngẫu nhiên phân bổ vào hộp")))
+            {
+                WorkspaceCommand("Phân bổ màu thông minh", next =>
+                {
+                    LoopLevelCommands.DistributeSolvableCubes(next, _canvasSelection, _autoFillColors, _variantSeed, _autoFillSecret);
+                    _status = "Đã phân bổ " + _autoFillColors + " màu bộ 4 vào các hộp.";
+                });
             }
         }
-        using(new EditorGUILayout.HorizontalScope())
+        using (new EditorGUILayout.HorizontalScope())
         {
-            using(new EditorGUI.DisabledScope(_canvasSelection.Count<2))
-            {
-                if(GUILayout.Button("Căn hàng ngang"))WorkspaceCommand("Căn hàng ngang",next=>LoopLevelCommands.Align(next,_canvasSelection,false,false),true);
-                if(GUILayout.Button("Căn cột"))WorkspaceCommand("Căn cột",next=>LoopLevelCommands.Align(next,_canvasSelection,true,false),true);
-                if(GUILayout.Button("Giãn đều X"))WorkspaceCommand("Giãn đều X",next=>LoopLevelCommands.Align(next,_canvasSelection,true,true),true);
-                if(GUILayout.Button("Giãn đều Z"))WorkspaceCommand("Giãn đều Z",next=>LoopLevelCommands.Align(next,_canvasSelection,false,true),true);
-            }
+            EditorGUILayout.LabelField("Ẩn / Khóa:", GUILayout.Width(68));
+            if (GUILayout.Button("Ẩn 1 đáy"))
+                WorkspaceCommand("Ẩn 1 khối đáy", next => LoopLevelCommands.SetBottomSecretCubes(next, _canvasSelection, 1));
+            if (GUILayout.Button("Ẩn 2 đáy"))
+                WorkspaceCommand("Ẩn 2 khối đáy", next => LoopLevelCommands.SetBottomSecretCubes(next, _canvasSelection, 2));
+            if (GUILayout.Button("Bỏ ẩn"))
+                WorkspaceCommand("Hiện toàn bộ khối", next => LoopLevelCommands.SetBottomSecretCubes(next, _canvasSelection, 0));
+            if (GUILayout.Button("Khóa = Màu cọ"))
+                WorkspaceCommand("Gán khóa màu", next => LoopLevelCommands.SetSelectedBoxesColorLock(next, _canvasSelection, _brushColor));
+            if (GUILayout.Button("Bỏ khóa"))
+                WorkspaceCommand("Bỏ khóa màu", next => LoopLevelCommands.SetSelectedBoxesColorLock(next, _canvasSelection, 0));
         }
-        using(new EditorGUILayout.HorizontalScope())
+        using (new EditorGUILayout.HorizontalScope())
         {
-            _swapColor=EditorGUILayout.IntField("Đổi màu đang chọn ↔",_swapColor,GUILayout.Width(205));
-            if(GUILayout.Button("Đổi toàn level (cả khóa)"))WorkspaceCommand("Đổi bảng màu",next=>LoopLevelCommands.SwapColors(next,_brushColor,_swapColor));
+            _swapColor = EditorGUILayout.IntField("Đổi màu đang chọn ↔", _swapColor, GUILayout.Width(205));
+            if (GUILayout.Button("Đổi toàn level (cả khóa)")) WorkspaceCommand("Đổi bảng màu", next => LoopLevelCommands.SwapColors(next, _brushColor, _swapColor));
         }
-        using(new EditorGUILayout.HorizontalScope())
+        using (new EditorGUILayout.HorizontalScope())
         {
-            _variantSeed=EditorGUILayout.IntField("Seed",_variantSeed,GUILayout.Width(150));
-            using(new EditorGUI.DisabledScope(_canvasSelection.Count<2))
-                if(GUILayout.Button("Trộn khối vùng chọn"))WorkspaceCommand("Trộn nội dung, giữ bố cục / tổng màu",next=>LoopLevelCommands.ShuffleContents(next,_canvasSelection,_variantSeed));
+            _variantSeed = EditorGUILayout.IntField("Seed", _variantSeed, GUILayout.Width(150));
+            using (new EditorGUI.DisabledScope(_canvasSelection.Count < 2))
+                if (GUILayout.Button("Trộn khối vùng chọn")) WorkspaceCommand("Trộn nội dung, giữ bố cục / tổng màu", next => LoopLevelCommands.ShuffleContents(next, _canvasSelection, _variantSeed));
         }
         using (new EditorGUILayout.HorizontalScope())
         {
@@ -937,56 +1160,134 @@ public sealed partial class LoopLevelEditorWindow
         });
     }
 
-    private Rect CanvasCapacityRect(Rect rect, JObject item)
+    private Rect CanvasMapItemRect(Rect rect, JObject item)
     {
         Vector2 center = CanvasProject(rect, A.Vector(item, "Position"));
-        Vector2 size = new Vector2(Mathf.Max(40, 2 * _canvasScale), Mathf.Max(20, _canvasScale));
+        string name = item.Value<string>("Name");
+        bool isGate = string.Equals(name, "Enter", StringComparison.OrdinalIgnoreCase) ||
+                      string.Equals(name, "Exit", StringComparison.OrdinalIgnoreCase);
+        Vector2 size = isGate
+            ? new Vector2(Mathf.Max(38, 2.2f * _canvasScale), Mathf.Max(26, 1.4f * _canvasScale))
+            : new Vector2(Mathf.Max(40, 2f * _canvasScale), Mathf.Max(20, _canvasScale));
         return new Rect(center - size * .5f, size);
     }
 
-    private int HitCanvasCapacity(Rect rect, JObject layout, Vector2 mouse)
+    private int HitCanvasMapItem(Rect rect, JObject layout, Vector2 mouse)
     {
         JArray map = A.Array(layout, "MapData");
         for (int i = map.Count - 1; i >= 0; i--)
-            if (LoopLevelCommands.IsCapacity(layout, i) && CanvasCapacityRect(rect, (JObject)map[i]).Contains(mouse)) return i;
+        {
+            if (LoopLevelCommands.IsMapItem(layout, i) && CanvasMapItemRect(rect, (JObject)map[i]).Contains(mouse))
+                return i;
+        }
         return -1;
     }
 
-    private void DrawCanvasCapacities(Rect rect, JObject layout)
+    private void DrawCanvasMapItems(Rect rect, JObject layout)
     {
         JArray map = A.Array(layout, "MapData");
         for (int i = 0; i < map.Count; i++)
         {
-            if (!LoopLevelCommands.IsCapacity(layout, i)) continue;
-            Rect marker = CanvasCapacityRect(rect, (JObject)map[i]);
+            if (!LoopLevelCommands.IsMapItem(layout, i, out string name)) continue;
+            JObject item = (JObject)map[i];
+            Rect marker = CanvasMapItemRect(rect, item);
             marker.position -= rect.position;
-            Color color = new Color(.15f, .4f, .3f);
-            if (_canvasMap == i) color = new Color(.5f, .45f, .15f);
-            EditorGUI.DrawRect(marker, color);
-            GUI.Label(marker, "Capacity 0/" + A.Int(layout, "PathLength"), EditorStyles.whiteMiniLabel);
+
+            bool selected = _canvasMap == i;
+            if (LoopLevelCommands.IsCapacity(layout, i))
+            {
+                Color color = selected ? new Color(.5f, .45f, .15f) : new Color(.15f, .4f, .3f);
+                EditorGUI.DrawRect(marker, color);
+                GUI.Label(marker, "Capacity 0/" + A.Int(layout, "PathLength"), EditorStyles.whiteMiniLabel);
+            }
+            else if (LoopLevelCommands.IsEnter(layout, i))
+            {
+                Color color = selected ? new Color(0.9f, 0.85f, 0.2f) : new Color(0.12f, 0.65f, 0.22f, 0.95f);
+                EditorGUI.DrawRect(marker, color);
+                GUI.Label(marker, "🚪 VÀO", EditorStyles.whiteBoldLabel);
+            }
+            else if (LoopLevelCommands.IsExit(layout, i))
+            {
+                Color color = selected ? new Color(1f, 0.85f, 0.2f) : new Color(0.82f, 0.22f, 0.18f, 0.95f);
+                EditorGUI.DrawRect(marker, color);
+                GUI.Label(marker, "🚪 RA", EditorStyles.whiteBoldLabel);
+            }
+            else
+            {
+                Color color = selected ? Color.yellow : new Color(0.3f, 0.35f, 0.45f);
+                EditorGUI.DrawRect(marker, color);
+                GUI.Label(marker, name, EditorStyles.whiteMiniLabel);
+            }
+
+            if (LoopLevelCommands.IsEnter(layout, i) || LoopLevelCommands.IsExit(layout, i))
+            {
+                Vector3 itemPos = A.Vector(item, "Position");
+                Vector3 itemRot = A.Vector(item, "Rotation");
+                float rad = itemRot.y * Mathf.Deg2Rad;
+                Vector3 dir = new Vector3(Mathf.Sin(rad), 0, Mathf.Cos(rad));
+                Vector3 facingCenter = (Vector3)(CanvasProject(rect, itemPos) - rect.position);
+                Vector3 facingTip = (Vector3)(CanvasProject(rect, itemPos + dir * 1.8f) - rect.position);
+                Handles.color = selected ? Color.yellow : (LoopLevelCommands.IsEnter(layout, i) ? Color.green : new Color(1f, 0.4f, 0.2f));
+                Handles.DrawLine(facingCenter, facingTip);
+                Handles.DrawSolidDisc(facingTip, Vector3.forward, 3.5f);
+            }
         }
     }
 
-    private void DrawCapacityInspector(JObject root)
-    {
-        Header("Bảng Capacity");
-        EditorGUILayout.HelpBox("Kéo bảng bằng công cụ Chọn. Đây là ký hiệu vị trí; kiểm tra hình ảnh prefab trong Game View.", MessageType.None);
-        JObject editable = (JObject)root.DeepClone();
-        JObject item = (JObject)A.Array(A.Layout(editable), "MapData")[_canvasMap];
-        EditorGUI.BeginChangeCheck();
-        VectorField(item, "Position"); VectorField(item, "Rotation"); VectorField(item, "Scale");
-        if (EditorGUI.EndChangeCheck() && _canvasGesture == 0)
-        {
-            Commit(editable, "Sửa Capacity");
-            GUIUtility.ExitGUI();
-        }
-        if (GUILayout.Button("Xóa bảng Capacity")) WorkspaceCommand("Xóa Capacity", DeleteSelectedCapacity);
-    }
-
-    private void DeleteSelectedCapacity(JObject root)
+    private void DrawMapItemInspector(JObject root)
     {
         JObject layout = A.Layout(root);
-        if (LoopLevelCommands.IsCapacity(layout, _canvasMap)) A.Array(layout, "MapData").RemoveAt(_canvasMap);
+        JArray map = A.Array(layout, "MapData");
+        if (_canvasMap < 0 || _canvasMap >= map.Count || !(map[_canvasMap] is JObject item)) return;
+
+        string name = item.Value<string>("Name");
+        bool isEnter = LoopLevelCommands.IsEnter(layout, _canvasMap);
+        bool isExit = LoopLevelCommands.IsExit(layout, _canvasMap);
+        bool isCapacity = LoopLevelCommands.IsCapacity(layout, _canvasMap);
+
+        string title = isEnter ? "Cổng Vào (Enter Gate)" : (isExit ? "Cổng Ra (Exit Gate)" : (isCapacity ? "Bảng Capacity" : ("Mục: " + name)));
+        Header(title);
+
+        if (isEnter || isExit)
+        {
+            EditorGUILayout.HelpBox("Cổng đón/xuất khối ở đầu và cuối đường mở (IsCircle = 0). Có thể kéo trên bàn hoặc bấm đồng bộ với đường.", MessageType.None);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Kéo bằng công cụ Chọn. Kiểm tra hình ảnh prefab trong Game View.", MessageType.None);
+        }
+
+        JObject editable = (JObject)root.DeepClone();
+        JObject editItem = (JObject)A.Array(A.Layout(editable), "MapData")[_canvasMap];
+        EditorGUI.BeginChangeCheck();
+        VectorField(editItem, "Position");
+        VectorField(editItem, "Rotation");
+        VectorField(editItem, "Scale");
+        if (EditorGUI.EndChangeCheck() && _canvasGesture == 0)
+        {
+            Commit(editable, "Sửa " + title);
+            GUIUtility.ExitGUI();
+        }
+
+        if (isEnter || isExit)
+        {
+            if (GUILayout.Button("⚡ Tự động căn theo đầu/cuối đường mở"))
+            {
+                WorkspaceCommand("Đồng bộ cổng vào ra", next => LoopLevelAuthoring.SyncEnterExitGates(A.Layout(next)));
+            }
+        }
+
+        if (GUILayout.Button("Xóa mục này"))
+        {
+            WorkspaceCommand("Xóa MapData", DeleteSelectedMapItem);
+        }
+    }
+
+    private void DeleteSelectedMapItem(JObject root)
+    {
+        JObject layout = A.Layout(root);
+        if (LoopLevelCommands.IsMapItem(layout, _canvasMap))
+            LoopLevelCommands.DeleteMapItem(layout, _canvasMap);
         ClearCanvasSelection();
     }
 
@@ -1105,6 +1406,26 @@ public sealed partial class LoopLevelEditorWindow
             EditorGUILayout.LabelField("Tổng: " + _balanceTotal + " khối · Đường: " + A.Int(A.Layout(root), "PathLength") + " nhóm", EditorStyles.miniLabel);
             if (_normalDemand > _normalTargets || _longDemand > _longTargets)
                 EditorGUILayout.HelpBox("Thiếu hộp đích theo tổng màu: thường cần " + _normalDemand + "/" + _normalTargets + ", dài cần " + _longDemand + "/" + _longTargets + ". Chưa xét chuyển đổi màu đặc biệt.", MessageType.Warning);
+            bool hasImbalance = false;
+            foreach (KeyValuePair<int, int> pair in _balanceColors)
+            {
+                int cap = LoopLevelCommands.ColorTargetCapacity(pair.Key);
+                if (cap > 0 && pair.Value % cap != 0) { hasImbalance = true; break; }
+            }
+            if (hasImbalance || _normalDemand > _normalTargets || _longDemand > _longTargets)
+            {
+                Color prevCol = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(1f, 0.75f, 0.2f);
+                if (GUILayout.Button("⚡ Tự động cân bằng tất cả màu về bộ 4 (Khắc phục lỗi !)", GUILayout.Height(24)))
+                {
+                    WorkspaceCommand("Cân bằng tất cả màu về bộ 4", next =>
+                    {
+                        LoopLevelCommands.BalanceCubesToSetsOfFour(next, out _, out string report);
+                        _status = report;
+                    });
+                }
+                GUI.backgroundColor = prevCol;
+            }
         }
     }
 
@@ -1291,6 +1612,17 @@ public sealed partial class LoopLevelEditorWindow
                 WorkspaceCommand("Làm thẳng đường", next => A.SmoothRoad((JObject)A.Array(A.Layout(next), "Paths")[_path], 0f));
             if (GUILayout.Button(new GUIContent(isClosed ? "Mở vòng" : "Khép kín", "Chuyển giữa đường mở và vòng kín")))
                 WorkspaceCommand("Đổi kiểu vòng", next => A.ToggleRoadClosed((JObject)A.Array(A.Layout(next), "Paths")[_path], _roadSmoothing));
+        }
+
+        if (!isClosed)
+        {
+            Color prevGateBg = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.2f, 0.75f, 0.4f);
+            if (GUILayout.Button(new GUIContent("⚡ Đồng bộ Cổng Vào / Cổng Ra theo đường mở", "Tự động đặt Enter ở điểm đầu và Exit ở điểm cuối đúng góc xoay")))
+            {
+                WorkspaceCommand("Đồng bộ cổng vào/ra", next => LoopLevelAuthoring.SyncEnterExitGates(A.Layout(next)));
+            }
+            GUI.backgroundColor = prevGateBg;
         }
 
         using (new EditorGUILayout.HorizontalScope())
@@ -1483,6 +1815,62 @@ public sealed partial class LoopLevelEditorWindow
                         JArray p = A.Array(A.Layout(next), "Paths");
                         p.Add(A.Figure8Road(Vector3.zero, 10f, 6f, _roadSmoothing));
                         _path = p.Count - 1; _point = 0;
+                    });
+                }
+            }
+            EditorGUILayout.Space(2);
+            EditorGUILayout.LabelField("Đường mở (Có Cổng Vào/Ra tự động):", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Thẳng ngang (X)"))
+                {
+                    WorkspaceCommand("Tạo đường thẳng ngang", next =>
+                    {
+                        JObject layout = A.Layout(next);
+                        layout["Paths"] = new JArray(A.StraightRoadCentered(Vector3.zero, 14f, true));
+                        A.SyncEnterExitGates(layout);
+                        _path = 0; _point = 0;
+                    });
+                }
+                if (GUILayout.Button("Thẳng dọc (Z)"))
+                {
+                    WorkspaceCommand("Tạo đường thẳng dọc", next =>
+                    {
+                        JObject layout = A.Layout(next);
+                        layout["Paths"] = new JArray(A.StraightRoadCentered(Vector3.zero, 14f, false));
+                        A.SyncEnterExitGates(layout);
+                        _path = 0; _point = 0;
+                    });
+                }
+                if (GUILayout.Button("Chữ S"))
+                {
+                    WorkspaceCommand("Tạo đường chữ S", next =>
+                    {
+                        JObject layout = A.Layout(next);
+                        layout["Paths"] = new JArray(A.SCurveRoad(Vector3.zero, 8f, 14f, _roadSmoothing));
+                        A.SyncEnterExitGates(layout);
+                        _path = 0; _point = 0;
+                    });
+                }
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Lượn sóng (Winding)"))
+                {
+                    WorkspaceCommand("Tạo đường lượn sóng", next =>
+                    {
+                        JObject layout = A.Layout(next);
+                        layout["Paths"] = new JArray(A.OpenWindingRoad(Vector3.zero, 10f, 16f, _roadSmoothing));
+                        A.SyncEnterExitGates(layout);
+                        _path = 0; _point = 0;
+                    });
+                }
+                if (GUILayout.Button("Băng chuyền cạnh hộp"))
+                {
+                    WorkspaceCommand("Băng chuyền cạnh hộp", next =>
+                    {
+                        A.FitStraightRoadBesideBoxes(A.Layout(next), 2.5f, true);
+                        _path = 0; _point = 0;
                     });
                 }
             }

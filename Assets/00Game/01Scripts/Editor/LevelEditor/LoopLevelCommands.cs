@@ -29,6 +29,12 @@ public static class LoopLevelCommands
         int count = 0;
         foreach (BoxInfo box in data.Boxes)
         {
+            CubeInfo top = box.PeekTopCube();
+            if (top != null && top.LinkedPairId > 0)
+            {
+                if (data.LinkedPair != null && box == data.LinkedPair.FirstBox && LinkedCubeLaunch.CanBegin(data, box, out _)) count++;
+                continue;
+            }
             if (box.State != BoxState.Free || box.IsEmpty() || !box.CanPopup()) continue;
             if (box.GetTopCubes(false).Count > 0) count++;
         }
@@ -98,6 +104,7 @@ public static class LoopLevelCommands
         JObject layout = A.Layout(root); JArray boxes = A.Array(layout, "Boxes");
         int[] indices = Selection(root, selection);
         var mapping = new Dictionary<int, int>(); var groups = new List<JObject>();
+        var copiedBoxes = new List<JObject>();
         var groupMap = new Dictionary<int, int>();
         if (wholeMechanism)
         {
@@ -122,8 +129,9 @@ public static class LoopLevelCommands
             foreach (JObject cube in A.Array(copy, "Cubes"))
                 if (A.Int(cube, "GroupKeyId") > 0)
                     cube["GroupKeyId"] = wholeMechanism && groupMap.TryGetValue(A.Int(cube, "GroupKeyId"), out int id) ? id : 0;
-            mapping[i] = boxes.Count; boxes.Add(copy);
+            mapping[i] = boxes.Count; boxes.Add(copy); copiedBoxes.Add(copy);
         }
+        LoopLinkedCubeAuthoring.RemapCopiedMembers(layout, copiedBoxes);
         foreach (JObject group in groups)
         {
             group["Id"] = groupMap[A.Int(group, "Id")];
@@ -306,6 +314,536 @@ public static class LoopLevelCommands
             if (cubes.Count > 0 && A.Int((JObject)cubes[cubes.Count - 1], "IsSecret") > 0) result.Add("Hộp " + i + ": khối thả đầu tiên đang bị ẩn.");
         }
         return result;
+    }
+
+    public static bool IsEnter(JObject layout, int index)
+    {
+        JArray map = A.Array(layout, "MapData");
+        if (index < 0 || index >= map.Count || !(map[index] is JObject item)) return false;
+        string name = item.Value<string>("Name");
+        return string.Equals(name, "Enter", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(name, "MapEnter", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsExit(JObject layout, int index)
+    {
+        JArray map = A.Array(layout, "MapData");
+        if (index < 0 || index >= map.Count || !(map[index] is JObject item)) return false;
+        string name = item.Value<string>("Name");
+        return string.Equals(name, "Exit", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(name, "MapExit", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsMapItem(JObject layout, int index)
+    {
+        return IsMapItem(layout, index, out _);
+    }
+
+    public static bool IsMapItem(JObject layout, int index, out string name)
+    {
+        name = null;
+        JArray map = A.Array(layout, "MapData");
+        if (index < 0 || index >= map.Count || !(map[index] is JObject item)) return false;
+        name = item.Value<string>("Name");
+        return !string.IsNullOrEmpty(name);
+    }
+
+    public static void DeleteMapItem(JObject layout, int index)
+    {
+        JArray map = A.Array(layout, "MapData");
+        if (index >= 0 && index < map.Count)
+        {
+            map.RemoveAt(index);
+        }
+    }
+
+    public static int AddBox(JObject root, int boxType, float defaultYaw = 0f)
+    {
+        JObject layout = A.Layout(root);
+        JArray boxes = A.Array(layout, "Boxes");
+        Vector3 newPos = Vector3.zero;
+        float yaw = defaultYaw;
+
+        if (boxes.Count > 0)
+        {
+            JObject lastBox = (JObject)boxes[boxes.Count - 1];
+            Vector3 lastPos = A.Vector(lastBox, "Position");
+            Vector3 lastRot = A.Vector(lastBox, "Rotation");
+            if (Mathf.Abs(lastRot.y - 270f) < 10f || Mathf.Abs(lastRot.y - 90f) < 10f)
+            {
+                newPos = lastPos + new Vector3(0, 0, -1.7f);
+                yaw = lastRot.y;
+            }
+            else
+            {
+                newPos = lastPos + new Vector3(2.4f, 0, 0);
+                yaw = lastRot.y;
+            }
+        }
+
+        JObject box = A.NewBox(newPos);
+        box["BoxType"] = boxType;
+        box["Rotation"] = A.Vector(new Vector3(0, yaw, 0));
+        boxes.Add(box);
+        return boxes.Count - 1;
+    }
+
+    public static void BalanceCubesToSetsOfFour(JObject root, out int modified, out string report)
+    {
+        modified = 0;
+        JObject layout = A.Layout(root);
+        JArray boxes = A.Array(layout, "Boxes");
+        if (boxes.Count == 0)
+        {
+            report = "Chưa có hộp nào để cân bằng.";
+            return;
+        }
+
+        var colorCounts = new Dictionary<int, int>();
+        for (int b = 0; b < boxes.Count; b++)
+        {
+            JObject box = (JObject)boxes[b];
+            if (A.Int(box, "BoxType") == 1) continue;
+            JArray cubes = A.Array(box, "Cubes");
+            for (int c = 0; c < cubes.Count; c++)
+            {
+                int type = A.Int((JObject)cubes[c], "Type");
+                if (type <= 0 || (type >= 201 && type <= 299)) continue;
+                if (!colorCounts.ContainsKey(type)) colorCounts[type] = 0;
+                colorCounts[type]++;
+            }
+        }
+
+        var reportLines = new List<string>();
+        foreach (var kv in colorCounts)
+        {
+            int color = kv.Key;
+            int count = kv.Value;
+            int rem = count % 4;
+            if (rem == 0) continue;
+
+            int needed = (4 - rem) % 4;
+            if (needed <= 2)
+            {
+                int added = 0;
+                for (int b = 0; b < boxes.Count && added < needed; b++)
+                {
+                    JObject box = (JObject)boxes[b];
+                    if (A.Int(box, "BoxType") != 0) continue;
+                    JArray cubes = A.Array(box, "Cubes");
+                    if (cubes.Count < 4)
+                    {
+                        cubes.Add(A.NewCube(color));
+                        box["Cubes"] = cubes;
+                        added++;
+                        modified++;
+                    }
+                }
+                if (added == needed)
+                {
+                    reportLines.Add("Màu " + color + ": thêm " + added + " khối -> tròn " + (count + added));
+                }
+                else
+                {
+                    // Rollback partial adds and remove remainder instead
+                    for (int b = boxes.Count - 1; b >= 0 && added > 0; b--)
+                    {
+                        JObject box = (JObject)boxes[b];
+                        if (A.Int(box, "BoxType") != 0) continue;
+                        JArray cubes = A.Array(box, "Cubes");
+                        if (cubes.Count > 0 && A.Int((JObject)cubes[cubes.Count - 1], "Type") == color)
+                        {
+                            cubes.RemoveAt(cubes.Count - 1);
+                            added--;
+                            modified--;
+                        }
+                    }
+                    int removed = 0;
+                    for (int b = boxes.Count - 1; b >= 0 && removed < rem; b--)
+                    {
+                        JObject box = (JObject)boxes[b];
+                        if (A.Int(box, "BoxType") != 0) continue;
+                        JArray cubes = A.Array(box, "Cubes");
+                        for (int c = cubes.Count - 1; c >= 0 && removed < rem; c--)
+                        {
+                            if (A.Int((JObject)cubes[c], "Type") == color)
+                            {
+                                cubes.RemoveAt(c);
+                                removed++;
+                                modified++;
+                            }
+                        }
+                        if (cubes.Count > 0)
+                        {
+                            ((JObject)cubes[cubes.Count - 1])["IsSecret"] = 0;
+                        }
+                    }
+                    reportLines.Add("Màu " + color + ": bớt " + removed + " khối (do bàn đầy) -> tròn " + (count - removed));
+                }
+            }
+            else
+            {
+                int removed = 0;
+                for (int b = boxes.Count - 1; b >= 0 && removed < rem; b--)
+                {
+                    JObject box = (JObject)boxes[b];
+                    if (A.Int(box, "BoxType") != 0) continue;
+                    JArray cubes = A.Array(box, "Cubes");
+                    for (int c = cubes.Count - 1; c >= 0 && removed < rem; c--)
+                    {
+                        if (A.Int((JObject)cubes[c], "Type") == color)
+                        {
+                            cubes.RemoveAt(c);
+                            removed++;
+                            modified++;
+                        }
+                    }
+                    if (cubes.Count > 0)
+                    {
+                        ((JObject)cubes[cubes.Count - 1])["IsSecret"] = 0;
+                    }
+                }
+                reportLines.Add("Màu " + color + ": bớt " + removed + " khối -> tròn " + (count - removed));
+            }
+        }
+
+        if (reportLines.Count == 0) report = "Tất cả các màu đã tròn bộ 4 (Hợp lệ).";
+        else report = string.Join("; ", reportLines);
+    }
+
+    public static void DistributeSolvableCubes(JObject root, IEnumerable<int> selection, int colorCount, int seed, int secretPercent = 0, int setsOfFour = -1)
+    {
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        int[] indices = Selection(root, selection);
+        if (indices.Length == 0)
+        {
+            indices = new int[boxes.Count];
+            for (int i = 0; i < boxes.Count; i++) indices[i] = i;
+        }
+
+        var normalIndices = new List<int>();
+        for (int i = 0; i < indices.Length; i++)
+        {
+            if (A.Int((JObject)boxes[indices[i]], "BoxType") == 0)
+                normalIndices.Add(indices[i]);
+        }
+        if (normalIndices.Count == 0) return;
+
+        colorCount = Mathf.Clamp(colorCount, 1, 14);
+        if (setsOfFour <= 0)
+        {
+            if (colorCount > 0 && colorCount < normalIndices.Count)
+            {
+                setsOfFour = colorCount;
+            }
+            else
+            {
+                setsOfFour = Mathf.Max(1, normalIndices.Count - 1);
+            }
+        }
+
+        var allCubes = new List<int>();
+        for (int s = 0; s < setsOfFour; s++)
+        {
+            int color = (s % colorCount) + 1;
+            for (int k = 0; k < 4; k++)
+            {
+                allCubes.Add(color);
+            }
+        }
+
+        var rand = new System.Random(seed);
+        for (int i = allCubes.Count - 1; i > 0; i--)
+        {
+            int j = rand.Next(i + 1);
+            int tmp = allCubes[i];
+            allCubes[i] = allCubes[j];
+            allCubes[j] = tmp;
+        }
+
+        int totalCubes = allCubes.Count;
+        int boxCount = normalIndices.Count;
+        int basePerBox = totalCubes / boxCount;
+        int extra = totalCubes % boxCount;
+        int[] targetCounts = new int[boxCount];
+        for (int i = 0; i < boxCount; i++)
+        {
+            targetCounts[i] = basePerBox + (i < extra ? 1 : 0);
+        }
+        for (int i = targetCounts.Length - 1; i > 0; i--)
+        {
+            int j = rand.Next(i + 1);
+            int temp = targetCounts[i];
+            targetCounts[i] = targetCounts[j];
+            targetCounts[j] = temp;
+        }
+
+        int cubeIdx = 0;
+        for (int n = 0; n < normalIndices.Count; n++)
+        {
+            JObject box = (JObject)boxes[normalIndices[n]];
+            int target = targetCounts[n];
+            int boxLockColor = A.Int(box, "LockColor");
+            var cubes = new JArray();
+            for (int c = 0; c < target && cubeIdx < allCubes.Count; c++)
+            {
+                if (boxLockColor > 0 && allCubes[cubeIdx] == boxLockColor)
+                {
+                    for (int swap = cubeIdx + 1; swap < allCubes.Count; swap++)
+                    {
+                        if (allCubes[swap] != boxLockColor)
+                        {
+                            int swapVal = allCubes[cubeIdx];
+                            allCubes[cubeIdx] = allCubes[swap];
+                            allCubes[swap] = swapVal;
+                            break;
+                        }
+                    }
+                }
+
+                JObject cube = A.NewCube(allCubes[cubeIdx++]);
+                bool canBeSecret = secretPercent > 0 && c < target - 1 && c < 2;
+                if (canBeSecret && rand.Next(100) < secretPercent)
+                {
+                    cube["IsSecret"] = 1;
+                }
+                cubes.Add(cube);
+            }
+            box["Cubes"] = cubes;
+        }
+    }
+
+    public static void FillSelectedBoxes(JObject root, IEnumerable<int> selection, int color)
+    {
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        int[] indices = Selection(root, selection);
+        if (indices.Length == 0) return;
+        for (int i = 0; i < indices.Length; i++)
+        {
+            JObject box = (JObject)boxes[indices[i]];
+            A.FillBox(box, color);
+        }
+    }
+
+    public static void ClearSelectedBoxes(JObject root, IEnumerable<int> selection)
+    {
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        int[] indices = Selection(root, selection);
+        if (indices.Length == 0)
+        {
+            indices = new int[boxes.Count];
+            for (int i = 0; i < boxes.Count; i++) indices[i] = i;
+        }
+        for (int i = 0; i < indices.Length; i++)
+        {
+            JObject box = (JObject)boxes[indices[i]];
+            box["Cubes"] = new JArray();
+        }
+    }
+
+    public static void SetBottomSecretCubes(JObject root, IEnumerable<int> selection, int layers = 1)
+    {
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        int[] indices = Selection(root, selection);
+        if (indices.Length == 0)
+        {
+            indices = new int[boxes.Count];
+            for (int i = 0; i < boxes.Count; i++) indices[i] = i;
+        }
+        for (int i = 0; i < indices.Length; i++)
+        {
+            JObject box = (JObject)boxes[indices[i]];
+            JArray cubes = A.Array(box, "Cubes");
+            for (int c = 0; c < cubes.Count; c++)
+            {
+                JObject cube = (JObject)cubes[c];
+                bool isHidden = layers > 0 && c < layers && c < cubes.Count - 1;
+                cube["IsSecret"] = isHidden ? 1 : 0;
+            }
+        }
+    }
+
+    public static void SetSelectedBoxesColorLock(JObject root, IEnumerable<int> selection, int lockColor)
+    {
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        int[] indices = Selection(root, selection);
+        if (indices.Length == 0) return;
+        for (int i = 0; i < indices.Length; i++)
+        {
+            JObject box = (JObject)boxes[indices[i]];
+            box["LockColor"] = lockColor;
+        }
+    }
+
+    public static void SetupScaffoldBoard(JObject root, int boxCount, int roadShape, int contentMode, int seed)
+    {
+        if (root == null) return;
+        JObject layout = A.Layout(root);
+        boxCount = Mathf.Clamp(boxCount, 2, 16);
+        roadShape = Mathf.Clamp(roadShape, 0, 5);
+        contentMode = Mathf.Clamp(contentMode, 0, 3);
+
+        JArray boxes = A.Array(layout, "Boxes");
+        boxes.Clear();
+        A.Array(layout, "Groups").Clear();
+        layout.Remove("Covers");
+
+        for (int i = 0; i < boxCount; i++)
+        {
+            boxes.Add(A.NewBox(Vector3.zero));
+        }
+
+        if (roadShape == 3)
+        {
+            if (boxCount <= 4)
+            {
+                LoopLevelBoardLayout.ArrangeSingleColumn(boxes, null, 0.4f, 270f);
+            }
+            else
+            {
+                LoopLevelBoardLayout.ArrangeGrid(boxes, null, 2, 0.4f, 0.6f);
+            }
+        }
+        else if (roadShape >= 4)
+        {
+            // Open winding or S-curve weaving through middle: boxes face inward towards center path
+            LoopLevelBoardLayout.ArrangeTwoBanks(boxes, null, 0.4f, 4.2f);
+        }
+        else if (boxCount <= 3)
+        {
+            LoopLevelBoardLayout.ArrangeSingleRow(boxes, null, 0.4f);
+        }
+        else
+        {
+            // Closed perimeter loop: boxes face outward so transfer arrows point directly into road
+            LoopLevelBoardLayout.ArrangeTwoColumnsFacingOutward(boxes, null, 0.4f, 0.4f);
+        }
+
+        Bounds content = LoopLevelBoardLayout.BoardBounds(layout);
+        Vector3 shift = new Vector3(content.center.x, 0, content.center.z);
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            JObject box = (JObject)boxes[i];
+            box["Position"] = A.Vector(A.Vector(box, "Position") - shift);
+        }
+        content = LoopLevelBoardLayout.BoardBounds(layout);
+
+        Vector3 center = new Vector3(content.center.x, 0.2f, content.center.z);
+        float clearance = 0.75f;
+        float width = content.size.x + 2f * clearance;
+        float depth = content.size.z + 2f * clearance;
+
+        if (roadShape == 0)
+        {
+            float radius = Mathf.Clamp(clearance * 0.85f, 0.4f, Mathf.Min(width, depth) * 0.25f);
+            layout["Paths"] = new JArray(A.RoundedRectangleRoad(center, width, depth, radius));
+            A.SyncEnterExitGates(layout);
+        }
+        else if (roadShape == 1)
+        {
+            float halfW = content.size.x * 0.5f;
+            float halfD = content.size.z * 0.5f;
+            float diag = Mathf.Sqrt(halfW * halfW + halfD * halfD);
+            float scale = (diag + clearance + 0.05f) / Mathf.Max(0.001f, diag);
+            layout["Paths"] = new JArray(A.OvalRoad(center, 2f * halfW * scale, 2f * halfD * scale));
+            A.SyncEnterExitGates(layout);
+        }
+        else if (roadShape == 2)
+        {
+            float maxDim = Mathf.Max(width, depth);
+            layout["Paths"] = new JArray(A.OvalRoad(center, maxDim, maxDim));
+            A.SyncEnterExitGates(layout);
+        }
+        else if (roadShape == 3)
+        {
+            A.FitStraightRoadBesideBoxes(layout, clearance, true);
+        }
+        else if (roadShape == 4)
+        {
+            layout["Paths"] = new JArray(A.SCurveRoad(center, width, depth));
+            A.SyncEnterExitGates(layout);
+        }
+        else if (roadShape == 5)
+        {
+            layout["Paths"] = new JArray(A.OpenWindingRoad(center, width, depth));
+            A.SyncEnterExitGates(layout);
+        }
+
+        layout["PathLength"] = Mathf.Clamp(boxCount, 4, 8);
+        AddCapacity(root);
+
+        LoopLevelBoardLayout.AutoBindBoxesToRoad(layout);
+
+        if (contentMode == 0)
+        {
+            int sets = Math.Max(1, boxCount - 1);
+            DistributeSolvableCubes(root, null, sets, seed, 0);
+        }
+        else if (contentMode == 1)
+        {
+            ClearSelectedBoxes(root, null);
+        }
+        else if (contentMode == 2)
+        {
+            int sets = Math.Max(2, boxCount - 1);
+            DistributeSolvableCubes(root, null, sets, seed, 0);
+
+            var unlockedColors = new HashSet<int>();
+            for (int b = 1; b < boxes.Count; b++)
+            {
+                JArray cubes = A.Array((JObject)boxes[b], "Cubes");
+                for (int c = 0; c < cubes.Count; c++)
+                {
+                    unlockedColors.Add(A.Int((JObject)cubes[c], "Type"));
+                }
+            }
+
+            int keyColor = 0;
+            foreach (int c in unlockedColors)
+            {
+                if (c > 0)
+                {
+                    keyColor = c;
+                    break;
+                }
+            }
+
+            if (keyColor > 0)
+            {
+                JObject box0 = (JObject)boxes[0];
+                box0["LockColor"] = keyColor;
+
+                JArray box0Cubes = A.Array(box0, "Cubes");
+                for (int c = 0; c < box0Cubes.Count; c++)
+                {
+                    if (A.Int((JObject)box0Cubes[c], "Type") == keyColor)
+                    {
+                        for (int b = 1; b < boxes.Count; b++)
+                        {
+                            JArray otherCubes = A.Array((JObject)boxes[b], "Cubes");
+                            for (int oc = 0; oc < otherCubes.Count; oc++)
+                            {
+                                int oType = A.Int((JObject)otherCubes[oc], "Type");
+                                if (oType != keyColor)
+                                {
+                                    box0Cubes[c]["Type"] = oType;
+                                    otherCubes[oc]["Type"] = keyColor;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (contentMode == 3)
+        {
+            int sets = Math.Max(1, boxCount - 1);
+            DistributeSolvableCubes(root, null, sets, seed, 25);
+        }
+
+        Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);
+        layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1;
     }
 }
 #endif

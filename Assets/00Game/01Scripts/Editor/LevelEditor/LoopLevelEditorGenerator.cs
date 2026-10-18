@@ -30,6 +30,14 @@ public sealed partial class LoopLevelEditorWindow
         Header("Tạo tự động — chọn thiết lập, tạo và dùng kết quả");
         using (new EditorGUI.DisabledScope(running))
         {
+            Color prevBg = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.4f, 0.85f, 0.5f);
+            if (GUILayout.Button($"⭐ Áp dụng thiết lập chuẩn cho Level {_generatedLevelNumber} (Tiến trình chính thức)"))
+            {
+                s.ApplyOfficial30Rules(_generatedLevelNumber);
+            }
+            GUI.backgroundColor = prevBg;
+
             if (GUILayout.Button("Thiết lập theo bộ 300 level: hộp thường, không Single / Long"))
             { s.ApplyDifficulty(1); s.SingleBoxes = s.LongBoxes = 0; }
             int difficulty = EditorGUILayout.Popup("Thiết lập độ khó", s.Difficulty, new[] { "Dễ", "Thường", "Khó", "Rất khó" });
@@ -40,10 +48,17 @@ public sealed partial class LoopLevelEditorWindow
                 if (GUILayout.Button("Seed mới", GUILayout.Width(90))) s.Seed = Guid.NewGuid().GetHashCode() & int.MaxValue;
             }
             _generatedLevelNumber = Mathf.Max(1, EditorGUILayout.IntField("Số màn chơi", _generatedLevelNumber));
-            s.BoxCount = EditorGUILayout.IntSlider("Tổng số hộp", s.BoxCount, 3, 24);
-            s.ColorCount = EditorGUILayout.IntSlider("Số màu thường", s.ColorCount, 2, 14);
+            s.BoxCount = EditorGUILayout.IntSlider("Tổng số hộp", s.BoxCount, 2, 24);
+            s.ColorCount = EditorGUILayout.IntSlider("Số màu thường", s.ColorCount, 1, 14);
             s.EmptyBoxes = EditorGUILayout.IntSlider("Số hộp trống dự phòng", s.EmptyBoxes, 0, 4);
-            s.RoadShape = EditorGUILayout.Popup("Hình đường", s.RoadShape, new[] { "Chữ nhật bo góc", "Bầu dục", "Tròn" });
+            s.RoadShape = EditorGUILayout.Popup("Hình đường", s.RoadShape, new[] {
+                "Chữ nhật bo góc (Đóng)",
+                "Bầu dục (Đóng)",
+                "Tròn (Đóng)",
+                "Đường thẳng mở (Cổng Vào/Ra)",
+                "Đường chữ S mở (Cổng Vào/Ra)",
+                "Đường uốn lượn mở (Cổng Vào/Ra)"
+            });
             s.BoardLayout = EditorGUILayout.Popup("Cách xếp hộp", s.BoardLayout, new[] { "Hai dãy hướng ra đường", "Các hàng cân đối" });
             s.BoxGap = EditorGUILayout.Slider("Khoảng cách giữa mép hộp", s.BoxGap, .35f, 2);
             s.RoadClearance = EditorGUILayout.Slider("Khoảng cách tới thành đường", s.RoadClearance, .05f, 3);
@@ -249,9 +264,16 @@ public sealed partial class LoopLevelEditorWindow
                 var settings = _generatorSettings.Copy();
                 if (_batchAutoDifficulty)
                 {
-                    float ratio = (float)i / Math.Max(1, _batchCount - 1);
-                    int diff = ratio < 0.25f ? 0 : ratio < 0.65f ? 1 : ratio < 0.9f ? 2 : 3;
-                    settings.ApplyDifficulty(diff);
+                    if (levelNum <= 30)
+                    {
+                        settings.ApplyOfficial30Rules(levelNum);
+                    }
+                    else
+                    {
+                        float ratio = (float)i / Math.Max(1, _batchCount - 1);
+                        int diff = ratio < 0.25f ? 0 : ratio < 0.65f ? 1 : ratio < 0.9f ? 2 : 3;
+                        settings.ApplyDifficulty(diff);
+                    }
                 }
                 settings.Seed = unchecked((int)(DateTime.UtcNow.Ticks & 0x7FFFFFFF) + levelNum * 7919);
                 settings.VerifySolution = false; // Fast batch generation with guaranteed DAG locks

@@ -60,7 +60,11 @@ public static class LoopLevelAuthoring
         if (levelNumber < 1) throw new ArgumentOutOfRangeException(nameof(levelNumber));
         JObject draft = (JObject)source.DeepClone();
         draft["level_number"] = levelNumber; draft["puzzle_id"] = levelNumber;
-        if (!preserveMap) Layout(draft).Remove("MapData");
+        if (!preserveMap)
+        {
+            Layout(draft).Remove("MapData");
+            SyncEnterExitGates(Layout(draft));
+        }
         if (draft["editor_generator"] is JObject proof)
         { proof["verified"] = false; proof.Remove("solution_clicks"); }
         return draft;
@@ -291,6 +295,12 @@ public static class LoopLevelAuthoring
         }
     }
 
+    public static void ToggleRoadClosed(JObject layout, JObject path, float smoothing = 0.6f)
+    {
+        ToggleRoadClosed(path, smoothing);
+        if (layout != null) SyncEnterExitGates(layout);
+    }
+
     public static void CenterRoad(JObject path, Vector3 targetCenter)
     {
         JArray points = Array(path, "ControlPoints");
@@ -357,6 +367,170 @@ public static class LoopLevelAuthoring
             center + new Vector3(hx, 0, hz)
         };
         return RoadFromPositions(list, false, smoothing);
+    }
+
+    public static JObject StraightRoad(Vector3 start, Vector3 end)
+    {
+        var list = new[] { start, end };
+        return RoadFromPositions(list, false, 0f);
+    }
+
+    public static JObject StraightRoadCentered(Vector3 center, float length, bool horizontal = true)
+    {
+        float half = length * 0.5f;
+        Vector3 start = horizontal ? center + new Vector3(-half, 0.2f, 0) : center + new Vector3(0, 0.2f, half);
+        Vector3 end = horizontal ? center + new Vector3(half, 0.2f, 0) : center + new Vector3(0, 0.2f, -half);
+        return StraightRoad(start, end);
+    }
+
+    public static JObject SCurveRoad(Vector3 center, float width, float depth, float smoothing = 0.6f)
+    {
+        CheckRoadSize(width, depth);
+        float hx = width * 0.5f, hz = depth * 0.5f;
+        var list = new[]
+        {
+            center + new Vector3(-hx, 0.2f, hz),
+            center + new Vector3(-hx * 0.4f, 0.2f, hz * 0.4f),
+            center + new Vector3(0f, 0.2f, 0f),
+            center + new Vector3(hx * 0.4f, 0.2f, -hz * 0.4f),
+            center + new Vector3(hx, 0.2f, -hz)
+        };
+        return RoadFromPositions(list, false, smoothing);
+    }
+
+    public static JObject OpenWindingRoad(Vector3 center, float width, float depth, float smoothing = 0.6f)
+    {
+        CheckRoadSize(width, depth);
+        float hx = width * 0.5f, hz = depth * 0.5f;
+        var list = new[]
+        {
+            center + new Vector3(-hx, 0.2f, hz),
+            center + new Vector3(-hx * 0.5f, 0.2f, 0f),
+            center + new Vector3(0f, 0.2f, hz * 0.4f),
+            center + new Vector3(hx * 0.5f, 0.2f, -hz * 0.4f),
+            center + new Vector3(hx, 0.2f, 0f),
+            center + new Vector3(hx, 0.2f, -hz)
+        };
+        return RoadFromPositions(list, false, smoothing);
+    }
+
+    public static void FitStraightRoadBesideBoxes(JObject layout, float clearance = 1.8f, bool onLeft = true)
+    {
+        JArray boxes = Array(layout, "Boxes");
+        if (boxes.Count == 0) throw new FormatException("Thêm hộp trước khi tạo băng chuyền thẳng.");
+        Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, false);
+        float x = onLeft ? (bounds.min.x - clearance) : (bounds.max.x + clearance);
+        float zStart = bounds.max.z + 1.2f;
+        float zEnd = bounds.min.z - 1.2f;
+        Vector3 p0 = new Vector3(x, 0.2f, zStart);
+        Vector3 p1 = new Vector3(x, 0.2f, zEnd);
+        layout["Paths"] = new JArray(StraightRoad(p0, p1));
+        Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);
+        layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1;
+        SyncEnterExitGates(layout);
+    }
+
+    public static void SyncEnterExitGates(JObject layout)
+    {
+        if (layout == null) return;
+        JArray paths = Array(layout, "Paths");
+        if (paths.Count == 0) return;
+        JObject road = (JObject)paths[0];
+        JArray points = Array(road, "ControlPoints");
+        if (points.Count < 2) return;
+        bool isCircle = Int(road, "IsCircle") > 0;
+        JArray map = layout["MapData"] as JArray;
+        if (map == null)
+        {
+            map = new JArray();
+            layout["MapData"] = map;
+        }
+
+        if (isCircle)
+        {
+            for (int i = map.Count - 1; i >= 0; i--)
+            {
+                string name = map[i]?.Value<string>("Name");
+                if (string.Equals(name, "Enter", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, "MapEnter", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, "Exit", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, "MapExit", StringComparison.OrdinalIgnoreCase))
+                {
+                    map.RemoveAt(i);
+                }
+            }
+            return;
+        }
+
+        Vector3 p0 = Vector((JObject)points[0], "Position");
+        Vector3 p1 = Vector((JObject)points[1], "Position");
+        Vector3 pEnd = Vector((JObject)points[points.Count - 1], "Position");
+        Vector3 pPrev = Vector((JObject)points[points.Count - 2], "Position");
+
+        Vector3 startDir = p1 - p0;
+        startDir.y = 0;
+        if (startDir.sqrMagnitude < 0.0001f) startDir = Vector3.forward;
+        else startDir.Normalize();
+
+        Vector3 endDir = pEnd - pPrev;
+        endDir.y = 0;
+        if (endDir.sqrMagnitude < 0.0001f) endDir = Vector3.forward;
+        else endDir.Normalize();
+
+        float enterYaw = (Mathf.Atan2(startDir.x, startDir.z) * Mathf.Rad2Deg + 90f + 360f) % 360f;
+        float exitYaw = (Mathf.Atan2(endDir.x, endDir.z) * Mathf.Rad2Deg - 90f + 360f) % 360f;
+
+        Vector3 enterPos = new Vector3(p0.x, 0f, p0.z);
+        Vector3 exitPos = new Vector3(pEnd.x, 0f, pEnd.z);
+
+        JObject enterItem = null;
+        JObject exitItem = null;
+        for (int i = 0; i < map.Count; i++)
+        {
+            string name = map[i]?.Value<string>("Name");
+            if (enterItem == null && (string.Equals(name, "Enter", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "MapEnter", StringComparison.OrdinalIgnoreCase)))
+            {
+                enterItem = (JObject)map[i];
+            }
+            else if (exitItem == null && (string.Equals(name, "Exit", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "MapExit", StringComparison.OrdinalIgnoreCase)))
+            {
+                exitItem = (JObject)map[i];
+            }
+        }
+
+        if (enterItem == null)
+        {
+            enterItem = new JObject
+            {
+                ["Name"] = "Enter",
+                ["Position"] = Vector(enterPos),
+                ["Rotation"] = Vector(new Vector3(0, enterYaw, 0)),
+                ["Scale"] = Vector(Vector3.one)
+            };
+            map.Add(enterItem);
+        }
+        else
+        {
+            enterItem["Position"] = Vector(enterPos);
+            enterItem["Rotation"] = Vector(new Vector3(0, enterYaw, 0));
+        }
+
+        if (exitItem == null)
+        {
+            exitItem = new JObject
+            {
+                ["Name"] = "Exit",
+                ["Position"] = Vector(exitPos),
+                ["Rotation"] = Vector(new Vector3(0, exitYaw, 0)),
+                ["Scale"] = Vector(Vector3.one)
+            };
+            map.Add(exitItem);
+        }
+        else
+        {
+            exitItem["Position"] = Vector(exitPos);
+            exitItem["Rotation"] = Vector(new Vector3(0, exitYaw, 0));
+        }
     }
 
     public static JObject HourglassRoad(Vector3 center, float width, float depth, float waist = 1.8f, float smoothing = 0.6f)
@@ -587,6 +761,9 @@ public static class LoopLevelAuthoring
 
     public static void RemoveBox(JObject root, int index)
     {
+        JObject removedBox = (JObject)Array(Layout(root), "Boxes")[index];
+        foreach (JObject cube in Array(removedBox, "Cubes"))
+            LoopLinkedCubeAuthoring.Unlink(root, Int(cube, "LinkedPairId"));
         JObject layout = Layout(root); Array(layout, "Boxes").RemoveAt(index);
         foreach (string key in new[] { "Groups", "Covers" })
         {
@@ -600,6 +777,7 @@ public static class LoopLevelAuthoring
     }
     public static void RemoveCube(JObject box, int index)
     {
+        LoopLinkedCubeAuthoring.BeforeDeleteCube(box, index);
         Array(box, "Cubes").RemoveAt(index);
         var links = Array(box, "LinkedCubes");
         for (int i = links.Count - 1; i >= 0; i--)
@@ -702,6 +880,33 @@ public static class LoopLevelAuthoring
                 if (points.Count > 128) errors.Add("Mỗi đường có tối đa 128 điểm trong trình sửa này.");
                 foreach (JObject point in points)
                     foreach (string key in new[] { "Position", "InTangent", "OutTangent" }) CheckVector(point, key, errors);
+                if (Int(path, "IsCircle") == 0)
+                {
+                    JArray map = Array(layout, "MapData");
+                    bool hasEnter = false;
+                    bool hasExit = false;
+                    for (int m = 0; m < map.Count; m++)
+                    {
+                        if (map[m] is JObject item)
+                        {
+                            string name = item.Value<string>("Name");
+                            if (string.Equals(name, "Enter", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(name, "MapEnter", StringComparison.OrdinalIgnoreCase))
+                            {
+                                hasEnter = true;
+                            }
+                            else if (string.Equals(name, "Exit", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(name, "MapExit", StringComparison.OrdinalIgnoreCase))
+                            {
+                                hasExit = true;
+                            }
+                        }
+                    }
+                    if (!hasEnter || !hasExit)
+                    {
+                        warnings.Add("Đường mở (IsCircle=0) đang thiếu Cổng Vào (Enter) hoặc Cổng Ra (Exit). Hãy bấm 'Cập nhật Cổng' để tự thêm.");
+                    }
+                }
             }
             foreach (JObject box in boxes)
             {
@@ -758,7 +963,22 @@ public static class LoopLevelAuthoring
             }
             if (boxes.All(box => ((JObject)box)["Cubes"] is JArray cubes && cubes.Count == 0)) warnings.Add("Mọi hộp đều trống.");
             warnings.Add("Kiểm tra cấu trúc không đảm bảo màn chơi có lời giải. Hãy chơi thử trong Play Mode.");
-            ExportedPuzzleJsonDecoder.Decode(root.ToString(Formatting.None));
+            Puzzle decoded = ExportedPuzzleJsonDecoder.Decode(root.ToString(Formatting.None));
+            LinkedCubePair.Validate(decoded);
+            if (decoded.Boxes.Any(box => box.Cubes.Any(cube => cube.LinkedPairId > 0)))
+            {
+                if (errors.Count == 0)
+                {
+                    // Resolve automatic entrances using the same path builder as gameplay.
+                    // DecodeDetached restores GameData.Current even when validation throws.
+                    GameData preview = LoopLevelGenerator.DecodeDetached(root);
+                    LinkedCubePair pair = preview.LinkedPair;
+                    if (preview.PathPoints.Count < 2 || pair.FirstBox.PathIndex < 0 || pair.SecondBox.PathIndex < 0 ||
+                        pair.FirstBox.PathIndex >= preview.PathPoints.Count || pair.SecondBox.PathIndex >= preview.PathPoints.Count)
+                        errors.Add("Cube đôi cần hai điểm vào băng chuyền hợp lệ.");
+                }
+                warnings.Add("Cube đôi: kiểm tra hai khay kề nhau trong Game View; dây phải rõ và không xuyên khay thứ ba. Validator chưa kiểm tra hình học này.");
+            }
         }
         catch (Exception exception) { errors.Add("Dữ liệu không hợp lệ: " + exception.Message); }
         return errors;

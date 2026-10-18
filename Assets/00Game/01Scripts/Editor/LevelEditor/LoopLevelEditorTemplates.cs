@@ -26,6 +26,10 @@ public sealed partial class LoopLevelEditorWindow
     private const int TemplatePageSize = 8;
     [SerializeField] private bool _templatePreserveMap = true;
     [SerializeField] private int _templateMinBoxes = 2, _templateMaxBoxes = 24, _templateMechanisms;
+    [SerializeField] private int _templateSubTab;
+    [SerializeField] private int _selectedOfficialLevel = 1;
+    [SerializeField] private int _selectedArchetypeIndex;
+    private Vector2 _archetypeScroll;
 
     private void RefreshTemplates()
     {
@@ -56,8 +60,180 @@ public sealed partial class LoopLevelEditorWindow
     {
         if (_templates == null) RefreshTemplates();
         if (_templateTargetNumber < 1) _templateTargetNumber = NextLevelNumber();
-        Header("Bắt đầu từ màn chơi có sẵn");
-        EditorGUILayout.HelpBox("Chọn màn có đường và cơ chế bạn cần. Tạo bản nháp sẽ sao chép hộp, đường, khóa và chìa khóa. Sửa bản sao ở tab Hộp, chơi thử rồi Lưu thành.", MessageType.Info);
+        Header("Bắt đầu từ màn chơi mẫu & Archetypes");
+        _templateSubTab = GUILayout.Toolbar(_templateSubTab, new[] { "13 Mẫu Archetypes (Level 1–30)", "Chọn nhanh Level 1–30 gốc", "Duyệt thư viện màn chơi" });
+        EditorGUILayout.Space(2);
+        switch (_templateSubTab)
+        {
+            case 0: DrawArchetypeTemplates(); break;
+            case 1: DrawOfficialLevelsShortcuts(); break;
+            default: DrawLibraryTemplates(); break;
+        }
+    }
+
+    private void DrawArchetypeTemplates()
+    {
+        EditorGUILayout.HelpBox("13 Mẫu thiết kế chuẩn hóa theo cấu trúc của 30 màn đầu tiên: Băng chuyền mở có cổng Vào/Ra, vòng khép kín oval/chữ nhật/chữ U, 1 hàng/1 cột/2 dãy đối xứng, cùng cơ chế khối ẩn và khóa màu hợp lệ.", MessageType.Info);
+        var archetypes = LoopLevelArchetypes.All;
+        if (archetypes.Count == 0) return;
+        _selectedArchetypeIndex = Mathf.Clamp(_selectedArchetypeIndex, 0, archetypes.Count - 1);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            using (var scroll = new EditorGUILayout.ScrollViewScope(_archetypeScroll, GUILayout.Width(270), GUILayout.Height(390)))
+            {
+                _archetypeScroll = scroll.scrollPosition;
+                for (int i = 0; i < archetypes.Count; i++)
+                {
+                    var a = archetypes[i];
+                    bool isSelected = _selectedArchetypeIndex == i;
+                    string label = a.Title;
+                    if (GUILayout.Toggle(isSelected, label, "Button", GUILayout.Height(28)))
+                    {
+                        _selectedArchetypeIndex = i;
+                    }
+                }
+            }
+
+            var selected = archetypes[_selectedArchetypeIndex];
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                Header(selected.Title);
+                EditorGUILayout.LabelField(selected.Description, EditorStyles.wordWrappedLabel);
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Số hộp đích:", selected.BoxCount + " hộp");
+                EditorGUILayout.LabelField("Số màu sử dụng:", selected.ColorCount + " màu");
+                EditorGUILayout.LabelField("Kiểu đường:", selected.IsOpenRoad ? "Đường mở (Open Road có Cổng Vào & Ra)" : "Vòng khép kín (Closed Loop)");
+                string mech = (selected.HasSecrets ? "Khối ẩn (Secret)  " : "") + (selected.HasLocks ? "Khóa màu (Color Lock)  " : "");
+                if (string.IsNullOrEmpty(mech)) mech = "Cơ bản";
+                EditorGUILayout.LabelField("Cơ chế đặc biệt:", mech);
+                EditorGUILayout.Space(6);
+
+                _templateTargetNumber = Mathf.Max(1, EditorGUILayout.IntField("Số màn chơi mới", _templateTargetNumber));
+                EditorGUILayout.Space(4);
+
+                Color prev = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.3f, 0.85f, 0.45f);
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || HasRawChanges || _drawingRoad || EditorApplication.isCompiling))
+                {
+                    if (GUILayout.Button("⚡ Tạo Level từ Archetype này (Áp dụng ngay)", GUILayout.Height(36)))
+                    {
+                        ApplyArchetype(selected, _templateTargetNumber);
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                GUI.backgroundColor = prev;
+            }
+        }
+    }
+
+    private void ApplyArchetype(LoopLevelArchetypes.ArchetypeDef archetype, int levelNumber)
+    {
+        if (archetype == null || archetype.Create == null) return;
+        string targetPath = Path.Combine(A.LevelFolder, "Level " + levelNumber + ".json");
+        if (File.Exists(targetPath))
+        {
+            if (!EditorUtility.DisplayDialog("Ghi đè màn chơi?", "Màn " + levelNumber + " đã tồn tại. Ghi đè bằng màn mới từ archetype này?", "Ghi đè", "Hủy"))
+                return;
+        }
+        JObject draft = archetype.Create(levelNumber);
+        if (!ConfirmReplace()) return;
+        BeginTemplateDraft(draft);
+        _workspace = true;
+        _editorMode = 0;
+        _status = "Đã tạo màn chơi mới từ: " + archetype.Title;
+    }
+
+    private void DrawOfficialLevelsShortcuts()
+    {
+        EditorGUILayout.HelpBox("Chọn nhanh trong 30 màn chơi gốc có sẵn. Bấm để mở sửa trực tiếp hoặc nhân bản sang màn mới.", MessageType.Info);
+        int columns = 6;
+        for (int row = 0; row < 5; row++)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                for (int col = 0; col < columns; col++)
+                {
+                    int lvl = row * columns + col + 1;
+                    bool isSelected = _selectedOfficialLevel == lvl;
+                    string filePath = Path.Combine(A.LevelFolder, "Level " + lvl + ".json");
+                    bool exists = File.Exists(filePath);
+                    Color prevBg = GUI.backgroundColor;
+                    if (isSelected) GUI.backgroundColor = Color.cyan;
+                    else if (!exists) GUI.backgroundColor = new Color(0.6f, 0.6f, 0.6f);
+                    if (GUILayout.Toggle(isSelected, "Màn " + lvl, "Button", GUILayout.Height(24)))
+                    {
+                        if (_selectedOfficialLevel != lvl)
+                        {
+                            _selectedOfficialLevel = lvl;
+                            _templatePreviewRoot = null;
+                        }
+                    }
+                    GUI.backgroundColor = prevBg;
+                }
+            }
+        }
+
+        EditorGUILayout.Space(6);
+        string path = Path.Combine(A.LevelFolder, "Level " + _selectedOfficialLevel + ".json");
+        if (!File.Exists(path))
+        {
+            EditorGUILayout.HelpBox("Không tìm thấy file Level " + _selectedOfficialLevel + ".json trong thư mục Resources/LevelData.", MessageType.Warning);
+            return;
+        }
+
+        try
+        {
+            if (_templatePreviewRoot == null) _templatePreviewRoot = A.Parse(File.ReadAllText(path));
+            JObject layout = A.Layout(_templatePreviewRoot);
+            JArray boxes = A.Array(layout, "Boxes");
+            JArray paths = A.Array(layout, "Paths");
+            bool isCircle = paths.Count > 0 && A.Int((JObject)paths[0], "IsCircle") > 0;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                Header("Màn " + _selectedOfficialLevel + " — " + Path.GetFileName(path));
+                EditorGUILayout.LabelField("Cấu trúc:", boxes.Count + " hộp · " + (isCircle ? "Vòng khép kín" : "Đường mở (Open Road)"));
+                DrawTemplateDiagram(_templatePreviewRoot, GUILayoutUtility.GetRect(100, 180, GUILayout.ExpandWidth(true)));
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    Color prev = GUI.backgroundColor;
+                    GUI.backgroundColor = new Color(0.35f, 0.75f, 1f);
+                    if (GUILayout.Button("▶ Mở sửa trực tiếp (Vào Bàn 2D)", GUILayout.Height(30)))
+                    {
+                        if (ConfirmReplace())
+                        {
+                            TryOpen(path);
+                            _editorMode = 0;
+                            _workspace = true;
+                            GUIUtility.ExitGUI();
+                        }
+                    }
+                    GUI.backgroundColor = prev;
+
+                    _templateTargetNumber = Mathf.Max(1, EditorGUILayout.IntField("Số màn mới", _templateTargetNumber, GUILayout.Width(130)));
+                    if (GUILayout.Button("Nhân bản sang màn mới", GUILayout.Height(30)))
+                    {
+                        if (TryUseTemplate(path, _templateTargetNumber))
+                        {
+                            _editorMode = 0;
+                            _workspace = true;
+                            GUIUtility.ExitGUI();
+                        }
+                    }
+                }
+            }
+        }
+        catch (ExitGUIException) { throw; }
+        catch (Exception ex)
+        {
+            EditorGUILayout.HelpBox("Lỗi đọc màn: " + ex.Message, MessageType.Warning);
+        }
+    }
+
+    private void DrawLibraryTemplates()
+    {
         using (new EditorGUILayout.HorizontalScope())
         {
             string search = EditorGUILayout.TextField("Số màn / tên file", _templateSearch);
@@ -130,8 +306,12 @@ public sealed partial class LoopLevelEditorWindow
         try
         {
             if (EditorApplication.isPlaying || HasRawChanges || _drawingRoad) return false;
-            if (File.Exists(Path.Combine(A.LevelFolder, "Level " + levelNumber + ".json")))
-                throw new FormatException("Số màn này đã tồn tại. Chọn số chưa dùng cho bản nháp mới.");
+            string targetPath = Path.Combine(A.LevelFolder, "Level " + levelNumber + ".json");
+            if (File.Exists(targetPath))
+            {
+                if (!EditorUtility.DisplayDialog("Ghi đè màn chơi?", "Màn " + levelNumber + " đã tồn tại. Bạn có muốn ghi đè lên màn này không?", "Ghi đè", "Hủy"))
+                    return false;
+            }
             JObject draft = A.FromTemplate(A.Parse(File.ReadAllText(path)), levelNumber, _templatePreserveMap);
             List<string> errors = A.Validate(draft, out _);
             if (errors.Count > 0) throw new FormatException(string.Join("\n", errors.Take(5)));
