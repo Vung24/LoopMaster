@@ -405,6 +405,7 @@ public sealed partial class LoopLevelEditorWindow
                     string label = occupied ? A.Int(cube, "Type").ToString() : "+";
                     if (occupied && A.Int(cube, "IsSecret") > 0) label += "?";
                     if (occupied && A.Int(cube, "GroupKeyId") > 0) label += "K" + A.Int(cube, "GroupKeyId");
+                    if (occupied && A.Int(cube, "LinkedPairId") > 0) label += "🔗";
                     bool concealed = _workspace && _canvasPlayerView && occupied && A.Int(cube, "IsSecret") > 0;
                     if (concealed) label = "?";
                     Rect cell = GUILayoutUtility.GetRect(34, 28, GUILayout.MaxWidth(48)); Event e = Event.current;
@@ -419,7 +420,8 @@ public sealed partial class LoopLevelEditorWindow
                     if (GUI.enabled && occupied && e.type == EventType.MouseDown && e.button == 1 && cell.Contains(e.mousePosition))
                     { A.RemoveCube(box, c); _box = b; e.Use(); return; }
                     Color previous = GUI.backgroundColor; GUI.backgroundColor = concealed ? Color.gray : occupied ? A.ColorFor(A.Int(cube, "Type")) : Color.white;
-                    bool click = GUI.Button(cell, new GUIContent(label, "Hộp " + b + ", khối " + c)); GUI.backgroundColor = previous;
+                    string tooltip = "Hộp " + b + ", khối " + c + (occupied && A.Int(cube, "LinkedPairId") > 0 ? " [Cube đôi #" + A.Int(cube, "LinkedPairId") + "]" : "");
+                    bool click = GUI.Button(cell, new GUIContent(label, tooltip)); GUI.backgroundColor = previous;
                     if (click)
                     {
                         _box = b;
@@ -434,6 +436,7 @@ public sealed partial class LoopLevelEditorWindow
                 if (A.Int(box, "IsEnterOnly") > 0) rule += " Vào";
                 if (A.Int(box, "LimitedColor") > 0) rule += " Màu " + A.Int(box, "LimitedColor");
                 if (A.Int(box, "IsAdjacentLocked") > 0) rule += " Kề";
+                if (LoopLinkedCubeAuthoring.HasLinkedCube(box)) rule += " 🔗";
                 GUILayout.Label(rule, EditorStyles.miniLabel, GUILayout.MaxWidth(105));
             }
         }

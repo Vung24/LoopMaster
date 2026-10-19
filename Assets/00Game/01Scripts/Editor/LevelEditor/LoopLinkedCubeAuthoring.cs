@@ -5,6 +5,24 @@ using Newtonsoft.Json.Linq;
 using UnityEngine;
 using A = LoopLevelAuthoring;
 
+public readonly struct LinkedCubePairRef
+{
+    public readonly int Id;
+    public readonly int BoxA;
+    public readonly int CubeA;
+    public readonly int BoxB;
+    public readonly int CubeB;
+
+    public LinkedCubePairRef(int id, int boxA, int cubeA, int boxB, int cubeB)
+    {
+        Id = id;
+        BoxA = boxA;
+        CubeA = cubeA;
+        BoxB = boxB;
+        CubeB = cubeB;
+    }
+}
+
 public static class LoopLinkedCubeAuthoring
 {
     [UnityEditor.MenuItem("LoopMaster/Cube đôi/1. Hai khối đã lộ")]
@@ -29,26 +47,142 @@ public static class LoopLinkedCubeAuthoring
         if (!LoopLevelPlaytest.Play(root, out string error)) Debug.LogError(error);
     }
 
+    public static bool HasLinkedCube(JObject box)
+    {
+        if (box == null) return false;
+        JArray cubes = box["Cubes"] as JArray;
+        if (cubes == null) return false;
+        for (int i = 0; i < cubes.Count; i++)
+        {
+            if (cubes[i] is JObject cube && A.Int(cube, "LinkedPairId") > 0) return true;
+        }
+        return false;
+    }
+
+    public static bool TryGetLinkedPair(JObject layout, out int id, out int boxA, out int cubeA, out int boxB, out int cubeB)
+    {
+        bool found = TryGetLinkedPair(layout, out LinkedCubePairRef pairRef);
+        id = pairRef.Id;
+        boxA = pairRef.BoxA;
+        cubeA = pairRef.CubeA;
+        boxB = pairRef.BoxB;
+        cubeB = pairRef.CubeB;
+        return found;
+    }
+
+    public static bool TryGetLinkedPair(JObject layout, out LinkedCubePairRef pairRef)
+    {
+        int id = 0, boxA = -1, cubeA = -1, boxB = -1, cubeB = -1;
+        pairRef = new LinkedCubePairRef(id, boxA, cubeA, boxB, cubeB);
+        if (layout == null) return false;
+        JArray boxes = A.Array(layout, "Boxes");
+        for (int b = 0; b < boxes.Count; b++)
+        {
+            JArray cubes = A.Array((JObject)boxes[b], "Cubes");
+            for (int c = 0; c < cubes.Count; c++)
+            {
+                int pairId = A.Int((JObject)cubes[c], "LinkedPairId");
+                if (pairId <= 0) continue;
+                if (id == 0)
+                {
+                    id = pairId;
+                    boxA = b;
+                    cubeA = c;
+                }
+                else if (pairId == id)
+                {
+                    boxB = b;
+                    cubeB = c;
+                    pairRef = new LinkedCubePairRef(id, boxA, cubeA, boxB, cubeB);
+                    return true;
+                }
+            }
+        }
+        pairRef = new LinkedCubePairRef(id, boxA, cubeA, boxB, cubeB);
+        return false;
+    }
+
+    public static bool TryLinkTopCubes(JObject root, int boxA, int boxB, out string error)
+    {
+        error = null;
+        if (root == null) { error = "Dữ liệu màn chơi rỗng."; return false; }
+        JObject layout = A.Layout(root);
+        JArray boxes = A.Array(layout, "Boxes");
+        if (boxA == boxB) { error = "Chọn hai hộp khác nhau."; return false; }
+        if (boxA < 0 || boxA >= boxes.Count || boxB < 0 || boxB >= boxes.Count) { error = "Chỉ số hộp không hợp lệ."; return false; }
+
+        JObject bA = (JObject)boxes[boxA];
+        JObject bB = (JObject)boxes[boxB];
+        if (A.Int(bA, "BoxType") != 0 || A.Int(bB, "BoxType") != 0)
+        {
+            error = "Cube đôi chỉ hỗ trợ khay hộp thường (Normal).";
+            return false;
+        }
+
+        JArray cubesA = A.Array(bA, "Cubes");
+        JArray cubesB = A.Array(bB, "Cubes");
+        if (cubesA.Count == 0 || cubesB.Count == 0)
+        {
+            error = "Cả hai hộp đều phải có ít nhất một khối màu.";
+            return false;
+        }
+
+        int cubeA = cubesA.Count - 1;
+        int cubeB = cubesB.Count - 1;
+        return TryLinkCubes(root, boxA, cubeA, boxB, cubeB, out error);
+    }
+
+    public static bool TryLinkCubes(JObject root, int firstBox, int firstCube, int secondBox, int secondCube, out string error)
+    {
+        error = null;
+        try
+        {
+            Link(root, firstBox, firstCube, secondBox, secondCube);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
     public static void Link(JObject root, int firstBox, int firstCube, int secondBox, int secondCube)
     {
         JArray boxes = A.Array(A.Layout(root), "Boxes");
         if (firstBox == secondBox) throw new FormatException("Chọn hai khối ở hai hộp khác nhau.");
-        JObject first = Cube(boxes, firstBox, firstCube), second = Cube(boxes, secondBox, secondCube);
-        foreach (JObject box in boxes)
-            foreach (JObject cube in A.Array(box, "Cubes"))
-                if (A.Int(cube, "LinkedPairId") != 0) throw new FormatException("Prototype chỉ hỗ trợ một cặp. Tháo cặp hiện tại trước.");
+        JObject first = GetCube(boxes, firstBox, firstCube), second = GetCube(boxes, secondBox, secondCube);
+
+        // Remove any prior pair to satisfy prototype limit
+        Unlink(root, 1);
+
         int oldFirst = A.Int(first, "LinkedPairId"), oldSecond = A.Int(second, "LinkedPairId");
+        int oldSecretA = A.Int(first, "IsSecret"), oldSecretB = A.Int(second, "IsSecret");
+        int oldKeyA = A.Int(first, "GroupKeyId"), oldKeyB = A.Int(second, "GroupKeyId");
+        int oldNumA = A.Int(first, "NumLock"), oldNumB = A.Int(second, "NumLock");
+        int oldFixA = A.Int(first, "IsFixed"), oldFixB = A.Int(second, "IsFixed");
+
+        first["GroupKeyId"] = 0; first["NumLock"] = 0; first["IsFixed"] = 0;
+        second["GroupKeyId"] = 0; second["NumLock"] = 0; second["IsFixed"] = 0;
+
         first["LinkedPairId"] = 1;
         second["LinkedPairId"] = 1;
-        try { LinkedCubePair.Validate(ExportedPuzzleJsonDecoder.Decode(root.ToString())); }
+        try
+        {
+            LinkedCubePair.Validate(ExportedPuzzleJsonDecoder.Decode(root.ToString(Newtonsoft.Json.Formatting.None)));
+        }
         catch
         {
             first["LinkedPairId"] = oldFirst; second["LinkedPairId"] = oldSecond;
+            first["IsSecret"] = oldSecretA; second["IsSecret"] = oldSecretB;
+            first["GroupKeyId"] = oldKeyA; second["GroupKeyId"] = oldKeyB;
+            first["NumLock"] = oldNumA; second["NumLock"] = oldNumB;
+            first["IsFixed"] = oldFixA; second["IsFixed"] = oldFixB;
             throw;
         }
     }
 
-    private static JObject Cube(JArray boxes, int boxIndex, int cubeIndex)
+    private static JObject GetCube(JArray boxes, int boxIndex, int cubeIndex)
     {
         if (boxIndex < 0 || boxIndex >= boxes.Count) throw new FormatException("Hộp được chọn không còn tồn tại.");
         JArray cubes = A.Array((JObject)boxes[boxIndex], "Cubes");

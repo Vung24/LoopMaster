@@ -1021,9 +1021,24 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             if (_editorMode == 1) { DrawGeneratedScene(); return; }
             if (_editorMode == 2) return;
             JObject root = Root(), layout = A.Layout(root);
+            if (HandleSceneDragAndDrop(view, root, layout)) return;
             if (_workspace)
             {
-                using (new Handles.DrawingScope(Matrix4x4.identity)) { DrawRoadPreview(); DrawBoxPreview(layout, false); }
+                using (new Handles.DrawingScope(Matrix4x4.identity))
+                {
+                    DrawRoadPreview();
+                    DrawBoxPreview(layout, true);
+                    if (_box >= 0 && _box < A.Array(layout, "Boxes").Count)
+                    {
+                        TransformHandle((JObject)A.Array(layout, "Boxes")[_box]);
+                    }
+                    else if (LoopLevelCommands.IsMapItem(layout, _canvasMap) && _canvasMap < A.Array(layout, "MapData").Count)
+                    {
+                        TransformHandle((JObject)A.Array(layout, "MapData")[_canvasMap]);
+                    }
+                    DrawLinkedCubePreview(layout);
+                }
+                Commit(root, "Move level element in Scene");
                 return;
             }
             Event e = Event.current;
@@ -1165,7 +1180,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             Bounds footprint = LoopLevelBoardLayout.LocalBounds(type);
             using (new Handles.DrawingScope(Matrix4x4.TRS(position, rotation, Vector3.one)))
             {
-                Handles.color = interactive && _tab == 1 && _box == i ? Color.yellow : Color.white;
+                Handles.color = interactive && _box == i && (_tab == 1 || _workspace) ? Color.yellow : Color.white;
                 Handles.DrawWireCube(footprint.center, footprint.size);
                 JArray cubes = A.Array(box, "Cubes");
                 int visible = type == 1 ? Math.Min(1, cubes.Count) : cubes.Count;
@@ -1183,8 +1198,14 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 if (type == 1) Handles.Label(Vector3.up * 1.6f, "Hàng đợi: " + cubes.Count);
                 else { Handles.color = Color.cyan; Handles.DrawAAPolyLine(2, new Vector3(0,.35f,1.8f), new Vector3(0,.35f,2.5f)); }
             }
-            Handles.color = interactive && _box == i && _tab == 1 ? Color.yellow : Color.white;
-            if (interactive && Handles.Button(position + Vector3.up * .75f, rotation, .16f, .2f, Handles.SphereHandleCap)) { _box = i; _tab = 1; Repaint(); }
+            Handles.color = interactive && _box == i && (_tab == 1 || _workspace) ? Color.yellow : Color.white;
+            if (interactive && Handles.Button(position + Vector3.up * .75f, rotation, .16f, .2f, Handles.SphereHandleCap))
+            {
+                _box = i;
+                if (_workspace) SetCanvasSelection(new[] { i });
+                else _tab = 1;
+                Repaint();
+            }
             string label = "Hộp " + i;
             if (A.Int(box, "LockColor") > 0) label += " · color lock " + A.Int(box, "LockColor");
             if (A.Int(box, "NumLock") > 0) label += " · number lock " + A.Int(box, "NumLock");

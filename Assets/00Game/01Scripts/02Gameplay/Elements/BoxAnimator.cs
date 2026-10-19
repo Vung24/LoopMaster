@@ -5,11 +5,14 @@ using UnityEngine;
 
 public sealed class BoxAnimator
 {
+	private const string DoneClipName = "BoxSingleDone";
+	private const string ClickClipName = "Skeleton|cube_click";
+	private const string StaticClipName = "Skeleton|cube_static";
+
 	private readonly Box _box;
 	private readonly Animation _anim;
 	private readonly Transform _boxCard;
 	private readonly AudioSource _audioSource;
-	private readonly Func<GameLoader> _getLoader;
 
 	private Cube _finishCube;
 	private bool _onPlayingAnim;
@@ -17,13 +20,12 @@ public sealed class BoxAnimator
 	private float? _finishPresentationTime;
 	private readonly List<Cube> _addAnimationCubes = new List<Cube>();
 
-	public BoxAnimator(Box box, Animation anim, Transform boxCard, AudioSource audioSource, Func<GameLoader> getLoader)
+	public BoxAnimator(Box box, Animation anim, Transform boxCard, AudioSource audioSource)
 	{
 		_box = box;
 		_anim = anim;
 		_boxCard = boxCard;
 		_audioSource = audioSource;
-		_getLoader = getLoader;
 	}
 
 	public Cube FinishCube => _finishCube;
@@ -40,7 +42,7 @@ public sealed class BoxAnimator
 				Cube cube = _box.Cubes[i];
 				if (cube != null && cube.IsFinishAnimationPlaying) return true;
 			}
-			return _anim != null && _anim.IsPlaying("BoxSingleDone");
+			return _anim != null && _anim.IsPlaying(DoneClipName);
 		}
 	}
 
@@ -68,7 +70,7 @@ public sealed class BoxAnimator
 
 	public void PlayPopInAudio()
 	{
-		GameLoader loader = _getLoader != null ? _getLoader() : null;
+		GameLoader loader = _box != null ? _box.GameLoader : null;
 		if (loader == null || GameAudioPlayer.Current == null) return;
 		int combo = GameController.Current == null ? 0 : GameController.Current.ComboInCount;
 		GameAudioPlayer.Current.PlaySlicePopIn(_audioSource, loader.SlicePopIn,
@@ -77,7 +79,7 @@ public sealed class BoxAnimator
 
 	public void PlayJumpAudio()
 	{
-		GameLoader loader = _getLoader != null ? _getLoader() : null;
+		GameLoader loader = _box != null ? _box.GameLoader : null;
 		if (loader == null || GameAudioPlayer.Current == null) return;
 		GameAudioPlayer.Current.PlaySlicePopOut(_audioSource, loader.SlicePopOut, loader.SlicePopOutPitch);
 	}
@@ -86,7 +88,7 @@ public sealed class BoxAnimator
 	{
 		if (_onPlayingAnim) return;
 		GameVibrationHelper.PlayBoxTap(isPopup);
-		string clip = isPopup ? "Skeleton|cube_click" : "Skeleton|cube_static";
+		string clip = isPopup ? ClickClipName : StaticClipName;
 		if (_anim != null && _anim.GetClip(clip) != null) _anim.Play(clip);
 		if (cubes != null)
 		{
@@ -155,7 +157,7 @@ public sealed class BoxAnimator
 
 	public void PlayCubeAddEffect(Color color, Vector3 targetPos)
 	{
-		GameLoader loader = _getLoader != null ? _getLoader() : null;
+		GameLoader loader = _box != null ? _box.GameLoader : null;
 		if (loader == null || loader.BoxNormalEffect == null || _box == null || _box.Info == null) return;
 
 		PooledParticleEffect pooled = loader.GetPooledGameObject<PooledParticleEffect>(
@@ -193,7 +195,7 @@ public sealed class BoxAnimator
 
 			PlayBoxFinishEffect(combo, interval, finished);
 
-			GameLoader loader = _getLoader != null ? _getLoader() : null;
+			GameLoader loader = _box != null ? _box.GameLoader : null;
 			if (loader != null && GameAudioPlayer.Current != null)
 				GameAudioPlayer.Current.PlayBoxAudio(_audioSource, loader.MatchClip);
 		}
@@ -206,7 +208,7 @@ public sealed class BoxAnimator
 
 	public void PlayBoxFinishEffect(int combo, float interval, int finished)
 	{
-		GameLoader loader = _getLoader != null ? _getLoader() : null;
+		GameLoader loader = _box != null ? _box.GameLoader : null;
 		if (loader == null || _box == null || _box.Info == null) return;
 
 		if (loader.BoxFinishEffect != null)
@@ -242,7 +244,7 @@ public sealed class BoxAnimator
 
 	public void CreateFinishCube(int type)
 	{
-		GameLoader loader = _getLoader != null ? _getLoader() : null;
+		GameLoader loader = _box != null ? _box.GameLoader : null;
 		if (_finishCube != null || loader == null || _box == null || _box.Info == null) return;
 
 		GameObject prefab = _box.Info.BoxType == BoxType.Long
@@ -262,7 +264,7 @@ public sealed class BoxAnimator
 		_finishCube.transform.SetPositionAndRotation(_box.GetFinishCubePos(), _box.transform.rotation);
 		_finishCube.InitFinish(type);
 		_finishCube.PlayAnim("Skeleton|cube_all");
-		if (_box.Info.BoxType == BoxType.Single && _anim != null && _anim.GetClip("BoxSingleDone") != null)
-			_anim.Play("BoxSingleDone");
+		if (_box.Info.BoxType == BoxType.Single && _anim != null && _anim.GetClip(DoneClipName) != null)
+			_anim.Play(DoneClipName);
 	}
 }
