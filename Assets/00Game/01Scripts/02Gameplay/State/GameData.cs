@@ -37,6 +37,8 @@ public class GameData
 	public int ExtraPathLength;
 	private Dictionary<int, int> _colorMap;
 	private Dictionary<int, int> _transferTypeCounts = new Dictionary<int, int>();
+	private int _cachedTransferGroup;
+	private bool _isTransferGroupDirty = true;
 	private HashSet<int> _speedUpSeenTypes = new HashSet<int>();
 	private Dictionary<int, int> _noSolutionCounts = new Dictionary<int, int>();
 	private float _pathDistance;
@@ -70,6 +72,7 @@ public class GameData
 			throw new InvalidOperationException("Wait for the linked launch to finish before copying the board for search.");
 		GameData copy = (GameData)MemberwiseClone();
 		copy._transferTypeCounts = new Dictionary<int, int>();
+		copy._isTransferGroupDirty = true;
 		copy._speedUpSeenTypes = new HashSet<int>();
 		copy._noSolutionCounts = new Dictionary<int, int>();
 		copy.UndoData = new UndoData();
@@ -471,14 +474,22 @@ public class GameData
 	public void SetRuntimePathDistance(float distance) => _pathDistance = Math.Max(0f, distance);
 	public List<GamePath> GetPaths() => Puzzle == null ? null : Puzzle.Paths;
 
+	public void InvalidateTransferGroup() => _isTransferGroupDirty = true;
+
 	public bool AddTransferSlice(SliceInfo slice)
 	{
 		if (TransferSlice.Contains(slice)) return false;
 		TransferSlice.Add(slice);
+		_isTransferGroupDirty = true;
 		return true;
 	}
 
-	public bool RemoveTransferSlice(SliceInfo slice) => TransferSlice.Remove(slice);
+	public bool RemoveTransferSlice(SliceInfo slice)
+	{
+		bool removed = TransferSlice.Remove(slice);
+		if (removed) _isTransferGroupDirty = true;
+		return removed;
+	}
 	public GroupInfo GetGroupInfo(int id)
 	{
 		for (int i = 0; i < Groups.Count; i++)
@@ -526,6 +537,8 @@ public class GameData
 		Math.Max(0, GetPathLength() - GetTransferGroup() - Math.Max(0, OnJumpingCube));
 	public int GetTransferGroup()
 	{
+		if (!_isTransferGroupDirty) return _cachedTransferGroup;
+
 		_transferTypeCounts.Clear();
 		for (int i = 0; i < TransferSlice.Count; i++)
 		{
@@ -536,6 +549,8 @@ public class GameData
 		int groups = 0;
 		foreach (int count in _transferTypeCounts.Values)
 			groups = checked(groups + (count + SliceCountPerGroup - 1) / SliceCountPerGroup);
+		_cachedTransferGroup = groups;
+		_isTransferGroupDirty = false;
 		return groups;
 	}
 	public float GetPathBusyRate()

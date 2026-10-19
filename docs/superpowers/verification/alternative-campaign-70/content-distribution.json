@@ -1,7 +1,7 @@
 {
   "builder_version": 2,
   "distinct_road_geometries": 47,
-  "colors_equal_boxes_levels": 27,
+  "colors_equal_boxes_levels": 28,
   "levels_with_multiple_mechanics": 28,
   "capacity_histogram": {
     "4": 18,
@@ -11,14 +11,13 @@
     "8": 4
   },
   "box_count_histogram": {
-    "2": 1,
-    "3": 1,
+    "2": 2,
     "4": 1,
     "5": 1,
     "6": 1,
-    "7": 2,
+    "7": 3,
     "8": 10,
-    "9": 15,
+    "9": 14,
     "10": 19,
     "12": 17,
     "13": 2
@@ -39,7 +38,7 @@
     },
     {
       "level": 2,
-      "boxes": 3,
+      "boxes": 2,
       "normal_colors": 2,
       "capacity": 6,
       "hard": 0,
@@ -47,7 +46,7 @@
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
-      "road_sha256": "04452c7764107e248d91b2c8caa97d925ab7073889e4223bb656f4dbf22a6a2e",
+      "road_sha256": "7e8ef7e074f8db4512c16c9465fa76d57079c6305f7c1d1701d1b9df60ad24d7",
       "reference_clicks": 3
     },
     {
@@ -151,18 +150,18 @@
     },
     {
       "level": 10,
-      "boxes": 9,
-      "normal_colors": 9,
+      "boxes": 7,
+      "normal_colors": 7,
       "capacity": 4,
       "hard": 1,
-      "mixed_boxes": 9,
-      "geometry_reference": 213,
-      "mixing_recipe": "generator_scramble",
+      "mixed_boxes": 7,
+      "geometry_reference": 10,
+      "mixing_recipe": "layered_cycle_0011",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "15b646c97c7ba2d90b53f9a9372d177e7b8b501f42870a3e387d97466cbb1fc2",
-      "reference_clicks": 33
+      "road_sha256": "0682d04e73d3f16572e2e815663625cdfbe11817d0144c915c130e412e70fd9f",
+      "reference_clicks": 7
     },
     {
       "level": 11,
@@ -285,11 +284,11 @@
       "capacity": 6,
       "hard": 0,
       "mixed_boxes": 9,
-      "geometry_reference": 275,
+      "geometry_reference": 123,
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
-      "road_sha256": "45305a5229dc58ebe1eb9ce7ae9db56d3d6fea313f427a40174939831b93afe7",
-      "reference_clicks": 33
+      "road_sha256": "e4695da4f16606754f8bcdc6018239b885e8f0570097924c76e561c2f15b4379",
+      "reference_clicks": 27
     },
     {
       "level": 20,
@@ -505,14 +504,14 @@
       "capacity": 7,
       "hard": 0,
       "mixed_boxes": 10,
-      "geometry_reference": 140,
+      "geometry_reference": 235,
       "mixing_recipe": "layered_cycle_0012",
       "mechanics": [
         "color_lock",
         "adjacent_lock"
       ],
-      "road_sha256": "40b02c382682c703a729eba644b18c3887b036b42b4b449f6a3cc0b92ad524cd",
-      "reference_clicks": 25
+      "road_sha256": "4e5645d8a8afc65deeb724eb7b141ce135b9bfa0f61717857a8851688fe7a3b9",
+      "reference_clicks": 20
     },
     {
       "level": 35,
