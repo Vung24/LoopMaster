@@ -80,7 +80,7 @@ public class RetryDialogContent : DialogContent
             if (this == null || !isActiveAndEnabled || Result != RESULT_UNKNOWN || _offerVersion != offerVersion ||
                 _controller != controller || controller == null || controller.Data != data ||
                 (Managers.Heart != null && !Managers.Heart.IsHeartEnough())) return;
-            if (controller.TryReplayLevel()) Dismiss(RESULT_RESTART);
+            if (controller.ReplayLevel()) Dismiss(RESULT_RESTART);
         }
         catch (System.OperationCanceledException) { }
         finally { _isRestarting = false; }

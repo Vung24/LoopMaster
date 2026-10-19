@@ -59,19 +59,6 @@ namespace Snui
 			}
 		}
 
-		private void Start()
-		{
-			CheckRTL();
-		}
-
-		private void CheckRTL()
-		{
-			if (_countdownText != null)
-			{
-				_countdownText.isRightToLeftText = UiUtils.IsUiRtl();
-			}
-		}
-
 		private void OnTimerStart()
 		{
 			if (_spine != null && _spine.skeletonDataAsset != null && _spine.AnimationState != null)

@@ -169,8 +169,8 @@ public sealed class PauseDialogContent : Snui.BasePopup
 				CancelConfirmation();
 				if (result != PauseConfirmDialogContent.RESULT_CONFIRM) return;
 				CompleteResume();
-				if (type == PauseConfirmType.Replay) _controller.TryReplayLevel();
-				else _controller.TryReturnHome();
+				if (type == PauseConfirmType.Replay) _controller.ReplayLevel();
+				else _controller.ReturnHome();
 			};
 		}
 		catch { if (this != null && version == _modalVersion) CancelConfirmation(); throw; }

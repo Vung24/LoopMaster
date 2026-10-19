@@ -775,6 +775,6 @@ public class WinDialogContent : DialogContent
 
 	public void OnClickReplayLevel()
 	{
-		if (_controller != null) _controller.TryReplayLevel();
+		if (_controller != null) _controller.ReplayLevel();
 	}
 }

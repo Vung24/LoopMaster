@@ -79,6 +79,8 @@ public sealed class GameplaySceneBuilder : IGroupLockScene
 		{
 			MapComponent item = mapData[i];
 			if (item == null || string.IsNullOrEmpty(item.Name)) continue;
+			// Capacity is already presented by the HUD; keep legacy map data without spawning a duplicate.
+			if (string.Equals(item.Name, "Capacity", StringComparison.OrdinalIgnoreCase)) continue;
 			GameObject prefab = _gameLoader.GetMapPrefab(item.Name);
 			if (prefab == null) continue;
 			GameObject instance = Object.Instantiate(prefab, GameRoot);

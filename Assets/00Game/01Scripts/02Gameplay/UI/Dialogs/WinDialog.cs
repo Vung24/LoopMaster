@@ -239,7 +239,7 @@ public class WinDialog : MonoBehaviour
 		{
 			if (!_controller.CanLoadNextLevel)
 			{
-				return _controller.TryLoadNextLevel();
+				return _controller.LoadNextLevel();
 			}
 			IsTransitioningNextLevel = true;
 			FadeOutAndAdvanceLevel().Forget();
@@ -258,7 +258,7 @@ public class WinDialog : MonoBehaviour
 		StopFireworks();
 		SetMaskAlpha(1f);
 
-		bool success = _controller != null && _controller.TryLoadNextLevel();
+		bool success = _controller != null && _controller.LoadNextLevel();
 		if (!success)
 		{
 			IsTransitioningNextLevel = false;
@@ -325,5 +325,5 @@ public class WinDialog : MonoBehaviour
 		IsEnteringHome = false;
 		_winDialogContent?.AllowNavigationRetry();
 	}
-	public void OnClickReplayLevel() { if (_controller != null) _controller.TryReplayLevel(); }
+	public void OnClickReplayLevel() { if (_controller != null) _controller.ReplayLevel(); }
 }

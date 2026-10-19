@@ -41,7 +41,6 @@ namespace Snui.Lava
 		protected override void Start()
 		{
 			base.Start();
-			AnalyticsManager.LogEvent("lava_dialog_show");
 
 			if (_contentText != null && Managers.Lava != null)
 			{
@@ -79,7 +78,6 @@ namespace Snui.Lava
 		private void OnClickStartBtn()
 		{
 			if (Result != RESULT_UNKNOWN || Managers.Lava == null || !Managers.Lava.IsWaitingStart()) return;
-			AnalyticsManager.LogEvent("lava_dialog_play");
 			if (Managers.Lava != null)
 			{
 				Managers.Lava.StartEvent();

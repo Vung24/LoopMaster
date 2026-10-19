@@ -498,10 +498,6 @@ namespace Snui.Lava
 
 				if (_config != null && _data.Record >= _config.LevelGoal)
 				{
-					AnalyticsManager.LogEvent("lava_race_win", new Dictionary<string, object>
-					{
-						{ "fails", _data.TotalFails }
-					});
 					_data.WinCount++;
 					OnWinEvent?.Invoke();
 				}
@@ -526,12 +522,6 @@ namespace Snui.Lava
 			_data.PlayCount = 0;
 			_data.PromptCount = 0;
 			SaveData();
-
-			AnalyticsManager.LogEvent("lava_race_failed", new Dictionary<string, object>
-			{
-				{ "levels", _data.Record },
-				{ "fails", _data.TotalFails }
-			});
 		}
 
 		public void OnTimeOut()
@@ -546,12 +536,6 @@ namespace Snui.Lava
 			_data.PlayCount = 0;
 			_data.PromptCount = 0;
 			SaveData();
-
-			AnalyticsManager.LogEvent("lava_race_failed", new Dictionary<string, object>
-			{
-				{ "levels", _data.Record },
-				{ "fails", _data.TotalFails }
-			});
 		}
 
 		public string GetTitleKey()
