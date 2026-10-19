@@ -1,0 +1,61 @@
+{
+  "level": 10,
+  "builder_version": 2,
+  "seed": 719028,
+  "learning_objective": "Màn Thử Thách Giai Đoạn 1",
+  "sha256": "a1e27dd41656f87bedd615eb3f931bc6d86c337d3f182386cc456023573aec8e",
+  "profile": {
+    "Level": 10,
+    "Boxes": 7,
+    "Colors": 7,
+    "Road": 1,
+    "Singles": 0,
+    "Longs": 0,
+    "Secrets": 10,
+    "ColorLocks": 0,
+    "Adjacent": 0,
+    "Ice": 0,
+    "IceCount": 0,
+    "Groups": 0,
+    "GroupSize": 0,
+    "Pair": 0,
+    "Surprise": 0,
+    "Hard": 1,
+    "Capacity": 4,
+    "GeometryReference": 10,
+    "MixingMode": 2,
+    "MixingRecipe": "layered_cycle_0011"
+  },
+  "mechanics": [
+    "secret"
+  ],
+  "color_type_policy": "normal_1_to_N_long_101_to_N_surprise_201_to_N",
+  "empty_boxes": 0,
+  "secret_eligible": 21,
+  "secret_count": 2,
+  "structural_validation": "passed",
+  "warnings": [
+    "Kiểm tra cấu trúc không đảm bảo màn chơi có lời giải. Hãy chơi thử trong Play Mode."
+  ],
+  "capacity_display_review": "pending",
+  "simulation_replay": "passed",
+  "solution_clicks": [
+    0,
+    2,
+    3,
+    1,
+    4,
+    5,
+    6
+  ],
+  "wait_policy": "Wait for launch, landing, lock and surprise animations; allow conveyor circulation before the next click.",
+  "reference_click_count": 7,
+  "settled_road_peak_groups": 2,
+  "peak_limitations": "Settled-state samples only; transient peak requires Unity measurement.",
+  "unity_replay": "pending",
+  "visual_review": "pending",
+  "lifecycle_review": "pending",
+  "completion_seconds": null,
+  "restart_count": null,
+  "acceptance": "draft_pending_unity_and_balance"
+}
