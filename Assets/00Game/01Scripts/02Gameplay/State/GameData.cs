@@ -38,6 +38,7 @@ public class GameData
 	private Dictionary<int, int> _colorMap;
 	private Dictionary<int, int> _transferTypeCounts = new Dictionary<int, int>();
 	private HashSet<int> _speedUpSeenTypes = new HashSet<int>();
+	private Dictionary<int, int> _noSolutionCounts = new Dictionary<int, int>();
 	private float _pathDistance;
 	private float _roadSpacingScale = 1f;
 	public float RoadSpacingScale => _roadSpacingScale;
@@ -70,6 +71,7 @@ public class GameData
 		GameData copy = (GameData)MemberwiseClone();
 		copy._transferTypeCounts = new Dictionary<int, int>();
 		copy._speedUpSeenTypes = new HashSet<int>();
+		copy._noSolutionCounts = new Dictionary<int, int>();
 		copy.UndoData = new UndoData();
 		copy.ActiveLinkedLaunch = null;
 		copy.LinkedPair = null;
@@ -408,32 +410,57 @@ public class GameData
 
 	public bool ShouldForceUnlockAdjacentBox(BoxInfo lockedBox)
 	{
-		if (lockedBox == null) return false;
-		return !Boxes.Any(box => box != lockedBox && (box.IsEmpty() || !box.IsFinished()) &&
-			box.CanUnlockAdjacentBox(lockedBox));
-	}
-
-	private Dictionary<int, int> GetTransferTypes()
-	{
-		return TransferSlice.GroupBy(slice => slice.Type)
-			.ToDictionary(group => group.Key, group => group.Count());
+		if (lockedBox == null || Boxes == null) return false;
+		for (int i = 0; i < Boxes.Count; i++)
+		{
+			BoxInfo box = Boxes[i];
+			if (box == null || box == lockedBox) continue;
+			if ((box.IsEmpty() || !box.IsFinished()) && box.CanUnlockAdjacentBox(lockedBox))
+				return false;
+		}
+		return true;
 	}
 
 	public bool IsNoSolution()
 	{
-		Dictionary<int, int> available = GetTransferTypes();
-		if (available.Any(pair => pair.Value >= GetSliceCapacityByType(pair.Key))) return false;
-
-		foreach (BoxInfo box in Boxes.Where(item => !item.IsFinished()))
+		_noSolutionCounts.Clear();
+		if (TransferSlice != null)
 		{
-			foreach (CubeInfo cube in box.GetReachableCubes())
+			for (int i = 0; i < TransferSlice.Count; i++)
 			{
-				int count;
-				available.TryGetValue(cube.Type, out count);
-				count += cube.Size;
-				available[cube.Type] = count;
-				if (cube.GroupKeyId > 0 || cube.IsSecret || count >= GetSliceCapacityByType(cube.Type))
+				SliceInfo slice = TransferSlice[i];
+				if (slice == null) continue;
+				int type = slice.Type;
+				_noSolutionCounts.TryGetValue(type, out int count);
+				count++;
+				_noSolutionCounts[type] = count;
+				if (count >= GetSliceCapacityByType(type))
 					return false;
+			}
+		}
+
+		if (Boxes != null)
+		{
+			for (int i = 0; i < Boxes.Count; i++)
+			{
+				BoxInfo box = Boxes[i];
+				if (box == null || box.IsFinished()) continue;
+
+				List<CubeInfo> cubes = box.CubeInfos;
+				if (cubes == null) continue;
+				for (int j = cubes.Count - 1; j >= 0; j--)
+				{
+					CubeInfo cube = cubes[j];
+					if (cube == null) continue;
+					if (cube.IsSecret || cube.NumLock > 0) break;
+
+					int type = cube.Type;
+					_noSolutionCounts.TryGetValue(type, out int count);
+					count += cube.Size;
+					_noSolutionCounts[type] = count;
+					if (cube.GroupKeyId > 0 || count >= GetSliceCapacityByType(type))
+						return false;
+				}
 			}
 		}
 
