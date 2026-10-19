@@ -66,14 +66,14 @@ public sealed class DebugLevelPanel
         {
             if (GUILayout.Button("Replay Level"))
             {
-                _status = controller.TryReplayLevel() ? "Level replayed. Ready to test again." : "Could not replay this level.";
+                _status = controller.ReplayLevel() ? "Level replayed. Ready to test again." : "Could not replay this level.";
             }
         }
         using (new EditorGUI.DisabledScope(_applyingLevel || !IsRunning || controller == null || !controller.CanLoadNextLevel))
         {
             if (GUILayout.Button("Next Level"))
             {
-                _status = controller.TryLoadNextLevel() ? "Next level loaded." : "Could not load next level.";
+                _status = controller.LoadNextLevel() ? "Next level loaded." : "Could not load next level.";
             }
         }
     }
@@ -184,7 +184,7 @@ public sealed class DebugLevelPanel
 
     internal void ForceResult(GameController controller, GameEndState state)
     {
-        _status = controller.TryDebugForceEndState(state) ?
+        _status = controller.DebugForceEndState(state) ?
             "Forced " + state + " through the normal result flow." : "Could not force the result. Wait for gameplay to be active.";
         Debug.Log("[Debug Level] " + _status, controller);
     }

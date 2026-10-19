@@ -74,7 +74,7 @@ public sealed class DebugSpecialStreakPanel
             if (GUILayout.Button("Revive - Check Multiplier Kept"))
             {
                 int before = manager.MultiplierIndex;
-                bool revived = controller.TryRevive();
+                bool revived = controller.Revive();
                 SetStatus(!revived ? "Revive unavailable." : manager.MultiplierIndex == before ?
                     "PASS: Revive kept multiplier." : "FAIL: Revive changed multiplier.");
             }
@@ -84,7 +84,7 @@ public sealed class DebugSpecialStreakPanel
             if (GUILayout.Button("Retry - Check Multiplier Reset"))
             {
                 bool ongoing = manager.IsOngoing;
-                bool replayed = controller.TryReplayLevel();
+                bool replayed = controller.ReplayLevel();
                 SetStatus(!replayed ? "Retry unavailable." : !ongoing ? "Retry loaded; event is inactive." :
                     manager.MultiplierIndex == 0 ? "PASS: Retry reset multiplier to x1." : "FAIL: Retry did not reset multiplier.");
             }
@@ -92,12 +92,12 @@ public sealed class DebugSpecialStreakPanel
         using (new EditorGUI.DisabledScope(!Running || controller == null || !controller.CanLoadNextLevel))
         {
             if (GUILayout.Button("Next Level / Settle Collection"))
-                SetStatus(controller.TryLoadNextLevel() ? "Next level loaded; collection settled." : "Could not advance; inspect event error.");
+                SetStatus(controller.LoadNextLevel() ? "Next level loaded; collection settled." : "Could not advance; inspect event error.");
         }
         using (new EditorGUI.DisabledScope(!Running || controller == null))
         {
             if (GUILayout.Button("Return Home / Show Collection"))
-                SetStatus(controller.TryReturnHome() ? "Returning home; pending collection will be shown on arrival." : "Could not return home; inspect event error.");
+                SetStatus(controller.ReturnHome() ? "Returning home; pending collection will be shown on arrival." : "Could not return home; inspect event error.");
         }
         using (new EditorGUI.DisabledScope(!Running || home == null || !home.CanOpenSpecialStreak || progress == null || manager == null || manager.IsLocked))
         {
