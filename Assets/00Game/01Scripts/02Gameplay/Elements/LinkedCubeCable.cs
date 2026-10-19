@@ -36,12 +36,6 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		_blockedUntil = Time.time + .55f;
 	}
 
-	public void ShowRecoveryNotice()
-	{
-		if (Snui.CommonToast.Instance != null)
-			Snui.CommonToast.Instance.Show("Màn chơi đã được khôi phục về đầu");
-	}
-
 	private Transform CreateRoot(string name)
 	{
 		var root = new GameObject(name);

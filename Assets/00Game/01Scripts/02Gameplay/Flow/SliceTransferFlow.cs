@@ -53,8 +53,7 @@ public sealed class SliceTransferFlow
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
 		Func<Box, bool> isGroupUnlocking, Action updateCombo,
-		Action refreshPathState, Action onLaunchFinished, Action checkGameOver, Action<bool> setSpeedUp,
-		Action<Exception> linkedFailure = null)
+		Action refreshPathState, Action onLaunchFinished, Action checkGameOver, Action<bool> setSpeedUp)
 	{
 		_host = host;
 		_hostToken = host.destroyCancellationToken;
@@ -66,7 +65,6 @@ public sealed class SliceTransferFlow
 		_onLaunchFinished = onLaunchFinished;
 		_checkGameOver = checkGameOver;
 		_setSpeedUp = setSpeedUp;
-		_linkedFailure = linkedFailure;
 	}
 
 	public void Reset(GameData data, GameLoader loader, Transform gameRoot)

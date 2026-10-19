@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System.Threading;
@@ -149,11 +148,11 @@ public class Box : MonoBehaviour
 		_surpriseLifetime = lifetime;
 		var completion = new UniTaskCompletionSource();
 		_surpriseTask = completion.Task;
-		Cube.CompleteSurpriseTask(TransformSurpriseAsync(_info, GameData.Current, surprise.NormalCubes.ToArray(), lifetime), completion).Forget();
+		Cube.CompleteSurpriseTask(TransformSurpriseAsync(_info, GameData.Current, surprise.NormalCubes, lifetime), completion).Forget();
 		return true;
 	}
 
-	private async UniTask TransformSurpriseAsync(BoxInfo info, GameData data, CubeInfo[] replacements,
+	private async UniTask TransformSurpriseAsync(BoxInfo info, GameData data, IReadOnlyList<CubeInfo> replacements,
 		CancellationTokenSource lifetime)
 	{
 		try
@@ -198,7 +197,11 @@ public class Box : MonoBehaviour
 	{
 		var lifetime = _surpriseLifetime;
 		_surpriseLifetime = null;
-		foreach (Cube cube in _surpriseCubes.ToArray()) if (cube != null) cube.CancelSurpriseTransformation();
+		for (int i = 0; i < _surpriseCubes.Count; i++)
+		{
+			Cube cube = _surpriseCubes[i];
+			if (cube != null) cube.CancelSurpriseTransformation();
+		}
 		_surpriseCubes.Clear();
 		lifetime?.Cancel();
 	}
@@ -245,13 +248,15 @@ public class Box : MonoBehaviour
 	public void RefreshAfterUndo(bool restoredToSource, int restoredType, float restoreDelay)
 	{
 		if (_info == null) return;
-		foreach (Cube cube in Cubes.ToList())
+		for (int i = 0; i < Cubes.Count; i++)
 		{
+			Cube cube = Cubes[i];
 			if (cube == null || cube.Info == null) continue;
 			if (!_info.CubeInfos.Contains(cube.Info))
 			{
 				// Snapshot Undo replaces identities, so stale cubes can still have a positive size.
-				Cubes.Remove(cube);
+				Cubes.RemoveAt(i);
+				i--;
 				cube.PlayDismissAnim();
 			}
 			else if (cube.Info.Size <= 0)
