@@ -12,9 +12,12 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private LinkedCubePair _pair;
 	private Transform _bridge, _firstSocket, _secondSocket;
 	private Vector3 _firstAnchor, _secondAnchor;
-	private bool _hasFirst, _hasSecond;
 	private float _blockedUntil;
 	private float _consumedAt = -1f;
+	private bool _cachedReady;
+	private float _nextReadyCheckTime;
+	private Color _currentTintColor = Color.clear;
+	private bool _hasTintColor;
 
 	public void Initialize(GameData data)
 	{

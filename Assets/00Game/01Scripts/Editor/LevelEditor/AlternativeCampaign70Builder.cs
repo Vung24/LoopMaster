@@ -24,7 +24,7 @@ public static class AlternativeCampaign70Builder
 
     // Number, boxes (including special boxes), normal colors, road, singles, longs,
     // secret %, color locks, adjacent locks, ice cubes, ice count, groups, group size,
-    // linked pair, surprise colors, hard label, road capacity, mixing mode (0=generator, 1=layered, 2=two-layer).
+    // linked pair, surprise colors, hard label, road capacity, mixing mode (0=generator, 1=layered, 2=intro challenge).
     // Existing layout API roads:
     // rounded rectangle=0, oval=1, circle=2, straight=3, U=4, S=5, winding=6.
     private const string Curriculum = @"1,2,1,3,0,0,0,0,0,0,0,0,0,0,0,0,4,0
@@ -322,6 +322,8 @@ public static class AlternativeCampaign70Builder
                 if (!Replay(json, clicks, out peak)) { lastError = "Final JSON replay failed"; continue; }
                 if (p.Level >= 5 && clicks.Count < p.Boxes)
                 { lastError = "Reference solution is too short for this chapter"; continue; }
+                if (p.Level == 10 && (clicks.Count < 14 || clicks.Count > 18))
+                { lastError = "First Hard level requires a reference solution of 14-18 clicks"; continue; }
                 List<string> warnings;
                 List<string> errors = A.Validate(root, out warnings);
                 if (errors.Count != 0) { lastError = string.Join("\n", errors); continue; }
@@ -450,7 +452,7 @@ public static class AlternativeCampaign70Builder
         int[] offsets;
         if (profile.MixingMode == 2)
         {
-            offsets = new[] { 0,0,1,1 };
+            offsets = new[] { 0,0,1,2 };
         }
         else
         {

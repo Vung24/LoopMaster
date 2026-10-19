@@ -272,26 +272,29 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 		int maximum = Mathf.Max(0, _controller.RoadMaxCapacity);
 		int used = Mathf.Clamp(_controller.RoadUsedCapacity, 0, maximum);
-		float progress = maximum == 0 ? 0f : used / (float)maximum;
-		if (_capacityFill != null && _capacityFill.type == Image.Type.Filled)
-			_capacityFill.fillAmount = progress;
-		else if (_capacityFillRect != null)
+		if (used != _displayedCapacityUsed || maximum != _displayedCapacityMaximum)
 		{
-			float currentWidth = _capacityFillRect.rect.width;
-			if (_capacityFillWidth <= 0f && currentWidth > 0f)
-				_capacityFillWidth = currentWidth;
-			if (_capacityFillWidth > 0f)
-			{
-				float targetWidth = _capacityFillWidth * progress;
-				if (!Mathf.Approximately(currentWidth, targetWidth))
-					_capacityFillRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, targetWidth);
-			}
-		}
-		if (_capacityLabel != null && (used != _displayedCapacityUsed || maximum != _displayedCapacityMaximum))
-		{
-			_capacityLabel.text = used + "/" + maximum;
 			_displayedCapacityUsed = used;
 			_displayedCapacityMaximum = maximum;
+			float progress = maximum == 0 ? 0f : used / (float)maximum;
+			if (_capacityFill != null && _capacityFill.type == Image.Type.Filled)
+				_capacityFill.fillAmount = progress;
+			else if (_capacityFillRect != null)
+			{
+				float currentWidth = _capacityFillRect.rect.width;
+				if (_capacityFillWidth <= 0f && currentWidth > 0f)
+					_capacityFillWidth = currentWidth;
+				if (_capacityFillWidth > 0f)
+				{
+					float targetWidth = _capacityFillWidth * progress;
+					if (!Mathf.Approximately(currentWidth, targetWidth))
+						_capacityFillRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, targetWidth);
+				}
+			}
+			if (_capacityLabel != null)
+			{
+				_capacityLabel.text = used + "/" + maximum;
+			}
 		}
 
 		bool active = _controller.IsGameplayActive;
