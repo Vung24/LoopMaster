@@ -195,8 +195,15 @@ public sealed class DebugLevelSolver
                 source.State = BoxState.Free;
                 data.OnJumpingCube = 0;
                 UnlockAvailableKeys(data);
-                foreach (BoxInfo box in data.Boxes.Where(box => box.IsAdjacentLocked))
-                    if (data.IsNoSolution() || data.ShouldForceUnlockAdjacentBox(box)) box.IsAdjacentLocked = false;
+                for (int b = 0; b < data.Boxes.Count; b++)
+                {
+                    BoxInfo box = data.Boxes[b];
+                    if (box != null && box.IsAdjacentLocked)
+                    {
+                        if (data.IsNoSolution() || data.ShouldForceUnlockAdjacentBox(box))
+                            box.IsAdjacentLocked = false;
+                    }
+                }
                 released = true;
             }
             if (!released) continue;

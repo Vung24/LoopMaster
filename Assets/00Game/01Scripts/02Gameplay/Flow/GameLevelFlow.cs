@@ -43,6 +43,9 @@ public sealed class GameLevelFlow
 		{
 			if (_source != null && _source.HasExactLevel(level) &&
 				_source.TryCreateExactLevel(level, out data)) return true;
+#if UNITY_EDITOR
+            if (GamePrefs.EditorCampaignLoader != null) return false;
+#endif
 			if (_template == null) return false;
 			data = GameLevelDataConverter.FromPuzzle(_template, _puzzleId, level);
 			return true;

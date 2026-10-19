@@ -25,7 +25,8 @@ internal static class LoopLevelPlaytest
     {
         GameController.EditorPlaytestSource = TakePendingDraft;
         GameController.EditorPlaytestResetSource = ResetDraft;
-        GamePrefs.EditorSandbox = SessionState.GetBool(Prefix + "Sandbox", false);
+        if (GamePrefs.EditorCampaignLastLevel == 0)
+            GamePrefs.EditorSandbox = SessionState.GetBool(Prefix + "Sandbox", false);
         EditorApplication.playModeStateChanged += OnPlayModeChanged;
         EditorApplication.update += Update;
         if (!string.IsNullOrEmpty(SessionState.GetString(PendingKey, ""))) BeginWaiting();
@@ -34,6 +35,8 @@ internal static class LoopLevelPlaytest
     internal static bool Play(JObject root, out string error)
     {
         error = null;
+        if (GamePrefs.EditorCampaignLastLevel > 0)
+        { error = "Stop the campaign session before starting a single-level sandbox."; return false; }
         if (Busy || EditorApplication.isCompiling || EditorApplication.isUpdating ||
             EditorApplication.isPlayingOrWillChangePlaymode != EditorApplication.isPlaying)
         { error = "Unity đang bận. Chờ hoàn tất chuyển đổi Play Mode."; return false; }

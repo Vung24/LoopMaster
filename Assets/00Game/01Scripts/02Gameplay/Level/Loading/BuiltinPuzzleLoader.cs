@@ -71,6 +71,13 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 		GameData previous = GameData.Current;
 		try
 		{
+#if UNITY_EDITOR
+            if (GamePrefs.EditorCampaignLoader != null)
+            {
+                data = GamePrefs.EditorCampaignLoader(levelNumber);
+                return data != null;
+            }
+#endif
 			if (Application.isEditor)
 			{
 				if (!string.IsNullOrEmpty(_lastJsonFolder) && ReadJsonLevel(_lastJsonFolder, levelNumber, out data)) return true;
@@ -92,6 +99,10 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 
 	public bool HasExactLevel(int levelNumber)
 	{
+#if UNITY_EDITOR
+        if (GamePrefs.EditorCampaignAvailability != null)
+            return GamePrefs.EditorCampaignAvailability(levelNumber);
+#endif
 		if (levelNumber < 1) return false;
 		int frame = Time.frameCount;
 		if (Application.isPlaying && _availabilityFrame == frame && _availabilityLevel == levelNumber &&

@@ -124,27 +124,7 @@ public sealed partial class LoopLevelEditorWindow
             _canvasSelection = LoopLevelCommands.Selection(root, _canvasSelection).ToList();
             if (_box >= 0 && _box < A.Array(layout, "Boxes").Count && !_canvasSelection.Contains(_box)) SetCanvasSelection(new[] { _box });
             EditorGUILayout.Space(2);
-            int currentToolbarIndex = _canvasTool == 6 ? 0 : (_canvasTool == 0 ? 1 : (_canvasTool == 2 ? 2 : (_canvasTool == 5 ? 3 : 1)));
-            Color prevToolbarBg = GUI.backgroundColor;
-            if (currentToolbarIndex == 3) GUI.backgroundColor = new Color(1f, 0.45f, 0.45f);
-            int selectedToolbarIndex = GUILayout.Toolbar(currentToolbarIndex, new[]
-            {
-                "🛣️ 1. Đường đi (Q)",
-                "📦 2. Hộp & Cổng (W)",
-                "🎨 3. Tô màu khối (E)",
-                "❌ 4. Xóa (R)"
-            }, GUILayout.Height(26));
-            GUI.backgroundColor = prevToolbarBg;
 
-            if (selectedToolbarIndex != currentToolbarIndex)
-            {
-                CancelCanvasGesture();
-                if (selectedToolbarIndex == 0) _canvasTool = 6;
-                else if (selectedToolbarIndex == 1) _canvasTool = 0;
-                else if (selectedToolbarIndex == 2) _canvasTool = 2;
-                else if (selectedToolbarIndex == 3) _canvasTool = 5;
-                GUIUtility.ExitGUI();
-            }
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("Căn khung", GUILayout.Width(85))) _canvasFramed = false;
@@ -171,7 +151,7 @@ public sealed partial class LoopLevelEditorWindow
             if (_canvasTool == 6) DrawRoadQuickBar(root);
             if (_canvasTool == 2) DrawWorkspacePalette(layout);
             if (_canvasTool == 5) EditorGUILayout.HelpBox("🗑️ CHẾ ĐỘ XÓA ĐANG BẬT (Phím R):\n• Bấm vào Khối Cube: xóa khối đó.\n• Kéo chuột qua các khối: xóa nhiều khối liên tiếp.\n• Bấm vào Hộp trống hoặc viền hộp: xóa nguyên hộp.\n• Bấm vào Cổng Vào/Ra hoặc Capacity: xóa cổng đó.\n• Bấm vào Mấu neo đường: xóa điểm đường đó.\n• Nhấn phím Esc hoặc chọn công cụ khác để thoát chế độ xóa.", MessageType.Warning);
-            float height = Mathf.Clamp(position.height - 430, 240, 600);
+            float height = Mathf.Clamp(position.height - 400, 240, 620);
             bool wide = position.width >= 850;
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -1033,10 +1013,10 @@ public sealed partial class LoopLevelEditorWindow
                     });
                     e.Use(); Repaint(); GUIUtility.ExitGUI(); return;
                 }
-                int mapHit = HitCanvasMapItem(rect, A.Layout(root), e.mousePosition);
-                if (mapHit >= 0)
+                int eraseMapHit = HitCanvasMapItem(rect, A.Layout(root), e.mousePosition);
+                if (eraseMapHit >= 0)
                 {
-                    _canvasMap = mapHit;
+                    _canvasMap = eraseMapHit;
                     WorkspaceCommand("Xóa MapData", DeleteSelectedMapItem);
                     e.Use(); Repaint(); GUIUtility.ExitGUI(); return;
                 }

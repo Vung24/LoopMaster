@@ -43,6 +43,16 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     private bool _hasValidation;
     private int _dragGroup = -1;
     private static readonly string[] Tabs = { "Màn chơi", "Hộp", "Đường", "Nhóm / Nắp", "JSON" };
+    private static readonly string[] TopBarTabs =
+    {
+        "🛣️ 1. Đường (Q)",
+        "📦 2. Hộp & Cổng (W)",
+        "🎨 3. Tô màu (E)",
+        "❌ 4. Xóa (R)",
+        "🤖 Tự động",
+        "📋 Mẫu",
+        "⚙️ Nâng cao"
+    };
 
     [MenuItem("Tools/LoopMaster/Trình sửa màn chơi")]
     public static void Open() => GetWindow<LoopLevelEditorWindow>("Trình sửa màn chơi").Show();
@@ -278,7 +288,8 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 string file = EditorUtility.OpenFilePanel("Mở JSON màn chơi", A.LevelFolder, "json");
                 if (!string.IsNullOrEmpty(file)) TryOpen(file);
             }
-            if (GUILayout.Button("Mẫu", EditorStyles.toolbarButton)) { _editorMode = 2; _scroll = Vector2.zero; }
+            if (GUILayout.Button("Mẫu", EditorStyles.toolbarButton)) { _editorMode = 2; _workspace = false; _scroll = Vector2.zero; }
+            if (GUILayout.Button("Campaign 70", EditorStyles.toolbarButton)) AlternativeCampaign70Window.Open();
             if (GUILayout.Button("Lưu", EditorStyles.toolbarButton)) TrySave(false);
             if (GUILayout.Button("Lưu thành…", EditorStyles.toolbarButton)) TrySave(true);
             GUILayout.FlexibleSpace();
@@ -295,19 +306,82 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             _showBindings = EditorGUILayout.ToggleLeft("Liên kết hộp", _showBindings, GUILayout.Width(105));
             if (GUILayout.Button("Nhìn từ trên", GUILayout.Width(95))) Frame();
         }
-        int mode = GUILayout.Toolbar(_editorMode, new[] { "Chỉnh thủ công", "Tạo tự động", "Mẫu màn chơi" });
-        if (mode != _editorMode) { CancelCanvasGesture(); _editorMode = mode; GUIUtility.ExitGUI(); }
-        if (_editorMode == 0)
+        int currentTopTab;
+        if (_editorMode == 1) currentTopTab = 4;
+        else if (_editorMode == 2) currentTopTab = 5;
+        else if (!_workspace) currentTopTab = 6;
+        else
         {
-            bool workspace = GUILayout.Toolbar(_workspace ? 0 : 1, new[] { "Bàn chỉnh sửa 2D", "Các tab nâng cao" }) == 0;
-            if (workspace != _workspace) { CancelCanvasGesture(); _workspace = workspace; GUIUtility.ExitGUI(); }
-            if (!_workspace) _tab = GUILayout.Toolbar(_tab, Tabs);
+            if (_canvasTool == 6) currentTopTab = 0;
+            else if (_canvasTool == 2 || _canvasTool == 3 || _canvasTool == 4) currentTopTab = 2;
+            else if (_canvasTool == 5) currentTopTab = 3;
+            else currentTopTab = 1;
         }
+
+        Color prevBg = GUI.backgroundColor;
+        if (currentTopTab == 3) GUI.backgroundColor = new Color(1f, 0.45f, 0.45f);
+        int nextTopTab = GUILayout.Toolbar(currentTopTab, TopBarTabs, GUILayout.Height(28));
+        GUI.backgroundColor = prevBg;
+
+        if (nextTopTab != currentTopTab)
+        {
+            CancelCanvasGesture();
+            if (_drawingRoad) CancelRoadSketch();
+            switch (nextTopTab)
+            {
+                case 0:
+                    _editorMode = 0;
+                    _workspace = true;
+                    _canvasTool = 6;
+                    _status = "Công cụ: 1. Đường đi";
+                    break;
+                case 1:
+                    _editorMode = 0;
+                    _workspace = true;
+                    _canvasTool = 0;
+                    _status = "Công cụ: 2. Hộp & Cổng";
+                    break;
+                case 2:
+                    _editorMode = 0;
+                    _workspace = true;
+                    _canvasTool = 2;
+                    _status = "Công cụ: 3. Tô màu khối";
+                    break;
+                case 3:
+                    _editorMode = 0;
+                    _workspace = true;
+                    _canvasTool = 5;
+                    _status = "Công cụ: 4. Xóa (Eraser)";
+                    break;
+                case 4:
+                    _editorMode = 1;
+                    _workspace = false;
+                    _scroll = Vector2.zero;
+                    break;
+                case 5:
+                    _editorMode = 2;
+                    _workspace = false;
+                    _scroll = Vector2.zero;
+                    break;
+                case 6:
+                    _editorMode = 0;
+                    _workspace = false;
+                    _tab = 4;
+                    _scroll = Vector2.zero;
+                    break;
+            }
+            GUIUtility.ExitGUI();
+        }
+
         if (_editorMode == 0 && _workspace)
         {
             if (HasRawChanges) EditorGUILayout.HelpBox("Áp dụng hoặc đặt lại thay đổi trong tab JSON trước khi chỉnh trên bàn.", MessageType.Warning);
             else DrawWorkspace();
             SyncDirty(); return;
+        }
+        if (_editorMode == 0 && !_workspace)
+        {
+            _tab = GUILayout.Toolbar(_tab, Tabs);
         }
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
         try
@@ -348,8 +422,34 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     private void HandleShortcuts()
     {
         Event e = Event.current;
-        if (e.type != EventType.KeyDown || !(e.control || e.command) || e.keyCode != KeyCode.S) return;
-        TrySave(e.shift); e.Use();
+        if (e.type != EventType.KeyDown) return;
+        if ((e.control || e.command) && e.keyCode == KeyCode.S)
+        {
+            TrySave(e.shift); e.Use(); return;
+        }
+        if (!e.control && !e.command && !e.alt && !EditorGUIUtility.editingTextField)
+        {
+            if (e.keyCode == KeyCode.Q || e.keyCode == KeyCode.T)
+            {
+                _editorMode = 0; _workspace = true; _canvasTool = 6; _status = "Công cụ: 1. Đường đi";
+                e.Use(); Repaint(); return;
+            }
+            if (e.keyCode == KeyCode.W)
+            {
+                _editorMode = 0; _workspace = true; _canvasTool = 0; _status = "Công cụ: 2. Hộp & Cổng";
+                e.Use(); Repaint(); return;
+            }
+            if (e.keyCode == KeyCode.E)
+            {
+                _editorMode = 0; _workspace = true; _canvasTool = 2; _status = "Công cụ: 3. Tô màu khối";
+                e.Use(); Repaint(); return;
+            }
+            if (e.keyCode == KeyCode.R)
+            {
+                _editorMode = 0; _workspace = true; _canvasTool = 5; _status = "Công cụ: 4. Xóa (Eraser)";
+                e.Use(); Repaint(); return;
+            }
+        }
     }
     private void PlayInGameView(JObject level)
     {
