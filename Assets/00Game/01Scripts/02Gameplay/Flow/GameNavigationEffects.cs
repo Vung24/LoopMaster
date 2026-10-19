@@ -6,7 +6,16 @@ using UnityEngine;
 public sealed class GameNavigationEffects : IGameNavigationEffects
 {
     public bool IsSceneChanging => GameSceneManager.OnChangeScene;
-    public bool ReturnHomeAfterWin => GameSceneRoutingRules.ReturnHomeAfterWin(GameProgressStore.CurrentPuzzleIndex);
+    public bool ReturnHomeAfterWin
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (GamePrefs.EditorCampaignLastLevel > 0) return false;
+#endif
+            return GameSceneRoutingRules.ReturnHomeAfterWin(GameProgressStore.CurrentPuzzleIndex);
+        }
+    }
     public bool IsLevelCompleted(int level) => GameProgressStore.IsLevelCompleted(level);
     public bool TrySettlePendingWins() => SpecialStreakManager.Ensure().SettlePending();
     public void SynchronizeStreakLevel() => Managers.StreakLine?.SynchronizeTempLevel();

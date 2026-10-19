@@ -15,6 +15,9 @@ public static class GameProgressStore
             int next = Mathf.Max(HighestUnlockedLevel, HighestCompletedLevel == int.MaxValue ? int.MaxValue : HighestCompletedLevel + 1);
             var catalog = BuiltinLevelCatalog.Current;
             int last = catalog == null ? 0 : catalog.HighestLevel;
+#if UNITY_EDITOR
+            if (GamePrefs.EditorCampaignLastLevel > 0) last = GamePrefs.EditorCampaignLastLevel;
+#endif
             return last > 0 && next > last ? last : next;
         }
     }
@@ -24,6 +27,9 @@ public static class GameProgressStore
         {
             var catalog = BuiltinLevelCatalog.Current;
             int last = catalog == null ? 0 : catalog.HighestLevel;
+#if UNITY_EDITOR
+            if (GamePrefs.EditorCampaignLastLevel > 0) last = GamePrefs.EditorCampaignLastLevel;
+#endif
             return last > 0 && HighestCompletedLevel >= last;
         }
     }
