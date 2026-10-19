@@ -24,11 +24,11 @@ public static class AlternativeCampaign70Builder
 
     // Number, boxes (including special boxes), normal colors, road, singles, longs,
     // secret %, color locks, adjacent locks, ice cubes, ice count, groups, group size,
-    // linked pair, surprise colors, hard label, road capacity, mixing mode (0=generator, 1=layered).
+    // linked pair, surprise colors, hard label, road capacity, mixing mode (0=generator, 1=layered, 2=two-layer).
     // Existing layout API roads:
     // rounded rectangle=0, oval=1, circle=2, straight=3, U=4, S=5, winding=6.
-    private const string Curriculum = @"1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0
-2,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0
+    private const string Curriculum = @"1,2,1,3,0,0,0,0,0,0,0,0,0,0,0,0,4,0
+2,2,2,3,0,0,0,0,0,0,0,0,0,0,0,0,6,0
 3,4,3,1,0,0,0,0,0,0,0,0,0,0,0,0,7,0
 4,5,4,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0
 5,6,5,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
@@ -36,7 +36,7 @@ public static class AlternativeCampaign70Builder
 7,8,8,0,0,0,20,0,0,0,0,0,0,0,0,0,6,0
 8,7,7,0,0,0,20,0,0,0,0,0,0,0,0,0,5,0
 9,9,8,0,0,0,20,0,0,0,0,0,0,0,0,0,4,0
-10,9,9,1,0,0,25,0,0,0,0,0,0,0,0,1,4,0
+10,7,7,1,0,0,10,0,0,0,0,0,0,0,0,1,4,2
 11,8,8,3,0,0,0,0,0,0,0,0,0,0,0,0,7,0
 12,8,7,3,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 13,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,6,1
@@ -77,7 +77,7 @@ public static class AlternativeCampaign70Builder
 48,12,8,0,1,2,20,0,0,0,0,0,0,0,0,0,5,0
 49,9,8,1,0,0,0,0,0,0,0,0,0,1,0,0,6,0
 50,10,9,1,0,0,0,0,0,0,0,0,0,1,0,0,5,0
-51,9,9,1,0,0,20,0,0,0,0,0,0,1,0,0,7,0
+51,9,9,1,0,0,20,0,0,0,0,0,0,1,0,0,7,1
 52,10,10,5,0,0,0,1,0,0,0,0,0,1,0,0,5,1
 53,10,9,0,0,0,0,0,0,0,0,1,2,0,0,0,6,0
 54,12,12,0,0,0,0,0,0,0,0,1,3,0,0,0,5,1
@@ -361,7 +361,7 @@ public static class AlternativeCampaign70Builder
             LongBoxes=p.Longs, SecretPercent=0, ColorLocks=0, NumberLocks=0, Groups=0,
             RoadShape=p.Road, RoadCapacity=p.Capacity, ScrambleMoves=p.Level<5 ? 8 : 24+p.Level/5*4,
             CubePairs=0, AddCapacity=true, BoxGap=.35f, RoadClearance=.08f, VerifySolution=false };
-        if (p.Level <= 4)
+        if (p.Level <= 4 && p.Road < 3)
         {
             settings.RoadShape = 0;
             settings.BoardLayout = 1;
@@ -383,6 +383,7 @@ public static class AlternativeCampaign70Builder
             for (int i=0; i<3; i++) A.Array((JObject)tutorial[0], "Cubes").Add(A.NewCube(1));
             A.Array((JObject)tutorial[1], "Cubes").Add(A.NewCube(1));
         }
+        NormalizePalette(A.Array(layout, "Boxes"));
         ApplySpecialMechanics(root, p, seed);
         int mixed = 0;
         foreach (JObject box in A.Array(layout, "Boxes"))
@@ -397,12 +398,38 @@ public static class AlternativeCampaign70Builder
         return root;
     }
 
+    private static void NormalizePalette(JArray boxes)
+    {
+        var normalColors = new SortedSet<int>();
+        var longColors = new SortedSet<int>();
+        foreach (JObject box in boxes)
+        foreach (JObject cube in A.Array(box, "Cubes"))
+        {
+            int type = A.Int(cube, "Type");
+            if (type >= 1 && type <= 14) normalColors.Add(type);
+            else if (type >= 101 && type <= 105) longColors.Add(type);
+            else throw new FormatException("Unexpected cube type before mechanic placement: " + type);
+        }
+        var mapping = new Dictionary<int, int>();
+        int next = 1;
+        foreach (int type in normalColors) mapping.Add(type, next++);
+        next = 101;
+        foreach (int type in longColors) mapping.Add(type, next++);
+        // Apply before creating locks, group keys and Surprise replacements so every
+        // color reference is derived from the same consecutive palette.
+        foreach (JObject box in boxes)
+        foreach (JObject cube in A.Array(box, "Cubes"))
+            cube["Type"] = mapping[A.Int(cube, "Type")];
+    }
+
     private static void MixFullBoardStacks(JObject layout, Profile profile, int seed)
     {
         if (profile.MixingMode == 0) return;
-        if (profile.Boxes-profile.Longs < 8 || profile.Singles > 0 ||
+        int minimumBoxes = 8;
+        if (profile.MixingMode == 2) minimumBoxes = 2;
+        if (profile.Boxes-profile.Longs < minimumBoxes || profile.Singles > 0 ||
             profile.Colors != profile.Boxes-profile.Longs)
-            throw new FormatException("Layered mixing requires at least eight full normal boxes, one color per normal box, and no single queue.");
+            throw new FormatException("Layered mixing requires at least " + minimumBoxes + " full normal boxes, one color per normal box, and no single queue.");
         var boxes = new List<JObject>();
         var colors = new SortedSet<int>();
         foreach (JObject box in A.Array(layout, "Boxes"))
@@ -420,12 +447,20 @@ public static class AlternativeCampaign70Builder
             int target = random.Next(i + 1);
             int color = palette[i]; palette[i] = palette[target]; palette[target] = color;
         }
-        int[][] recipes = { new[] { 0,0,1,2 }, new[] { 0,1,2,3 }, new[] { 0,1,2,2 } };
-        int recipe = (int)((uint)seed % (uint)recipes.Length);
-        // Thirteen-box references are a small set; avoid tying every Expert road
-        // to the same recipe through matching modulo counts.
-        if (profile.Hard == 2) recipe = random.Next(recipes.Length);
-        int[] offsets = recipes[recipe];
+        int[] offsets;
+        if (profile.MixingMode == 2)
+        {
+            offsets = new[] { 0,0,1,1 };
+        }
+        else
+        {
+            int[][] recipes = { new[] { 0,0,1,2 }, new[] { 0,1,2,3 }, new[] { 0,1,2,2 } };
+            int recipe = (int)((uint)seed % (uint)recipes.Length);
+            // Thirteen-box references are a small set; avoid tying every Expert road
+            // to the same recipe through matching modulo counts.
+            if (profile.Hard == 2) recipe = random.Next(recipes.Length);
+            offsets = recipes[recipe];
+        }
         profile.MixingRecipe = "layered_cycle_" + string.Join("", offsets);
         // Every layer is a permutation: retain exactly four cubes of every color.
         // Neighbouring exits share dependencies; locked boxes then constrain the release order.
@@ -794,6 +829,7 @@ public static class AlternativeCampaign70Builder
             ["learning_objective"]=LearningObjective(p.Level),
             ["sha256"]=Hash(root.ToString(Formatting.Indented)), ["profile"]=JObject.FromObject(p),
             ["mechanics"]=new JArray(GetMechanics(p)),
+            ["color_type_policy"]="normal_1_to_N_long_101_to_N_surprise_201_to_N",
             ["empty_boxes"]=empty, ["secret_eligible"]=eligible, ["secret_count"]=hidden,
             ["structural_validation"]="passed", ["warnings"]=new JArray(warnings),
             ["capacity_display_review"]="pending",
