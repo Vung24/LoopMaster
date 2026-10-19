@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using DG.Tweening;
+using static UnityEngine.Object;
 
 public sealed class BoosterFlow
 {
@@ -114,9 +115,9 @@ public sealed class BoosterFlow
 		_playAudio(_loader == null ? null : _loader.PathClip);
 		if (_loader != null && _loader.ToolPathBoxEffect != null)
 		{
-			GameObject effect = UnityEngine.Object.Instantiate(_loader.ToolPathBoxEffect, _gameRoot);
+			GameObject effect = Instantiate(_loader.ToolPathBoxEffect, _gameRoot);
 			effect.SetActive(true);
-			UnityEngine.Object.Destroy(effect, 1.5f);
+			Destroy(effect, 1.5f);
 		}
 		_refreshPathState();
 		return true;
@@ -175,7 +176,7 @@ public sealed class BoosterFlow
 			for (int i = 0; i < returnOrigins.Count; i++)
 			{
 				var origin = returnOrigins[i];
-				GameObject visual = UnityEngine.Object.Instantiate(_loader.Slice, origin.position, origin.rotation, _gameRoot);
+				GameObject visual = Instantiate(_loader.Slice, origin.position, origin.rotation, _gameRoot);
 				_undoVisuals.Add(visual);
 				visual.transform.localScale = origin.scale;
 				Slice slice = visual.GetComponent<Slice>();
@@ -233,7 +234,7 @@ public sealed class BoosterFlow
 			for (int i = 0; i < origins.Count; i++)
 			{
 				var origin = origins[i];
-				GameObject visual = UnityEngine.Object.Instantiate(_loader.Slice, origin.position, origin.rotation, _gameRoot);
+				GameObject visual = Instantiate(_loader.Slice, origin.position, origin.rotation, _gameRoot);
 				_undoVisuals.Add(visual);
 				visual.transform.localScale = origin.scale;
 				Slice slice = visual.GetComponent<Slice>();

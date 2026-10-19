@@ -90,6 +90,29 @@ public static class LoopLevelBoardLayout
         if (boxes.Count == 0) throw new FormatException("Thêm hộp trước khi sắp xếp bàn chơi.");
         var order = Enumerable.Range(0, boxes.Count).ToList(); var random = new System.Random(seed);
         for (int i = order.Count - 1; i > 0; i--) { int j = random.Next(i + 1); int old = order[i]; order[i] = order[j]; order[j] = old; }
+
+        if (settings.RoadShape == 3)
+        {
+            if (boxes.Count <= 4)
+            {
+                ArrangeSingleColumn(boxes, order, settings.BoxGap, 270f);
+            }
+            else
+            {
+                ArrangeColumnsFacingLeft(boxes, order, 2, settings.BoxGap + 0.2f, settings.BoxGap);
+            }
+            FitAndBind(layout, settings);
+            return;
+        }
+
+        if (settings.RoadShape == 5)
+        {
+            float centerGap = Mathf.Max(3.2f, settings.BoxGap + 2.6f);
+            ArrangeBanksInward(boxes, order, settings.BoxGap, centerGap);
+            FitAndBind(layout, settings);
+            return;
+        }
+
         if (settings.BoardLayout == 0)
         {
             ArrangeBanks(boxes, order, settings.BoxGap);
@@ -151,11 +174,32 @@ public static class LoopLevelBoardLayout
             }
         }
 
-        ArrangeVerticalBank(boxes, leftBank, gap, gap, -1f);
-        ArrangeVerticalBank(boxes, rightBank, gap, gap, 1f);
+        ArrangeVerticalBank(boxes, leftBank, gap, gap, -1f, false);
+        ArrangeVerticalBank(boxes, rightBank, gap, gap, 1f, false);
     }
 
-    private static void ArrangeVerticalBank(JArray boxes, List<int> bank, float gap, float centerGap, float sign)
+    private static void ArrangeBanksInward(JArray boxes, List<int> order, float gap, float centerGap)
+    {
+        int split = (boxes.Count + 1) / 2;
+        var leftBank = new List<int>();
+        var rightBank = new List<int>();
+        for (int i = 0; i < order.Count; i++)
+        {
+            if (i < split)
+            {
+                leftBank.Add(order[i]);
+            }
+            else
+            {
+                rightBank.Add(order[i]);
+            }
+        }
+
+        ArrangeVerticalBank(boxes, leftBank, gap, centerGap, -1f, true);
+        ArrangeVerticalBank(boxes, rightBank, gap, centerGap, 1f, true);
+    }
+
+    private static void ArrangeVerticalBank(JArray boxes, List<int> bank, float gap, float centerGap, float sign, bool faceInward = false)
     {
         if (bank.Count == 0)
         {
@@ -189,13 +233,90 @@ public static class LoopLevelBoardLayout
             float radial = GetRadialSpan(type);
             float length = GetTangentSpan(type);
 
-            Vector3 rotation = new Vector3(0, type == 1 ? 0 : sign * 90f, 0);
+            float targetYaw = faceInward ? -sign * 90f : sign * 90f;
+            Vector3 rotation = new Vector3(0, type == 1 ? 0 : targetYaw, 0);
             Vector3 center = new Vector3(sign * (centerGap * 0.5f + maxRadial - radial * 0.5f), 0f, bottom + length * 0.5f);
             Vector3 pivot = Quaternion.Euler(rotation) * new Vector3(local.center.x, 0f, local.center.z);
 
             box["Rotation"] = A.Vector(rotation);
             box["Position"] = A.Vector(center - pivot);
             bottom += length + gap;
+        }
+    }
+
+    public static void ArrangeTwoBanksFacingInward(JArray boxes, IList<int> selection, float gap = 0.4f, float centerGap = 3.2f)
+    {
+        int[] indices = GetEffectiveIndices(boxes, selection);
+        if (indices.Length == 0)
+        {
+            return;
+        }
+
+        int split = (indices.Length + 1) / 2;
+        var leftBank = new List<int>();
+        var rightBank = new List<int>();
+        for (int i = 0; i < indices.Length; i++)
+        {
+            if (i < split)
+            {
+                leftBank.Add(indices[i]);
+            }
+            else
+            {
+                rightBank.Add(indices[i]);
+            }
+        }
+
+        ArrangeVerticalBank(boxes, leftBank, gap, centerGap, -1f, true);
+        ArrangeVerticalBank(boxes, rightBank, gap, centerGap, 1f, true);
+    }
+
+    public static void ArrangeColumnsFacingLeft(JArray boxes, IList<int> selection, int columns = 1, float gapX = 0.6f, float gapZ = 0.4f)
+    {
+        int[] indices = GetEffectiveIndices(boxes, selection);
+        if (indices.Length == 0) return;
+        columns = Mathf.Max(1, columns);
+        int rows = Mathf.CeilToInt(indices.Length / (float)columns);
+
+        float maxBoxSpanZ = 0f;
+        float maxBoxSpanX = 0f;
+        for (int i = 0; i < indices.Length; i++)
+        {
+            JObject box = (JObject)boxes[indices[i]];
+            int type = A.Int(box, "BoxType");
+            Bounds local = LocalBounds(type);
+            float spanZ = type == 1 ? local.size.z : local.size.x;
+            float spanX = type == 1 ? local.size.x : local.size.z;
+            if (spanZ > maxBoxSpanZ) maxBoxSpanZ = spanZ;
+            if (spanX > maxBoxSpanX) maxBoxSpanX = spanX;
+        }
+
+        float totalDepth = rows * maxBoxSpanZ + Mathf.Max(0, rows - 1) * gapZ;
+        float totalWidth = columns * maxBoxSpanX + Mathf.Max(0, columns - 1) * gapX;
+
+        float topZ = totalDepth * 0.5f;
+        int current = 0;
+        for (int r = 0; r < rows; r++)
+        {
+            int inThisRow = Mathf.Min(columns, indices.Length - current);
+            float leftX = -totalWidth * 0.5f;
+            float centerZ = topZ - maxBoxSpanZ * 0.5f;
+
+            for (int c = 0; c < inThisRow; c++)
+            {
+                JObject box = (JObject)boxes[indices[current++]];
+                int type = A.Int(box, "BoxType");
+                Bounds local = LocalBounds(type);
+                float spanX = type == 1 ? local.size.x : local.size.z;
+                Vector3 rotation = new Vector3(0, type == 1 ? 0 : 270f, 0);
+                Vector3 center = new Vector3(leftX + spanX * 0.5f, 0f, centerZ);
+                Vector3 pivot = Quaternion.Euler(rotation) * new Vector3(local.center.x, 0, local.center.z);
+
+                box["Rotation"] = A.Vector(rotation);
+                box["Position"] = A.Vector(center - pivot);
+                leftX += spanX + gapX;
+            }
+            topZ -= maxBoxSpanZ + gapZ;
         }
     }
 
@@ -222,8 +343,8 @@ public static class LoopLevelBoardLayout
             }
         }
 
-        ArrangeVerticalBank(boxes, leftBank, gap, centerGap, -1f);
-        ArrangeVerticalBank(boxes, rightBank, gap, centerGap, 1f);
+        ArrangeVerticalBank(boxes, leftBank, gap, centerGap, -1f, false);
+        ArrangeVerticalBank(boxes, rightBank, gap, centerGap, 1f, false);
     }
 
     public static void FitRoadOnly(JObject layout, LoopLevelGeneratorSettings settings)
@@ -251,11 +372,8 @@ public static class LoopLevelBoardLayout
 
     public static void FitOpenRoad(JObject layout, JArray boxes, Bounds content, int shape, float clearance)
     {
-        Vector3 center = new Vector3(content.center.x, 0.2f, content.center.z);
         float requiredClearance = clearance + 0.5f;
         float padding = requiredClearance + 0.05f;
-        float width = content.size.x + 2f * padding;
-        float depth = content.size.z + 2f * padding;
 
         if (shape == 3)
         {
@@ -263,13 +381,19 @@ public static class LoopLevelBoardLayout
         }
         else if (shape == 4)
         {
-            layout["Paths"] = new JArray(A.SCurveRoad(center, width, depth));
-            A.SyncEnterExitGates(layout);
+            A.FitUShapeRoadAroundBoxes(layout, clearance);
         }
         else if (shape == 5)
         {
-            layout["Paths"] = new JArray(A.OpenWindingRoad(center, width, depth));
-            A.SyncEnterExitGates(layout);
+            A.FitSCurveRoadBetweenBanks(layout, clearance);
+        }
+        else if (shape == 6)
+        {
+            A.FitOpenWindingRoadAroundBoxes(layout, clearance);
+        }
+        else
+        {
+            A.FitUShapeRoadAroundBoxes(layout, clearance);
         }
     }
 

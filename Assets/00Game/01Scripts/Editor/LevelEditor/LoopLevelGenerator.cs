@@ -16,6 +16,7 @@ public sealed class LoopLevelGeneratorSettings
     public int Difficulty = 1, Seed = 12345, BoxCount = 8, ColorCount = 8, EmptyBoxes = 0;
     public int SingleBoxes, LongBoxes, SecretPercent = 20, ColorLocks = 1, NumberLocks, Groups;
     public int EnterOnlyBoxes, LimitedColorBoxes, AdjacentLocks;
+    public int CubePairs;
     public int ScrambleMoves = 24, RoadCapacity = 6, RoadShape, MaxStates = 2000, Attempts = 8;
     public float BoxSpacing = 3f, RoadMargin = 2.5f;
     public float BoxGap = .4f, RoadClearance = .2f, BoardAspect = .75f;
@@ -30,6 +31,7 @@ public sealed class LoopLevelGeneratorSettings
         EmptyBoxes = 0;
         SingleBoxes = 0;
         LongBoxes = 0;
+        CubePairs = 0;
         ColorCount = BoxCount - EmptyBoxes;
         SecretPercent = new[] { 0, 15, 25, 35 }[Difficulty];
         ColorLocks = new[] { 0, 1, 2, 2 }[Difficulty];
@@ -53,6 +55,7 @@ public sealed class LoopLevelGeneratorSettings
         LimitedColorBoxes = 0;
         AdjacentLocks = 0;
         EmptyBoxes = 0;
+        CubePairs = 0;
         AutoBinding = true;
         AddCapacity = true;
         VerifySolution = false;
@@ -60,7 +63,18 @@ public sealed class LoopLevelGeneratorSettings
         bool isOpenRoad = level == 1 || level == 12 || level == 13 || level == 16 || level == 17 || level == 20 || level == 29 || level == 30;
         if (isOpenRoad)
         {
-            RoadShape = level == 1 ? 3 : (level % 2 == 0 ? 4 : 5);
+            if (level == 1 || level == 12)
+            {
+                RoadShape = 3;
+            }
+            else if (level == 13 || level == 30)
+            {
+                RoadShape = 5;
+            }
+            else
+            {
+                RoadShape = 4;
+            }
         }
         else
         {
@@ -122,7 +136,7 @@ public sealed class LoopLevelGeneratorSettings
     public List<string> Validate()
     {
         var errors = new List<string>();
-        if (Difficulty < 0 || Difficulty > 3 || RoadShape < 0 || RoadShape > 5) errors.Add("Chọn độ khó và hình đường hợp lệ.");
+        if (Difficulty < 0 || Difficulty > 3 || RoadShape < 0 || RoadShape > 6) errors.Add("Chọn độ khó và hình đường hợp lệ.");
         if (BoxCount < 2 || BoxCount > 24) errors.Add("Tổng số hộp phải từ 2–24.");
         if (EmptyBoxes < 0 || EmptyBoxes > 4 || SingleBoxes < 0 || SingleBoxes > 3 || LongBoxes < 0 || LongBoxes > 6 || LongBoxes == 1)
             errors.Add("Dùng 0–4 hộp dự phòng thường, 0–3 hộp đơn và 0 hoặc 2–6 hộp dài.");
@@ -132,6 +146,10 @@ public sealed class LoopLevelGeneratorSettings
             errors.Add("Mỗi loại khóa tối đa 3; giữ ít nhất một hộp đầy nằm ngoài mọi khóa.");
         if (EnterOnlyBoxes < 0 || EnterOnlyBoxes > 3 || LimitedColorBoxes < 0 || LimitedColorBoxes > 3 || AdjacentLocks < 0 || AdjacentLocks > 3)
             errors.Add("Hộp chỉ nhận vào / nhận màu / khóa liền kề tối đa 3.");
+        int normalBoxes = BoxCount - SingleBoxes - LongBoxes;
+        if (CubePairs > 0 && normalBoxes < 2) errors.Add("Cube đôi cần ít nhất 2 hộp thường.");
+        int lockedNormal = ColorLocks + NumberLocks + Groups + EnterOnlyBoxes + LimitedColorBoxes;
+        if (CubePairs > 0 && normalFilled - lockedNormal < 2) errors.Add("Cần ít nhất 2 hộp thường không khóa để đặt Cube đôi.");
         if (SecretPercent < 0 || SecretPercent > 70 || ScrambleMoves < 4 || ScrambleMoves > 160 || RoadCapacity < 2 || RoadCapacity > 16) errors.Add("Tỉ lệ khối ẩn, số bước trộn hoặc sức chứa đường không hợp lệ.");
         if (MaxStates < 100 || MaxStates > 20000 || Attempts < 1 || Attempts > 16) errors.Add("Số trạng thái tìm phải từ 100–20000, số lần thử từ 1–16.");
         if (!FiniteRange(BoxGap, .35f, 2) || !FiniteRange(RoadClearance, .05f, 3) || !FiniteRange(BoardAspect, .5f, 1.5f) || BoardColumns < 0 || BoardColumns > 24 || BoardLayout < 0 || BoardLayout > 1)
@@ -207,6 +225,10 @@ public static class LoopLevelGenerator
                 { cubes[c]["IsSecret"] = 1; result.HiddenCubes++; }
         }
         LoopLevelBoardLayout.Arrange(layout, settings, seed);
+        if (settings.CubePairs > 0)
+        {
+            AddCubePair(result.Json, random);
+        }
         if (settings.AddCapacity)
         {
             LoopLevelCommands.AddCapacity(result.Json);
@@ -412,7 +434,37 @@ public static class LoopLevelGenerator
         }
     }
 
-    public static bool AutoFillCubesAndMechanics(JObject root, int colorCount, int secretPercent, int colorLocks, int numberLocks, int groups, int enterOnly, int limitedColor, int seed, out string error)
+    private static void AddCubePair(JObject root, System.Random random)
+    {
+        JObject layout = A.Layout(root);
+        JArray boxes = A.Array(layout, "Boxes");
+        var candidates = new List<int>();
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            JObject b = (JObject)boxes[i];
+            if (A.Int(b, "BoxType") == 0 && A.Array(b, "Cubes").Count > 0 &&
+                A.Int(b, "LockColor") == 0 && A.Int(b, "NumLock") == 0 &&
+                !b.Value<bool>("IsEnterOnly") && A.Int(b, "LimitedColor") == 0 &&
+                A.Int(b, "IsAdjacentLocked") == 0)
+            {
+                candidates.Add(i);
+            }
+        }
+        if (candidates.Count < 2) return;
+
+        Shuffle(candidates, random);
+        int boxA = candidates[0];
+        Vector3 posA = A.Vector((JObject)boxes[boxA], "Position");
+
+        int boxB = candidates
+            .Skip(1)
+            .OrderBy(idx => Vector3.Distance(posA, A.Vector((JObject)boxes[idx], "Position")))
+            .First();
+
+        LoopLinkedCubeAuthoring.TryLinkTopCubes(root, boxA, boxB, out _);
+    }
+
+    public static bool AutoFillCubesAndMechanics(JObject root, int colorCount, int secretPercent, int colorLocks, int numberLocks, int groups, int enterOnly, int limitedColor, int seed, out string error, int cubePairs = 0)
     {
         error = null;
         JObject layout = A.Layout(root);
@@ -429,6 +481,7 @@ public static class LoopLevelGenerator
         int filledCount = count - emptyCount;
         colorCount = Mathf.Clamp(colorCount, 2, Math.Min(14, filledCount));
 
+        LoopLinkedCubeAuthoring.Unlink(root, 1);
         A.Array(layout, "Groups").Clear();
         foreach (JObject b in boxes)
         {
@@ -483,6 +536,11 @@ public static class LoopLevelGenerator
             for (int c = 0; c < firstVisible; c++)
                 if (A.Int((JObject)cubes[c], "GroupKeyId") == 0 && random.Next(100) < secretPercent)
                     cubes[c]["IsSecret"] = 1;
+        }
+
+        if (cubePairs > 0)
+        {
+            AddCubePair(root, random);
         }
 
         var errors = A.Validate(root, out _);

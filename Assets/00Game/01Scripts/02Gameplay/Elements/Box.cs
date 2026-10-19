@@ -65,7 +65,7 @@ public class Box : MonoBehaviour
 			_audioSource.playOnAwake = false;
 		}
 		if (_boxCard == null) _boxCard = HierarchyReferenceCache.Child(transform, "BoxCard");
-		_animator = new BoxAnimator(this, _anim, BoxCard, _audioSource, () => _gameLoader);
+		_animator = new BoxAnimator(this, _anim, BoxCard, _audioSource);
 	}
 
 	public void Init(BoxInfo info, GameLoader gameLoader)

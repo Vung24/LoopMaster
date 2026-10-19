@@ -360,11 +360,11 @@ public static class LoopLevelAuthoring
         float hx = width * 0.5f, hz = depth * 0.5f;
         var list = new[]
         {
-            center + new Vector3(-hx, 0, hz),
-            center + new Vector3(-hx, 0, -hz),
-            center + new Vector3(0, 0, -hz),
-            center + new Vector3(hx, 0, -hz),
-            center + new Vector3(hx, 0, hz)
+            center + new Vector3(-hx, 0.2f, hz),
+            center + new Vector3(-hx, 0.2f, -hz),
+            center + new Vector3(0, 0.2f, -hz),
+            center + new Vector3(hx, 0.2f, -hz),
+            center + new Vector3(hx, 0.2f, hz)
         };
         return RoadFromPositions(list, false, smoothing);
     }
@@ -417,7 +417,7 @@ public static class LoopLevelAuthoring
     public static void FitStraightRoadBesideBoxes(JObject layout, float clearance = 1.8f, bool onLeft = true)
     {
         JArray boxes = Array(layout, "Boxes");
-        if (boxes.Count == 0) throw new FormatException("Thêm hộp trước khi tạo băng chuyền thẳng.");
+        if (boxes.Count == 0) throw new InvalidOperationException("Thêm hộp trước khi tạo băng chuyền thẳng.");
         Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, false);
         float x = onLeft ? (bounds.min.x - clearance) : (bounds.max.x + clearance);
         float zStart = bounds.max.z + 1.2f;
@@ -427,6 +427,99 @@ public static class LoopLevelAuthoring
         layout["Paths"] = new JArray(StraightRoad(p0, p1));
         Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);
         layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1;
+        SyncEnterExitGates(layout);
+    }
+
+    public static void FitUShapeRoadAroundBoxes(JObject layout, float clearance = 1.2f)
+    {
+        JArray boxes = Array(layout, "Boxes");
+        if (boxes.Count == 0) throw new InvalidOperationException("Thêm hộp trước khi tạo đường chữ U.");
+        Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, false);
+        float requiredClearance = clearance + 0.5f;
+        float padding = requiredClearance + 0.05f;
+
+        float leftX = bounds.min.x - padding;
+        float rightX = bounds.max.x + padding;
+        float bottomZ = bounds.min.z - padding;
+        float topZ = bounds.max.z + 1.2f;
+
+        float spanX = rightX - leftX;
+        float cornerRatio = Mathf.Clamp(padding / Mathf.Max(1f, spanX), 0.15f, 0.35f);
+
+        var list = new[]
+        {
+            new Vector3(leftX, 0.2f, topZ),
+            new Vector3(leftX, 0.2f, bounds.min.z),
+            new Vector3(leftX + spanX * cornerRatio, 0.2f, bottomZ),
+            new Vector3(rightX - spanX * cornerRatio, 0.2f, bottomZ),
+            new Vector3(rightX, 0.2f, bounds.min.z),
+            new Vector3(rightX, 0.2f, topZ)
+        };
+
+        layout["Paths"] = new JArray(RoadFromPositions(list, false, 0.45f));
+        Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);
+        layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1f;
+        SyncEnterExitGates(layout);
+    }
+
+    public static void FitSCurveRoadBetweenBanks(JObject layout, float clearance = 1.0f)
+    {
+        JArray boxes = Array(layout, "Boxes");
+        if (boxes.Count == 0) throw new InvalidOperationException("Thêm hộp trước khi tạo đường chữ S.");
+        Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, false);
+        float topZ = bounds.max.z + 1.5f;
+        float bottomZ = bounds.min.z - 1.5f;
+
+        float hx = Mathf.Clamp(bounds.size.x * 0.15f, 0.6f, 1.2f);
+        var list = new[]
+        {
+            new Vector3(-hx, 0.2f, topZ),
+            new Vector3(-hx * 1.1f, 0.2f, bounds.max.z * 0.5f),
+            new Vector3(0f, 0.2f, 0f),
+            new Vector3(hx * 1.1f, 0.2f, bounds.min.z * 0.5f),
+            new Vector3(hx, 0.2f, bottomZ)
+        };
+
+        layout["Paths"] = new JArray(RoadFromPositions(list, false, 0.55f));
+        Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);
+        layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1f;
+        SyncEnterExitGates(layout);
+    }
+
+    public static void FitOpenWindingRoadAroundBoxes(JObject layout, float clearance = 1.2f)
+    {
+        JArray boxes = Array(layout, "Boxes");
+        if (boxes.Count == 0) throw new InvalidOperationException("Thêm hộp trước khi tạo đường uốn lượn.");
+        Bounds bounds = LoopLevelBoardLayout.BoardBounds(layout, false);
+        float requiredClearance = clearance + 0.5f;
+        float padding = requiredClearance + 0.05f;
+
+        float leftX = bounds.min.x - padding;
+        float rightX = bounds.max.x + padding;
+        float bottomZ = bounds.min.z - padding;
+        float topZ = bounds.max.z + 1.2f;
+
+        float midZ = (bounds.min.z + bounds.max.z) * 0.5f;
+        float wave = Mathf.Min(0.6f, padding * 0.35f);
+
+        var list = new[]
+        {
+            new Vector3(leftX, 0.2f, topZ),
+            new Vector3(leftX - wave, 0.2f, (topZ + midZ) * 0.5f),
+            new Vector3(leftX, 0.2f, midZ),
+            new Vector3(leftX - wave, 0.2f, (midZ + bottomZ) * 0.5f),
+            new Vector3(leftX, 0.2f, bounds.min.z),
+            new Vector3((leftX + rightX) * 0.5f, 0.2f, bottomZ - wave),
+            new Vector3(rightX, 0.2f, bounds.min.z),
+            new Vector3(rightX + wave, 0.2f, (midZ + bottomZ) * 0.5f),
+            new Vector3(rightX, 0.2f, midZ),
+            new Vector3(rightX + wave, 0.2f, (topZ + midZ) * 0.5f),
+            new Vector3(rightX, 0.2f, topZ)
+        };
+
+        layout["Paths"] = new JArray(RoadFromPositions(list, false, 0.5f));
+        Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);
+        layout["Size"] = Mathf.Max(whole.size.x, whole.size.z) + 1f;
         SyncEnterExitGates(layout);
     }
 

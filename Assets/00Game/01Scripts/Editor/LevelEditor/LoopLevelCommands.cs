@@ -680,8 +680,8 @@ public static class LoopLevelCommands
         if (root == null) return;
         JObject layout = A.Layout(root);
         boxCount = Mathf.Clamp(boxCount, 2, 16);
-        roadShape = Mathf.Clamp(roadShape, 0, 5);
-        contentMode = Mathf.Clamp(contentMode, 0, 3);
+        roadShape = Mathf.Clamp(roadShape, 0, 6);
+        contentMode = Mathf.Clamp(contentMode, 0, 4);
 
         JArray boxes = A.Array(layout, "Boxes");
         boxes.Clear();
@@ -701,13 +701,20 @@ public static class LoopLevelCommands
             }
             else
             {
-                LoopLevelBoardLayout.ArrangeGrid(boxes, null, 2, 0.4f, 0.6f);
+                LoopLevelBoardLayout.ArrangeColumnsFacingLeft(boxes, null, 2, 0.6f, 0.4f);
             }
         }
-        else if (roadShape >= 4)
+        else if (roadShape == 4)
         {
-            // Open winding or S-curve weaving through middle: boxes face inward towards center path
-            LoopLevelBoardLayout.ArrangeTwoBanks(boxes, null, 0.4f, 4.2f);
+            LoopLevelBoardLayout.ArrangeTwoColumnsFacingOutward(boxes, null, 0.4f, 0.4f);
+        }
+        else if (roadShape == 5)
+        {
+            LoopLevelBoardLayout.ArrangeTwoBanksFacingInward(boxes, null, 0.4f, 3.2f);
+        }
+        else if (roadShape == 6)
+        {
+            LoopLevelBoardLayout.ArrangeTwoColumnsFacingOutward(boxes, null, 0.4f, 0.4f);
         }
         else if (boxCount <= 3)
         {
@@ -715,7 +722,6 @@ public static class LoopLevelCommands
         }
         else
         {
-            // Closed perimeter loop: boxes face outward so transfer arrows point directly into road
             LoopLevelBoardLayout.ArrangeTwoColumnsFacingOutward(boxes, null, 0.4f, 0.4f);
         }
 
@@ -760,13 +766,15 @@ public static class LoopLevelCommands
         }
         else if (roadShape == 4)
         {
-            layout["Paths"] = new JArray(A.SCurveRoad(center, width, depth));
-            A.SyncEnterExitGates(layout);
+            A.FitUShapeRoadAroundBoxes(layout, clearance);
         }
         else if (roadShape == 5)
         {
-            layout["Paths"] = new JArray(A.OpenWindingRoad(center, width, depth));
-            A.SyncEnterExitGates(layout);
+            A.FitSCurveRoadBetweenBanks(layout, clearance);
+        }
+        else if (roadShape == 6)
+        {
+            A.FitOpenWindingRoadAroundBoxes(layout, clearance);
         }
 
         layout["PathLength"] = Mathf.Clamp(boxCount, 4, 8);
@@ -840,6 +848,24 @@ public static class LoopLevelCommands
         {
             int sets = Math.Max(1, boxCount - 1);
             DistributeSolvableCubes(root, null, sets, seed, 25);
+        }
+        else if (contentMode == 4)
+        {
+            int sets = Math.Max(1, boxCount - 1);
+            DistributeSolvableCubes(root, null, sets, seed, 0);
+            int boxA = -1, boxB = -1;
+            for (int b = 0; b < boxes.Count; b++)
+            {
+                if (A.Array((JObject)boxes[b], "Cubes").Count > 0)
+                {
+                    if (boxA < 0) boxA = b;
+                    else if (boxB < 0) { boxB = b; break; }
+                }
+            }
+            if (boxA >= 0 && boxB >= 0)
+            {
+                LoopLinkedCubeAuthoring.TryLinkTopCubes(root, boxA, boxB, out _);
+            }
         }
 
         Bounds whole = LoopLevelBoardLayout.BoardBounds(layout, true);

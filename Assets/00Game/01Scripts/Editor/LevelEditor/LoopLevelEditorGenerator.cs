@@ -56,7 +56,8 @@ public sealed partial class LoopLevelEditorWindow
                 "Bầu dục (Đóng)",
                 "Tròn (Đóng)",
                 "Đường thẳng mở (Cổng Vào/Ra)",
-                "Đường chữ S mở (Cổng Vào/Ra)",
+                "Đường chữ U mở (Cổng Vào & Ra ở trên)",
+                "Đường chữ S mở (Luồn giữa 2 dãy)",
                 "Đường uốn lượn mở (Cổng Vào/Ra)"
             });
             s.BoardLayout = EditorGUILayout.Popup("Cách xếp hộp", s.BoardLayout, new[] { "Hai dãy hướng ra đường", "Các hàng cân đối" });
@@ -73,6 +74,7 @@ public sealed partial class LoopLevelEditorWindow
             s.Groups = EditorGUILayout.IntSlider("Nhóm khóa + chìa khóa", s.Groups, 0, 3);
             s.EnterOnlyBoxes = EditorGUILayout.IntSlider("Hộp chỉ nhận vào", s.EnterOnlyBoxes, 0, 3);
             s.LimitedColorBoxes = EditorGUILayout.IntSlider("Hộp chỉ nhận màu", s.LimitedColorBoxes, 0, 3);
+            s.CubePairs = EditorGUILayout.IntSlider("Cube đôi (cặp nối)", s.CubePairs, 0, 1);
             EditorGUILayout.HelpBox("Trong LoopMaster, băng chuyền đóng vai trò bộ đệm nên số hộp trống dự phòng chuẩn là 0 (hoặc 1–2 nếu muốn dễ hơn). Mỗi màu thường tương ứng 1 hộp 4 khối.", MessageType.None);
             s.VerifySolution = EditorGUILayout.Toggle("Tìm lời giải trước khi dùng", s.VerifySolution);
             _generatorAdvanced = EditorGUILayout.Foldout(_generatorAdvanced, "Thiết lập tạo nâng cao", true);
