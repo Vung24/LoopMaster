@@ -19,6 +19,19 @@ public class BoxInfo
 	public bool IsLastUnlockSecret;
 	public GroupInfo GroupInfo;
 	public BoxType BoxType;
+	internal LinkedCubePair LinkedPair;
+
+	public bool HasUnconsumedLinkedCube => LinkedPair != null && LinkedPair.State != LinkedCubePairState.Consumed;
+
+	public CubeInfo PeekTopCube()
+	{
+		for (int i = CubeInfos.Count - 1; i >= 0; i--)
+		{
+			CubeInfo cube = CubeInfos[i];
+			if (cube != null && cube.Size > 0) return cube;
+		}
+		return null;
+	}
 
 	public BoxInfo(BoxData data, Dictionary<int, int> colorMap)
 	{
@@ -45,6 +58,7 @@ public class BoxInfo
 		for (int i = CubeInfos.Count - 1; i >= 0; i--)
 		{
 			CubeInfo cube = CubeInfos[i];
+			if (cube.LinkedPairId > 0) break;
 			if (cube.Type != type || (!includeSecret && cube.IsSecret) || cube.NumLock > 0) break;
 			result.Add(cube);
 			if (BoxType == BoxType.Single) break;
@@ -146,6 +160,7 @@ public class BoxInfo
 
 	public bool IsFinished()
 	{
+		if (HasUnconsumedLinkedCube) return false;
 		if (CubeInfos.Count == 0) return true;
 		if (BoxType == BoxType.Single || GetSliceCount() < GetTotalSize() || HasSurpriseCube()) return false;
 		int type = CubeInfos[CubeInfos.Count - 1].Type;
@@ -165,7 +180,7 @@ public class BoxInfo
 		return true;
 	}
 
-	public bool CanShuffle() => BoxType != BoxType.Single && !HasUnFinishedCube() && !IsEmpty() &&
+	public bool CanShuffle() => !HasUnconsumedLinkedCube && BoxType != BoxType.Single && !HasUnFinishedCube() && !IsEmpty() &&
 		!IsCubeSameType() && !IsFinished() && !HasBlockingLock();
 
 	public bool ShuffleCubes()

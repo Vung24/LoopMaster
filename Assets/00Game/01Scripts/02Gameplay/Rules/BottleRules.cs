@@ -13,13 +13,15 @@ public struct SolverBlock
 	public bool IsSecret;
 	public int GroupKeyId;
 	public int NumLock;
+	public int LinkedPairId;
 
-	public SolverBlock(int color, bool isSecret = false, int groupKeyId = 0, int numLock = 0)
+	public SolverBlock(int color, bool isSecret = false, int groupKeyId = 0, int numLock = 0, int linkedPairId = 0)
 	{
 		Color = color;
 		IsSecret = isSecret;
 		GroupKeyId = groupKeyId;
 		NumLock = numLock;
+		LinkedPairId = linkedPairId;
 	}
 }
 

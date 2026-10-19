@@ -143,7 +143,7 @@ public class Cube : MonoBehaviour
 		_meshRenderer.SetPropertyBlock(_outlinePropBlock);
 	}
 
-	public async UniTask TryDescNumLock()
+	public async UniTask DecrementNumLock()
 	{
 		if (_info == null || _info.NumLock <= 0 || _box == null || _box.Info == null) return;
 		CubeInfo info = _info;
@@ -154,7 +154,7 @@ public class Cube : MonoBehaviour
 		if (info.NumLock <= 0)
 		{
 			_numLock = null;
-			_box.TryHandleFinish();
+			_box.HandleFinishIfReady();
 		}
 	}
 

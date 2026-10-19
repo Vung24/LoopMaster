@@ -3,6 +3,7 @@ using System.Threading;
 using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
 
 public sealed class GameResultUI : MonoBehaviour
 {
@@ -28,6 +29,67 @@ public sealed class GameResultUI : MonoBehaviour
 	public Transform DialogParent => _canvas == null ? null : _canvas.transform;
 	private Coroutine _showWinRoutine;
 	private Coroutine _showFailRoutine;
+	private GameObject _linkedRecoveryRoot;
+	private GameController _linkedRecoveryController;
+
+	public void ShowLinkedRecoveryError(GameController controller)
+	{
+		HideLinkedRecoveryError();
+		if (_canvas == null || controller == null) return;
+		_linkedRecoveryController = controller;
+		_linkedRecoveryRoot = new GameObject("LinkedRecoveryError", typeof(RectTransform), typeof(Image));
+		RectTransform root = _linkedRecoveryRoot.GetComponent<RectTransform>();
+		root.SetParent(_canvas.transform, false);
+		root.anchorMin = Vector2.zero;
+		root.anchorMax = Vector2.one;
+		root.offsetMin = root.offsetMax = Vector2.zero;
+		_linkedRecoveryRoot.GetComponent<Image>().color = new Color(.03f, .04f, .08f, .9f);
+		CreateRecoveryText(root, "Không thể khôi phục màn chơi.\nVui lòng thử lại.", new Vector2(580f, 120f), new Vector2(0f, 50f));
+		var buttonObject = new GameObject("Retry", typeof(RectTransform), typeof(Image), typeof(Button));
+		RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
+		buttonRect.SetParent(root, false);
+		buttonRect.sizeDelta = new Vector2(240f, 64f);
+		buttonRect.anchoredPosition = new Vector2(0f, -70f);
+		Image image = buttonObject.GetComponent<Image>();
+		image.color = new Color(.2f, .4f, .75f);
+		Button button = buttonObject.GetComponent<Button>();
+		button.targetGraphic = image;
+		button.onClick.AddListener(RetryLinkedRecovery);
+		CreateRecoveryText(buttonRect, "Thử lại", buttonRect.sizeDelta, Vector2.zero);
+		_canvas.gameObject.SetActive(true);
+	}
+
+	private static void CreateRecoveryText(RectTransform parent, string message, Vector2 size, Vector2 position)
+	{
+		var label = new GameObject("Message", typeof(RectTransform), typeof(Text));
+		RectTransform rect = label.GetComponent<RectTransform>();
+		rect.SetParent(parent, false);
+		rect.sizeDelta = size;
+		rect.anchoredPosition = position;
+		Text text = label.GetComponent<Text>();
+		text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+		text.fontSize = 28;
+		text.color = Color.white;
+		text.alignment = TextAnchor.MiddleCenter;
+		text.raycastTarget = false;
+		text.text = message;
+	}
+
+	private void RetryLinkedRecovery()
+	{
+		if (_linkedRecoveryController != null) _linkedRecoveryController.TryRetryLinkedRecovery();
+	}
+
+	public void HideLinkedRecoveryError()
+	{
+		if (_linkedRecoveryRoot != null)
+		{
+			_linkedRecoveryRoot.SetActive(false);
+			Destroy(_linkedRecoveryRoot);
+		}
+		_linkedRecoveryRoot = null;
+		_linkedRecoveryController = null;
+	}
 
 	public static GameResultUI Ensure(GameController controller, string winAddress,
 		string failAddress, string failContentAddress)
@@ -279,6 +341,7 @@ public sealed class GameResultUI : MonoBehaviour
 
 	private void HideAll(bool releaseWin = false)
 	{
+		HideLinkedRecoveryError();
 		_uiVersion++;
 		_retryLoading = false;
 		_resultLoad?.Cancel();
@@ -288,7 +351,7 @@ public sealed class GameResultUI : MonoBehaviour
 		_retryContent = null; _retryRoot = null;
 		if (_streakBanner != null) Destroy(_streakBanner.gameObject); _streakBanner = null;
 		if (_streakWarning != null) Destroy(_streakWarning); _streakWarning = null;
-		HudContainer.TryRevertToOriginLayer();
+		HudContainer.RevertCurrentToOriginLayer();
 		if (HudContainer.Current != null && _canvas != null && HudContainer.Current.transform.IsChildOf(_canvas.transform))
 			HudContainer.Current.gameObject.SetActive(false);
 		HideFailTutorial();

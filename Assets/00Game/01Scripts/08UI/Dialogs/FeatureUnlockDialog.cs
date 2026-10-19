@@ -10,7 +10,7 @@ public enum FeatureType
 {
     None = 0, SecretCube = 1, ColorLock = 2, EnterOnly = 4, NumLock = 8,
     GroupColorLock = 16, LimitedColor = 32, AdjacentLock = 64, SingleBox = 128,
-    LongBox = 256, CubeNumLock = 512, SurpriseCube = 1024
+    LongBox = 256, CubeNumLock = 512, SurpriseCube = 1024, LinkedCubes = 2048
 }
 
 public class FeatureUnlockDialog : BasePopup
@@ -34,6 +34,7 @@ public class FeatureUnlockDialog : BasePopup
     [SerializeField] private Sprite _longSlotSprite;
     [SerializeField] private Sprite _cubeNumLockSprite;
     [SerializeField] private Sprite _surpriseCubeSprite;
+    [SerializeField] private Sprite _linkedCubesSprite;
     private FeatureType _featureType;
 
     protected override void Start()
@@ -51,7 +52,11 @@ public class FeatureUnlockDialog : BasePopup
         foreach (TMP_Text text in new[] { _titleText1, _titleText2, _titleText3 })
             if (text != null) text.text = title;
         if (_descriptionText != null) _descriptionText.text = GetDescription();
-        if (_featureImage != null) _featureImage.sprite = GetFeatureSprite();
+        if (_featureImage != null)
+        {
+            _featureImage.sprite = GetFeatureSprite();
+            if (type == FeatureType.LinkedCubes) _featureImage.preserveAspect = true;
+        }
         foreach (Button button in new[] { _continueButton, _fullButton })
         {
             if (button == null) continue;
@@ -89,6 +94,7 @@ public class FeatureUnlockDialog : BasePopup
             case FeatureType.LongBox: return _longSlotSprite;
             case FeatureType.CubeNumLock: return _cubeNumLockSprite;
             case FeatureType.SurpriseCube: return _surpriseCubeSprite;
+            case FeatureType.LinkedCubes: return _linkedCubesSprite;
             default: return null;
         }
     }
@@ -108,6 +114,7 @@ public class FeatureUnlockDialog : BasePopup
             case FeatureType.LongBox: return "Long Slot";
             case FeatureType.CubeNumLock: return "Frozen Block";
             case FeatureType.SurpriseCube: return "Surprise Blocks";
+            case FeatureType.LinkedCubes: return "Linked Blocks";
             default: return "New Feature";
         }
     }
@@ -127,6 +134,7 @@ public class FeatureUnlockDialog : BasePopup
             case FeatureType.LongBox: return "Long slots hold six groups of blocks.";
             case FeatureType.CubeNumLock: return "Complete slots to reduce the counter and free the frozen block.";
             case FeatureType.SurpriseCube: return "Complete the surprise color to reveal more blocks.";
+            case FeatureType.LinkedCubes: return "Clear above both linked blocks. Tap either one to release them together.";
             default: return string.Empty;
         }
     }
@@ -136,7 +144,7 @@ public class FeatureUnlockDialog : BasePopup
         if (data == null) return FeatureType.None;
         foreach (FeatureType feature in new[] { FeatureType.SecretCube, FeatureType.ColorLock, FeatureType.EnterOnly,
             FeatureType.NumLock, FeatureType.GroupColorLock, FeatureType.LimitedColor, FeatureType.AdjacentLock,
-            FeatureType.SingleBox, FeatureType.LongBox, FeatureType.CubeNumLock, FeatureType.SurpriseCube })
+            FeatureType.SingleBox, FeatureType.LongBox, FeatureType.CubeNumLock, FeatureType.SurpriseCube, FeatureType.LinkedCubes })
         {
             if ((shown & feature) != 0) continue;
             bool present;
@@ -152,6 +160,7 @@ public class FeatureUnlockDialog : BasePopup
                 case FeatureType.SingleBox: present = data.Boxes.Any(b => b.BoxType == BoxType.Single); break;
                 case FeatureType.LongBox: present = data.Boxes.Any(b => b.BoxType == BoxType.Long); break;
                 case FeatureType.CubeNumLock: present = data.Boxes.Any(b => b.CubeInfos.Any(c => c.NumLock > 0)); break;
+                case FeatureType.LinkedCubes: present = data.LinkedPair != null; break;
                 default: present = data.Boxes.Any(b => b.CubeInfos.Any(c => CubeData.IsSurpriseColor(c.Type))); break;
             }
             if (present) return feature;

@@ -34,7 +34,7 @@ public class GameLoading : LoadingPanel
 #if UNITY_EDITOR
 			if (prefab == null)
 			{
-				prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/00Game/AAResources/Common/Prefab/GameLoading.prefab");
+				prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/00Game/04Prefabs/UI/Common/Loading/GameLoading.prefab");
 			}
 #endif
 			if (prefab != null)

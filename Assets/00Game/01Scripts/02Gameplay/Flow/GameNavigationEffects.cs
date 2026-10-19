@@ -40,6 +40,6 @@ public sealed class GameNavigationEffects : IGameNavigationEffects
         }
     }
 
-    public UniTask DismissLoadingAsync() => LoadingPanel.TryDismiss();
+    public UniTask DismissLoadingAsync() => LoadingPanel.DismissCurrent();
     public void ReportError(Exception error) => Debug.LogException(error);
 }

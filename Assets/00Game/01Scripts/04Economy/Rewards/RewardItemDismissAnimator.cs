@@ -24,7 +24,7 @@ public class RewardItemDismissAnimator : BaseRewardItemDismissAnimator
         {
             Snui_HeartHud.Current.PlayShakeAnimation();
             Snui_HeartHud.Current.PlaySparks();
-            Snui_HeartHud.TrySetAutoUpdate(true);
+            Snui_HeartHud.SetCurrentAutoUpdate(true);
             return;
         }
         var button = HomeController.Current?.HomePage?.PlayButton;

@@ -96,6 +96,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private GameNavigationEffects _navigationEffects;
 	private BuiltinPuzzleLoader _puzzleLoader;
 	private Transform _dialogParent;
+	private GameResultUI _resultUI;
 	public Transform DialogParent => _dialogParent != null ? _dialogParent : (_uiCanvas != null ? _uiCanvas.transform : null);
 	private GameNavigationFlow Navigation => _navigation ?? CreateNavigation();
 	private bool IsTransitioningLevel => _navigation != null && _navigation.IsTransitioning;
@@ -138,7 +139,11 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private SliceTransferFlow _sliceTransferFlow;
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
 		this, Scene.Boxes, IsGameStartActive,
-		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp));
+		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp,
+		HandleLinkedLaunchFailure));
+	private bool _recoverLinkedOnEnable;
+	private bool _isLinkedRecovery;
+	private LinkedCubeCable _linkedCable;
 	[SerializeField] private Camera _mainCamera;
 	[SerializeField] private Camera _topCamera;
 
@@ -178,8 +183,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			_uiCanvas = _uiCanvasInstance.GetComponent<UICanvas>();
 			if (_uiCanvas != null) _uiCanvas.Bind(this);
 		}
-		GameResultUI resultUI = GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
-		_dialogParent = resultUI == null ? null : resultUI.DialogParent;
+		_resultUI = GameResultUI.Ensure(this, WinDialogAddress, FailDialogAddress, FailDialogContentAddress);
+		_dialogParent = _resultUI == null ? null : _resultUI.DialogParent;
 	}
 
 	private void ResolvePuzzleLoader()
@@ -302,7 +307,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		_presentation?.Cancel();
 		StopAllCoroutines();
 		_winRewards.BeginLevel(data);
-		bool enteringEventLevel = Data != data && !editorPlaytest;
+		bool enteringEventLevel = Data != data && !editorPlaytest && !_isLinkedRecovery;
 		Data = data;
 		if (enteringEventLevel) Managers.Event?.DispatchEvent("OnEnterGame");
 		Data.ConfigureRoadSpacing(_sliceSpacingScale);
@@ -321,6 +326,15 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void CompleteLevelInitialization(GameData data)
 	{
+		if (data.LinkedPair != null && GameRoot != null)
+		{
+			GameObject cablePrefab = _gameLoader.LinkedCubeCable;
+			if (cablePrefab == null) throw new System.InvalidOperationException("Missing CoreGamePrefabs/LinkedCubeCable prefab.");
+			GameObject cableRoot = Instantiate(cablePrefab, GameRoot);
+			_linkedCable = cableRoot.GetComponent<LinkedCubeCable>();
+			if (_linkedCable == null) throw new System.InvalidOperationException("LinkedCubeCable prefab requires its visual component.");
+			_linkedCable.Initialize(data);
+		}
 		_cameraFlow.Reset(Data, GameRoot);
 		UpdateCamera();
 		_isGameStart = Data.PathPoints.Count > 1;
@@ -386,8 +400,45 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public void OnClickBox(Box box)
 	{
-		if (!IsGameplayActive || box == null || box.Info == null ||
-			box.Info.State != BoxState.Free || !box.CanPopupSlice()) return;
+		if (!IsGameplayActive || box == null || box.Info == null) return;
+		if (Data.ActiveLinkedLaunch != null)
+		{
+			box.PlayClickedAnim(false);
+			if (_linkedCable != null) _linkedCable.ShowBlocked(LinkedCubeLaunchFailure.Busy);
+			return;
+		}
+		if (box.Info.State != BoxState.Free) return;
+		CubeInfo top = box.Info.PeekTopCube();
+		if (top != null && top.LinkedPairId != 0)
+		{
+			LinkedCubePair pair = Data.LinkedPair;
+			if (top.LinkedPairId < 0 || pair == null || pair.Id != top.LinkedPairId ||
+				pair.State == LinkedCubePairState.Consumed || !pair.Contains(box.Info))
+			{
+				HandleLinkedLaunchFailure(new System.InvalidOperationException("Invalid linked cube intent in level " + Data.Id));
+				return;
+			}
+			if (!IsGameplaySettled())
+			{
+				box.PlayClickedAnim(false);
+				if (_linkedCable != null) _linkedCable.ShowBlocked(LinkedCubeLaunchFailure.Busy);
+				return;
+			}
+			if (!Transfers.TryLaunchLinked(box, _sliceJumpDuration, _sliceJumpHeight, out LinkedCubeLaunchFailure failure))
+			{
+				box.PlayClickedAnim(false);
+				if (_linkedCable != null) _linkedCable.ShowBlocked(failure);
+				Box partner = GetBox(box.Info == pair.FirstBox ? pair.SecondBox : pair.FirstBox);
+				if (partner != null) partner.PlayClickedAnim(false);
+				if (failure == LinkedCubeLaunchFailure.InvalidState)
+					HandleLinkedLaunchFailure(new System.InvalidOperationException("Linked pair " + pair.Id + " failed its state validation."));
+				return;
+			}
+			if (_presentation != null && _uiCanvasInstance != null)
+				_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
+			return;
+		}
+		if (!box.CanPopupSlice()) return;
 		Transfers.Launch(box, _sliceJumpDuration, _sliceJumpHeight);
 		if (_presentation != null && _uiCanvasInstance != null)
 			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
@@ -403,7 +454,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		GroupLocks.HandleFinishedBox(box.Info);
 		for (int i = 0; i < Scene.Boxes.Count; i++)
 			if (Scene.Boxes[i] != null) Scene.Boxes[i].OnBoxFinished(box.Info);
-		TryUnlockAvailableGroupColorLockKeys();
+		UnlockAvailableGroupColorLockKeys();
 		CheckGameOver();
 	}
 
@@ -423,9 +474,9 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 	}
 
-	public void TryUnlockAvailableGroupColorLockKeys()
+	public void UnlockAvailableGroupColorLockKeys()
 	{
-		if (Data != null) GroupLocks.TryUnlockAvailableKeys();
+		if (Data != null) GroupLocks.UnlockAvailableKeys();
 	}
 
 	public void UpdateCombo()
@@ -503,7 +554,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void RefreshGameplayAfterOperation()
 	{
-		TryUnlockAvailableGroupColorLockKeys();
+		UnlockAvailableGroupColorLockKeys();
 		CheckRemoveNoSolutionLockBoxes();
 		RefreshPathState();
 		CheckGameOver();
@@ -676,6 +727,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private bool IsGameplaySettled()
 	{
+		if (Data != null && Data.ActiveLinkedLaunch != null) return false;
 		if (Data == null || Data.OnJumpingCube > 0 || (_groupLocks != null && _groupLocks.IsBusy)) return false;
 		for (int i = 0; i < Scene.Boxes.Count; i++)
 			if (Scene.Boxes[i] != null && Scene.Boxes[i].IsLockAnimationPlaying) return false;
@@ -773,6 +825,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void ClearRuntimeObjects()
 	{
+		_linkedCable = null;
 		_groupLocks?.Clear();
 		// Return active slices before clearing the level so replay/next level reuse them.
 		if (GameRoot != null)
@@ -803,8 +856,58 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void OnDisable()
 	{
+		if (Data != null && Data.LinkedPair != null && (!IsGameplaySettled() || IsUsingBooster))
+		{
+			_recoverLinkedOnEnable = true;
+			_isGameStart = false;
+			_sliceTransferFlow?.Cancel();
+			_boosterFlow?.Cancel();
+		}
 		_sliceTransferFlow?.StopVibrationWindows();
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
+	}
+
+	private void OnEnable()
+	{
+		if (_recoverLinkedOnEnable) RecoverLinkedLevel();
+	}
+
+	private void HandleLinkedLaunchFailure(System.Exception error)
+	{
+		Debug.LogError("Linked cube level recovery: " + error, this);
+		_isGameStart = false;
+		_recoverLinkedOnEnable = true;
+		_sliceTransferFlow?.Cancel();
+		if (isActiveAndEnabled) RecoverLinkedLevel();
+	}
+
+	private void RecoverLinkedLevel()
+	{
+		_recoverLinkedOnEnable = false;
+		_isLinkedRecovery = true;
+		try
+		{
+			if (_resultUI != null) _resultUI.HideLinkedRecoveryError();
+			Initialize(Data.RecreateFromTemplate(), IsEditorPlaytest);
+			if (_linkedCable != null) _linkedCable.ShowRecoveryNotice();
+		}
+		catch (System.Exception error)
+		{
+			_isGameStart = false;
+			IsLevelReady = false;
+			GameData.SetCurrent(Data);
+			InitializationError = error;
+			Debug.LogError("Cannot recover linked cube level: " + error, this);
+			if (_resultUI != null) _resultUI.ShowLinkedRecoveryError(this);
+		}
+		finally { _isLinkedRecovery = false; }
+	}
+
+	public bool TryRetryLinkedRecovery()
+	{
+		if (_isLinkedRecovery || InitializationError == null || Data == null || Data.LinkedPair == null) return false;
+		RecoverLinkedLevel();
+		return InitializationError == null && IsLevelReady;
 	}
 }

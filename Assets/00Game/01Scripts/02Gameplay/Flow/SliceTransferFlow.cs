@@ -13,6 +13,15 @@ public sealed class SliceTransferFlow
 		public bool FirstVibration = true;
 	}
 
+	private sealed class LinkedFlight
+	{
+		public SliceInfo Info;
+		public int TargetPath;
+		public float Duration;
+		public float Elapsed;
+		public bool Landed;
+	}
+
 	private readonly MonoBehaviour _host;
 	private readonly CancellationToken _hostToken;
 	private readonly IReadOnlyList<Box> _boxes;
@@ -39,10 +48,13 @@ public sealed class SliceTransferFlow
 	private bool _isPlayingPopOutVibration;
 	private CancellationTokenSource _vibrationLifetime;
 	private int _vibrationVersion;
+	private CancellationTokenSource _linkedLifetime;
+	private readonly Action<Exception> _linkedFailure;
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
 		Func<Box, bool> isGroupUnlocking, Action updateCombo,
-		Action refreshPathState, Action onLaunchFinished, Action checkGameOver, Action<bool> setSpeedUp)
+		Action refreshPathState, Action onLaunchFinished, Action checkGameOver, Action<bool> setSpeedUp,
+		Action<Exception> linkedFailure = null)
 	{
 		_host = host;
 		_hostToken = host.destroyCancellationToken;
@@ -54,6 +66,7 @@ public sealed class SliceTransferFlow
 		_onLaunchFinished = onLaunchFinished;
 		_checkGameOver = checkGameOver;
 		_setSpeedUp = setSpeedUp;
+		_linkedFailure = linkedFailure;
 	}
 
 	public void Reset(GameData data, GameLoader loader, Transform gameRoot)
@@ -66,6 +79,11 @@ public sealed class SliceTransferFlow
 
 	public void Cancel()
 	{
+		_linkedLifetime?.Cancel();
+		_linkedLifetime?.Dispose();
+		_linkedLifetime = null;
+		try { _data?.ActiveLinkedLaunch?.Cancel(); }
+		catch (InvalidOperationException error) { Debug.LogError("Linked launch cleanup requires board reload: " + error); }
 		StopVibrationWindows();
 		EndArrivalBatch();
 		_version++;
@@ -168,6 +186,7 @@ public sealed class SliceTransferFlow
 		box.OnPushSliceCount++;
 		_data.UndoData.UpdateUndoBox(slice.Info, box.Info);
 		Cube destination = box.ReserveIncomingSlice(slice.Info.Type, out bool mergedWithTopCube);
+		_data.UndoData.CaptureLinkedExpected(box.Info);
 		if (destination == null)
 		{
 			box.OnPushSliceCount = Mathf.Max(0, box.OnPushSliceCount - 1);
@@ -201,7 +220,7 @@ public sealed class SliceTransferFlow
 		{
 			if (box.Info.State == BoxState.OnPush) box.Info.State = BoxState.Free;
 			if (box.CheckSurpriseFinished()) HandleSurpriseBoxFinished(box);
-			box.TryHandleFinish();
+			box.HandleFinishIfReady();
 		}
 		_checkGameOver();
 	}
@@ -222,7 +241,7 @@ public sealed class SliceTransferFlow
 		{
 			await completion;
 			if (version != _version || _data != data || box == null || !box.isActiveAndEnabled || box.Info != info) return;
-			box.TryHandleFinish();
+			box.HandleFinishIfReady();
 			_checkGameOver();
 		}
 		catch (OperationCanceledException) { }
@@ -231,6 +250,8 @@ public sealed class SliceTransferFlow
 
 	public void Launch(Box box, float jumpDuration, float jumpHeight)
 	{
+		if (_data != null && _data.ActiveLinkedLaunch != null) return;
+		if (box != null && box.Info != null && box.Info.PeekTopCube() != null && box.Info.PeekTopCube().LinkedPairId != 0) return;
 		if (box == null || box.Info == null || box.Info.State != BoxState.Free || !box.CanPopupSlice()) return;
 		if (!_isGameRunning() || box == null || box.Info == null || _data == null || !_data.CanCubeJumpToTransfer())
 		{
@@ -252,6 +273,126 @@ public sealed class SliceTransferFlow
 		_launches.Add(operation);
 		JumpSliceToTransferAsync(box, topCubes, jumpDuration, jumpHeight, operation).Forget();
 		return;
+	}
+
+	public bool TryLaunchLinked(Box source, float jumpDuration, float jumpHeight, out LinkedCubeLaunchFailure failure)
+	{
+		failure = LinkedCubeLaunchFailure.Busy;
+		if (!_isGameRunning() || _host == null || !_host.isActiveAndEnabled || _data == null || _launches.Count != 0)
+			return false;
+		LinkedCubePair pair = _data.LinkedPair;
+		if (pair == null) { failure = LinkedCubeLaunchFailure.InvalidState; return false; }
+		Box first = GetBox(pair.FirstBox), second = GetBox(pair.SecondBox);
+		if (first == null || second == null || pair.FirstCube == null || pair.SecondCube == null ||
+			pair.FirstCube.CubeSc == null || pair.SecondCube.CubeSc == null)
+		{
+			failure = LinkedCubeLaunchFailure.InvalidState;
+			return false;
+		}
+		if (!first.CanPopupSlice() || !second.CanPopupSlice() ||
+			_isGroupUnlocking(first) || _isGroupUnlocking(second)) return false;
+		if (!LinkedCubeLaunch.TryBegin(_data, source.Info, out LinkedCubeLaunch launch, out failure)) return false;
+		first.PlayClickedAnim(true);
+		second.PlayClickedAnim(true);
+		_linkedLifetime = CancellationTokenSource.CreateLinkedTokenSource(_hostToken);
+		RunLinkedLaunchAsync(launch, first, second, jumpDuration, jumpHeight, _version, _linkedLifetime.Token).Forget();
+		return true;
+	}
+
+	private Box GetBox(BoxInfo info)
+	{
+		for (int i = 0; i < _boxes.Count; i++)
+			if (_boxes[i] != null && _boxes[i].Info == info) return _boxes[i];
+		return null;
+	}
+
+	private async UniTask RunLinkedLaunchAsync(LinkedCubeLaunch launch, Box first, Box second,
+		float jumpDuration, float jumpHeight, int version, CancellationToken token)
+	{
+		Exception failure = null;
+		var flights = new List<LinkedFlight>();
+		try
+		{
+			await UniTask.WaitForSeconds(GameplayFeedbackRules.SliceLaunchStartDelay,
+				delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: token);
+			float untilEmission = 0f;
+			while (launch.IsEmitting || !launch.CanComplete)
+			{
+				token.ThrowIfCancellationRequested();
+				if (!IsCurrent(version)) throw new OperationCanceledException(token);
+				if (first == null || second == null) throw new InvalidOperationException("Linked cube source was destroyed during launch.");
+				if (launch.IsEmitting && untilEmission <= 0f && Time.timeScale > 0f)
+				{
+					EmitLinkedSlice(launch, first, false, jumpDuration, jumpHeight, flights);
+					EmitLinkedSlice(launch, second, true, jumpDuration, jumpHeight, flights);
+					_refreshPathState();
+					untilEmission = GameplayFeedbackRules.SliceLaunchInterval;
+				}
+				await UniTask.NextFrame(PlayerLoopTiming.PreLateUpdate, token);
+				if (!IsCurrent(version)) throw new OperationCanceledException(token);
+				float delta = Time.deltaTime;
+				untilEmission -= delta;
+				UpdateLinkedFlights(launch, flights, delta);
+			}
+			launch.Complete();
+			CheckNearOver();
+			_onLaunchFinished();
+		}
+		catch (OperationCanceledException) { }
+		catch (Exception error) { failure = error; }
+		finally
+		{
+			try { if (launch.IsActive) launch.Cancel(); }
+			catch (InvalidOperationException cleanupError)
+			{
+				if (failure == null) failure = cleanupError;
+				else failure = new AggregateException(failure, cleanupError);
+			}
+			if (version == _version)
+			{
+				_linkedLifetime?.Dispose();
+				_linkedLifetime = null;
+			}
+		}
+		if (failure != null && version == _version) _linkedFailure?.Invoke(failure);
+	}
+
+	private void EmitLinkedSlice(LinkedCubeLaunch launch, Box box, bool second, float duration, float height,
+		List<LinkedFlight> flights)
+	{
+		if (box == null) throw new InvalidOperationException("Linked cube source was destroyed.");
+		CubeInfo member = second ? launch.Pair.SecondCube : launch.Pair.FirstCube;
+		Vector3 origin = box.GetTopSlicePos();
+		SliceInfo info = launch.Emit(second);
+		if (info == null) return;
+		Slice visual = _loader.GetSlice(_gameRoot);
+		if (visual == null) throw new InvalidOperationException("Cannot allocate linked slice visual.");
+		visual.Init(info, origin, box.transform.rotation);
+		box.PlayLinkedSliceEmitted(member);
+		box.RemoveEmptyCube();
+		ExtendVibrationWindow(true, launch.Created.Count <= 2);
+		flights.Add(new LinkedFlight { Info = info, TargetPath = box.Info.PathIndex, Duration = Mathf.Max(.01f, duration) });
+		visual.JumpToTransfer(box.Info.PathIndex, duration, height, commitLogicOnComplete: false).Forget();
+	}
+
+	private void UpdateLinkedFlights(LinkedCubeLaunch launch, List<LinkedFlight> flights, float delta)
+	{
+		float scale = GameController.Current == null ? 1f : GameController.Current.SliceJumpTimeScale;
+		foreach (LinkedFlight flight in flights)
+		{
+			if (flight.Landed) continue;
+			SliceInfo info = flight.Info;
+			if (info.SliceSc == null || !launch.Data.TransferSlice.Contains(info))
+				throw new InvalidOperationException("Linked pair " + launch.Pair.Id + " lost a slice before logical landing.");
+			flight.Elapsed += delta * scale;
+			if (flight.Elapsed < flight.Duration) continue;
+			int count = launch.Data.PathPoints.Count;
+			if (count < 2) throw new InvalidOperationException("Linked flight has no valid path.");
+			info.PathIndex = ((flight.TargetPath % count) + count) % count;
+			info.IsMoved = false;
+			flight.Landed = true;
+			launch.ConfirmLanding(info);
+		}
 	}
 
 	private async UniTask JumpSliceToTransferAsync(Box box, List<CubeInfo> topCubes, float jumpDuration, float jumpHeight, LaunchOperation operation)
@@ -344,7 +485,6 @@ public sealed class SliceTransferFlow
 
 	private void ExtendVibrationWindow(bool popOut, bool first = false)
 	{
-		// Native ExtendSlicePop*VibrationWindow: extend by 0.3s, one loop per direction.
 		if (_vibrationLifetime == null)
 			_vibrationLifetime = CancellationTokenSource.CreateLinkedTokenSource(_hostToken);
 		if (popOut)
@@ -372,7 +512,6 @@ public sealed class SliceTransferFlow
 	{
 		try
 		{
-			// Native uses UniTask at Update (enum 8), not coroutine WaitForSeconds.
 			if (popOut) await UniTask.WaitForSeconds(0.025f, delayTiming: PlayerLoopTiming.Update, cancellationToken: token);
 			while (version == _vibrationVersion && _host != null && _host.isActiveAndEnabled &&
 				Time.time < (popOut ? _popOutVibrationEndTime : _popInVibrationEndTime))

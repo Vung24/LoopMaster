@@ -26,6 +26,7 @@ public sealed class CoreGameplayEngine
 
 	public bool UsePathBooster()
 	{
+		if (_data.ActiveLinkedLaunch != null) return false;
 		_data.ToolPathUsedCount++;
 		_data.ExtendPath();
 		return true;
@@ -33,6 +34,7 @@ public sealed class CoreGameplayEngine
 
 	public int UseShuffleBooster()
 	{
+		if (_data.ActiveLinkedLaunch != null) return 0;
 		if (_data.Boxes.Any(box => box != null && box.State != BoxState.Free)) return 0;
 		List<BoxInfo> boxes = _data.Boxes.Where(box => box != null && box.CanShuffle()).ToList();
 		if (boxes.Count == 0) return 0;
@@ -50,6 +52,11 @@ public sealed class CoreGameplayEngine
 
 	public bool UndoLastMove()
 	{
+		if (_data.UndoData.IsLinked)
+		{
+			if (!TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
+			return TryUndoLinked(plan);
+		}
 		UndoData undo = _data.UndoData;
 		if (undo == null || !undo.CanUndo() ||
 			_data.Boxes.Any(box => box != null && box.State != BoxState.Free))
@@ -90,9 +97,25 @@ public sealed class CoreGameplayEngine
 		}
 	}
 
+	public bool TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)
+	{
+		plan = null;
+		return _data.UndoData.LinkedRecord != null && _data.UndoData.LinkedRecord.TryPrepare(out plan);
+	}
+
+	public bool TryUndoLinked(LinkedCubeUndoPlan plan)
+	{
+		LinkedCubeUndoRecord record = _data.UndoData.LinkedRecord;
+		if (record == null || !record.TryCommit(plan)) return false;
+		_data.UndoData.Clear();
+		return true;
+	}
+
 	public CoreMoveResult PopBoxToTransfer(BoxInfo source, out List<SliceInfo> createdSlices)
 	{
 		createdSlices = new List<SliceInfo>();
+		if (_data.ActiveLinkedLaunch != null || source != null && source.PeekTopCube() != null &&
+			source.PeekTopCube().LinkedPairId != 0) return CoreMoveResult.Blocked;
 		if (source == null || source.State != BoxState.Free || !source.CanPopup() ||
 			!_data.CanCubeJumpToTransfer())
 			return CoreMoveResult.Blocked;
@@ -163,7 +186,7 @@ public sealed class CoreGameplayEngine
 			.ToList();
 		foreach (SliceInfo slice in arrivals)
 		{
-			CoreMoveResult result = TryMoveSliceIntoBox(slice);
+			CoreMoveResult result = MoveSliceIntoBox(slice);
 			if (result == CoreMoveResult.GameWon || result == CoreMoveResult.GameFailed)
 				return result;
 		}
@@ -171,7 +194,7 @@ public sealed class CoreGameplayEngine
 		return EvaluateEndState();
 	}
 
-	public CoreMoveResult TryMoveSliceIntoBox(SliceInfo slice)
+	public CoreMoveResult MoveSliceIntoBox(SliceInfo slice)
 	{
 		if (slice == null || !slice.IsMoved || !_data.TransferSlice.Contains(slice))
 			return CoreMoveResult.None;
@@ -201,6 +224,7 @@ public sealed class CoreGameplayEngine
 		}
 
 		_data.RemoveTransferSlice(slice);
+		_data.UndoData.CaptureLinkedExpected(target);
 		ResolveSurpriseBox(target);
 		target.State = BoxState.Free;
 

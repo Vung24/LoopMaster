@@ -10,7 +10,7 @@ public class LoadingPanel : MonoBehaviour
 	protected CanvasGroup _canvasGroup;
 	private float _showStartTime;
 
-	public static async UniTask TryDismiss()
+	public static async UniTask DismissCurrent()
 	{
 		if (Current != null)
 		{

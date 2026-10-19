@@ -208,10 +208,11 @@ namespace Snui
 
 		public void OnClickClaimBtn()
 		{
-			TryClaimReward().Forget();
+			ClaimDailyRewardAsync().Forget();
 		}
 
-		public async UniTask<bool> TryClaimReward()
+		/// <returns>True when a monthly reward box was presented; false otherwise, even if the daily reward was claimed.</returns>
+		public async UniTask<bool> ClaimDailyRewardAsync()
 		{
 			if (!IsOpen || _claiming) return false;
 			_claiming = true;
@@ -316,8 +317,8 @@ namespace Snui
 		public async UniTaskVoid OnCloseDialog()
 		{
 			if (!CanClose()) return;
-			bool claimed = await TryClaimReward();
-			if (!claimed)
+			bool claimedBox = await ClaimDailyRewardAsync();
+			if (!claimedBox)
 			{
 				ForceClose();
 			}

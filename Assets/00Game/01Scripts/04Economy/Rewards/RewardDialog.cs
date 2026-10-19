@@ -59,13 +59,13 @@ namespace Snui
             if (hasCoins)
             {
                 HudContainer.Current?.CoinHud?.SetAutoUpdate(false);
-                Snui_CoinHud.TrySetAutoUpdate(false);
+                Snui_CoinHud.SetCurrentAutoUpdate(false);
             }
             else
             {
                 HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
             }
-            Snui_HeartHud.TrySetAutoUpdate(true);
+            Snui_HeartHud.SetCurrentAutoUpdate(true);
             dialog.Reveal();
             return dialog;
         }
@@ -115,7 +115,7 @@ namespace Snui
             if (hasCoins)
             {
                 HudContainer.Current?.CoinHud?.SetAutoUpdate(false);
-                Snui_CoinHud.TrySetAutoUpdate(false);
+                Snui_CoinHud.SetCurrentAutoUpdate(false);
             }
             if (chest != null)
             {
@@ -174,13 +174,13 @@ namespace Snui
             if (hasCoins)
             {
                 HudContainer.Current?.CoinHud?.SetAutoUpdate(false);
-                Snui_CoinHud.TrySetAutoUpdate(false);
+                Snui_CoinHud.SetCurrentAutoUpdate(false);
             }
             else
             {
                 HudContainer.Current?.CoinHud?.SetAutoUpdate(true);
             }
-            Snui_HeartHud.TrySetAutoUpdate(true);
+            Snui_HeartHud.SetCurrentAutoUpdate(true);
             if(!saved) { SetDescription("REWARD NOT SAVED — TAP TO RETRY"); return; }
             if(receiveImmediately) { Reveal(); return; }
             PrepareLevelBoxPresentation();
@@ -354,7 +354,7 @@ namespace Snui
             if(coins>0 && hud!=null && hud.isActiveAndEnabled)
             {
                 int order=GetComponent<Canvas>().sortingOrder;
-                HudContainer.TrySetTop(order+1);
+                HudContainer.SetCurrentTop(order+1);
                 hud.SetTop(order+1);
                 _coins=gameObject.AddComponent<ClaimCoinAnim>();
                 yield return _coins.Play(coins,transform,start,hud,null,order+2);
@@ -380,8 +380,8 @@ namespace Snui
             _presentationTweens.Clear();
             if(_chest!=null && _chest.AnimationState!=null) _chest.AnimationState.Event-=OnChestEvent;
             InventoryManager.Current?.ReplayPendingRewardJournal();
-            HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.TryRevertToOriginLayer();
-            Snui_CoinHud.Current?.RevertToOriginLayer(); Snui_HeartHud.TrySetAutoUpdate(true);
+            HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.RevertCurrentToOriginLayer();
+            Snui_CoinHud.Current?.RevertToOriginLayer(); Snui_HeartHud.SetCurrentAutoUpdate(true);
             base.OnDisable();
         }
         protected override void OnDestroy() { if(_fullBtn!=null) _fullBtn.onClick.RemoveListener(OnClickReceive); base.OnDestroy(); }

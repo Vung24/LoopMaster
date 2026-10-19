@@ -94,7 +94,7 @@ public sealed class GameLevelPresentationFlow
 
 	private void CheckNewPlayerTutorial(GameData data, Camera gameCamera, GameObject tutorialPrefab)
 	{
-		if (Snui.CheatManager.SkipTutorial) return;
+		if (Snui.CheatManager.SkipTutorial || data.LinkedPair != null) return;
 		int stage = data.GetPuzzleActualLevel();
 		if (stage < 1 || stage > 3 || tutorialPrefab == null) return;
 		GameObject instance = Instantiate(tutorialPrefab, _canvas.transform, false);

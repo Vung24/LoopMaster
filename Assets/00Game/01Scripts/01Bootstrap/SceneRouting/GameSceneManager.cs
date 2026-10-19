@@ -110,7 +110,7 @@ public static class GameSceneManager
 				await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
 			}
 
-			await LoadingPanel.TryDismiss();
+			await LoadingPanel.DismissCurrent();
 		}
 		finally
 		{

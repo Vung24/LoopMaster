@@ -64,7 +64,7 @@ public sealed class HudContainer : MonoBehaviour
 		return UniTask.FromResult(Current);
 	}
 
-	public static void TrySetTop(int order = 1100)
+	public static void SetCurrentTop(int order = 1100)
 	{
 		if (Current == null) return;
 		Current.RestoreVisibility();
@@ -95,7 +95,7 @@ public sealed class HudContainer : MonoBehaviour
 		}
 	}
 
-	public static void TryRevertToOriginLayer()
+	public static void RevertCurrentToOriginLayer()
 	{
 		if (Current == null) return;
 		Current.CoinHud?.RevertToOriginLayer();

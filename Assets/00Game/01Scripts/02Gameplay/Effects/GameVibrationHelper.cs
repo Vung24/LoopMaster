@@ -79,12 +79,8 @@ public static class GameVibrationHelper
 			var pattern = new long[checked(count * 2)];
 			for (int i = 1; i < pattern.Length; i++)
 				pattern[i] = (i & 1) != 0 ? milliseconds : Mathf.Max(0, interval);
-			if (_androidVersion >= 26)
-			{
-				using (var effect = _vibrationEffect.CallStatic<AndroidJavaObject>("createWaveform", pattern, -1))
-					_vibrator.Call("vibrate", effect);
-			}
-			else _vibrator.Call("vibrate", pattern, -1);
+			int version = System.Threading.Volatile.Read(ref _androidVibrationVersion);
+			_androidActivity.Call("runOnUiThread", new AndroidJavaRunnable(() => PlayAndroidPattern(pattern, version)));
 		}
 		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
 		#endif
@@ -97,13 +93,10 @@ public static class GameVibrationHelper
 		try
 		{
 			if (!InitializeAndroid()) return;
-			if (_androidVersion >= 26)
-			{
-				using (var effect = _vibrationEffect.CallStatic<AndroidJavaObject>("createOneShot",
-					milliseconds, amplitude == -1 ? -1 : Mathf.Clamp(amplitude, 1, 255)))
-					_vibrator.Call("vibrate", effect);
-			}
-			else _vibrator.Call("vibrate", milliseconds);
+			int safeAmplitude = amplitude == -1 ? -1 : Mathf.Clamp(amplitude, 1, 255);
+			int version = System.Threading.Volatile.Read(ref _androidVibrationVersion);
+			// Android's vibrator service can block on IPC. Queue it off the Unity frame.
+			_androidActivity.Call("runOnUiThread", new AndroidJavaRunnable(() => PlayAndroidPulse(milliseconds, safeAmplitude, version)));
 		}
 		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
 		#elif UNITY_IOS && !UNITY_EDITOR
@@ -114,17 +107,61 @@ public static class GameVibrationHelper
 	public static void Cancel()
 	{
 		#if UNITY_ANDROID && !UNITY_EDITOR
-		try { if (_vibrator != null) _vibrator.Call("cancel"); }
+		System.Threading.Interlocked.Increment(ref _androidVibrationVersion);
+		try { if (_androidActivity != null) _androidActivity.Call("runOnUiThread", new AndroidJavaRunnable(CancelAndroidVibration)); }
 		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
 		#endif
 	}
 
 	#if UNITY_ANDROID && !UNITY_EDITOR
 	private static AndroidJavaObject _vibrator;
+	private static AndroidJavaObject _androidActivity;
 	private static AndroidJavaClass _vibrationEffect;
 	private static int _androidVersion;
+	private static int _androidVibrationVersion;
 	private static bool _androidInitialized;
-	private static bool _androidFailed;
+	private static volatile bool _androidFailed;
+
+	private static bool CanPlayAndroidRequest(int version)
+	{
+		return Enabled && !_androidFailed && version == System.Threading.Volatile.Read(ref _androidVibrationVersion);
+	}
+
+	private static void PlayAndroidPulse(long milliseconds, int amplitude, int version)
+	{
+		if (!CanPlayAndroidRequest(version)) return;
+		try
+		{
+			if (_androidVersion >= 26)
+			{
+				using (var effect = _vibrationEffect.CallStatic<AndroidJavaObject>("createOneShot", milliseconds, amplitude))
+					_vibrator.Call("vibrate", effect);
+			}
+			else _vibrator.Call("vibrate", milliseconds);
+		}
+		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
+	}
+
+	private static void PlayAndroidPattern(long[] pattern, int version)
+	{
+		if (!CanPlayAndroidRequest(version)) return;
+		try
+		{
+			if (_androidVersion >= 26)
+			{
+				using (var effect = _vibrationEffect.CallStatic<AndroidJavaObject>("createWaveform", pattern, -1))
+					_vibrator.Call("vibrate", effect);
+			}
+			else _vibrator.Call("vibrate", pattern, -1);
+		}
+		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
+	}
+
+	private static void CancelAndroidVibration()
+	{
+		try { if (_vibrator != null) _vibrator.Call("cancel"); }
+		catch (AndroidJavaException exception) { ReportAndroidFailure(exception); }
+	}
 
 	private static bool InitializeAndroid()
 	{
@@ -135,6 +172,7 @@ public static class GameVibrationHelper
 		using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
 		{
 			if (activity == null) return false;
+			_androidActivity = player.GetStatic<AndroidJavaObject>("currentActivity");
 			_androidVersion = version.GetStatic<int>("SDK_INT");
 			_vibrator = activity.Call<AndroidJavaObject>("getSystemService", "vibrator");
 			if (_vibrator != null && !_vibrator.Call<bool>("hasVibrator"))

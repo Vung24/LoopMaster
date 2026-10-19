@@ -109,7 +109,7 @@ namespace Snui
 		}
 
 		public override void PlayShakeAnimation() => base.PlayShakeAnimation();
-		public static void TrySetAutoUpdate(bool autoUpdate) { if (Current != null) Current.SetAutoUpdate(autoUpdate); }
+		public static void SetCurrentAutoUpdate(bool autoUpdate) { if (Current != null) Current.SetAutoUpdate(autoUpdate); }
 
 		public override void SetAutoUpdate(bool isAuto)
 		{

@@ -74,7 +74,7 @@ public static class ExportedPuzzleJsonDecoder
 	{
 		Type = Int(map, "Type"), IsSecret = Int(map, "IsSecret"),
 		GroupKeyId = Int(map, "GroupKeyId"), NumLock = Int(map, "NumLock"),
-		IsFixed = Int(map, "IsFixed")
+		IsFixed = Int(map, "IsFixed"), LinkedPairId = Int(map, "LinkedPairId")
 	};
 
 	private static GamePath ReadPath(Dictionary<string, object> map)

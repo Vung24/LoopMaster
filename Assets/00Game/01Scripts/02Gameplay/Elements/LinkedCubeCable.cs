@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 
-/// <summary>Presentation only. A soft bridge joins the centers of the two cube side faces.</summary>
 public sealed class LinkedCubeCable : MonoBehaviour
 {
 	[SerializeField] private Mesh _bridgeMesh;

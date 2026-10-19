@@ -65,9 +65,7 @@ public class ShopPage : MonoBehaviour
 		{
 			if (_safeArea == null)
 			{
-				_safeArea = HierarchyReferenceCache.Child(transform, "SafeArea")
-					?? HierarchyReferenceCache.Descendant(transform, "SafeArea")
-					?? transform;
+				Debug.Log("ShopPage: SafeArea is not assigned.");
 			}
 
 			_content = await ShopDialogContent.Show(_safeArea, new ShopDelegate(), "home_shop");

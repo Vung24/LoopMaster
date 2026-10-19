@@ -18,20 +18,6 @@ namespace ShopUI
 		protected override void Awake()
 		{
 			base.Awake();
-			if (_continueBtn == null)
-			{
-				_continueBtn = HierarchyReferenceCache.ChildComponent<Button>(transform, "ContinueBtn")
-					?? HierarchyReferenceCache.DescendantComponent<Button>(transform, "ContinueBtn")
-					?? GetComponentInChildren<Button>(true);
-			}
-
-			if (_closeBtn == null)
-			{
-				_closeBtn = HierarchyReferenceCache.ChildComponent<Button>(transform, "CloseButton")
-					?? HierarchyReferenceCache.ChildComponent<Button>(transform, "CloseBtn")
-					?? HierarchyReferenceCache.DescendantComponent<Button>(transform, "CloseButton")
-					?? HierarchyReferenceCache.DescendantComponent<Button>(transform, "CloseBtn");
-			}
 		}
 
 		protected override void Start()

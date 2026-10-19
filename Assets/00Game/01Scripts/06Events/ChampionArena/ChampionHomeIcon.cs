@@ -68,7 +68,7 @@ namespace Snui.ChampionArena
 			{
 				_button.onClick.AddListener(OnClick);
 			}
-			TryCreateCountdownHelper();
+			EnsureCountdownHelper();
 		}
 
 		private void Start()
@@ -168,7 +168,7 @@ namespace Snui.ChampionArena
 			_clickTween = null;
 		}
 
-		private void TryCreateCountdownHelper()
+		private void EnsureCountdownHelper()
 		{
 			if (_countdownHelper == null)
 			{

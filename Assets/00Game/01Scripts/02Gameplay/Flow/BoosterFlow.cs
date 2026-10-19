@@ -125,6 +125,7 @@ public sealed class BoosterFlow
 	private bool ApplyToolUndo()
 	{
 		if (!CanUseBooster(true) || _engine == null || !_data.CanUndo()) return false;
+		if (_data.UndoData.IsLinked) return ApplyLinkedUndo();
 
 		UndoData undo = _data.UndoData;
 		Box source = _getBox(undo.PopupBox);
@@ -204,6 +205,64 @@ public sealed class BoosterFlow
 		return true;
 	}
 
+	private bool ApplyLinkedUndo()
+	{
+		if (!_engine.TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
+		var origins = new List<(Vector3 position, Quaternion rotation, Vector3 scale, int color, Box source)>();
+		var roadVisuals = new List<Slice>();
+		foreach (LinkedCubeUndoEntry entry in plan.Entries)
+		{
+			Box source = _getBox(entry.Source);
+			Box destination = entry.Destination == null ? null : _getBox(entry.Destination);
+			if (source == null || entry.Destination != null && destination == null) return false;
+			if (entry.Destination == null)
+			{
+				Slice slice = entry.Slice.SliceSc;
+				if (slice == null) continue;
+				origins.Add((slice.transform.position, slice.transform.rotation, slice.transform.localScale, entry.Color, source));
+				roadVisuals.Add(slice);
+			}
+			else origins.Add((destination.GetTopSlicePos(), destination.transform.rotation, Vector3.one, entry.Color, source));
+		}
+		if (!_engine.TryUndoLinked(plan)) return false;
+		IsBusy = true;
+		foreach (Slice slice in roadVisuals) if (slice != null) slice.DismissForUndo();
+		if (_loader != null && _loader.Slice != null && origins.Count > 0)
+		{
+			_undoPresentation = DOTween.Sequence().SetLink(_host.gameObject);
+			for (int i = 0; i < origins.Count; i++)
+			{
+				var origin = origins[i];
+				GameObject visual = UnityEngine.Object.Instantiate(_loader.Slice, origin.position, origin.rotation, _gameRoot);
+				_undoVisuals.Add(visual);
+				visual.transform.localScale = origin.scale;
+				Slice slice = visual.GetComponent<Slice>();
+				if (slice != null) slice.PrepareVisual(origin.color);
+				visual.SetActive(true);
+				float delay = origins.Count <= 1 ? 0f : .08f * i / (origins.Count - 1);
+				_undoPresentation.Insert(delay, visual.transform.DOJump(origin.source.GetTopSlicePos(), .8f, 1, .32f).SetEase(Ease.OutQuad));
+				_undoPresentation.Insert(delay, visual.transform.DORotateQuaternion(origin.source.transform.rotation, .32f));
+				_undoPresentation.Insert(delay, visual.transform.DOScale(Vector3.one, .32f));
+			}
+			_undoPresentation.OnComplete(ClearUndoPresentation);
+		}
+		var affected = new List<BoxInfo>();
+		float restoreDelay = _undoPresentation != null ? 0.4f : 0f;
+		foreach (BoxInfo info in plan.Boxes)
+		{
+			Box box = _getBox(info);
+			bool isSource = plan.Pair != null && plan.Pair.Contains(info);
+			int restoredType = isSource ? (info == plan.Pair.FirstBox ? plan.Pair.FirstCube.Type : plan.Pair.SecondCube.Type) : 0;
+			if (box != null) box.RefreshAfterUndo(isSource, restoredType, isSource ? restoreDelay : 0f);
+			info.State = BoxState.OnUnlocking;
+			affected.Add(info);
+		}
+		_playAudio(_loader == null ? null : _loader.UndoClip);
+		_refreshPathState();
+		_completion = _host.StartCoroutine(FinishBoosterUse(.6f, affected));
+		return true;
+	}
+
 	private void ClearUndoPresentation()
 	{
 		_undoPresentation?.Kill();
@@ -238,10 +297,12 @@ public sealed class BoosterFlow
 	private bool CanUseBooster(bool requireSettled)
 	{
 		return Time.timeScale > 0f && _isGameRunning() && !IsBusy && _data != null &&
+			_data.ActiveLinkedLaunch == null &&
+			(_data.LinkedPair == null || _isGameplaySettled()) &&
 			(!requireSettled || _isGameplaySettled());
 	}
 
-	private System.Collections.IEnumerator FinishBoosterUse(float delay, List<BoxInfo> boxes)
+	private IEnumerator FinishBoosterUse(float delay, List<BoxInfo> boxes)
 	{
 		int operationVersion = _operationVersion;
 		yield return new WaitForSeconds(delay);

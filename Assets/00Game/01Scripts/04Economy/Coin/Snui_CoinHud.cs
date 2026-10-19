@@ -103,15 +103,15 @@ public class Snui_CoinHud : Snui_BaseHud
 	}
 	public void EnableClick() { if (_button != null) { _button.enabled = true; _button.interactable = true; } if (_addIcon != null) _addIcon.gameObject.SetActive(true); }
 
-	public static void TryResetParent()
+	public static void ResetCurrentParent()
 	{
 		if (Current == null || Current._originParent == null) return;
 		Current.transform.SetParent(Current._originParent, false);
 		Current.transform.localPosition = Current._originLocalPos;
 	}
 
-	public static void TrySetAutoUpdate(bool autoUpdate) { if (Current != null) Current.SetAutoUpdate(autoUpdate); }
-	public static void TrySetParent(Transform parent) { if (Current != null && parent != null) Current.transform.SetParent(parent, false); }
+	public static void SetCurrentAutoUpdate(bool autoUpdate) { if (Current != null) Current.SetAutoUpdate(autoUpdate); }
+	public static void SetCurrentParent(Transform parent) { if (Current != null && parent != null) Current.transform.SetParent(parent, false); }
 
 	protected override void OnDestroy()
 	{
