@@ -3,9 +3,13 @@ using UnityEngine;
 public static class GamePrefs
 {
 #if UNITY_EDITOR
-    // Editor playtests read real values, but all mutations stay in a session overlay.
+    // Single-level playtests overlay real prefs; isolated campaign profiles use fresh defaults.
     // Migration must also be read-only: even a GetInt can otherwise delete a legacy key.
     public static bool EditorSandbox { get; set; }
+    public static bool EditorIsolatedProfile { get; set; }
+    public static int EditorCampaignLastLevel { get; set; }
+    public static System.Func<int, GameData> EditorCampaignLoader { get; set; }
+    public static System.Func<int, bool> EditorCampaignAvailability { get; set; }
     private static readonly System.Collections.Generic.Dictionary<string, object> TestValues = new System.Collections.Generic.Dictionary<string, object>();
     public static void ResetEditorSandbox() { TestValues.Clear(); }
 #endif
@@ -13,6 +17,7 @@ public static class GamePrefs
     {
 #if UNITY_EDITOR
         if (EditorSandbox && TestValues.TryGetValue(key, out object test)) return test != null;
+        if (EditorSandbox && EditorIsolatedProfile) return false;
 #endif
         string legacy = GamePrefKeys.Legacy(key);
         return PlayerPrefs.HasKey(key) || (legacy != null && PlayerPrefs.HasKey(legacy));
@@ -24,6 +29,7 @@ public static class GamePrefs
         if (EditorSandbox)
         {
             if (TestValues.TryGetValue(key, out object test)) return test is int value ? value : defaultValue;
+            if (EditorIsolatedProfile) return defaultValue;
             string oldKey = GamePrefKeys.Legacy(key);
             return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, defaultValue) : oldKey != null ? PlayerPrefs.GetInt(oldKey, defaultValue) : defaultValue;
         }
@@ -44,6 +50,7 @@ public static class GamePrefs
         if (EditorSandbox)
         {
             if (TestValues.TryGetValue(key, out object test)) return test is string value ? value : defaultValue;
+            if (EditorIsolatedProfile) return defaultValue;
             string oldKey = GamePrefKeys.Legacy(key);
             return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key, defaultValue) : oldKey != null ? PlayerPrefs.GetString(oldKey, defaultValue) : defaultValue;
         }
