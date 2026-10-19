@@ -49,7 +49,7 @@ public sealed class LinkedCubePair
 	public static void Validate(Puzzle puzzle)
 	{
 		if (puzzle == null || puzzle.Boxes == null) return;
-		int pairId = 0, firstBox = -1, memberCount = 0;
+		int pairId = 0, firstBox = -1, secondBox = -1, memberCount = 0;
 		for (int b = 0; b < puzzle.Boxes.Count; b++)
 		{
 			BoxData box = puzzle.Boxes[b];
@@ -61,29 +61,30 @@ public sealed class LinkedCubePair
 				if (cube.LinkedPairId == 0) continue;
 				if (pairId != 0 && pairId != cube.LinkedPairId) throw Invalid("prototype supports one pair", b);
 				if (memberCount > 0 && b == firstBox) throw Invalid("members must be in different boxes", b);
-				if (cube.IsSecret != 0 || cube.GroupKeyId != 0 || cube.NumLock != 0 || cube.IsFixed != 0)
+				if (cube.GroupKeyId != 0 || cube.NumLock != 0 || cube.IsFixed != 0)
 					throw Invalid("unsupported linked member", b);
+				if (cube.Type <= 0 || cube.Type > 14)
+					throw Invalid("unsupported linked member color", b);
 				pairId = cube.LinkedPairId;
 				if (memberCount == 0) firstBox = b;
+				else secondBox = b;
 				memberCount++;
 			}
 		}
 		if (memberCount == 0) return;
 		if (memberCount != 2) throw Invalid("each pair needs exactly two members", firstBox);
-		if (puzzle.Groups != null && puzzle.Groups.Count > 0 || puzzle.Covers != null && puzzle.Covers.Count > 0 ||
-			puzzle.SurpriseDatas != null && puzzle.SurpriseDatas.Count > 0)
-			throw Invalid("prototype requires an ordinary uncovered board", firstBox);
-		for (int b = 0; b < puzzle.Boxes.Count; b++)
+
+		if (firstBox >= 0 && firstBox < puzzle.Boxes.Count)
 		{
-			BoxData box = puzzle.Boxes[b];
-			if (box == null || box.Cubes == null || box.BoxType != BoxType.Normal ||
-				box.LockColor != 0 || box.NumLock != 0 || box.IsAdjacentLocked != 0 || box.IsEnterOnly != 0 ||
-				box.LimitedColor != 0 || box.MultiColorLock != null && box.MultiColorLock.Count > 0)
-				throw Invalid("prototype requires normal unlocked boxes", b);
-			foreach (CubeData cube in box.Cubes)
-				if (cube == null || cube.Type <= 0 || cube.Type > 14 || cube.IsSecret != 0 ||
-					cube.GroupKeyId != 0 || cube.NumLock != 0 || cube.IsFixed != 0)
-					throw Invalid("prototype requires ordinary cubes", b);
+			BoxData bA = puzzle.Boxes[firstBox];
+			if (bA == null || bA.BoxType != BoxType.Normal)
+				throw Invalid("linked cubes must be in normal boxes", firstBox);
+		}
+		if (secondBox >= 0 && secondBox < puzzle.Boxes.Count)
+		{
+			BoxData bB = puzzle.Boxes[secondBox];
+			if (bB == null || bB.BoxType != BoxType.Normal)
+				throw Invalid("linked cubes must be in normal boxes", secondBox);
 		}
 	}
 

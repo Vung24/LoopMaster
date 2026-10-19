@@ -7,7 +7,8 @@ public sealed class LinkedCubeLaunch
 {
 	public GameData Data { get; }
 	public LinkedCubePair Pair { get; }
-	public readonly List<SliceInfo> Created = new List<SliceInfo>();
+	private readonly List<SliceInfo> _created = new List<SliceInfo>();
+	public IReadOnlyList<SliceInfo> Created => _created;
 	private readonly HashSet<SliceInfo> _landing = new HashSet<SliceInfo>();
 	private int _firstRemaining, _secondRemaining;
 	private readonly int _firstType, _secondType;
@@ -89,21 +90,24 @@ public sealed class LinkedCubeLaunch
 	public SliceInfo Emit(bool second)
 	{
 		if (_released) throw new InvalidOperationException("Cannot emit a released paired launch.");
-		if (second ? _secondRemaining == 0 : _firstRemaining == 0) return null;
-		BoxInfo box = second ? Pair.SecondBox : Pair.FirstBox;
-		CubeInfo member = second ? Pair.SecondCube : Pair.FirstCube;
-		int remaining = second ? _secondRemaining : _firstRemaining;
-		int type = second ? _secondType : _firstType;
+		if (second)
+			return EmitMember(Pair.SecondBox, Pair.SecondCube, ref _secondRemaining, _secondType);
+		return EmitMember(Pair.FirstBox, Pair.FirstCube, ref _firstRemaining, _firstType);
+	}
+
+	private SliceInfo EmitMember(BoxInfo box, CubeInfo member, ref int remaining, int type)
+	{
+		if (remaining == 0) return null;
 		if (box.PeekTopCube() != member || member.LinkedPairId != Pair.Id || member.Size != remaining ||
 			member.Type != type || box.State != BoxState.OnPopup)
 			throw new InvalidOperationException("Linked pair " + Pair.Id + " source changed during emission.");
 		var slice = new SliceInfo(member.Type, box);
 		if (!Data.AddTransferSlice(slice)) throw new InvalidOperationException("Duplicate linked slice.");
 		box.PopupSlice();
-		Created.Add(slice);
+		_created.Add(slice);
 		_landing.Add(slice);
 		Data.UndoData.AddLinkedSlice(slice);
-		if (second) _secondRemaining--; else _firstRemaining--;
+		remaining--;
 		if (member.Size == 0)
 		{
 			box.ClearCubes();
