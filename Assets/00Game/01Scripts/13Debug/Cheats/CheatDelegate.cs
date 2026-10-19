@@ -32,7 +32,7 @@ public class CheatDelegate : MonoBehaviour
             enteredFromHome = true;
         }
         var game = GameController.Current;
-        return game != null && ((enteredFromHome && game.CurrentLevelNumber == level) || game.TryCheatLoadLevel(level));
+        return game != null && ((enteredFromHome && game.CurrentLevelNumber == level) || game.CheatLoadLevel(level));
     }
 
     public bool ChangeInventory(RewardType type, int amount, bool add)
