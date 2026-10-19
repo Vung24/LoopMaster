@@ -84,6 +84,14 @@ public static class AlternativeCampaign70Audit
             foreach(SurpriseData surprise in puzzle.SurpriseDatas)
             foreach(CubeData replacement in surprise.NormalCubes) normalColors.Add(replacement.Type);
             Require(normalColors.Count==p.Colors,level,"normal color count including surprise replacements");
+            for (int type = 1; type <= p.Colors; type++)
+                Require(normalColors.Contains(type),level,"normal types must be consecutive starting at 1");
+            var longColors = new SortedSet<int>();
+            foreach (int type in stock.Keys)
+                if (CubeData.IsLongBoxColor(type)) longColors.Add(type);
+            int nextLongType = 101;
+            foreach (int type in longColors)
+                Require(type==nextLongType++,level,"long types must be consecutive starting at 101");
             int mixed = 0, normalMixed = 0;
             foreach (BoxData box in puzzle.Boxes)
             {
