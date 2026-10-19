@@ -9,19 +9,6 @@ public static class UiUtils
 	public static float DESIGN_HEIGHT { get; private set; } = 1334f;
 	public static float DesignAspect => DESIGN_WIDTH / DESIGN_HEIGHT;
 
-	public static bool IsUiRtl()
-	{
-		return false;
-	}
-
-	public static void FixArabic(TMP_Text tmp, bool force = false)
-	{
-	}
-
-	public static void RevertFixedArabic(TMP_Text tmp)
-	{
-	}
-
 	public static void SetPivotKeepPlace(RectTransform rectTransform, Vector2 pivot)
 	{
 		if (rectTransform == null) return;

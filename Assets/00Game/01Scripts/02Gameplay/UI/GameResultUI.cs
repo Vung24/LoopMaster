@@ -229,7 +229,7 @@ public sealed class GameResultUI : MonoBehaviour
 	}
 	private void OnRetryDismissed(int result)
 	{
-		if (result == Snui.DialogContent.RESULT_CLOSE && _controller != null) _controller.TryReturnHome();
+		if (result == Snui.DialogContent.RESULT_CLOSE && _controller != null) _controller.ReturnHome();
 	}
 	private void ShowFailTutorial(FailDialogContent content)
 	{

@@ -226,7 +226,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 #endif
 		int requestedCheatLevel = Snui.CheatManager.RequestedLevel;
 		Snui.CheatManager.RequestedLevel = 0;
-		if (requestedCheatLevel > 0 && TryCheatLoadLevel(requestedCheatLevel)) return;
+		if (requestedCheatLevel > 0 && CheatLoadLevel(requestedCheatLevel)) return;
 #if UNITY_EDITOR
 		GameData draft = EditorPlaytestSource?.Invoke();
 		if (draft != null) { InitializeEditorPlaytest(draft); return; }
@@ -240,7 +240,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			{
 				Debug.LogWarning(GameProgressStore.IsCampaignComplete ? "All available levels complete." : "Next level data is missing.", this);
 				InitializationError = new System.InvalidOperationException("No playable level data is available.");
-				TryReturnHome();
+				ReturnHome();
 			}
 			else InitializeOnSceneStart(data);
 		}
@@ -503,15 +503,15 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public void OnClickToolPath()
 	{
-		RequestTool(InventoryKeys.TOOL_PATH, CanRequestPathTool, TryUseToolPath);
+		RequestTool(InventoryKeys.TOOL_PATH, CanRequestPathTool, UseToolPath);
 	}
 
 	public void OnUseToolPath()
 	{
-		TryUseToolPath();
+		UseToolPath();
 	}
 
-	public bool TryUseToolPath()
+	public bool UseToolPath()
 	{
 		if (!Boosters.TryUsePath()) return false;
 		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
@@ -521,30 +521,30 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public void OnClickToolUndo()
 	{
-		RequestTool(InventoryKeys.TOOL_UNDO, CanRequestUndoTool, TryUseToolUndo);
+		RequestTool(InventoryKeys.TOOL_UNDO, CanRequestUndoTool, UseToolUndo);
 	}
 
 	public void OnUseToolUndo()
 	{
-		TryUseToolUndo();
+		UseToolUndo();
 	}
 
-	public bool TryUseToolUndo()
+	public bool UseToolUndo()
 	{
 		return Boosters.TryUseUndo();
 	}
 
 	public void OnClickToolShuffle()
 	{
-		RequestTool(InventoryKeys.TOOL_SHUFFLE, CanRequestShuffleTool, TryUseToolShuffle);
+		RequestTool(InventoryKeys.TOOL_SHUFFLE, CanRequestShuffleTool, UseToolShuffle);
 	}
 
 	public void OnUseToolShuffle()
 	{
-		TryUseToolShuffle();
+		UseToolShuffle();
 	}
 
-	public bool TryUseToolShuffle()
+	public bool UseToolShuffle()
 	{
 		return Boosters.TryUseShuffle();
 	}
@@ -571,27 +571,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		return GameplayFeedbackRules.GetConveyorInterval(_conveyorTickInterval, speedUp, _sliceSpacingScale);
 	}
 
-	private float GetSliceInterval(bool speedUp = false)
-	{
-		return GetTickInterval(speedUp) * 0.5f;
-	}
-
-	private bool IsSliceBlocked(SliceInfo slice, SliceInfo sliceB, bool isOverlapMove)
-	{
-		return _engine != null && _engine.IsSliceBlocked(slice, sliceB, isOverlapMove);
-	}
-
-	private bool IsBoxBlockIndex(int pathIndex)
-	{
-		for (int i = 0; i < Scene.Boxes.Count; i++)
-		{
-			Box box = Scene.Boxes[i];
-			if (box != null && box.Info != null && box.Info.State == BoxState.OnPopup &&
-				box.Info.PathIndex - 1 == pathIndex) return true;
-		}
-		return false;
-	}
-
 	public void CheatWin()
 	{
 		GameOver();
@@ -599,7 +578,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public void CancelCheatTutorials() => _presentation?.Cancel();
 
-	public bool TryCheatLoadLevel(int level)
+	public bool CheatLoadLevel(int level)
 	{
 		if (level < 1 || IsTransitioningLevel || IsUsingBooster) return false;
 		var catalog = BuiltinLevelCatalog.Current;
@@ -627,7 +606,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	}
 
 #if UNITY_EDITOR
-	public bool TryDebugForceEndState(GameEndState state)
+	public bool DebugForceEndState(GameEndState state)
 	{
 		if (!Application.isPlaying || !IsGameplayActive || IsTransitioningLevel ||
 			(state != GameEndState.Won && state != GameEndState.Failed)) return false;
@@ -654,28 +633,13 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		CompleteGame(GameEndState.Failed);
 	}
 
-	public bool NextLevel()
-	{
-		return TryLoadNextLevel();
-	}
-
-	public bool TryLoadNextLevel()
+	public bool LoadNextLevel()
 	{
 		if (IsEditorPlaytest) return false;
 		return Navigation.TryLoadNextLevel();
 	}
 
 	public bool ReplayLevel()
-	{
-		return TryReplayLevel();
-	}
-
-	public bool RestartLevel()
-	{
-		return TryReplayLevel();
-	}
-
-	public bool TryReplayLevel()
 	{
 #if UNITY_EDITOR
 		if (IsEditorPlaytest)
@@ -692,7 +656,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		Navigation.CommitAbandonedLevel();
 	}
-	public bool TryReturnHome()
+	public bool ReturnHome()
 	{
 		return Navigation.TryReturnHome();
 	}
@@ -701,25 +665,25 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public void OnClickNextLevel()
 	{
-		TryLoadNextLevel();
+		LoadNextLevel();
 	}
 
 	public bool ShouldReturnHomeAfterWin => Navigation.ShouldReturnHomeAfterWin;
 
-	public bool TryContinueAfterWin()
+	public bool ContinueAfterWin()
 	{
-		if (IsEditorPlaytest) return TryReplayLevel();
+		if (IsEditorPlaytest) return ReplayLevel();
 		return Navigation.TryContinueAfterWin(HasClaimedWinReward(Data));
 	}
 
 	public void OnClickReplayLevel()
 	{
-		TryReplayLevel();
+		ReplayLevel();
 	}
 
 	public void OnClickRestartLevel()
 	{
-		TryReplayLevel();
+		ReplayLevel();
 	}
 
 	private bool IsGameplaySettled()
@@ -741,7 +705,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		BoosterUI.Request(key, canRequest, use);
 	}
 
-	public bool TryRevive(string way = "free", string route = "pre_fail")
+	public bool Revive(string way = "free", string route = "pre_fail")
 	{
 		if (!CanRevive) return false;
 		Data.ExtendPath();
@@ -756,7 +720,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		GameRevived?.Invoke();
 		return true;
 	}
-	public void Revive(string way, string route) => TryRevive(way, route);
 
 	public FeatureType IsFeatureTutorial() => Presentation.IsFeatureTutorial(Data);
 
@@ -807,12 +770,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 		else GameLost?.Invoke();
 		GameEnded?.Invoke(state);
-	}
-
-	private int WrapPathIndex(int index)
-	{
-		int count = Data == null ? 0 : Data.PathPoints.Count;
-		return count <= 0 ? index : ((index % count) + count) % count;
 	}
 
 	private Box GetBox(BoxInfo info)

@@ -101,10 +101,6 @@ namespace Snui
 			base.Start();
 
 			int signDay = Managers.DailyGiftManager != null ? Managers.DailyGiftManager.GetSignDay() : 0;
-			AnalyticsManager.LogEvent("daily_gift_show", new Dictionary<string, object>
-			{
-				{ "days", signDay + 1 }
-			});
 
 			if (Managers.DailyGiftManager != null)
 			{
@@ -222,12 +218,6 @@ namespace Snui
 				{
 					return false;
 				}
-
-				int signDay = Managers.DailyGiftManager.GetSignDay();
-				AnalyticsManager.LogEvent("daily_gift_claim", new Dictionary<string, object>
-				{
-					{ "days", signDay + 1 }
-				});
 
 				if (!Managers.DailyGiftManager.TryClaimToday()) return false;
 

@@ -34,7 +34,6 @@ public class SplashController : MonoBehaviour
 		if (splashLoadingPanel != null)
 			await splashLoadingPanel.Show();
 
-		await RequestAttPermission();
 		InitData = new SceneInit();
 		await InitData.LoadAsync(this.GetCancellationTokenOnDestroy());
 
@@ -46,10 +45,5 @@ public class SplashController : MonoBehaviour
 		{
 			GameSceneManager.EnterHome(withAnimation: false).Forget();
 		}
-	}
-
-	public UniTask RequestAttPermission()
-	{
-		return UniTask.CompletedTask;
 	}
 }

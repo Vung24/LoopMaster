@@ -206,25 +206,6 @@ public class Box : MonoBehaviour
 		lifetime?.Cancel();
 	}
 
-	public void ReduceSize(int size)
-	{
-		if (_info == null) return;
-		_info.ClearCubes();
-		for (int i = 0; i < size; i++)
-		{
-			CubeInfo cube = _info.PopupSlice();
-			if (cube == null) break;
-			if (cube.CubeSc != null) cube.CubeSc.PlayDescAnim(0.02f);
-		}
-		RemoveEmptyCube();
-	}
-
-	public void PlayCubeAddEffect(Color color)
-	{
-		if (_info == null) return;
-		PlayCubeAddEffect(color, _info.GetSliceCount());
-	}
-
 	public void PlayCubeAddEffect(Color color, int sliceCount)
 	{
 		if (_info == null) return;
@@ -268,14 +249,6 @@ public class Box : MonoBehaviour
 		foreach (CubeInfo info in _info.CubeInfos)
 			if (info != null && info.Size > 0 && info.CubeSc == null)
 				CreateCube(info, restoredToSource ? Mathf.Max(0.02f, restoreDelay) : 0f, "");
-	}
-
-	public void AddCube(int type, float delay = 0f)
-	{
-		if (_info == null) return;
-		CubeInfo cubeInfo = _info.AddCube(type);
-		if (cubeInfo == null) return;
-		CreateCube(cubeInfo, delay, "");
 	}
 
 	public bool CanPopupSlice() => !_isFinishHandled && !_onCreatingCube && _info != null && _info.CanPopup();

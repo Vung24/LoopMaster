@@ -103,12 +103,12 @@ public class FailDialogContent : DialogContent
 		bool success;
 		if (useCoins)
 		{
-			bool ExecuteRevive() => _controller.TryRevive(way, ReviveRoute);
+			bool ExecuteRevive() => _controller.Revive(way, ReviveRoute);
 			success = InventoryManager.Ensure().TrySpendCoins(RevivePrice, ExecuteRevive);
 		}
 		else
 		{
-			success = _controller.TryRevive(way, ReviveRoute);
+			success = _controller.Revive(way, ReviveRoute);
 		}
 		if (!success)
 		{
@@ -162,7 +162,7 @@ public class FailDialogContent : DialogContent
 	{
 		if (_isResolved || !isActiveAndEnabled || _controller == null || _controller.Data != _offeredData) return;
 		_isResolved = true;
-		if (!_controller.TryReplayLevel()) _isResolved = false;
+		if (!_controller.ReplayLevel()) _isResolved = false;
 	}
 
 	public void OnClickRetryLevel() { OnClickReplayLevel(); }

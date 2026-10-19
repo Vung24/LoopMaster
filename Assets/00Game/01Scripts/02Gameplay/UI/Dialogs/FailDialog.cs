@@ -45,6 +45,6 @@ public class FailDialog : MonoBehaviour
 		gameObject.SetActive(false);
 	}
 
-	public void OnClickReplayLevel() { if (_controller != null) _controller.TryReplayLevel(); }
+	public void OnClickReplayLevel() { if (_controller != null) _controller.ReplayLevel(); }
 	public void OnClickRetryLevel() { OnClickReplayLevel(); }
 }
