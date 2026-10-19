@@ -56,7 +56,8 @@ public static class LevelDataConverter
 				Blocks = BuildBlocks(box?.Cubes,
 					cube => cube.Type, cube => cube.IsSecret > 0,
 					cube => includeLocks ? cube.GroupKeyId : 0,
-					cube => includeLocks ? cube.NumLock : 0),
+					cube => includeLocks ? cube.NumLock : 0,
+					cube => cube.LinkedPairId),
 				LockedByColor = includeLocks && box != null ? box.LockColor : 0,
 				MultiColorLock = includeLocks && box != null
 					? SolverMultiColorLockRules.ClonePendingColors(box.MultiColorLock)
@@ -126,7 +127,7 @@ public static class LevelDataConverter
 		foreach (SolverBlock block in ToBottomToTopArray(bottle))
 		{
 			result.Cubes.Add(new CubeData(block.Color, block.IsSecret ? 1 : 0,
-				block.GroupKeyId, block.NumLock));
+				block.GroupKeyId, block.NumLock) { LinkedPairId = block.LinkedPairId });
 		}
 		return result;
 	}
@@ -141,7 +142,7 @@ public static class LevelDataConverter
 
 	private static Stack<SolverBlock> BuildBlocks<T>(IEnumerable<T> cubes,
 		Func<T, int> getColor, Func<T, bool> getIsSecret,
-		Func<T, int> getGroupKeyId, Func<T, int> getNumLock)
+		Func<T, int> getGroupKeyId, Func<T, int> getNumLock, Func<T, int> getLinkedPairId = null)
 	{
 		var result = new Stack<SolverBlock>();
 		if (cubes == null) return result;
@@ -149,7 +150,7 @@ public static class LevelDataConverter
 		{
 			if (ReferenceEquals(cube, null)) continue;
 			result.Push(new SolverBlock(getColor(cube), getIsSecret(cube),
-				getGroupKeyId?.Invoke(cube) ?? 0, getNumLock?.Invoke(cube) ?? 0));
+				getGroupKeyId?.Invoke(cube) ?? 0, getNumLock?.Invoke(cube) ?? 0, getLinkedPairId?.Invoke(cube) ?? 0));
 		}
 		return result;
 	}

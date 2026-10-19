@@ -27,6 +27,7 @@ public class BoxData
 public class CubeData
 {
 	public int Type;
+	public int LinkedPairId;
 	public int IsSecret;
 	public int GroupKeyId;
 	public int NumLock;

@@ -441,11 +441,11 @@ public class WinDialogContent : DialogContent
 		Transform parent = canvas != null ? canvas.rootCanvas.transform : transform.parent;
 		await HudContainer.Show(parent);
 		if (this == null || _token.IsCancellationRequested || !isActiveAndEnabled) return;
-		HudContainer.TrySetTop(1100);
+		HudContainer.SetCurrentTop(1100);
 		HudContainer.Current?.BeginCoinClaim(canvas);
 		GetComponentInParent<WinDialog>(true)?.BeginCoinClaim();
 		HudContainer.Current?.DisableClick();
-		Snui_CoinHud.TrySetAutoUpdate(false);
+		Snui_CoinHud.SetCurrentAutoUpdate(false);
 
 		if (_activeClaimButton != null)
 		{
@@ -505,7 +505,7 @@ public class WinDialogContent : DialogContent
 	private void ReleaseClaimHud()
 	{
 		// The outer dialog owns the mask and releases sorting when that mask is removed.
-		if (GetComponentInParent<WinDialog>(true) == null) HudContainer.TryRevertToOriginLayer();
+		if (GetComponentInParent<WinDialog>(true) == null) HudContainer.RevertCurrentToOriginLayer();
 	}
 
 	private void PlayDoubleCoinAnim()

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 
-/// <summary>Stable logical entries; presentation captures their world origins before commit.</summary>
 public sealed class LinkedCubeUndoEntry
 {
 	public int Id { get; internal set; }

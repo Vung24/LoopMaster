@@ -13,11 +13,10 @@ public class Box : MonoBehaviour
 	public int OnPushSliceCount;
 	public List<Cube> Cubes = new List<Cube>();
 	[SerializeField] private GameObject _cubePrefab;
-	private Cube _finishCube;
 	[SerializeField] private Transform _boxCard;
 
 	private BoxInfo _info;
-	private bool _onPlayingAnim;
+	private BoxAnimator _animator;
 	private GameLoader _gameLoader;
 	private AudioSource _audioSource;
 	[SerializeField] private Animation _anim;
@@ -26,13 +25,10 @@ public class Box : MonoBehaviour
 	[SerializeField] private AdjacentLock _adjacentLock;
 	private bool _onCreatingCube;
 	private bool _isFinishHandled;
-	private bool _finishAnimationPending;
-	private float? _finishPresentationTime;
 	private bool _onUnlockingColorLock;
 	private bool _onDecrementingNumLock;
 	private int _routineVersion;
 	private CancellationToken _routineToken;
-	private readonly List<Cube> _addAnimationCubes = new List<Cube>();
 	private CancellationTokenSource _surpriseLifetime;
 	private UniTask _surpriseTask;
 	private readonly List<Cube> _surpriseCubes = new List<Cube>();
@@ -41,7 +37,10 @@ public class Box : MonoBehaviour
 
 	public BoxInfo Info => _info;
 	public GameLoader GameLoader => _gameLoader;
+	public BoxAnimator Animator => _animator;
 	public Transform BoxCard => _boxCard != null ? _boxCard : (_boxCard = HierarchyReferenceCache.Child(transform, "BoxCard"));
+	internal int RoutineVersion => _routineVersion;
+	internal bool IsCurrentRoutine(int version) => this != null && version == _routineVersion && isActiveAndEnabled;
 	public bool IsLockAnimationPlaying
 	{
 		get
@@ -53,18 +52,7 @@ public class Box : MonoBehaviour
 			return false;
 		}
 	}
-	public bool IsFinishAnimationPlaying
-	{
-		get
-		{
-			if (!isActiveAndEnabled) return false;
-			if (IsSurpriseTransformationPlaying || _finishAnimationPending ||
-				(_finishCube != null && _finishCube.IsFinishAnimationPlaying)) return true;
-			for (int i = 0; i < Cubes.Count; i++)
-				if (Cubes[i] != null && Cubes[i].IsFinishAnimationPlaying) return true;
-			return _anim != null && _anim.IsPlaying("BoxSingleDone");
-		}
-	}
+	public bool IsFinishAnimationPlaying => _animator != null && _animator.IsFinishAnimationPlaying;
 
 	private void Awake()
 	{
@@ -77,19 +65,17 @@ public class Box : MonoBehaviour
 			_audioSource.playOnAwake = false;
 		}
 		if (_boxCard == null) _boxCard = HierarchyReferenceCache.Child(transform, "BoxCard");
+		_animator = new BoxAnimator(this, _anim, BoxCard, _audioSource, () => _gameLoader);
 	}
 
 	public void Init(BoxInfo info, GameLoader gameLoader)
 	{
 		_routineVersion++;
-		_onPlayingAnim = false;
-		_addAnimationCubes.Clear();
+		_animator?.Reset();
 		CancelSurpriseTransformation();
 		_info = info;
 		_gameLoader = gameLoader;
 		_isFinishHandled = false;
-		_finishAnimationPending = false;
-		_finishPresentationTime = null;
 		if (_info == null) return;
 
 		transform.position = _info.Pos;
@@ -238,67 +224,19 @@ public class Box : MonoBehaviour
 
 	public void PlayCubeAddEffect(Color color, int sliceCount)
 	{
-		if (_gameLoader == null || _gameLoader.BoxNormalEffect == null || _info == null) return;
+		if (_info == null) return;
 		Vector3 targetPos = GetBoxTargetPos(sliceCount, new Vector3(0f, 0.9f, -1.65f));
-		PooledParticleEffect pooled = _gameLoader.GetPooledGameObject<PooledParticleEffect>(
-			"BoxNormalEffect", _gameLoader.BoxNormalEffect, _gameLoader.transform);
-		if (pooled != null)
-		{
-			pooled.Play(targetPos, transform.rotation, color);
-		}
-		else
-		{
-			GameObject effect = Instantiate(_gameLoader.BoxNormalEffect, transform);
-			effect.transform.position = targetPos;
-			GameplayEffects.PlaySlicePopIn(effect, color);
-		}
+		_animator?.PlayCubeAddEffect(color, targetPos);
 	}
 
-	public async UniTask PlayAddCubeAnim()
+	public UniTask PlayAddCubeAnim()
 	{
-		if (_onPlayingAnim || !isActiveAndEnabled) return;
-		_onPlayingAnim = true;
-		int version = _routineVersion;
-		try
-		{
-			_addAnimationCubes.Clear();
-			for (int i = 0; i < Cubes.Count; i++)
-			{
-				Cube cube = Cubes[i];
-				if (cube != null && cube.Info != null && cube.Info.Size == GameData.SliceCountPerGroup)
-					_addAnimationCubes.Add(cube);
-			}
-			for (int i = _addAnimationCubes.Count - 1; i >= 0; i--)
-			{
-				if (_addAnimationCubes[i] != null) _addAnimationCubes[i].PlayAnim("Skeleton|cube_one");
-				if (!await WaitForRoutine(0.02f, version)) return;
-			}
-			await WaitForRoutine(2f, version);
-		}
-		finally
-		{
-			if (version == _routineVersion)
-			{
-				_onPlayingAnim = false;
-				_addAnimationCubes.Clear();
-			}
-		}
+		return _animator != null ? _animator.PlayAddCubeAnim(Cubes, _routineVersion) : default;
 	}
 
 	public void PlayShuffleLayout(float duration = 0.6f)
 	{
-		if (_info == null) return;
-		_info.State = BoxState.OnUnlocking;
-		foreach (Cube cube in Cubes)
-			if (cube != null && cube.Info != null) cube.PlayShuffleMove(duration);
-		FinishShuffleLayout(Mathf.Max(0.01f, duration), _routineVersion).Forget();
-	}
-
-	private async UniTask FinishShuffleLayout(float duration, int version)
-	{
-		if (!await WaitForRoutine(duration, version)) return;
-		if (_info != null) _info.State = BoxState.Free;
-		CheckHiddenSecret();
+		_animator?.PlayShuffleLayout(Cubes, duration, _routineVersion, CheckHiddenSecret);
 	}
 
 	public void RefreshAfterUndo(bool restoredToSource, int restoredType) =>
@@ -310,7 +248,13 @@ public class Box : MonoBehaviour
 		foreach (Cube cube in Cubes.ToList())
 		{
 			if (cube == null || cube.Info == null) continue;
-			if (cube.Info.Size <= 0 || !_info.CubeInfos.Contains(cube.Info))
+			if (!_info.CubeInfos.Contains(cube.Info))
+			{
+				// Snapshot Undo replaces identities, so stale cubes can still have a positive size.
+				Cubes.Remove(cube);
+				cube.PlayDismissAnim();
+			}
+			else if (cube.Info.Size <= 0)
 				cube.PlayDescAnim(0.18f);
 			else if (restoredToSource && cube.Info.Type == restoredType)
 				cube.PlayAddAnim(restoreDelay, 0.18f);
@@ -334,27 +278,27 @@ public class Box : MonoBehaviour
 	public void OnBoxFinished(BoxInfo box)
 	{
 		if (box == null || _info == null) return;
-		TryRemoveColorLock(box.GetTopType()).Forget();
-		TryDecNumLock().Forget();
-		TryDecCubeNumLock();
-		TryRemoveAdjacentLock(box);
-		TryCheckNoSolutionRemoveLock();
+		RemoveColorLock(box.GetTopType()).Forget();
+		DecrementNumLock().Forget();
+		DecrementCubeNumLocks();
+		RemoveAdjacentLock(box);
+		ScheduleNoSolutionLockCheck();
 	}
 
-	public void TryRemoveAdjacentLock(BoxInfo box)
+	public void RemoveAdjacentLock(BoxInfo box)
 	{
 		if (_info == null || !_info.IsAdjacentLocked || !_info.CanUnlockAdjacentBox(box)) return;
 		_info.IsAdjacentLocked = false;
 		if (_adjacentLock != null) _adjacentLock.UnLock().Forget();
 	}
 
-	private UniTaskVoid TryCheckNoSolutionRemoveLock()
+	private UniTaskVoid ScheduleNoSolutionLockCheck()
 	{
-		TryCheckNoSolutionRemoveLockAsync(_routineVersion).Forget();
+		CheckNoSolutionLockAfterDelayAsync(_routineVersion).Forget();
 		return default;
 	}
 
-	private async UniTask TryCheckNoSolutionRemoveLockAsync(int version)
+	private async UniTask CheckNoSolutionLockAfterDelayAsync(int version)
 	{
 		if (!await WaitForRoutine(0.9f, version)) return;
 		CheckNoSolutionRemoveLock();
@@ -390,15 +334,13 @@ public class Box : MonoBehaviour
 		return true;
 	}
 
-	private bool IsCurrentRoutine(int version) => this != null && version == _routineVersion && isActiveAndEnabled;
-
-	private async UniTask<bool> WaitForRoutine(float duration, int version)
+	internal async UniTask<bool> WaitForRoutine(float duration, int version)
 	{
 		bool canceled = await UniTask.WaitForSeconds(duration, cancellationToken: _routineToken).SuppressCancellationThrow();
 		return !canceled && IsCurrentRoutine(version);
 	}
 
-	private async UniTaskVoid TryDecNumLock()
+	private async UniTaskVoid DecrementNumLock()
 	{
 		if (_info == null || _info.NumLock <= 0 || _onDecrementingNumLock) return;
 		if (_numLock == null)
@@ -426,13 +368,13 @@ public class Box : MonoBehaviour
 		}
 	}
 
-	private void TryDecCubeNumLock()
+	private void DecrementCubeNumLocks()
 	{
 		foreach (Cube cube in Cubes)
-			if (cube != null && cube.Info != null && cube.Info.NumLock > 0) cube.TryDescNumLock().Forget();
+			if (cube != null && cube.Info != null && cube.Info.NumLock > 0) cube.DecrementNumLock().Forget();
 	}
 
-	private async UniTask TryRemoveColorLock(int type)
+	private async UniTask RemoveColorLock(int type)
 	{
 		if (_info == null || _info.LockColor <= 0 || _info.LockColor != type ||
 			_colorLock == null || _onUnlockingColorLock) return;
@@ -461,12 +403,7 @@ public class Box : MonoBehaviour
 
 	public void PlayClickedAnim(bool isPopup)
 	{
-		if (_onPlayingAnim) return;
-		GameVibrationHelper.PlayBoxTap(isPopup);
-		string clip = isPopup ? "Skeleton|cube_click" : "Skeleton|cube_static";
-		if (_anim != null && _anim.GetClip(clip) != null) _anim.Play(clip);
-		foreach (Cube cube in Cubes)
-			if (cube != null) cube.PlayAnim(clip);
+		_animator?.PlayClickedAnim(isPopup, Cubes);
 	}
 
 	public bool CanJumpType(int type)
@@ -494,28 +431,26 @@ public class Box : MonoBehaviour
 		if (newCube) CreateCube(info);
 		if (info.CubeSc == null) return null;
 		info.CubeSc.ReserveIncomingSlice(newCube);
-		// Native PushSlice starts the 0.5s finish delay before the slice's flight.
-		// Keep logical completion at landing, but count that flight toward the delay.
-		_finishPresentationTime = _info.IsFinished() ? Time.time + BoxFinishRules.FinishDelay : (float?)null;
-		PlayPopInAudio();
+		_animator?.SetFinishPresentationTime(_info.IsFinished() ? Time.time + BoxFinishRules.FinishDelay : (float?)null);
+		_animator?.PlayPopInAudio();
 		return info.CubeSc;
 	}
 	public void CompleteIncomingSlice(Cube cube)
 	{
 		if (cube == null || cube.Info == null) return;
 		cube.CompleteIncomingSlice();
-		TryRemoveColorLock(cube.Info.Type).Forget();
+		RemoveColorLock(cube.Info.Type).Forget();
 	}
 	public bool PushSlice(int type, float interval)
 	{
 		if (_info == null) return false;
 		CubeInfo cubeInfo = _info.PushSlice(type);
 		if (cubeInfo == null) return false;
-		PlayPopInAudio();
+		_animator?.PlayPopInAudio();
 		if (cubeInfo.CubeSc == null) CreateCube(cubeInfo);
 		if (cubeInfo.CubeSc != null) cubeInfo.CubeSc.PlayAddAnim(interval, 0.12f);
-		TryRemoveColorLock(type).Forget();
-		TryHandleFinish();
+		RemoveColorLock(type).Forget();
+		HandleFinishIfReady();
 		return true;
 	}
 
@@ -524,25 +459,18 @@ public class Box : MonoBehaviour
 		if (_info == null) return false;
 		CubeInfo cubeInfo = _info.PopupSlice();
 		if (cubeInfo == null) return false;
-		PlayJumpAudio();
-		if (cubeInfo.CubeSc != null) cubeInfo.CubeSc.PlayDescAnim();
+		PlayLinkedSliceEmitted(cubeInfo);
 		return true;
 	}
 
-	private void PlayPopInAudio()
+	internal void PlayLinkedSliceEmitted(CubeInfo cubeInfo)
 	{
-		if (_gameLoader == null || GameAudioPlayer.Current == null) return;
-		int combo = GameController.Current == null ? 0 : GameController.Current.ComboInCount;
-		GameAudioPlayer.Current.PlaySlicePopIn(_audioSource, _gameLoader.SlicePopIn,
-			GameplayFeedbackRules.GetPopInPitch(combo));
+		_animator?.PlayJumpAudio();
+		if (cubeInfo.CubeSc != null) cubeInfo.CubeSc.PlayDescAnim();
 	}
 
-	private void PlayJumpAudio()
-	{
-		if (_gameLoader == null || GameAudioPlayer.Current == null) return;
-		GameAudioPlayer.Current.PlaySlicePopOut(_audioSource, _gameLoader.SlicePopOut,
-			_gameLoader.SlicePopOutPitch);
-	}
+	public void PlayPopInAudio() => _animator?.PlayPopInAudio();
+	public void PlayJumpAudio() => _animator?.PlayJumpAudio();
 
 	public void RemoveEmptyCube()
 	{
@@ -558,111 +486,27 @@ public class Box : MonoBehaviour
 		_info?.ClearCubes();
 	}
 
-	public bool TryHandleFinish()
+	public void HandleFinishIfReady()
 	{
-		if (_isFinishHandled || IsSurpriseTransformationPlaying || _info == null || OnPushSliceCount > 0 || !_info.IsFinished()) return false;
+		if (_isFinishHandled || IsSurpriseTransformationPlaying || _info == null || OnPushSliceCount > 0 || !_info.IsFinished()) return;
 		_isFinishHandled = true;
-		_finishAnimationPending = true;
 		float interval = GameController.Current == null ? float.PositiveInfinity :
 			GameController.Current.GetLastFinishBoxInterval();
 		if (GameController.Current != null) GameController.Current.HandleBoxFinished(this);
 		GameData data = GameData.Current;
 		int combo = data == null ? 0 : (interval <= GameData.BoxEmojiComboTime ? data.BoxEmojiCombo : data.BoxCombo);
 		int finished = data == null ? 1 : data.FinishBoxCount;
-		PlayFullAnim(interval, combo, finished, _routineVersion).Forget();
-		return true;
-	}
-
-	private async UniTask PlayFullAnim(float interval, int combo, int finished, int version)
-	{
-		try
-		{
-			float delay = _finishPresentationTime.HasValue
-				? Mathf.Max(0f, _finishPresentationTime.Value - Time.time)
-				: BoxFinishRules.FinishDelay;
-			if (delay > 0f && !await WaitForRoutine(delay, version)) return;
-			if (!IsCurrentRoutine(version) || _info == null) return;
-			CreateFinishCube(_info.GetTopType());
-
-			foreach (Cube cube in Cubes)
-				if (cube != null) cube.PlayDismissAnim();
-			PlayBoxFinishEffect(combo, interval, finished);
-			if (_gameLoader != null && GameAudioPlayer.Current != null)
-				GameAudioPlayer.Current.PlayBoxAudio(_audioSource, _gameLoader.MatchClip);
-		}
-		finally { if (version == _routineVersion) _finishAnimationPending = false; }
+		_animator?.PlayFullAnim(interval, combo, finished, _routineVersion).Forget();
 	}
 
 	private void OnDisable()
 	{
 		_routineVersion++;
-		_onPlayingAnim = false;
-		_addAnimationCubes.Clear();
-		_finishAnimationPending = false;
-		_finishPresentationTime = null;
+		_animator?.OnDisable();
 		CancelSurpriseTransformation();
 	}
 
-	private void PlayBoxFinishEffect(int combo, float interval, int finished)
-	{
-		if (_gameLoader == null) return;
-		if (_gameLoader.BoxFinishEffect != null)
-		{
-			GameObject effect = Instantiate(_gameLoader.BoxFinishEffect, transform);
-			if (_info.BoxType == BoxType.Long) effect.transform.localPosition = new Vector3(0f, 0.9f, -0.8f);
-			Transform text = HierarchyReferenceCache.Child(effect.transform, "Text");
-			bool show = BoxFinishRules.ShouldShowCombo(interval, finished) &&
-				(GameAssetsConfig.Instance == null || GameAssetsConfig.Instance.EnableBoxComboEffects);
-			bool emoji = BoxFinishRules.UseEmoji(interval, finished);
-			if (text != null)
-			{
-				text.gameObject.SetActive(show && !emoji);
-				SpriteRenderer square = text.GetComponentInChildren<SpriteRenderer>(true);
-				if (square != null)
-				{
-					square.sprite = GameAssetsConfig.GetBoxFinishSprite(combo);
-					if (show && !emoji) GameplayEffects.BringComboToFront(square);
-					Camera view = GameController.Current != null ? GameController.Current.MainCamera : Camera.main;
-					if (view != null) square.transform.rotation = view.transform.rotation;
-					square.gameObject.SetActive(square.sprite != null);
-				}
-			}
-			GameplayEffects.PlayParticles(effect);
-			if (show && emoji && _gameLoader.BoxComboEffect != null)
-			{
-				GameObject comboEffect = Instantiate(_gameLoader.BoxComboEffect, transform);
-				comboEffect.transform.localPosition = new Vector3(0f, 2f, 0f);
-				GameplayEffects.PlayCombo(comboEffect, BoxFinishRules.GetEmojiVariant(combo));
-			}
-		}
-	}
-
-	private void CreateFinishCube(int type)
-	{
-		if (_finishCube != null || _gameLoader == null || _info == null) return;
-
-		GameObject prefab = _info.BoxType == BoxType.Long
-			? _gameLoader.FinishLongCube
-			: _gameLoader.FinishCube;
-		if (prefab == null) return;
-
-		Transform parent = _boxCard != null ? _boxCard : transform;
-		GameObject instance = Instantiate(prefab, parent);
-		_finishCube = instance.GetComponent<Cube>();
-		if (_finishCube == null)
-		{
-			Destroy(instance);
-			return;
-		}
-
-		_finishCube.transform.SetPositionAndRotation(GetFinishCubePos(), transform.rotation);
-		_finishCube.InitFinish(type);
-		_finishCube.PlayAnim("Skeleton|cube_all");
-		if (_info.BoxType == BoxType.Single && _anim != null && _anim.GetClip("BoxSingleDone") != null)
-			_anim.Play("BoxSingleDone");
-	}
-
-	private Vector3 GetFinishCubePos()
+	internal Vector3 GetFinishCubePos()
 	{
 		float zOffset = _info != null && _info.BoxType == BoxType.Long ? -0.8f : 0f;
 		return transform.TransformPoint(new Vector3(0f, 0.8f, zOffset));
@@ -734,10 +578,8 @@ public class Box : MonoBehaviour
 	private UniTask CreateCube(CubeInfo info, float delay = 0f, string playAnim = "")
 	{
 		if (info == null) return default;
-		GameObject cubePrefab = _cubePrefab != null ? _cubePrefab : (_gameLoader == null ? null : _gameLoader.Cube);
-		GameObject instance = cubePrefab != null
-			? Instantiate(cubePrefab, transform)
-			: new GameObject("Cube");
+		GameObject cubePrefab = _cubePrefab;
+		GameObject instance = Instantiate(cubePrefab, transform);
 		if (instance.transform.parent == null) instance.transform.SetParent(transform, false);
 		instance.SetActive(true);
 		Cube cube = instance.GetComponent<Cube>();

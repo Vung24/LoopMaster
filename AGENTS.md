@@ -75,3 +75,10 @@ Verification Checklist
 - Use explicit if/else for non-trivial logic.
 
 - Preserve existing behavior when simplifying code.
+
+## Method Naming: Avoid Unnecessary Try Prefixes
+
+- Do not prefix method names with Try unless failure is an expected, recoverable outcome that the caller needs to handle.
+- Use Try only when the method reports success or failure through its return value (normally bool), with out parameters when a result is needed.
+- Prefer direct, descriptive action names such as Initialize, Move, Build, or Get when Try semantics are unnecessary. Do not add Try wrappers merely for defensive null checks or to silently skip broken required setup.
+- Preserve existing public APIs and framework methods such as TryGetComponent; this rule does not require unrelated renames.

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class CubeInfo
 {
 	public int Type;
+	public int LinkedPairId;
 	public int Size;
 	public bool IsSecret;
 	public int GroupKeyId;
@@ -15,6 +16,7 @@ public class CubeInfo
 	{
 		if (data == null) throw new ArgumentNullException(nameof(data));
 		Type = MapColor(data.Type, colorMap);
+		LinkedPairId = data.LinkedPairId;
 		Size = GameData.SliceCountPerGroup;
 		IsSecret = data.IsSecret > 0;
 		GroupKeyId = data.GroupKeyId;

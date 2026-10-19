@@ -53,7 +53,7 @@ public sealed class GroupLockFlow
         }
     }
 
-    public void TryUnlockAvailableKeys()
+    public void UnlockAvailableKeys()
     {
         if (_data == null) return;
         for (int i = 0; i < _scene.Boxes.Count; i++)

@@ -22,6 +22,7 @@ public class GameLoader : MonoBehaviour
 	public GameObject CubeNumLock => LoadPrefab("CubeNumLock");
 	public GameObject Slice => LoadPrefab("Slice");
 	public GameObject Cube => LoadPrefab("Cube");
+	public GameObject LinkedCubeCable => LoadPrefab("LinkedCubeCable");
 	public GameObject FinishCube => LoadPrefab("CubeFinish");
 	public GameObject FinishLongCube => LoadPrefab("CubeLongFinish");
 	public GameObject GameRoad => LoadPrefab("GameRoad");

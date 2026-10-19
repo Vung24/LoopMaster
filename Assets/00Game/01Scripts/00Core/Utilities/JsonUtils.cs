@@ -23,7 +23,7 @@ public static class JsonUtils
 		return JsonConvert.SerializeObject(obj);
 	}
 
-	public static JObject TryParse(string text)
+	public static JObject ParseObjectOrNull(string text)
 	{
 		if (string.IsNullOrWhiteSpace(text)) return null;
 

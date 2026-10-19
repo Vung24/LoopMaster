@@ -560,11 +560,11 @@ public class SpecialStreakProgress : MonoBehaviour
             var type = _rewardCell.RewardItem.Type;
             if (type == RewardType.Coin)
             {
-                Snui_CoinHud.TrySetAutoUpdate(false);
+                Snui_CoinHud.SetCurrentAutoUpdate(false);
             }
             else if (type == RewardType.Heart || type == RewardType.InfinityHeart)
             {
-                Snui_HeartHud.TrySetAutoUpdate(false);
+                Snui_HeartHud.SetCurrentAutoUpdate(false);
             }
         }
 

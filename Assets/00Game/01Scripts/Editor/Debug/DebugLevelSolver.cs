@@ -62,7 +62,13 @@ public sealed class DebugLevelSolver
             for (int i = 0; i < node.Data.Boxes.Count; i++)
             {
                 BoxInfo source = node.Data.Boxes[i];
-                if (!source.CanPopup() || source.IsFinished() || source.GetTopCubes(false).Count == 0 ||
+                CubeInfo top = source.PeekTopCube();
+                if (top != null && top.LinkedPairId > 0)
+                {
+                    LinkedCubePair pair = node.Data.LinkedPair;
+                    if (pair == null || pair.State != LinkedCubePairState.Pending || i != pair.FirstBoxIndex) continue;
+                }
+                else if (!source.CanPopup() || source.IsFinished() || source.GetTopCubes(false).Count == 0 ||
                     !node.Data.CanCubeJumpToTransfer()) continue;
                 GameData next = SimulateClick(node.Data, i);
                 if (next != null)
@@ -88,15 +94,29 @@ public sealed class DebugLevelSolver
     {
         var key = new StringBuilder();
         key.Append(data.ExtraPathLength).Append('|');
+        bool linked = data.LinkedPair != null;
+        if (linked) key.Append("L").Append(data.LinkedPair.Id).Append(':').Append((int)data.LinkedPair.State);
         foreach (GroupInfo group in data.Groups) key.Append(group.IsLocked ? '1' : '0');
         foreach (BoxInfo box in data.Boxes)
         {
             key.Append('|').Append(box.LockColor).Append(',').Append(box.NumLock)
                 .Append(',').Append(box.IsAdjacentLocked ? 1 : 0);
+            if (linked) key.Append(',').Append(box.LastPopupType).Append(',').Append(box.IsLastUnlockSecret ? 1 : 0);
             foreach (CubeInfo cube in box.CubeInfos)
+            {
                 key.Append(';').Append(cube.Type).Append(',').Append(cube.Size)
                     .Append(',').Append(cube.IsSecret ? 1 : 0).Append(',').Append(cube.NumLock)
                     .Append(',').Append(cube.GroupKeyId);
+                if (linked) key.Append(',').Append(cube.LinkedPairId);
+            }
+        }
+        if (linked)
+        {
+            foreach (SliceInfo slice in data.TransferSlice.OrderBy(item => item.PathIndex).ThenBy(item => item.Type)
+                .ThenBy(item => data.Boxes.IndexOf(item.SourceBox)))
+                key.Append('/').Append(slice.Type).Append(',').Append(data.Boxes.IndexOf(slice.SourceBox))
+                    .Append(',').Append(slice.PathIndex).Append(',').Append(slice.IsMoved ? 1 : 0);
+            return key.ToString();
         }
         foreach (var group in data.TransferSlice.GroupBy(slice => new
             { slice.Type, Source = data.Boxes.IndexOf(slice.SourceBox) })
@@ -124,6 +144,8 @@ public sealed class DebugLevelSolver
     {
         GameData data = original.CreateDebugSimulationCopy();
         BoxInfo source = data.Boxes[boxIndex];
+        if (source.PeekTopCube() != null && source.PeekTopCube().LinkedPairId > 0)
+            return SimulateLinkedClick(data, source);
         List<CubeInfo> top = source.GetTopCubes(false);
         if (data.PathPoints.Count < 2 || top.Count == 0 || !source.CanPopup() ||
             !data.CanCubeJumpToTransfer()) return null;
@@ -193,6 +215,54 @@ public sealed class DebugLevelSolver
                 quiet += skip;
             }
         }
+        return null;
+    }
+
+    private static GameData SimulateLinkedClick(GameData data, BoxInfo source)
+    {
+        if (data.PathPoints.Count < 2 || !LinkedCubeLaunch.TryBegin(data, source, out LinkedCubeLaunch launch, out _))
+            return null;
+        var engine = new CoreGameplayEngine(data);
+        var finished = new HashSet<BoxInfo>(data.Boxes.Where(box => box.IsFinished()));
+        var landing = new Queue<KeyValuePair<SliceInfo, int>>();
+        int emissionInterval = Math.Max(1, (int)Math.Round(GameplayFeedbackRules.SliceLaunchInterval * 1000));
+        int jumpTime = Math.Max(1, (int)Math.Round(GameplayFeedbackRules.SliceJumpDuration * 1000));
+        int roadInterval = Math.Max(1, (int)Math.Round(GameplayFeedbackRules.ConveyorNormalInterval * 1000));
+        int nextEmission = (int)Math.Round(GameplayFeedbackRules.SliceLaunchStartDelay * 1000);
+        int nextRoad = roadInterval, quiet = 0;
+        int quietLimit = Math.Max(20, data.PathPoints.Count + 4);
+        int limit = (data.TransferSlice.Count + GameData.SliceCountPerGroup * 2 + 2) * quietLimit * 4;
+        for (int step = 0; step < limit; step++)
+        {
+            int next = nextRoad;
+            if (launch.IsEmitting) next = Math.Min(next, nextEmission);
+            if (landing.Count > 0) next = Math.Min(next, landing.Peek().Value);
+            while (landing.Count > 0 && landing.Peek().Value <= next)
+            {
+                SliceInfo slice = landing.Dequeue().Key;
+                slice.PathIndex = slice.SourceBox.PathIndex;
+                launch.ConfirmLanding(slice);
+            }
+            if (launch.IsEmitting && nextEmission <= next)
+            {
+                SliceInfo first = launch.Emit(false), second = launch.Emit(true);
+                if (first != null) landing.Enqueue(new KeyValuePair<SliceInfo, int>(first, next + jumpTime));
+                if (second != null) landing.Enqueue(new KeyValuePair<SliceInfo, int>(second, next + jumpTime));
+                nextEmission += emissionInterval;
+            }
+            if (launch.IsActive && launch.CanComplete) launch.Complete();
+            if (nextRoad > next) continue;
+            int before = data.TransferSlice.Count;
+            AcceptSlices(data, engine, finished);
+            MoveRoad(data, engine);
+            nextRoad += roadInterval;
+            if (launch.IsActive) continue;
+            if (data.IsGameOver()) return data;
+            if (data.IsGameFailed()) return null;
+            quiet = before == data.TransferSlice.Count ? quiet + 1 : 0;
+            if (data.TransferSlice.Count == 0 || quiet >= quietLimit) return data;
+        }
+        launch.Cancel();
         return null;
     }
 

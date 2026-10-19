@@ -65,7 +65,8 @@ public class Slice : MonoBehaviour
 		}
 	}
 
-	public UniTask JumpToTransfer(int targetPathIndex, float delayTime, float jumpHeight = JumpArcHeight)
+	public UniTask JumpToTransfer(int targetPathIndex, float delayTime, float jumpHeight = JumpArcHeight,
+		Action landed = null, bool commitLogicOnComplete = true)
 	{
 		if (_info == null || GameData.Current == null) return default;
 		_info.PathIndex = -1;
@@ -79,8 +80,12 @@ public class Slice : MonoBehaviour
 		StartAnimation(target, rotation, RoadScale, duration, () =>
 		{
 			if (_info == null) return;
-			_info.PathIndex = WrapPathIndex(targetPathIndex);
-			_info.IsMoved = false;
+			if (commitLogicOnComplete)
+			{
+				_info.PathIndex = WrapPathIndex(targetPathIndex);
+				_info.IsMoved = false;
+			}
+			landed?.Invoke();
 		}, jumpHeight, Ease.InQuad, false);
 		return default;
 	}

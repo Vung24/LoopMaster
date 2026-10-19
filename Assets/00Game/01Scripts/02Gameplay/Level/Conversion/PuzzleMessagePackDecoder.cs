@@ -59,7 +59,7 @@ public static class PuzzleMessagePackDecoder
 		IsSecret = Int(map, "s"),
 		GroupKeyId = Int(map, "k"),
 		NumLock = Int(map, "l"),
-		IsFixed = Int(map, "f")
+		IsFixed = Int(map, "f"), LinkedPairId = Int(map, "lp")
 	};
 
 	private static SurpriseData ReadSurprise(Dictionary<string, object> map)

@@ -144,7 +144,7 @@ public class WinDialog : MonoBehaviour
 			_canvasGroup.interactable = false;
 			_canvasGroup.blocksRaycasts = false;
 		}
-		HudContainer.TryRevertToOriginLayer();
+		HudContainer.RevertCurrentToOriginLayer();
 		gameObject.SetActive(false);
 	}
 
@@ -206,7 +206,7 @@ public class WinDialog : MonoBehaviour
 	{
 		CancelPresentation();
 		if (_logoDialogContent != null) _logoDialogContent.Hide();
-		HudContainer.TryRevertToOriginLayer();
+		HudContainer.RevertCurrentToOriginLayer();
 	}
 
 	private void OnDestroy()

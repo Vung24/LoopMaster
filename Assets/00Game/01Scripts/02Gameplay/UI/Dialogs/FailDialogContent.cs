@@ -90,13 +90,13 @@ public class FailDialogContent : DialogContent
 	}
 	private bool OfferValid => !_isResolved && isActiveAndEnabled && _controller != null &&
 		_controller.Data == _offeredData && _controller.CanRevive;
-	public void OnClickCoinButton() => TryRevive(true, "coin");
-	public void OnClickOfflineFreeButton() => TryRevive(false, "offline_free");
+	public void OnClickCoinButton() => HandleRevive(true, "coin");
+	public void OnClickOfflineFreeButton() => HandleRevive(false, "offline_free");
 	public void OnClickFreeButton()
 	{
-		if (_isFreeRevive) TryRevive(false, "free");
+		if (_isFreeRevive) HandleRevive(false, "free");
 	}
-	private void TryRevive(bool useCoins, string way)
+	private void HandleRevive(bool useCoins, string way)
 	{
 		if (!OfferValid) return;
 		_isResolved = true;
