@@ -2,7 +2,8 @@
 
 public class UISupport
 {
-    public static string SceneLoading = "Loading";
+    public static string SplashScene = "Splash";
     public static string SceneInit = "Init";
+    public static string HomeScene = "Home";
     public static string SceneGame = "Game";
 }
