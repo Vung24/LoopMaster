@@ -507,8 +507,20 @@ public class GameData
 		return group != null && group.Unlock();
 	}
 
-	public int GetFinishBoxCount() => Boxes.Count(box => box.IsFinished());
-	public bool IsGameOver() => TransferSlice.Count == 0 && Boxes.All(box => box.IsFinished());
+	public int GetFinishBoxCount()
+	{
+		int count = 0;
+		for (int i = 0; i < Boxes.Count; i++)
+			if (Boxes[i] != null && Boxes[i].IsFinished()) count++;
+		return count;
+	}
+	public bool IsGameOver()
+	{
+		if (TransferSlice.Count != 0) return false;
+		for (int i = 0; i < Boxes.Count; i++)
+			if (Boxes[i] != null && !Boxes[i].IsFinished()) return false;
+		return true;
+	}
 	public List<MapComponent> GetMapData() => Puzzle == null ? null : Puzzle.MapData;
 
 	public bool IsGameFailed()

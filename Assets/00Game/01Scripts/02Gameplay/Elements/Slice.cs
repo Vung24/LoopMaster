@@ -169,21 +169,21 @@ public class Slice : MonoBehaviour
 	{
 		StopMotion();
 		_rotationTween = transform.DORotate(targetRotation.eulerAngles, duration)
-			.SetEase(rotationEase).SetTarget(gameObject);
+			.SetEase(rotationEase).SetTarget(gameObject).SetLink(gameObject);
 		if (jumpHeight > 0f)
 		{
 			_isJumping = true;
 			_scaleJumpWithConveyor = scaleJumpWithConveyor;
 			_scaleTween = transform.DOScale(targetScale, duration)
-				.SetEase(Ease.OutQuad).SetTarget(gameObject);
+				.SetEase(Ease.OutQuad).SetTarget(gameObject).SetLink(gameObject);
 			_positionTween = transform.DOJump(targetPosition, jumpHeight, 1, duration)
-				.SetEase(Ease.OutQuad).SetTarget(gameObject);
+				.SetEase(Ease.OutQuad).SetTarget(gameObject).SetLink(gameObject);
 			SetJumpTimeScale(GameController.Current == null ? 1f : GameController.Current.SliceJumpTimeScale);
 		}
 		else
 		{
 			_positionTween = transform.DOMove(targetPosition, duration)
-				.SetEase(Ease.Linear).SetTarget(gameObject);
+				.SetEase(Ease.Linear).SetTarget(gameObject).SetLink(gameObject);
 		}
 		_positionTween.OnComplete(() =>
 		{
