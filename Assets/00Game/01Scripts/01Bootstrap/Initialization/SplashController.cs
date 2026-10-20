@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using UnityEngine;
 
 public class SplashController : MonoBehaviour
@@ -13,6 +14,11 @@ public class SplashController : MonoBehaviour
 	{
 		QualitySettings.vSyncCount = 0;
 		Application.targetFrameRate = 60;
+		DOTween.SetTweensCapacity(500, 100);
+		DOTween.defaultRecyclable = true;
+#if !UNITY_EDITOR
+		DOTween.logBehaviour = LogBehaviour.ErrorsOnly;
+#endif
 	}
 
 	private void Awake()
