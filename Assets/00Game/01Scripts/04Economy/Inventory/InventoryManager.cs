@@ -82,9 +82,16 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 		}
 	}
 
-	public bool IsBoosterUnlocked(string key) => IsBoosterKey(key) &&
-		(GameProgressStore.HighestUnlockedLevel >= GetToolUnlockLevel(key) ||
-		 (GameController.Current != null && (GameController.Current.IsEditorPlaytest || GameController.Current.CurrentLevelNumber >= GetToolUnlockLevel(key))));
+	public bool IsBoosterUnlocked(string key)
+	{
+		int unlockLevel = GetToolUnlockLevel(key);
+		if (unlockLevel <= 0) return false;
+		GameController controller = GameController.Current;
+		// Winning unlocks the next level before the current gameplay HUD is closed.
+		if (controller != null && controller.Data != null)
+			return controller.IsEditorPlaytest || controller.CurrentLevelNumber >= unlockLevel;
+		return GameProgressStore.HighestUnlockedLevel >= unlockLevel;
+	}
 	public bool CanUseBooster(string key) => !IsMutationBlocked && IsBoosterUnlocked(key) && GetAmount(key) > 0;
 	public int GetAmount(string key, int def = 0) => IsInventoryKey(key)
 		? Math.Max(0, GamePrefs.GetInt(CountKey(key), def)) : Math.Max(0, def);

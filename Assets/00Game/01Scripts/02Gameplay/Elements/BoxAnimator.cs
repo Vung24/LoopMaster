@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-
+using static UnityEngine.Object;
 public sealed class BoxAnimator
 {
 	private const string DoneClipName = "BoxSingleDone";
@@ -57,7 +57,11 @@ public sealed class BoxAnimator
 		_addAnimationCubes.Clear();
 		_finishAnimationPending = false;
 		_finishPresentationTime = null;
-		_finishCube = null;
+		if (_finishCube != null)
+		{
+			UnityEngine.Object.Destroy(_finishCube.gameObject);
+			_finishCube = null;
+		}
 	}
 
 	public void OnDisable()
@@ -168,7 +172,7 @@ public sealed class BoxAnimator
 		}
 		else
 		{
-			GameObject effect = UnityEngine.Object.Instantiate(loader.BoxNormalEffect, _box.transform);
+			GameObject effect = Instantiate(loader.BoxNormalEffect, _box.transform);
 			effect.transform.position = targetPos;
 			GameplayEffects.PlaySlicePopIn(effect, color);
 		}
@@ -213,31 +217,56 @@ public sealed class BoxAnimator
 
 		if (loader.BoxFinishEffect != null)
 		{
-			GameObject effect = UnityEngine.Object.Instantiate(loader.BoxFinishEffect, _box.transform);
-			if (_box.Info.BoxType == BoxType.Long) effect.transform.localPosition = new Vector3(0f, 0.9f, -0.8f);
-			Transform text = HierarchyReferenceCache.Child(effect.transform, "Text");
 			bool show = BoxFinishRules.ShouldShowCombo(interval, finished) &&
 				(GameAssetsConfig.Instance == null || GameAssetsConfig.Instance.EnableBoxComboEffects);
 			bool emoji = BoxFinishRules.UseEmoji(interval, finished);
-			if (text != null)
+			float zOffset = _box.Info.BoxType == BoxType.Long ? -0.8f : 0f;
+			Vector3 localPos = new Vector3(0f, 1.4f, zOffset);
+			Sprite comboSprite = (show && !emoji) ? GameAssetsConfig.GetBoxFinishSprite(combo) : null;
+			Camera view = GameController.Current != null ? GameController.Current.MainCamera : Camera.main;
+
+			PooledBoxFinishEffect pooledFinish = loader.GetPooledGameObject<PooledBoxFinishEffect>(
+				"BoxFinishEffect", loader.BoxFinishEffect, _box.transform);
+			if (pooledFinish != null)
 			{
-				text.gameObject.SetActive(show && !emoji);
-				SpriteRenderer square = text.GetComponentInChildren<SpriteRenderer>(true);
-				if (square != null)
-				{
-					square.sprite = GameAssetsConfig.GetBoxFinishSprite(combo);
-					if (show && !emoji) GameplayEffects.BringComboToFront(square);
-					Camera view = GameController.Current != null ? GameController.Current.MainCamera : Camera.main;
-					if (view != null) square.transform.rotation = view.transform.rotation;
-					square.gameObject.SetActive(square.sprite != null);
-				}
+				pooledFinish.Play(localPos, show && !emoji, comboSprite, view);
 			}
-			GameplayEffects.PlayParticles(effect);
+			else
+			{
+				GameObject effect = Instantiate(loader.BoxFinishEffect, _box.transform);
+				effect.transform.localPosition = localPos;
+				Transform text = HierarchyReferenceCache.Child(effect.transform, "Text");
+				if (text != null)
+				{
+					text.gameObject.SetActive(show && !emoji);
+					SpriteRenderer square = text.GetComponentInChildren<SpriteRenderer>(true);
+					if (square != null)
+					{
+						square.sprite = comboSprite;
+						if (show && !emoji) GameplayEffects.BringComboToFront(square);
+						if (view != null) square.transform.rotation = view.transform.rotation;
+						square.gameObject.SetActive(square.sprite != null);
+					}
+				}
+				GameplayEffects.PlayParticles(effect);
+			}
+
 			if (show && emoji && loader.BoxComboEffect != null)
 			{
-				GameObject comboEffect = UnityEngine.Object.Instantiate(loader.BoxComboEffect, _box.transform);
-				comboEffect.transform.localPosition = new Vector3(0f, 2f, 0f);
-				GameplayEffects.PlayCombo(comboEffect, BoxFinishRules.GetEmojiVariant(combo));
+				Vector3 comboPos = new Vector3(0f, 2.8f, zOffset);
+				int variant = BoxFinishRules.GetEmojiVariant(combo);
+				PooledBoxComboEffect pooledCombo = loader.GetPooledGameObject<PooledBoxComboEffect>(
+					"BoxComboEffect", loader.BoxComboEffect, _box.transform);
+				if (pooledCombo != null)
+				{
+					pooledCombo.Play(comboPos, variant, view);
+				}
+				else
+				{
+					GameObject comboEffect = Instantiate(loader.BoxComboEffect, _box.transform);
+					comboEffect.transform.localPosition = comboPos;
+					GameplayEffects.PlayCombo(comboEffect, variant);
+				}
 			}
 		}
 	}
@@ -253,11 +282,11 @@ public sealed class BoxAnimator
 		if (prefab == null) return;
 
 		Transform parent = _boxCard != null ? _boxCard : _box.transform;
-		GameObject instance = UnityEngine.Object.Instantiate(prefab, parent);
+		GameObject instance = Instantiate(prefab, parent);
 		_finishCube = instance.GetComponent<Cube>();
 		if (_finishCube == null)
 		{
-			UnityEngine.Object.Destroy(instance);
+			Destroy(instance);
 			return;
 		}
 

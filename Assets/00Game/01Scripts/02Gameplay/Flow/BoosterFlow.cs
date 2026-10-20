@@ -25,6 +25,8 @@ public sealed class BoosterFlow
 	private int _operationVersion;
 	private Sequence _undoPresentation;
 	private readonly List<GameObject> _undoVisuals = new List<GameObject>();
+	private bool _cachedCanShuffle;
+	private float _nextShuffleCheckTime;
 	private InventoryManager Inventory => _inventory != null ? _inventory : (_inventory = InventoryManager.Ensure());
 
 	public bool IsBusy { get; private set; }
@@ -61,12 +63,15 @@ public sealed class BoosterFlow
 		undo = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
 			(Inventory.GetAmount(InventoryKeys.TOOL_UNDO) == 0 || (settled && _data.CanUndo()));
 		bool canShuffle = false;
-		if (settled) for (int i = 0; i < _boxes.Count; i++)
+		if (settled)
 		{
-			Box box = _boxes[i];
-			if (box == null || box.Info == null || !box.Info.CanShuffle()) continue;
-			canShuffle = true;
-			break;
+			float now = Time.unscaledTime;
+			if (now >= _nextShuffleCheckTime)
+			{
+				_cachedCanShuffle = HasAnyShuffleableBox();
+				_nextShuffleCheckTime = now + 0.15f;
+			}
+			canShuffle = _cachedCanShuffle;
 		}
 		shuffle = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE) &&
 			(Inventory.GetAmount(InventoryKeys.TOOL_SHUFFLE) == 0 || canShuffle);
@@ -102,6 +107,7 @@ public sealed class BoosterFlow
 		_completion = null;
 		ClearUndoPresentation();
 		IsBusy = false;
+		_nextShuffleCheckTime = 0f;
 	}
 
 	public bool TryUsePath() => Inventory.TryUseBooster(InventoryKeys.TOOL_PATH, ApplyToolPath);
@@ -312,6 +318,7 @@ public sealed class BoosterFlow
 			if (box != null && box.State == BoxState.OnUnlocking) box.State = BoxState.Free;
 		_completion = null;
 		IsBusy = false;
+		_nextShuffleCheckTime = 0f;
 		_onFinished();
 	}
 }

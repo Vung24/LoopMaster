@@ -35,7 +35,16 @@ public static class AlternativeCampaign70Geometry
 
         LoadReferences(projectRoot);
         if (!References.TryGetValue(profile.Boxes, out List<JObject> candidates) || candidates.Count == 0)
-            throw new InvalidOperationException("No authored geometry reference for " + profile.Boxes + " boxes.");
+        {
+            // The original catalog has no thirteen-box normal board. Keep the generated
+            // box layout and fit a compact road; validation still checks every footprint.
+            var settings = new LoopLevelGeneratorSettings { RoadShape = profile.Road, RoadClearance = .08f };
+            if (settings.RoadShape < 3) settings.RoadShape = 0;
+            LoopLevelBoardLayout.FitRoadOnly(layout, settings);
+            LoopLevelBoardLayout.AutoBindBoxesToRoad(layout);
+            EnsureCapacity(layout);
+            return;
+        }
         var compatible = new List<JObject>();
         foreach (JObject candidate in candidates)
         {
@@ -131,14 +140,13 @@ public static class AlternativeCampaign70Geometry
 
     private static void LoadReferences(string projectRoot)
     {
-        string folder = Path.GetFullPath(Path.Combine(projectRoot, "Assets/00Game/Resources/LevelData"));
-        if (_referenceRoot == folder) return;
+        string catalog = Path.GetFullPath(Path.Combine(projectRoot,
+            "docs/superpowers/verification/alternative-campaign-70/geometry-references.json"));
+        if (_referenceRoot == catalog) return;
+        if (!File.Exists(catalog)) throw new FileNotFoundException("The original authored geometry catalog is required to rebuild the campaign.", catalog);
         References.Clear();
-        string[] files = Directory.GetFiles(folder, "*.json");
-        Array.Sort(files, StringComparer.Ordinal);
-        foreach (string file in files)
+        foreach (JObject root in JArray.Parse(File.ReadAllText(catalog)))
         {
-            JObject root = JObject.Parse(File.ReadAllText(file));
             JArray boxes = A.Array(A.Layout(root), "Boxes");
             bool normal = true;
             foreach (JObject box in boxes)
@@ -151,7 +159,7 @@ public static class AlternativeCampaign70Geometry
             }
             candidates.Add(root);
         }
-        _referenceRoot = folder;
+        _referenceRoot = catalog;
     }
 }
 #endif

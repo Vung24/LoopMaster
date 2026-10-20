@@ -11,7 +11,11 @@ public static class GamePrefs
     public static System.Func<int, GameData> EditorCampaignLoader { get; set; }
     public static System.Func<int, bool> EditorCampaignAvailability { get; set; }
     private static readonly System.Collections.Generic.Dictionary<string, object> TestValues = new System.Collections.Generic.Dictionary<string, object>();
-    public static void ResetEditorSandbox() { TestValues.Clear(); }
+    public static void ResetEditorSandbox()
+    {
+        TestValues.Clear();
+        _isDirty = false;
+    }
 #endif
     public static bool HasKey(string key)
     {
@@ -106,12 +110,30 @@ public static class GamePrefs
         if (legacy != null) PlayerPrefs.DeleteKey(legacy);
     }
 
+    private static bool _isDirty;
+    public static bool IsDirty => _isDirty;
+
     public static void Save()
+    {
+#if UNITY_EDITOR
+        if (EditorSandbox) return;
+        if (!Application.isPlaying)
+        {
+            PlayerPrefs.Save();
+            return;
+        }
+#endif
+        _isDirty = true;
+        GamePrefsLifecycleFlusher.Ensure();
+    }
+
+    public static void SaveImmediate()
     {
 #if UNITY_EDITOR
         if (EditorSandbox) return;
 #endif
         PlayerPrefs.Save();
+        _isDirty = false;
     }
 }
 

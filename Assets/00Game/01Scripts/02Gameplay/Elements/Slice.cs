@@ -124,7 +124,7 @@ public class Slice : MonoBehaviour
 		Vector3 target = GetRoadPosition(_info.PathIndex);
 		float duration = Mathf.Max(0.01f, interval);
 		if (!GameData.Current.IsPathCircle &&
-			GameData.Current.PathSectionIndices.Contains(_info.PathIndex))
+			GameData.Current.IsPathSectionIndex(_info.PathIndex))
 		{
 			StopMotion();
 			Vector3 next = GetRoadPosition(_info.PathIndex + 1);

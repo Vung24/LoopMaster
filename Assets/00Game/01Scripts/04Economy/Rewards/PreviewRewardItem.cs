@@ -52,7 +52,7 @@ namespace Snui
 			if (_count == null || RewardItem?.Type == null) return;
 			if (RewardItem.Type.IsTimeLimited())
 			{
-				_count.text = TimeFormatter.FormatTimeLeft(RewardItem.Count);
+				_count.text = TimeFormatter.FormatRewardDuration(RewardItem.Count);
 			}
 			else if (RewardItem.Type == RewardType.Coin)
 			{

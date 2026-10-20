@@ -1,21 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class GameAudioPlayer : MonoBehaviour
 {
 	private const float AudioRequestInterval = 0.04f;
-	private readonly HashSet<RequestKey> _requestedKeys = new HashSet<RequestKey>();
 	private AudioSource _sharedSource;
 
 	private enum RequestKey
 	{
-		SlicePopIn,
-		SlicePopOut,
-		ColorLockOpen,
-		NumLockBlast,
-		AdjacentLockBlast
+		SlicePopIn = 0,
+		SlicePopOut = 1,
+		ColorLockOpen = 2,
+		NumLockBlast = 3,
+		AdjacentLockBlast = 4,
+		Count = 5
 	}
+
+	private readonly float[] _nextAllowedAudioTime = new float[(int)RequestKey.Count];
 
 	public static GameAudioPlayer Current { get; private set; }
 
@@ -35,8 +36,7 @@ public class GameAudioPlayer : MonoBehaviour
 
 	private void OnDisable()
 	{
-		StopAllCoroutines();
-		_requestedKeys.Clear();
+		Array.Clear(_nextAllowedAudioTime, 0, _nextAllowedAudioTime.Length);
 	}
 
 	public void PlayOneShot(AudioClip clip)
@@ -90,14 +90,11 @@ public class GameAudioPlayer : MonoBehaviour
 
 	private bool TryRequest(RequestKey key)
 	{
-		if (!_requestedKeys.Add(key)) return false;
-		StartCoroutine(ResetRequest(key));
+		int index = (int)key;
+		if ((uint)index >= (uint)_nextAllowedAudioTime.Length) return false;
+		float now = Time.unscaledTime;
+		if (now < _nextAllowedAudioTime[index]) return false;
+		_nextAllowedAudioTime[index] = now + AudioRequestInterval;
 		return true;
-	}
-
-	private IEnumerator ResetRequest(RequestKey key)
-	{
-		yield return new WaitForSeconds(AudioRequestInterval);
-		_requestedKeys.Remove(key);
 	}
 }
