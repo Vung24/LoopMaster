@@ -28,7 +28,7 @@ public class PathArrow : MonoBehaviour
 		int next = (_pathIndex + 1) % GameData.Current.PathPoints.Count;
 		_pathIndex = next;
 		if (!GameData.Current.IsPathCircle &&
-			GameData.Current.PathSectionIndices.Contains(_pathIndex))
+			GameData.Current.IsPathSectionIndex(_pathIndex))
 		{
 			transform.position = GetPosByPathIndex(_pathIndex);
 			return;

@@ -34,6 +34,7 @@ public static class GameplayEffects
     public static void PlayParticles(GameObject effect, Color? tint = null)
     {
         if (effect == null) return;
+        if (effect.GetComponent<PooledGameObject>() != null) return;
         float lifetime = 0.5f;
         foreach (ParticleSystem particle in effect.GetComponentsInChildren<ParticleSystem>(true))
         {
@@ -56,6 +57,13 @@ public static class GameplayEffects
     public static void PlayCombo(GameObject effect, int variant)
     {
         if (effect == null) return;
+        PooledBoxComboEffect pooled = effect.GetComponent<PooledBoxComboEffect>();
+        if (pooled != null)
+        {
+            Camera viewCamera = GameController.Current != null ? GameController.Current.MainCamera : Camera.main;
+            pooled.Play(effect.transform.localPosition, variant, viewCamera);
+            return;
+        }
         float lifetime = 1f;
         for (int i = 0; i < effect.transform.childCount; i++)
         {

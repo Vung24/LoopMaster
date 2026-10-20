@@ -99,7 +99,8 @@ public partial class InventoryManager
             }
             Checkpoint("before-journal");
             GamePrefs.SetString(RewardJournalKey, JsonUtility.ToJson(journal));
-            GamePrefs.Save();
+            // Each transaction checkpoint must reach storage before the next mutation.
+            GamePrefs.SaveImmediate();
             Checkpoint("journal-saved");
             CompleteJournal(journal);
             result = RewardClaimResult.Claimed;
@@ -144,12 +145,12 @@ public partial class InventoryManager
         {
             for (int i = 0; i < journal.keys.Length; i++) GamePrefs.SetInt(CountKey(journal.keys[i]), journal.after[i]);
             if (journal.hasInfiniteHeart) GamePrefs.SetInt(InfiniteHeartRewardKey, journal.infiniteHeartAfter);
-            GamePrefs.Save(); Checkpoint("balances-saved");
+            GamePrefs.SaveImmediate(); Checkpoint("balances-saved");
             receipts.ids.Add(journal.id);
             GamePrefs.SetString(RewardReceiptsKey, JsonUtility.ToJson(receipts));
-            GamePrefs.Save(); Checkpoint("receipt-saved");
+            GamePrefs.SaveImmediate(); Checkpoint("receipt-saved");
         }
-        GamePrefs.DeleteKey(RewardJournalKey); GamePrefs.Save();
+        GamePrefs.DeleteKey(RewardJournalKey); GamePrefs.SaveImmediate();
         if (!already)
         {
             for (int i = 0; i < journal.keys.Length; i++)
@@ -164,6 +165,6 @@ public partial class InventoryManager
     {
         if(_rewardTransaction || _isApplyingBooster) return;
         _rewardStoreInvalid=false;
-        GamePrefs.DeleteKey(RewardJournalKey); GamePrefs.DeleteKey(RewardReceiptsKey); GamePrefs.Save();
+        GamePrefs.DeleteKey(RewardJournalKey); GamePrefs.DeleteKey(RewardReceiptsKey); GamePrefs.SaveImmediate();
     }
 }

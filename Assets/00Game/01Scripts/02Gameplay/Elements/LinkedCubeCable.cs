@@ -12,6 +12,7 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private LinkedCubePair _pair;
 	private Transform _bridge, _firstSocket, _secondSocket;
 	private Vector3 _firstAnchor, _secondAnchor;
+	private bool _hasFirst, _hasSecond;
 	private float _blockedUntil;
 	private float _consumedAt = -1f;
 	private bool _cachedReady;
@@ -79,7 +80,12 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		if (!show) return;
 		Vector3 span = _secondAnchor - _firstAnchor;
 		Quaternion rotation = span.sqrMagnitude > .0001f ? Quaternion.FromToRotation(Vector3.right, span.normalized) : Quaternion.identity;
-		bool ready = LinkedCubeLaunch.CanBegin(_data, _pair.FirstBox, out _);
+		if (Time.time >= _nextReadyCheckTime)
+		{
+			_cachedReady = LinkedCubeLaunch.CanBegin(_data, _pair.FirstBox, out _);
+			_nextReadyCheckTime = Time.time + 0.08f;
+		}
+		bool ready = _cachedReady;
 		float pulse = 1f;
 		if (Time.time < _blockedUntil) pulse += .06f * Mathf.Sin(Time.time * 30f);
 		else if (ready) pulse += .015f * Mathf.Sin(Time.time * 4f);
@@ -126,7 +132,12 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		Color color = _bridgeRenderer.sharedMaterial.color;
 		if (Time.time < _blockedUntil) color = Color.Lerp(color, new Color(1f, .28f, .2f), .45f);
 		else if (!ready && _pair.State == LinkedCubePairState.Pending) color *= .82f;
-		_properties.SetColor("_Color", color);
-		_bridgeRenderer.SetPropertyBlock(_properties);
+		if (!_hasTintColor || _currentTintColor != color)
+		{
+			_currentTintColor = color;
+			_hasTintColor = true;
+			_properties.SetColor("_Color", color);
+			_bridgeRenderer.SetPropertyBlock(_properties);
+		}
 	}
 }

@@ -22,7 +22,6 @@ public class Box : MonoBehaviour
 	[SerializeField] private ColorLock _colorLock;
 	[SerializeField] private BoxNumLock _numLock;
 	[SerializeField] private AdjacentLock _adjacentLock;
-	private bool _onCreatingCube;
 	private bool _isFinishHandled;
 	private bool _onUnlockingColorLock;
 	private bool _onDecrementingNumLock;
@@ -115,13 +114,10 @@ public class Box : MonoBehaviour
 	{
 		if (_info == null) return;
 		_info.ClearCubes();
-		int secretType = _info.GetTopType();
-		bool revealed = false;
-		for (int i = _info.CubeInfos.Count - 1; i >= 0; i--)
+		CubeInfo cubeInfo = _info.PeekTopCube();
+		bool revealed = cubeInfo != null && cubeInfo.IsSecret;
+		if (revealed)
 		{
-			CubeInfo cubeInfo = _info.CubeInfos[i];
-			if (cubeInfo.Type != secretType) break;
-			if (!cubeInfo.IsSecret) continue;
 			cubeInfo.IsSecret = false;
 			if (cubeInfo.CubeSc != null)
 			{
@@ -129,7 +125,6 @@ public class Box : MonoBehaviour
 				if (marker != null) marker.Reveal().Forget();
 				else cubeInfo.CubeSc.HiddenSecret().Forget();
 			}
-			revealed = true;
 		}
 		_info.IsLastUnlockSecret = revealed;
 	}
@@ -251,7 +246,7 @@ public class Box : MonoBehaviour
 				CreateCube(info, restoredToSource ? Mathf.Max(0.02f, restoreDelay) : 0f, "");
 	}
 
-	public bool CanPopupSlice() => !_isFinishHandled && !_onCreatingCube && _info != null && _info.CanPopup();
+	public bool CanPopupSlice() => !_isFinishHandled && _info != null && _info.CanPopup();
 
 	public void OnBoxFinished(BoxInfo box)
 	{

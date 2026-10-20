@@ -112,7 +112,6 @@ public class Cube : MonoBehaviour
 		if (_info.NumLock > 0 && _numLock == null && _gameLoader.CubeNumLock != null)
 		{
 			GameObject lockObject = Instantiate(_gameLoader.CubeNumLock, transform);
-			lockObject.transform.localPosition = Vector3.zero;
 			lockObject.transform.localRotation = Quaternion.identity;
 			_numLock = lockObject.GetComponent<CubeNumLock>() ?? lockObject.AddComponent<CubeNumLock>();
 		}

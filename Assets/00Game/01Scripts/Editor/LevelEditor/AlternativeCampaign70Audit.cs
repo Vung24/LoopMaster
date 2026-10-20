@@ -21,17 +21,42 @@ public static class AlternativeCampaign70Audit
         var content = new JArray();
         int equalColorBoxCount = 0;
         int combinationCount = 0;
-        int runtime=0, capacityDisplays=0;
+        int threeMechanicCount = 0, fourMechanicCount = 0, hardCount = 0, totalSecrets = 0;
+        int nearSolvedTotal = 0;
+        int linkedLevels = 0, lastLinkedLevel = 0;
+        int runtime=0, capacityDisplays=0, capacityRules=0, addSpaceReviews=0;
         for(int level=1;level<=70;level++)
         {
             AlternativeCampaign70Builder.Profile p=AlternativeCampaign70Builder.Profile.Get(level);
             List<string> mechanics = AlternativeCampaign70Builder.GetMechanics(p);
+            if (p.Pair > 0)
+            {
+                if (level >= 18) Require(level-lastLinkedLevel >= 2,level,"linked cube practice must be spaced apart");
+                linkedLevels++;
+                lastLinkedLevel=level;
+            }
+            if (level >= 6 && level != 36 && level != 46)
+                Require(mechanics.Count >= 1,level,"practice must reuse a learned mechanic");
+            if (level >= 58)
+                Require(mechanics.Count >= 4,level,"advanced level needs at least four distinct mechanic families");
+            if ((level >= 31 && level <= 35) || (level >= 51 && level <= 55 && level != 53) || level == 57)
+                Require(mechanics.Count >= 3,level,"combination practice needs at least three mechanic families");
+            if (level >= 43 && level <= 48 && level != 46)
+                Require(mechanics.Count >= 3,level,"late practice needs at least three mechanic families");
+            if (p.Hard > 0 && level >= 20)
+                Require(p.Secrets >= (level == 30 ? 30 : 40),level,"challenge needs sufficient hidden information");
             if (level >= 58 || level == 51 || level == 52)
                 Require(mechanics.Count >= 2,level,"later practice level needs distinct mechanic families");
             if (mechanics.Count >= 2) combinationCount++;
+            if (mechanics.Count >= 3) threeMechanicCount++;
+            if (mechanics.Count >= 4) fourMechanicCount++;
+            if (p.Hard > 0) hardCount++;
             string path=Path.Combine(AlternativeCampaign70Builder.LevelFolder,"Level "+level+".json");
             string json=File.ReadAllText(path);
             JObject root=A.Parse(json), layout=A.Layout(root);
+            int nearSolved = AlternativeCampaign70Builder.CountNearSolvedBoxes(A.Array(layout,"Boxes"));
+            if (level >= 5) Require(nearSolved <= 1,level,"too many near-solved normal boxes");
+            nearSolvedTotal += nearSolved;
             JObject report=JObject.Parse(File.ReadAllText(AlternativeCampaign70Builder.ReportPath(level)));
             Require(report.Value<int>("builder_version")==AlternativeCampaign70Builder.Version,level,"stale builder revision");
             Require(p.MixingMode==0 || ((string)report["profile"]?["MixingRecipe"] ?? "").StartsWith("layered_cycle_",StringComparison.Ordinal),
@@ -48,10 +73,13 @@ public static class AlternativeCampaign70Audit
             Puzzle puzzle=ExportedPuzzleJsonDecoder.Decode(json);
             Require(puzzle.Boxes.Count==p.Boxes && puzzle.HardLevel==p.Hard,level,"box count or hard label");
             Require(A.Int(layout,"PathLength")==p.Capacity,level,"road capacity");
+            if (level >= 5 && p.Hard == 0)
+                Require(p.Capacity >= 5 && p.Capacity <= 7,level,"Normal capacity must stay within the authored 5-7 range");
+            Require(p.Capacity <= 7,level,"excess road capacity");
             int indicators = 0;
             foreach (JObject item in A.Array(layout,"MapData"))
                 if (item.Value<string>("Name")=="Capacity") indicators++;
-            Require(indicators==1,level,"exactly one visible capacity indicator required");
+            Require(indicators==1,level,"exactly one serialized capacity marker required");
             int singles=0,longs=0,locks=0,adjacent=0,ice=0,links=0,hidden=0,eligible=0;
             var stock=new Dictionary<int,int>();
             foreach(BoxData box in puzzle.Boxes)
@@ -74,9 +102,12 @@ public static class AlternativeCampaign70Audit
                     stock[cube.Type]++;
                 }
             }
+            if (level < 49) Require(singles==0,level,"single boxes must follow their introduction at 49");
+            if (level < 15) Require(links==0,level,"linked cubes must follow their introduction at 15");
             Require(singles==p.Singles && longs==p.Longs && locks==p.ColorLocks && adjacent==p.Adjacent && ice==p.Ice && links==p.Pair*2,level,"mechanic counts");
             Require(puzzle.Groups.Count==p.Groups && puzzle.SurpriseDatas.Count==p.Surprise,level,"group or surprise count");
             Require(hidden==(int)Math.Round(eligible*p.Secrets/100.0,MidpointRounding.AwayFromZero),level,"secret denominator or rounding");
+            totalSecrets += hidden;
             foreach(KeyValuePair<int,int> entry in stock)
                 Require(entry.Value%(CubeData.IsLongBoxColor(entry.Key)?6:4)==0,level,"color stock must fill complete target boxes");
             var normalColors=new HashSet<int>();
@@ -104,8 +135,10 @@ public static class AlternativeCampaign70Audit
                 }
             }
             if (level >= 5)
-                Require(normalMixed >= Math.Max(2, (p.Boxes-p.Singles-p.Longs)/2) && clicks.Count >= p.Boxes,
+                Require(normalMixed >= Math.Max(2, (p.Boxes-p.Singles-p.Longs)/2) && clicks.Count >= AlternativeCampaign70Builder.MinimumReferenceClicks(p),
                     level,"shallow puzzle content");
+            if (level == 10)
+                Require(clicks.Count >= 14 && clicks.Count <= 18,level,"first Hard reference solution must have 14-18 clicks");
             if (p.Hard > 0) Require(p.Capacity==4,level,"Hard/Expert capacity");
             if (p.Colors==p.Boxes) equalColorBoxCount++;
             string roadHash = AlternativeCampaign70Builder.Hash(layout["Paths"].ToString(Formatting.None));
@@ -115,10 +148,12 @@ public static class AlternativeCampaign70Audit
             if (!boxCounts.ContainsKey(p.Boxes)) boxCounts[p.Boxes]=0;
             boxCounts[p.Boxes]++;
             report["mixed_boxes"] = mixed;
+            report["near_solved_normal_boxes"] = nearSolved;
             report["normal_mixed_boxes"] = normalMixed;
             report["road_geometry_sha256"] = roadHash;
             content.Add(new JObject { ["level"]=level, ["boxes"]=p.Boxes, ["normal_colors"]=p.Colors,
                 ["capacity"]=p.Capacity, ["hard"]=p.Hard, ["mixed_boxes"]=mixed,
+                ["near_solved_normal_boxes"]=nearSolved,
                 ["geometry_reference"]=report["profile"]?["GeometryReference"]?.DeepClone(),
                 ["mixing_recipe"]=report["profile"]?["MixingRecipe"]?.DeepClone(),
                 ["mechanics"]=new JArray(mechanics),
@@ -131,6 +166,14 @@ public static class AlternativeCampaign70Audit
             if(unity) runtime++;
             if((string)report["capacity_display_review"]=="passed") capacityDisplays++;
             else report["capacity_display_review"]="pending";
+            if((string)report["capacity_rules_review"]=="passed") capacityRules++;
+            if((string)report["add_space_runtime_review"]=="passed_initial_capacity_and_inventory")
+            {
+                Require(p.Hard>0 && report.Value<int>("add_space_capacity_before")==p.Capacity &&
+                    report.Value<int>("add_space_capacity_after")==p.Capacity+GameData.PathToolExtraGroupCount,
+                    level,"stale Add Space capacity evidence");
+                addSpaceReviews++;
+            }
             File.WriteAllText(AlternativeCampaign70Builder.ReportPath(level),report.ToString(Formatting.Indented));
             levels.Add(new JObject { ["level"]=level,["sha256"]=report["sha256"].DeepClone(),
                 ["objective"]=report["learning_objective"].DeepClone(),["simulation_replay"]="passed",
@@ -142,14 +185,22 @@ public static class AlternativeCampaign70Audit
         var summary=new JObject { ["levels"]=levels,["structural_and_simulation_passed"]=70,
             ["mechanic_contracts_passed"]=70,["runtime_replay_passed"]=runtime,
             ["capacity_display_passed"]=capacityDisplays,
+            ["capacity_rules_passed"]=capacityRules,
+            ["hard_add_space_initialization_passed"]=addSpaceReviews,
             ["geometry_scope"]="Box footprint separation, contiguous same-facing door groups, adjacent lock sources and linked member distance. Does not replace Game View review.",
             ["final_acceptance"]="pending_visual_lifecycle_and_human_balance" };
         File.WriteAllText(Path.Combine(AlternativeCampaign70Builder.ReportFolder,"campaign-audit.json"),summary.ToString(Formatting.Indented));
         Require(roadShapes.Count>=24,0,"insufficient distinct road contours");
+        Require(linkedLevels<=14,0,"linked cubes are used too frequently");
         File.WriteAllText(Path.Combine(AlternativeCampaign70Builder.ReportFolder,"content-distribution.json"),
             new JObject { ["builder_version"]=AlternativeCampaign70Builder.Version,
                 ["distinct_road_geometries"]=roadShapes.Count, ["colors_equal_boxes_levels"]=equalColorBoxCount,
                 ["levels_with_multiple_mechanics"]=combinationCount,
+                ["levels_with_three_or_more_mechanics"]=threeMechanicCount,
+                ["levels_with_four_or_more_mechanics"]=fourMechanicCount,
+                ["hard_or_expert_levels"]=hardCount, ["total_secret_cubes"]=totalSecrets,
+                ["linked_cube_levels"]=linkedLevels,
+                ["near_solved_normal_boxes"]=nearSolvedTotal,
                 ["capacity_histogram"]=JObject.FromObject(capacities), ["box_count_histogram"]=JObject.FromObject(boxCounts),
                 ["levels"]=content }.ToString(Formatting.Indented));
         Debug.Log("Alternative campaign audit: 70 structural/simulation/contracts passed; "+runtime+" current Unity proofs.");
@@ -211,9 +262,14 @@ public static class AlternativeCampaign70Audit
                 puzzle.Boxes[first].IsAdjacentLocked==0 && puzzle.Boxes[second].IsAdjacentLocked==0,
                 level,"linked pair must be independent of color/adjacent admission locks");
             bool same=puzzle.Boxes[first].Cubes[firstCube].Type==puzzle.Boxes[second].Cubes[secondCube].Type;
-            if(level==49) Require(same,level,"same-color linked lesson");
-            if(level==51) Require(!same,level,"different-color linked lesson");
-            if(level==50) Require((firstCube==puzzle.Boxes[first].Cubes.Count-1)!=(secondCube==puzzle.Boxes[second].Cubes.Count-1),level,"one buried linked partner");
+            if(level==15)
+            {
+                Require(same,level,"same-color linked lesson");
+                Require(firstCube==puzzle.Boxes[first].Cubes.Count-1 && secondCube==puzzle.Boxes[second].Cubes.Count-1,
+                    level,"introductory linked heads must both be visible on top");
+            }
+            if(level==17) Require(!same,level,"different-color linked lesson");
+            if(level==16) Require((firstCube==puzzle.Boxes[first].Cubes.Count-1)!=(secondCube==puzzle.Boxes[second].Cubes.Count-1),level,"one buried linked partner");
             if(level==59) Require(grouped.Contains(first)!=grouped.Contains(second),level,"pair must cross door boundary");
         }
     }

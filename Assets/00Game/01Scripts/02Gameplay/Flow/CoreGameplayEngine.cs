@@ -111,6 +111,131 @@ public sealed class CoreGameplayEngine
 		return true;
 	}
 
+	public CoreMoveResult PopBoxToTransfer(BoxInfo source, out List<SliceInfo> createdSlices)
+	{
+		createdSlices = new List<SliceInfo>();
+		if (_data.ActiveLinkedLaunch != null || source != null && source.PeekTopCube() != null &&
+			source.PeekTopCube().LinkedPairId != 0) return CoreMoveResult.Blocked;
+		if (source == null || source.State != BoxState.Free || !source.CanPopup() ||
+			!_data.CanCubeJumpToTransfer())
+			return CoreMoveResult.Blocked;
+
+		List<CubeInfo> topCubes = source.GetTopCubes(false);
+		if (topCubes.Count == 0) return CoreMoveResult.Blocked;
+
+		source.State = BoxState.OnPopup;
+		_data.OnJumpingCube += topCubes.Count;
+		foreach (CubeInfo cube in topCubes)
+		{
+			if (!_data.IsTransferHaveSpace()) break;
+			int count = cube.Size;
+			for (int i = 0; i < count; i++)
+			{
+				var slice = new SliceInfo(cube.Type, source)
+				{
+					PathIndex = source.PathIndex,
+					IsMoved = false
+				};
+				if (!_data.AddTransferSlice(slice)) continue;
+				if (source.PopupSlice() == null)
+				{
+					_data.RemoveTransferSlice(slice);
+					break;
+				}
+				createdSlices.Add(slice);
+			}
+		}
+
+		_data.OnJumpingCube -= topCubes.Count;
+		source.ClearCubes();
+		RevealTopSecretRun(source);
+		source.State = BoxState.Free;
+
+		if (source.BoxType == BoxType.Single) _data.UndoData.Clear();
+		else
+		{
+			_data.UndoData.Init(source);
+			_data.UndoData.AddUndo(createdSlices);
+		}
+
+		return createdSlices.Count > 0 ? CoreMoveResult.MovedToTransfer : CoreMoveResult.Blocked;
+	}
+
+	public CoreMoveResult AdvanceTransfer(bool allowOverlap = false)
+	{
+		if (_data.TransferSlice.Count == 0) return EvaluateEndState();
+
+		List<SliceInfo> ordered = _data.TransferSlice
+			.Where(slice => slice.PathIndex >= 0)
+			.OrderByDescending(slice => slice.PathIndex)
+			.ToList();
+		int begin = GetFirstMovableIndex(ordered, allowOverlap);
+		if (begin < 0) return EvaluateEndState();
+
+		for (int offset = 0; offset < ordered.Count; offset++)
+		{
+			SliceInfo slice = ordered[(begin + offset) % ordered.Count];
+			if (!CanMove(slice, allowOverlap)) continue;
+			slice.PathIndex = WrapPathIndex(slice.PathIndex + 1);
+			slice.IsMoved = true;
+		}
+
+		List<SliceInfo> arrivals = _data.TransferSlice
+			.Where(slice => slice.IsMoved)
+			.OrderBy(slice => slice.PathIndex)
+			.ToList();
+		foreach (SliceInfo slice in arrivals)
+		{
+			CoreMoveResult result = MoveSliceIntoBox(slice);
+			if (result == CoreMoveResult.GameWon || result == CoreMoveResult.GameFailed)
+				return result;
+		}
+
+		return EvaluateEndState();
+	}
+
+	public CoreMoveResult MoveSliceIntoBox(SliceInfo slice)
+	{
+		if (slice == null || !slice.IsMoved || !_data.TransferSlice.Contains(slice))
+			return CoreMoveResult.None;
+
+		List<BoxInfo> candidates = _data.Boxes.Where(box =>
+			box.PathIndex == slice.PathIndex &&
+			(box.State == BoxState.Free || box.State == BoxState.OnPush) &&
+			box.IsSliceCanJumpIn(slice) && !_data.IsIgnoreBox(slice.Type, box)).ToList();
+
+		if (candidates.Count > 1 && slice.SourceBox != null)
+			candidates.RemoveAll(box => box == slice.SourceBox);
+		if (candidates.Count == 0) return CoreMoveResult.None;
+
+		BoxInfo target = candidates[0];
+		target.State = BoxState.OnPush;
+		_data.UndoData.UpdateUndoBox(slice, target);
+		CubeInfo pushed = target.PushSlice(slice.Type);
+		if (pushed == null)
+		{
+			target.AddCube(slice.Type);
+			pushed = target.GetTopCube();
+		}
+		if (pushed == null)
+		{
+			target.State = BoxState.Free;
+			return CoreMoveResult.Blocked;
+		}
+
+		_data.RemoveTransferSlice(slice);
+		_data.UndoData.CaptureLinkedExpected(target);
+		ResolveSurpriseBox(target);
+		target.State = BoxState.Free;
+
+		if (target.IsFinished())
+		{
+			HandleFinishedBox(target);
+			return _data.IsGameOver() ? CoreMoveResult.GameWon : CoreMoveResult.BoxFinished;
+		}
+		return CoreMoveResult.MovedToBox;
+	}
+
 	public bool CanMove(SliceInfo slice, bool allowOverlap = false)
 	{
 		if (slice == null || slice.PathIndex < 0 || IsBoxBlockIndex(slice.PathIndex))
@@ -145,15 +270,11 @@ public sealed class CoreGameplayEngine
 	{
 		if (box == null) return false;
 		box.ClearCubes();
-		int secretType = box.GetTopType();
-		bool revealed = false;
-		for (int i = box.CubeInfos.Count - 1; i >= 0; i--)
+		CubeInfo cube = box.PeekTopCube();
+		bool revealed = cube != null && cube.IsSecret;
+		if (revealed)
 		{
-			CubeInfo cube = box.CubeInfos[i];
-			if (cube.Type != secretType) break;
-			if (!cube.IsSecret) continue;
 			cube.IsSecret = false;
-			revealed = true;
 		}
 		box.IsLastUnlockSecret = revealed;
 		return revealed;

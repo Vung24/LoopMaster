@@ -15,7 +15,7 @@ using A = LoopLevelAuthoring;
 public static class AlternativeCampaign70Builder
 {
     public static string ProjectRoot = ".";
-    public static string LevelFolder => Path.Combine(ProjectRoot, "Assets/00Game/05LevelData/AlternativeCampaign_70");
+    public static string LevelFolder => Path.Combine(ProjectRoot, "Assets/00Game/Resources/LevelData");
     public static string ReportFolder => Path.Combine(ProjectRoot, "docs/superpowers/verification/alternative-campaign-70");
     public const int Version = 2;
     private static IEnumerator _job;
@@ -28,75 +28,75 @@ public static class AlternativeCampaign70Builder
     // Existing layout API roads:
     // rounded rectangle=0, oval=1, circle=2, straight=3, U=4, S=5, winding=6.
     private const string Curriculum = @"1,2,1,3,0,0,0,0,0,0,0,0,0,0,0,0,4,0
-2,2,2,3,0,0,0,0,0,0,0,0,0,0,0,0,6,0
-3,4,3,1,0,0,0,0,0,0,0,0,0,0,0,0,7,0
-4,5,4,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0
+2,2,2,3,0,0,0,0,0,0,0,0,0,0,0,0,4,0
+3,4,3,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
+4,5,4,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 5,6,5,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
-6,7,6,0,0,0,15,0,0,0,0,0,0,0,0,0,7,0
-7,8,8,0,0,0,20,0,0,0,0,0,0,0,0,0,6,0
-8,7,7,0,0,0,20,0,0,0,0,0,0,0,0,0,5,0
-9,9,8,0,0,0,20,0,0,0,0,0,0,0,0,0,4,0
+6,7,6,0,0,0,15,0,0,0,0,0,0,0,0,0,6,0
+7,8,8,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+8,7,7,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+9,9,8,0,0,0,30,0,0,0,0,0,0,0,0,0,7,0
 10,7,7,1,0,0,10,0,0,0,0,0,0,0,0,1,4,2
-11,8,8,3,0,0,0,0,0,0,0,0,0,0,0,0,7,0
-12,8,7,3,0,0,0,0,0,0,0,0,0,0,0,0,5,0
-13,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,6,1
-14,9,8,5,0,0,20,0,0,0,0,0,0,0,0,0,7,0
-15,8,6,0,1,0,0,0,0,0,0,0,0,0,0,0,6,0
-16,9,8,0,1,0,0,0,0,0,0,0,0,0,0,0,5,0
-17,8,6,5,1,0,0,0,0,0,0,0,0,0,0,0,7,0
-18,10,8,4,1,0,0,0,0,0,0,0,0,0,0,0,5,0
-19,9,9,6,0,0,0,0,0,0,0,0,0,0,0,0,6,0
-20,12,10,4,1,0,20,0,0,0,0,0,0,0,0,1,4,0
-21,8,8,5,0,0,0,0,0,0,0,0,0,0,0,0,8,0
-22,10,9,6,0,0,0,0,0,0,0,0,0,0,0,0,5,0
+11,8,8,3,0,0,25,0,0,0,0,0,0,0,0,0,5,0
+12,8,7,3,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+13,10,10,5,0,0,30,0,0,0,0,0,0,0,0,0,6,1
+14,9,8,5,0,0,30,0,0,0,0,0,0,0,0,0,6,0
+15,8,7,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0
+16,9,8,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0
+17,8,7,5,0,0,30,0,0,0,0,0,0,1,0,0,6,0
+18,10,9,4,0,0,35,0,0,0,0,0,0,0,0,0,6,0
+19,9,8,6,0,0,30,0,0,0,0,0,0,0,0,0,6,0
+20,12,11,4,0,0,40,0,0,0,0,0,0,1,0,1,4,0
+21,8,8,5,0,0,30,0,0,0,0,0,0,0,0,0,6,0
+22,10,9,6,0,0,35,0,0,0,0,0,0,0,0,0,6,0
 23,8,7,0,0,0,0,1,0,0,0,0,0,0,0,0,6,0
-24,9,9,5,0,0,0,2,0,0,0,0,0,0,0,0,7,0
-25,10,10,1,0,0,20,2,0,0,0,0,0,0,0,0,5,0
-26,8,8,0,0,0,0,2,0,0,0,0,0,0,0,0,6,1
-27,10,9,4,0,0,0,2,0,0,0,0,0,0,0,0,5,0
-28,9,8,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0
+24,9,9,5,0,0,35,2,0,0,0,0,0,0,0,0,6,0
+25,10,10,1,0,0,40,2,0,0,0,0,0,1,0,1,4,1
+26,8,8,0,0,0,30,2,0,0,0,0,0,0,0,0,5,1
+27,10,9,4,0,0,35,2,0,0,0,0,0,0,0,0,6,0
+28,9,8,0,0,0,20,0,0,0,0,0,0,0,0,0,7,0
 29,8,7,1,0,0,0,0,1,0,0,0,0,0,0,0,6,0
-30,10,10,1,0,0,0,0,2,0,0,0,0,0,0,1,4,1
-31,9,9,5,0,0,0,1,1,0,0,0,0,0,0,0,5,1
-32,10,9,3,0,0,0,0,2,0,0,0,0,0,0,0,6,0
-33,9,8,0,0,0,0,0,2,0,0,0,0,0,0,0,5,0
-34,10,10,0,0,0,0,2,1,0,0,0,0,0,0,0,7,1
-35,12,12,2,0,0,15,2,1,0,0,0,0,0,0,1,4,1
-36,8,6,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0
-37,9,8,0,0,0,0,0,0,2,2,0,0,0,0,0,7,0
-38,10,10,1,0,0,0,0,0,2,4,0,0,0,0,0,5,1
-39,9,7,5,1,0,0,0,0,2,2,0,0,0,0,0,6,0
-40,10,9,0,0,0,20,0,0,2,2,0,0,0,0,0,5,0
-41,10,7,0,0,2,0,0,0,0,0,0,0,0,0,0,6,0
-42,10,5,0,0,4,0,0,0,0,0,0,0,0,0,0,5,0
-43,12,10,4,0,2,0,1,0,0,0,0,0,0,0,0,7,1
-44,10,7,0,0,2,0,0,0,2,2,0,0,0,0,0,5,0
-45,12,9,6,0,2,0,0,0,2,2,0,0,0,0,1,4,0
-46,9,7,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0
-47,10,10,0,0,0,0,0,1,2,2,0,0,0,0,0,6,1
-48,12,8,0,1,2,20,0,0,0,0,0,0,0,0,0,5,0
-49,9,8,1,0,0,0,0,0,0,0,0,0,1,0,0,6,0
-50,10,9,1,0,0,0,0,0,0,0,0,0,1,0,0,5,0
-51,9,9,1,0,0,20,0,0,0,0,0,0,1,0,0,7,1
-52,10,10,5,0,0,0,1,0,0,0,0,0,1,0,0,5,1
+30,10,10,1,0,0,30,0,2,0,0,0,0,0,0,1,4,1
+31,9,9,5,0,0,35,1,1,0,0,0,0,0,0,0,5,1
+32,10,9,3,0,0,35,1,2,0,0,0,0,0,0,0,6,0
+33,9,8,0,0,0,35,0,2,0,0,0,0,1,0,0,6,0
+34,10,10,0,0,0,40,2,1,0,0,0,0,0,0,0,6,1
+35,12,11,2,0,0,50,2,1,0,0,0,0,0,0,1,4,0
+36,8,6,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0
+37,9,8,0,0,0,0,0,0,2,2,0,0,0,0,0,6,0
+38,10,10,1,0,0,30,0,0,2,4,0,0,0,0,0,6,1
+39,9,8,5,0,0,35,1,0,2,2,0,0,0,0,0,6,0
+40,10,9,0,0,0,45,1,0,3,2,0,0,1,0,1,4,0
+41,10,7,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
+42,10,5,0,0,4,30,0,0,0,0,0,0,0,0,0,7,0
+43,12,10,4,0,2,40,2,0,0,0,0,0,0,0,0,7,1
+44,10,7,0,0,2,40,0,0,3,2,0,0,0,0,0,6,0
+45,12,9,6,0,2,50,1,0,3,2,0,0,1,0,1,4,0
+46,9,7,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0
+47,10,10,0,0,0,40,0,2,2,2,0,0,0,0,0,6,1
+48,12,9,0,0,2,40,1,0,0,0,0,0,0,0,0,7,0
+49,9,8,1,1,0,0,0,0,0,0,0,0,0,0,0,6,0
+50,10,9,1,1,0,30,0,0,0,0,0,0,0,0,0,6,0
+51,9,9,1,0,0,40,1,0,2,2,0,0,0,0,0,6,1
+52,10,10,5,0,0,40,2,0,2,2,0,0,1,0,0,6,1
 53,10,9,0,0,0,0,0,0,0,0,1,2,0,0,0,6,0
-54,12,12,0,0,0,0,0,0,0,0,1,3,0,0,0,5,1
-55,10,10,4,0,0,20,0,0,0,0,1,2,0,0,0,7,1
+54,12,12,0,0,0,35,0,0,2,2,1,3,0,0,0,7,1
+55,10,10,4,0,0,45,1,0,2,2,1,2,0,0,1,4,1
 56,9,9,0,0,0,0,0,0,0,0,0,0,0,1,0,6,0
-57,10,10,0,0,0,0,0,0,0,0,0,0,0,2,0,5,1
-58,12,10,5,1,0,0,0,0,0,0,0,0,0,1,0,7,0
-59,12,11,0,0,0,0,0,0,0,0,1,2,1,0,0,5,0
-60,12,12,2,0,0,0,0,0,0,0,1,2,1,1,1,4,1
-61,12,11,4,1,0,0,0,0,0,0,0,0,1,0,1,4,0
-62,12,12,0,0,0,20,0,0,0,0,2,2,0,0,1,4,1
-63,12,10,0,0,2,30,2,0,0,0,0,0,0,0,1,4,1
-64,12,12,1,0,0,0,0,0,2,2,0,0,1,0,1,4,1
-65,12,11,0,1,0,25,2,0,0,0,0,0,0,0,1,4,0
-66,12,12,6,0,0,0,0,0,0,0,1,2,1,0,1,4,1
-67,12,12,0,0,0,0,0,0,3,2,0,0,0,2,1,4,1
-68,13,12,1,0,0,0,1,1,0,0,0,0,1,0,2,4,0
-69,12,10,5,2,0,0,0,0,0,0,1,2,0,0,1,4,0
-70,13,10,2,1,2,20,1,1,2,2,1,2,1,1,2,4,0";
+57,10,10,0,0,0,35,1,0,0,0,0,0,0,2,0,6,1
+58,12,10,5,1,0,40,0,0,2,2,0,0,0,1,0,7,0
+59,12,11,0,0,0,45,1,0,0,0,1,2,1,0,0,7,0
+60,12,11,2,0,0,50,1,0,0,0,1,2,0,1,1,4,0
+61,12,10,4,1,0,45,1,0,2,2,0,0,0,0,1,4,0
+62,12,11,0,0,0,50,0,0,2,2,2,2,0,1,1,4,0
+63,12,9,0,0,2,55,2,0,2,2,0,0,0,0,1,4,0
+64,12,11,1,0,0,50,1,1,2,2,0,0,1,0,1,4,0
+65,12,10,0,1,0,50,2,0,2,2,0,0,0,0,1,4,0
+66,12,11,6,0,0,55,1,0,2,2,1,2,0,0,1,4,0
+67,12,11,0,0,0,50,0,1,3,2,0,0,0,2,1,4,0
+68,13,12,1,0,0,60,1,1,2,2,0,0,1,1,2,4,0
+69,12,9,5,2,0,50,0,0,2,2,1,2,0,0,1,4,0
+70,13,10,2,1,2,60,1,1,2,2,1,2,1,1,2,4,0";
 
     public sealed class Profile
     {
@@ -320,8 +320,8 @@ public static class AlternativeCampaign70Builder
                 }
                 int peak;
                 if (!Replay(json, clicks, out peak)) { lastError = "Final JSON replay failed"; continue; }
-                if (p.Level >= 5 && clicks.Count < p.Boxes)
-                { lastError = "Reference solution is too short for this chapter"; continue; }
+                if (p.Level >= 5 && clicks.Count < MinimumReferenceClicks(p))
+                { lastError = "Reference solution is too short for this challenge profile"; continue; }
                 if (p.Level == 10 && (clicks.Count < 14 || clicks.Count > 18))
                 { lastError = "First Hard level requires a reference solution of 14-18 clicks"; continue; }
                 List<string> warnings;
@@ -333,14 +333,7 @@ public static class AlternativeCampaign70Builder
                 WriteAtomic(Path.Combine(LevelFolder, "Level " + level + ".json"), json);
                 EnsureMeta(Path.Combine(LevelFolder, "Level " + level + ".json"), false);
                 JObject report = CreateReport(p, root, seed, clicks, peak, warnings);
-                if (previousReport != null && (string)previousReport["sha256"] == (string)report["sha256"])
-                {
-                    foreach (string key in new[] { "unity_replay", "runtime_peak_groups", "automated_replay_wall_seconds",
-                        "runtime_time_scale", "runtime_context", "runtime_solution_clicks", "runtime_wait_policy",
-                        "transition_timing_differences", "runtime_legal_no_effect_clicks", "capacity_display_review",
-                        "capacity_display_maximum", "visual_review", "lifecycle_review", "lifecycle_scope" })
-                        if (previousReport[key] != null) report[key] = previousReport[key].DeepClone();
-                }
+                PreserveMatchingEvidence(previousReport, report);
                 WriteAtomic(ReportPath(level), report.ToString(Formatting.Indented));
                 accepted = true;
                 UnityEngine.Debug.Log("Alternative campaign level " + level + ": simulation replay passed, " + clicks.Count + " clicks; Unity replay pending.");
@@ -377,6 +370,7 @@ public static class AlternativeCampaign70Builder
         MixFullBoardStacks(layout, p, seed);
         NormalizeSpecialBoxes(A.Array(layout, "Boxes"), p);
         MixFullNormalSection(A.Array(layout, "Boxes"), seed);
+        if (p.Level >= 5) ReduceNearSolvedBoxes(A.Array(layout, "Boxes"));
         if (p.Level == 1)
         {
             JArray tutorial = A.Array(layout, "Boxes");
@@ -398,6 +392,78 @@ public static class AlternativeCampaign70Builder
         if (errors.Count != 0) throw new FormatException(string.Join("\n", errors));
         AlternativeCampaign70Audit.CheckGeometry(root, ExportedPuzzleJsonDecoder.Decode(root.ToString()), p, p.Level);
         return root;
+    }
+
+    public static int CountNearSolvedBoxes(JArray boxes)
+    {
+        int count = 0;
+        foreach (JObject box in boxes)
+            if (HasThreeMatchingCubes(box)) count++;
+        return count;
+    }
+
+    private static bool HasThreeMatchingCubes(JObject box)
+    {
+        if (A.Int(box, "BoxType") != 0) return false;
+        JArray cubes = A.Array(box, "Cubes");
+        if (cubes.Count < 3 || cubes.Count > 4) return false;
+        foreach (JObject cube in cubes)
+        {
+            int matching = 0;
+            foreach (JObject other in cubes)
+                if (A.Int(other, "Type") == A.Int(cube, "Type")) matching++;
+            if (matching == 3) return true;
+        }
+        return false;
+    }
+
+    private static void ReduceNearSolvedBoxes(JArray boxes)
+    {
+        while (CountNearSolvedBoxes(boxes) > 1)
+        {
+            bool changed = false;
+            foreach (JObject box in boxes)
+            {
+                if (!HasThreeMatchingCubes(box) || !RedistributeTripleColor(box, boxes)) continue;
+                changed = true;
+                break;
+            }
+            if (!changed) throw new FormatException("Cannot reduce near-solved boxes while preserving color stock.");
+        }
+    }
+
+    private static bool RedistributeTripleColor(JObject box, JArray boxes)
+    {
+        JArray cubes = A.Array(box, "Cubes");
+        foreach (JObject cube in cubes)
+        {
+            int color = A.Int(cube, "Type"), matching = 0;
+            foreach (JObject item in cubes)
+                if (A.Int(item, "Type") == color) matching++;
+            if (matching != 3) continue;
+            foreach (JObject otherBox in boxes)
+            {
+                if (ReferenceEquals(box, otherBox) || A.Int(otherBox, "BoxType") != 0) continue;
+                int oldCount = 1;
+                if (HasThreeMatchingCubes(otherBox)) oldCount++;
+                JArray otherCubes = A.Array(otherBox, "Cubes");
+                foreach (JObject other in otherCubes)
+                {
+                    int otherColor = A.Int(other, "Type");
+                    if (color == otherColor) continue;
+                    cube["Type"] = otherColor;
+                    other["Type"] = color;
+                    int newCount = 0;
+                    if (HasThreeMatchingCubes(box)) newCount++;
+                    if (HasThreeMatchingCubes(otherBox)) newCount++;
+                    bool finished = otherCubes.Count == 4 && !HasMultipleColors(otherBox);
+                    if (newCount < oldCount && !finished) return true;
+                    cube["Type"] = color;
+                    other["Type"] = otherColor;
+                }
+            }
+        }
+        return false;
     }
 
     private static void NormalizePalette(JArray boxes)
@@ -518,7 +584,6 @@ public static class AlternativeCampaign70Builder
     {
         JObject layout = A.Layout(root);
         JArray boxes = A.Array(layout, "Boxes");
-        var random = new System.Random(seed);
         AddColorLocks(boxes, p);
         AddGroups(layout, boxes, p);
         AddAdjacentLocks(boxes, p);
@@ -538,10 +603,17 @@ public static class AlternativeCampaign70Builder
             }
         }
         if (ice != p.Ice) throw new FormatException("Not enough eligible ice cubes.");
+        ApplySecrets(boxes,p,seed);
+    }
+
+    private static void ApplySecrets(JArray boxes, Profile p, int seed)
+    {
+        var random = new System.Random(seed);
         var eligible = new List<JObject>();
         foreach (JObject box in boxes)
         {
             JArray cubes = A.Array(box,"Cubes");
+            foreach (JObject cube in cubes) cube["IsSecret"]=0;
             for (int c=0; c<cubes.Count-1; c++)
             {
                 JObject cube=(JObject)cubes[c];
@@ -756,9 +828,9 @@ public static class AlternativeCampaign70Builder
             }
             if(Vector3.Distance(A.Vector((JObject)boxes[a],"Position"),A.Vector((JObject)boxes[b],"Position"))>2.2f) continue;
             bool same=A.Int((JObject)ca[ca.Count-1],"Type")==A.Int((JObject)cb[cb.Count-1],"Type");
-            if(p.Level==49 && !same || p.Level==51 && same) continue;
+            if(p.Level==15 && !same || p.Level==17 && same) continue;
             if(!LoopLinkedCubeAuthoring.TryLinkTopCubes(root,a,b,out _)) continue;
-            if(p.Level==50)
+            if(p.Level==16)
             {
                 if(cb.Count<2) throw new FormatException("Buried partner needs two cubes.");
                 JObject top=(JObject)cb[cb.Count-1]; top["LinkedPairId"]=0;
@@ -814,7 +886,34 @@ public static class AlternativeCampaign70Builder
         return data.IsGameOver() && data.TransferSlice.Count==0;
     }
 
-    private static JObject CreateReport(Profile p, JObject root, int seed, List<int> clicks, int peak, List<string> warnings)
+    internal static int MinimumReferenceClicks(Profile profile)
+    {
+        if (profile.Level < 5) return 1;
+        if (profile.Level == 10) return 14;
+        if (profile.Hard == 0) return profile.Boxes;
+        float multiplier = 1.7f;
+        if (profile.Level >= 40) multiplier = 1.9f;
+        if (profile.Level >= 60) multiplier = 2.1f;
+        if (profile.Hard == 2) multiplier = 2.3f;
+        return Mathf.CeilToInt(profile.Boxes * multiplier);
+    }
+
+    internal static void PreserveMatchingEvidence(JObject previousReport, JObject report)
+    {
+        if (previousReport == null || (string)previousReport["sha256"] != (string)report["sha256"]) return;
+        foreach (string key in new[] { "unity_replay", "runtime_peak_groups", "automated_replay_wall_seconds",
+            "runtime_time_scale", "runtime_context", "runtime_solution_clicks", "runtime_wait_policy",
+            "transition_timing_differences", "runtime_legal_no_effect_clicks", "capacity_rules_review",
+            "runtime_replanning_count",
+            "capacity_rules_maximum", "capacity_map_spawn_review", "capacity_display_review",
+            "add_space_runtime_review", "add_space_capacity_before", "add_space_capacity_after",
+            "capacity_display_maximum", "visual_review", "lifecycle_review", "lifecycle_scope" })
+            if (previousReport[key] != null) report[key] = previousReport[key].DeepClone();
+        if ((string)report["unity_replay"] == "passed")
+            report["acceptance"] = "draft_pending_visual_lifecycle_and_human_balance";
+    }
+
+    internal static JObject CreateReport(Profile p, JObject root, int seed, List<int> clicks, int peak, List<string> warnings)
     {
         int eligible=0, hidden=0, empty=0;
         foreach(JObject box in A.Array(A.Layout(root),"Boxes"))
@@ -833,11 +932,14 @@ public static class AlternativeCampaign70Builder
             ["mechanics"]=new JArray(GetMechanics(p)),
             ["color_type_policy"]="normal_1_to_N_long_101_to_N_surprise_201_to_N",
             ["empty_boxes"]=empty, ["secret_eligible"]=eligible, ["secret_count"]=hidden,
+            ["near_solved_normal_boxes"]=CountNearSolvedBoxes(A.Array(A.Layout(root),"Boxes")),
             ["structural_validation"]="passed", ["warnings"]=new JArray(warnings),
             ["capacity_display_review"]="pending",
             ["simulation_replay"]="passed", ["solution_clicks"]=new JArray(clicks),
             ["wait_policy"]="Wait for launch, landing, lock and surprise animations; allow conveyor circulation before the next click.",
-            ["reference_click_count"]=clicks.Count, ["settled_road_peak_groups"]=peak,
+            ["reference_click_count"]=clicks.Count, ["minimum_reference_clicks"]=MinimumReferenceClicks(p), ["settled_road_peak_groups"]=peak,
+            ["challenge_intent"]=p.Hard > 0 ? "Tight road capacity and hidden dependencies; Add Space increases error margin, Undo recovers a mistaken release, Shuffle changes eligible stacks." : "Practice learned mechanics with capacity scaled to box count.",
+            ["difficulty_limitations"]="Reference length and mechanic counts are content filters, not minimum moves or measured human difficulty. Boosters remain optional.",
             ["peak_limitations"]="Settled-state samples only; transient peak requires Unity measurement.",
             ["unity_replay"]="pending", ["visual_review"]="pending", ["lifecycle_review"]="pending",
             ["completion_seconds"]=JValue.CreateNull(), ["restart_count"]=JValue.CreateNull(),

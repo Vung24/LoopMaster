@@ -97,13 +97,13 @@ namespace Snui
                     if (_infinityText != null)
                     {
                         _infinityText.gameObject.SetActive(true);
-                        _infinityText.text = TimeFormatter.FormatTimeLeft(item.Count);
+                        _infinityText.text = TimeFormatter.FormatRewardDuration(item.Count);
                     }
                 }
                 else if (_count != null)
                 {
                     _count.gameObject.SetActive(true);
-                    _count.text = TimeFormatter.FormatTimeLeft(item.Count);
+                    _count.text = TimeFormatter.FormatRewardDuration(item.Count);
                 }
             }
             else

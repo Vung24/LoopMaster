@@ -49,7 +49,6 @@ public sealed class SliceTransferFlow
 	private CancellationTokenSource _vibrationLifetime;
 	private int _vibrationVersion;
 	private CancellationTokenSource _linkedLifetime;
-	private readonly Action<Exception> _linkedFailure;
 
 	public SliceTransferFlow(MonoBehaviour host, IReadOnlyList<Box> boxes, Func<bool> isGameRunning,
 		Func<Box, bool> isGroupUnlocking, Action updateCombo,
@@ -352,7 +351,7 @@ public sealed class SliceTransferFlow
 				_linkedLifetime = null;
 			}
 		}
-		if (failure != null && version == _version) _linkedFailure?.Invoke(failure);
+		if (failure != null && version == _version) Debug.LogException(failure);
 	}
 
 	private void EmitLinkedSlice(LinkedCubeLaunch launch, Box box, bool second, float duration, float height,
@@ -368,6 +367,11 @@ public sealed class SliceTransferFlow
 		visual.Init(info, origin, box.transform.rotation);
 		box.PlayLinkedSliceEmitted(member);
 		box.RemoveEmptyCube();
+		if (member.Size == 0)
+		{
+			box.CheckHiddenSecret();
+			launch.Data.UndoData.CaptureLinkedExpected(box.Info);
+		}
 		ExtendVibrationWindow(true, launch.Created.Count <= 2);
 		flights.Add(new LinkedFlight { Info = info, TargetPath = box.Info.PathIndex, Duration = Mathf.Max(.01f, duration) });
 		visual.JumpToTransfer(box.Info.PathIndex, duration, height, commitLogicOnComplete: false).Forget();
