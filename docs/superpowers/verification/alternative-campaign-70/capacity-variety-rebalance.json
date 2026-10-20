@@ -1,0 +1,54 @@
+{
+  "before": {
+    "capacity_histogram": {
+      "4": 20,
+      "6": 3,
+      "7": 3,
+      "8": 10,
+      "9": 14,
+      "10": 20
+    },
+    "linked_cube_levels": 40
+  },
+  "after": {
+    "capacity_histogram": {
+      "4": 21,
+      "5": 6,
+      "6": 32,
+      "7": 11
+    },
+    "linked_cube_levels": 13,
+    "linked_cube_level_numbers": [
+      15,
+      16,
+      17,
+      20,
+      25,
+      33,
+      40,
+      45,
+      52,
+      59,
+      64,
+      68,
+      70
+    ],
+    "normal_capacity_range_from_level_5": [
+      5,
+      7
+    ],
+    "hard_expert_capacity": 4,
+    "three_or_more_mechanics": 31,
+    "four_or_more_mechanics": 17
+  },
+  "policy": "Explicit capacity per profile; no automatic box-count floor. Values describe base capacity before optional Add Space (+2).",
+  "preserved_introductions": "15: same-color heads; 16: buried partner; 17: different-color heads. Practice is spaced out afterwards.",
+  "replacement_lessons": {
+    "39": "secret + color lock + ice",
+    "51": "secret + color lock + ice",
+    "54": "secret + group door + ice",
+    "57": "secret + color lock + surprise"
+  },
+  "current_runtime_failures": [],
+  "limitations": "Reference lengths are content filters, not shortest solutions or human difficulty ratings. Runtime evidence applies only to the listed hashes; visual/lifecycle/human balance remain separate checks."
+}

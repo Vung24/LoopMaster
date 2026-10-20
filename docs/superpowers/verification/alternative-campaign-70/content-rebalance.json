@@ -1,0 +1,22 @@
+{
+  "before": {
+    "full_three_plus_one_boxes": 172,
+    "near_solved_normal_boxes": 173,
+    "multi_mechanic_levels": 28
+  },
+  "after": {
+    "full_three_plus_one_boxes": 54,
+    "near_solved_normal_boxes": 54,
+    "multi_mechanic_levels": 40,
+    "capacity_rules_passed": 70,
+    "advanced_levels_with_four_or_more_families": 13
+  },
+  "capacity_policy": "Explicit profiles: Normal from level 5 uses 5-7; Hard/Expert 4; no automatic box-count floor.",
+  "limitations": "Simulation and representative runtime proofs do not certify human difficulty or Game View layout.",
+  "teaching_order": {
+    "linked_pair_first_level": 15,
+    "linked_buried_partner_level": 16,
+    "linked_different_colors_level": 17,
+    "single_box_first_level": 49
+  }
+}
