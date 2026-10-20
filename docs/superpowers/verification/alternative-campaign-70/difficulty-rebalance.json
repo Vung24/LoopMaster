@@ -1,0 +1,1324 @@
+{
+  "before": {
+    "secret_cubes": 167,
+    "three_or_more_mechanics": 17,
+    "four_or_more_mechanics": 1,
+    "hard_or_expert": 16
+  },
+  "after": {
+    "secret_cubes": 581,
+    "three_or_more_mechanics": 31,
+    "four_or_more_mechanics": 17,
+    "hard_or_expert": 19,
+    "changed_levels": 68,
+    "changed_levels_with_current_unity_win": 14,
+    "hard_levels_with_add_space_check": 19
+  },
+  "current_runtime_failures": [],
+  "changed_levels_pending_runtime_win": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    11,
+    12,
+    13,
+    14,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    41,
+    42,
+    43,
+    44,
+    46,
+    47,
+    48,
+    49,
+    50,
+    52,
+    53,
+    55,
+    56,
+    58,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    69
+  ],
+  "new_hard_peaks": [
+    25,
+    40,
+    55
+  ],
+  "booster_policy": "Optional; every current JSON has a model solution without boosters. Add Space adds two groups. Human booster demand has not been measured.",
+  "limitations": "Reference lengths are content filters, not shortest solutions or human difficulty ratings. Runtime evidence applies only to the listed hashes; visual/lifecycle/human balance remain separate checks.",
+  "levels": [
+    {
+      "level": 2,
+      "sha256": "91797bf47f680801c3009979db8a0d5bbd51b63c4239ae05bca9e691ddd590f4",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [],
+      "hard": 0,
+      "boxes": 2,
+      "normal_colors": 2,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 3,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 3,
+      "sha256": "9db8bb9e12371e1a53d4d680e838ee0f630fbab67c08fbac1095b98ae494b547",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [],
+      "hard": 0,
+      "boxes": 4,
+      "normal_colors": 3,
+      "empty_boxes": 0,
+      "capacity": 5,
+      "reference_clicks": 5,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 4,
+      "sha256": "39c6055afb9212631ca2d968f61e66966eeeb27046503fbe075947ae0e60fd83",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [],
+      "hard": 0,
+      "boxes": 5,
+      "normal_colors": 4,
+      "empty_boxes": 0,
+      "capacity": 5,
+      "reference_clicks": 8,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 5,
+      "sha256": "421700b7e840da15b1ee8b39a858d5a54c36492f95de702e8b4b6ca063a07cd5",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [],
+      "hard": 0,
+      "boxes": 6,
+      "normal_colors": 5,
+      "empty_boxes": 0,
+      "capacity": 5,
+      "reference_clicks": 11,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 6,
+      "sha256": "332f6bcb46062f0f973f58c6804f1a148a373ccc5615f916a971589c9fa5cba7",
+      "secrets_percent_of_eligible": 15,
+      "secret_cubes": 3,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 7,
+      "normal_colors": 6,
+      "empty_boxes": 1,
+      "capacity": 6,
+      "reference_clicks": 15,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 7,
+      "sha256": "d93c20a6405083f041f6e3323bf58d2894a7f7422455db7c1c68aaffaa32a00d",
+      "secrets_percent_of_eligible": 25,
+      "secret_cubes": 6,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 27,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 6
+    },
+    {
+      "level": 8,
+      "sha256": "ae8852d7740ef538c1c59d5dd3a37df05c6867f115f60e926d094025a394e457",
+      "secrets_percent_of_eligible": 25,
+      "secret_cubes": 5,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 7,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 23,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 9,
+      "sha256": "4e97c1feb96ce3606db87bb48148c4a778257e0e1ec5f985551456bdaf1f9a3b",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 7,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 18,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 3
+    },
+    {
+      "level": 11,
+      "sha256": "c48dd42ec8ef1edb814703ca190a85e35f9a269da21666af12bf143ad8a83b69",
+      "secrets_percent_of_eligible": 25,
+      "secret_cubes": 6,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 5,
+      "reference_clicks": 38,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 12,
+      "sha256": "6132dd42b1274fdf6c4a67de320db4b5c48a0a606df718a45e4843c7efd5b823",
+      "secrets_percent_of_eligible": 25,
+      "secret_cubes": 5,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 15,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 13,
+      "sha256": "6fda5b90a6cd636949a5c3756dd6761b7844cdc698daf3f16c9eff285d063065",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 24,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 14,
+      "sha256": "174b9a338c8f9fa62a2487953038b4730127df4a35e387b0a84924516311947e",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 7,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 16,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 15,
+      "sha256": "bb992ae8dd9890478556dd7e800b09f3a0d6b293b1ba5349d265567770a59cde",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "linked_pair"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 14,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 3
+    },
+    {
+      "level": 16,
+      "sha256": "0600d2cbbf7032db46855b039f8f23ae531b47c77b1d231b64e24c648d40b69b",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "linked_pair"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 20,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 3
+    },
+    {
+      "level": 17,
+      "sha256": "a4a2ad159cd6cf6bbfd9cede816385935ae0f88b2e22bc7a23628df824de5786",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 6,
+      "mechanics": [
+        "secret",
+        "linked_pair"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 19,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 18,
+      "sha256": "763692acad6b7aaedabd43b74fb7d39ec4d205ecb01536adcfd5a99251804ab5",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 25,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 19,
+      "sha256": "b19ac3780d6c08a9f4b397792dd0289acf1b1a556be05504bcb2d38ea618c3bb",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 7,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 1,
+      "capacity": 6,
+      "reference_clicks": 24,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 20,
+      "sha256": "5d724ace234212a08608055aaab201933919e03e7ec586378568276d8d6343e6",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 13,
+      "mechanics": [
+        "secret",
+        "linked_pair"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 1,
+      "capacity": 4,
+      "reference_clicks": 28,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 21,
+      "sha256": "76b762e89bcb8a280f8f8c95a0cfcdbd7224685fc55b3eab6abe14e5df91b881",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 7,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 22,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 22,
+      "sha256": "f263f739683688413116eea1df387a28785a4766009bea5a45f0511fc8b05498",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 22,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 23,
+      "sha256": "fa983b12d47a6de1766568509fe4afd616f8ad091f137f8f95e057e827c79bb2",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "color_lock"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 15,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 24,
+      "sha256": "6facabc83280d4faca34c2c73c25572e2b05c0a896380e39b0bd724679ae5c04",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret",
+        "color_lock"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 32,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 25,
+      "sha256": "52f1e336abee0e716a62679240d791fdddf85560bdd2b69ef4850c895e0798d0",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 12,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "linked_pair"
+      ],
+      "hard": 1,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 23,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 4
+    },
+    {
+      "level": 26,
+      "sha256": "3814d78dd11607fdc6e8836882af62539c5edd8082c9f6f42f74f152bbd2762f",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 7,
+      "mechanics": [
+        "secret",
+        "color_lock"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 5,
+      "reference_clicks": 16,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 27,
+      "sha256": "067f7e1ade0ef5dab1cb4cdba6ce073370568905b97fa1d98ee7abb237e10062",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret",
+        "color_lock"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 24,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 28,
+      "sha256": "e241afa6194c8a226ed6467c7c66ab5891c3ffeb0f127a69ec4602281acdb590",
+      "secrets_percent_of_eligible": 20,
+      "secret_cubes": 5,
+      "mechanics": [
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 17,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 29,
+      "sha256": "a6c5603fdf0ed7783558bcff20ab3f6b7d384e4fc343cb8f30d2d02897be5452",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "adjacent_lock"
+      ],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 15,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 30,
+      "sha256": "275ae5ba5623ade9e0f6585664acbe0834dd6429b4d0e35e840f318abfc3ff46",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret",
+        "adjacent_lock"
+      ],
+      "hard": 1,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 25,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 31,
+      "sha256": "11e366644e1824c408c3d7e15a4516d9e8f8020a91169381cddf7d3838d8d675",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 5,
+      "reference_clicks": 18,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 32,
+      "sha256": "b6dac0ff3b28659df20d4000ebfb6b5929f2126a273cbda0c0cb57fd1ab1f611",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 1,
+      "capacity": 6,
+      "reference_clicks": 24,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 33,
+      "sha256": "85e6c47a766fb5b5a10d595b96287cf2251e66ec35df006a9ab4ae1a3d823a10",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 8,
+      "mechanics": [
+        "secret",
+        "adjacent_lock",
+        "linked_pair"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 19,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 34,
+      "sha256": "ada7507679f931b8201395366512edf582b1474f7fd1bbc12aa0e3c4594ac300",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 12,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 20,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 35,
+      "sha256": "7e84909b82011ae956f55ba533a3f8ec780ffad8a96ba6c45a53d8cd3870508d",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 16,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 33,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 36,
+      "sha256": "032ead509f67486285b20a58da03ef9d7503ba2cbb7a15783916360c6ce7e343",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [],
+      "hard": 0,
+      "boxes": 8,
+      "normal_colors": 6,
+      "empty_boxes": 1,
+      "capacity": 7,
+      "reference_clicks": 17,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 37,
+      "sha256": "bc5ed3d66a9173864244a325dc38b504ff9d112dbb4e76c921a8f5aa9b2302c8",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "ice"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 18,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 38,
+      "sha256": "7f6d3ed9d731f8c7a4e4cbd9d60798b46589415f440c6520d74dbe2d8d8a8af4",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 9,
+      "mechanics": [
+        "secret",
+        "ice"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 20,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 39,
+      "sha256": "4e9710b5168d64992941f1e069a74be9e97664fe45a4473b00123d19abc3c62c",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 8,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 19,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 5
+    },
+    {
+      "level": 40,
+      "sha256": "95dfff0f91ac4be84de6b60941d55a010d697ad4f05b9bb70955b680b45c8f72",
+      "secrets_percent_of_eligible": 45,
+      "secret_cubes": 12,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice",
+        "linked_pair"
+      ],
+      "hard": 1,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 19,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 4
+    },
+    {
+      "level": 41,
+      "sha256": "f14a1658d5e489c6d15f6f65cd4b76e3b5b53d2826378a7d7f0e52fa234db505",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "long"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 15,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 42,
+      "sha256": "41733c41487a17ee4a789b3269beb9246b86f6f7f076391f8fed5db9cfbb8bd9",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 9,
+      "mechanics": [
+        "long",
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 5,
+      "empty_boxes": 1,
+      "capacity": 7,
+      "reference_clicks": 15,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 43,
+      "sha256": "4fead0f3d1c09f0c16c47b93a0e1869ef3849cb22b81deee3eba85e12a60ee19",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 14,
+      "mechanics": [
+        "long",
+        "secret",
+        "color_lock"
+      ],
+      "hard": 0,
+      "boxes": 12,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 22,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 44,
+      "sha256": "358f62ef99fad03750c1495079cae767ae8c5885d97af4a3197fe9b3c83c230c",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 10,
+      "mechanics": [
+        "long",
+        "secret",
+        "ice"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 19,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 45,
+      "sha256": "cc94465e7f895e4553bb6c333a60dfded09936f0f9efb8f71474b0ea6cbc2ab9",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 15,
+      "mechanics": [
+        "long",
+        "secret",
+        "color_lock",
+        "ice",
+        "linked_pair"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 26,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 3
+    },
+    {
+      "level": 46,
+      "sha256": "0454fe60f93023bbd53f2cc3e2c8fdb732a1c749c0d28f774edeb42ee8e7338c",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 7,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 18,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 47,
+      "sha256": "be3a42922bb27fb631243b47bbf0995c7fbb6c110b96c7fc86c72f87cb0eddaa",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 12,
+      "mechanics": [
+        "secret",
+        "adjacent_lock",
+        "ice"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 30,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 48,
+      "sha256": "8686332e83e64223049e56edc1c4ad762d634856167111c0cd047a8947a09260",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 12,
+      "mechanics": [
+        "long",
+        "secret",
+        "color_lock"
+      ],
+      "hard": 0,
+      "boxes": 12,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 24,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 49,
+      "sha256": "c94f91fc9494e3c55606575183eacee76958b514c0c51591da072dea340e1fff",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "single"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 8,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 19,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 50,
+      "sha256": "c85f6dfbfa7c20f4bf39f031f595c36ba9fb04616cbca44f8ab9543f01f4af7a",
+      "secrets_percent_of_eligible": 30,
+      "secret_cubes": 8,
+      "mechanics": [
+        "single",
+        "secret"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 30,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 51,
+      "sha256": "6e6f1dac3350d0f68c1527f24b118515fbc6649b1d5f1b476b7cac908e32ed50",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 11,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 25,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 6
+    },
+    {
+      "level": 52,
+      "sha256": "aeeede16099b313c9a1f4cdb95917c9666754354e0c6cf27591333563efdbdfa",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 12,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice",
+        "linked_pair"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 23,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 53,
+      "sha256": "0b549f6a1a6d3b06a5e936fb7b59b9446fca309d4f107cbd847ab1e68876960d",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "group_door"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 9,
+      "empty_boxes": 1,
+      "capacity": 6,
+      "reference_clicks": 20,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 54,
+      "sha256": "afe1815e3df9104a316f932289cde6bd24c78cfbf5e18af15fa766087b3a330f",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 13,
+      "mechanics": [
+        "secret",
+        "ice",
+        "group_door"
+      ],
+      "hard": 0,
+      "boxes": 12,
+      "normal_colors": 12,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 29,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 6
+    },
+    {
+      "level": 55,
+      "sha256": "d94245727e377dbb45f7c19fcaffbbcbeb5dc784d4d0dbc077638a8132b89fc6",
+      "secrets_percent_of_eligible": 45,
+      "secret_cubes": 13,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice",
+        "group_door"
+      ],
+      "hard": 1,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 22,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 56,
+      "sha256": "d29036b83ce5c7bb6d2320159b8084ff6a28b41b5142e8032a32c7574677332c",
+      "secrets_percent_of_eligible": 0,
+      "secret_cubes": 0,
+      "mechanics": [
+        "surprise"
+      ],
+      "hard": 0,
+      "boxes": 9,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 33,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 57,
+      "sha256": "370be0927d58714afae0bb1a6d70cd2493e360c760552651d0a2913f1515cfa8",
+      "secrets_percent_of_eligible": 35,
+      "secret_cubes": 11,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "surprise"
+      ],
+      "hard": 0,
+      "boxes": 10,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 6,
+      "reference_clicks": 20,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 4
+    },
+    {
+      "level": 58,
+      "sha256": "134415193f94ccf2798e1fb2960dbf17263ea921f26e9695bc2af542e942fde8",
+      "secrets_percent_of_eligible": 40,
+      "secret_cubes": 11,
+      "mechanics": [
+        "single",
+        "secret",
+        "ice",
+        "surprise"
+      ],
+      "hard": 0,
+      "boxes": 12,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 26,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 59,
+      "sha256": "40370b648c2cd46321bd1f978fc3fa70fa67c645986a1731e7021fe9b81e0c04",
+      "secrets_percent_of_eligible": 45,
+      "secret_cubes": 14,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "group_door",
+        "linked_pair"
+      ],
+      "hard": 0,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 7,
+      "reference_clicks": 27,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 3
+    },
+    {
+      "level": 60,
+      "sha256": "d2c5ef46b0349d240f26c1de8d24f0b99430f7f85d6fb4b7dd4191e679c8e7d1",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 16,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "group_door",
+        "surprise"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 28,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 61,
+      "sha256": "7abff388ce1b1f7b5d19b2bf423eaedc03a52905ffad601930d0a817db667aa0",
+      "secrets_percent_of_eligible": 45,
+      "secret_cubes": 13,
+      "mechanics": [
+        "single",
+        "secret",
+        "color_lock",
+        "ice"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 10,
+      "empty_boxes": 1,
+      "capacity": 4,
+      "reference_clicks": 30,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 62,
+      "sha256": "9d2828cb4b61bbbea42701a98df161d72d95afa3668bc0e95826838a4ec510ff",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 16,
+      "mechanics": [
+        "secret",
+        "ice",
+        "group_door",
+        "surprise"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 27,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 63,
+      "sha256": "8fc2685d58e23a9996d8b6d10ad3e632feb8a1e3c725e08cdd1bd2c9fc7dc552",
+      "secrets_percent_of_eligible": 55,
+      "secret_cubes": 17,
+      "mechanics": [
+        "long",
+        "secret",
+        "color_lock",
+        "ice"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 9,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 28,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 64,
+      "sha256": "4c647ed6804b1e814eecd5eeb51284a80e0aaa93f00fd4b3805fb3ca5c33d4de",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 16,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock",
+        "ice",
+        "linked_pair"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 29,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 65,
+      "sha256": "39052f9fade794bbf97f8adbc6da5515604408ff3099caa5b27fb49d0c8e1608",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 14,
+      "mechanics": [
+        "single",
+        "secret",
+        "color_lock",
+        "ice"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 27,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 66,
+      "sha256": "cd8f6df6ae3470d5a2a26577fa553ec93c7f6ef2ded69f15d228a9836d4d8190",
+      "secrets_percent_of_eligible": 55,
+      "secret_cubes": 18,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice",
+        "group_door"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 27,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 67,
+      "sha256": "b1cc783fcc5d6b2bbf975d6c93a17421b25c2c98b311d8b416e5e505ae0c5d9b",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 16,
+      "mechanics": [
+        "secret",
+        "adjacent_lock",
+        "ice",
+        "surprise"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 11,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 30,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 68,
+      "sha256": "7f3d8330267a58c5f3918b3fd4a190684991d3bf29ede854f7394616b913cbd1",
+      "secrets_percent_of_eligible": 60,
+      "secret_cubes": 22,
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock",
+        "ice",
+        "linked_pair",
+        "surprise"
+      ],
+      "hard": 2,
+      "boxes": 13,
+      "normal_colors": 12,
+      "empty_boxes": 1,
+      "capacity": 4,
+      "reference_clicks": 36,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 4
+    },
+    {
+      "level": 69,
+      "sha256": "87402d7616b53d89294e64e0464499f49d2c38a63928ad3f0d97f02c0501ba19",
+      "secrets_percent_of_eligible": 50,
+      "secret_cubes": 13,
+      "mechanics": [
+        "single",
+        "secret",
+        "ice",
+        "group_door"
+      ],
+      "hard": 1,
+      "boxes": 12,
+      "normal_colors": 9,
+      "empty_boxes": 1,
+      "capacity": 4,
+      "reference_clicks": 26,
+      "unity_replay": "pending",
+      "runtime_peak_groups": null
+    },
+    {
+      "level": 70,
+      "sha256": "5e9a811497c45fe5f699ef4e2cbfd32decb65e897b78f9715b1ebb04b1cc235f",
+      "secrets_percent_of_eligible": 60,
+      "secret_cubes": 20,
+      "mechanics": [
+        "single",
+        "long",
+        "secret",
+        "color_lock",
+        "adjacent_lock",
+        "ice",
+        "group_door",
+        "linked_pair",
+        "surprise"
+      ],
+      "hard": 2,
+      "boxes": 13,
+      "normal_colors": 10,
+      "empty_boxes": 0,
+      "capacity": 4,
+      "reference_clicks": 38,
+      "unity_replay": "passed",
+      "runtime_peak_groups": 4
+    }
+  ]
+}
