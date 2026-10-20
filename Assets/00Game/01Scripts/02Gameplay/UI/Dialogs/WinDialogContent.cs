@@ -265,11 +265,6 @@ public class WinDialogContent : DialogContent
 
 		_isCanSkipAnims = false;
 
-		if (AudioManager.Current != null)
-		{
-			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
-		}
-
 		if (_coinsBgLight != null)
 		{
 			_coinsBgLight.gameObject.SetActive(true);
@@ -368,11 +363,6 @@ public class WinDialogContent : DialogContent
 			CanvasGroup titleGroup = _artTitle.GetComponent<CanvasGroup>();
 			if (titleGroup != null) titleGroup.alpha = 1f;
 			_artTitle.gameObject.SetActive(true);
-		}
-
-		if (AudioManager.Current != null)
-		{
-			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
 		}
 
 		if (_coinsBgLight != null)
@@ -521,6 +511,11 @@ public class WinDialogContent : DialogContent
 	private async UniTaskVoid PlayCoinClaimAnimAsync(int coinCount)
 	{
 		CancellationToken token = _token;
+		if (token.IsCancellationRequested || !isActiveAndEnabled) return;
+		if (_showAudioClip != null && AudioManager.Current != null)
+		{
+			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
+		}
 		HideEffects();
 		ClearCoinClaimAnimation();
 

@@ -40,20 +40,20 @@ public class SceneSwitchButtonConfig
         //    Selection.activeObject = dataObject;
         //}
 
-        if (GUILayout.Button(new GUIContent("Level Data", GetToolTipText(UISupport.SceneGame)), ToolbarStyles.commandButtonStyle))
-        {
-            Selection.activeObject = Resources.Load("Data/LevelCollections/LevelCollection");
-        }
+        // if (GUILayout.Button(new GUIContent("Level Data", GetToolTipText(UISupport.SceneGame)), ToolbarStyles.commandButtonStyle))
+        // {
+        //     Selection.activeObject = Resources.Load("Data/LevelCollections/LevelCollection");
+        // }
 
-        if (GUILayout.Button(new GUIContent("Theme Data", GetToolTipText(UISupport.SceneGame)), ToolbarStyles.commandButtonStyle))
-        {
-            Selection.activeObject = Resources.Load("Data/ThemeManagerData");
-        }
+        // if (GUILayout.Button(new GUIContent("Theme Data", GetToolTipText(UISupport.SceneGame)), ToolbarStyles.commandButtonStyle))
+        // {
+        //     Selection.activeObject = Resources.Load("Data/ThemeManagerData");
+        // }
 
-        if (GUILayout.Button(new GUIContent("Tutorial Data", GetToolTipText(UISupport.SceneGame)), ToolbarStyles.commandButtonStyle))
-        {
-            Selection.activeObject = Resources.Load("Data/Tutorials/TutorialDataCollection");
-        }
+        // if (GUILayout.Button(new GUIContent("Tutorial Data", GetToolTipText(UISupport.SceneGame)), ToolbarStyles.commandButtonStyle))
+        // {
+        //     Selection.activeObject = Resources.Load("Data/Tutorials/TutorialDataCollection");
+        // }
     }
 
     private static void OnRightToolbarGUI()
@@ -62,9 +62,13 @@ public class SceneSwitchButtonConfig
         {
             SceneHelper.OpenScene(UISupport.SceneGame);
         }
-        if (GUILayout.Button(new GUIContent("Init Scene", GetToolTipText(UISupport.SceneInit)), ToolbarStyles.commandButtonStyle))
+        if (GUILayout.Button(new GUIContent("Splash Scene", GetToolTipText(UISupport.SplashScene)), ToolbarStyles.commandButtonStyle))
         {
-            SceneHelper.OpenScene(UISupport.SceneInit);
+            SceneHelper.OpenScene(UISupport.SplashScene);
+        }
+        if (GUILayout.Button(new GUIContent("Home Scene", GetToolTipText(UISupport.HomeScene)), ToolbarStyles.commandButtonStyle))
+        {
+            SceneHelper.OpenScene(UISupport.HomeScene);
         }
     }
 

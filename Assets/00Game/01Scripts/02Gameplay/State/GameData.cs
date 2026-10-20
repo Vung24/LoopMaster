@@ -30,6 +30,7 @@ public class GameData
 	public List<BoxInfo> Boxes;
 	public List<GroupInfo> Groups;
 	public List<SliceInfo> TransferSlice;
+	public uint TransferGroupVersion { get; private set; }
 	public List<SurpriseInfo> SurpriseInfos;
 	public List<Vector3> PathPoints;
 	public List<int> PathSectionIndices;
@@ -49,7 +50,6 @@ public class GameData
 	public LinkedCubeLaunch ActiveLinkedLaunch { get; internal set; }
 	public bool IsPathCircle, IsNearOver;
 
-	// Keep the public mutable list authoritative, including edits made by loaders and tools.
 	public bool IsPathSectionIndex(int index) => PathSectionIndices != null && PathSectionIndices.Contains(index);
 
 	public GameData()
@@ -477,16 +477,27 @@ public class GameData
 	public void SetRuntimePathDistance(float distance) => _pathDistance = Math.Max(0f, distance);
 	public List<GamePath> GetPaths() => Puzzle == null ? null : Puzzle.Paths;
 
-	public void InvalidateTransferGroup() {}
+	// Direct edits to slice types or same-count list replacements must invalidate HUD data.
+	// Gameplay queries deliberately continue reading the public list directly.
+	public void InvalidateTransferGroup()
+	{
+		unchecked { TransferGroupVersion++; }
+	}
 
 	public bool AddTransferSlice(SliceInfo slice)
 	{
 		if (TransferSlice.Contains(slice)) return false;
 		TransferSlice.Add(slice);
+		InvalidateTransferGroup();
 		return true;
 	}
 
-	public bool RemoveTransferSlice(SliceInfo slice) => TransferSlice.Remove(slice);
+	public bool RemoveTransferSlice(SliceInfo slice)
+	{
+		if (!TransferSlice.Remove(slice)) return false;
+		InvalidateTransferGroup();
+		return true;
+	}
 	public GroupInfo GetGroupInfo(int id)
 	{
 		for (int i = 0; i < Groups.Count; i++)

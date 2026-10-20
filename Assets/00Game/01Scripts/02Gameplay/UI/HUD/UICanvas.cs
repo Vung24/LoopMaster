@@ -39,6 +39,11 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private int _displayedLevel = -1;
 	private int _displayedCapacityUsed = -1;
 	private int _displayedCapacityMaximum = -1;
+	private GameData _capacityData;
+	private List<SliceInfo> _capacitySlices;
+	private uint _capacityVersion;
+	private int _capacitySliceCount;
+	private int _capacityUsed;
 	private GameObject _pathFlightItem;
 	private Sequence _pathFlightTween;
 	private Tween _capacityExtensionTween;
@@ -122,6 +127,8 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		_displayedLevel = -1;
 		_displayedCapacityUsed = -1;
 		_displayedCapacityMaximum = -1;
+		_capacityData = null;
+		_capacitySlices = null;
 		_controller = controller;
 		CacheLegacyPrefabReferences();
 		_undoTool = BindTool(_undoButton, InventoryKeys.TOOL_UNDO);
@@ -271,7 +278,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		}
 
 		int maximum = Mathf.Max(0, _controller.RoadMaxCapacity);
-		int used = Mathf.Clamp(_controller.RoadUsedCapacity, 0, maximum);
+		int used = Mathf.Clamp(GetCapacityUsed(), 0, maximum);
 		if (used != _displayedCapacityUsed || maximum != _displayedCapacityMaximum)
 		{
 			_displayedCapacityUsed = used;
@@ -306,6 +313,30 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			if (_shuffleTool != null) _shuffleTool.UpdateCanUseState(shuffle);
 			if (_pathTool != null) _pathTool.UpdateCanUseState(path);
 		}
+	}
+
+	private int GetCapacityUsed()
+	{
+		GameData data = _controller.Data;
+		if (data == null)
+		{
+			_capacityData = null;
+			_capacitySlices = null;
+			return 0;
+		}
+
+		// Movement and list sorting do not change capacity. Count/reference checks also
+		// cover direct list edits by loaders and conveyor null-entry cleanup.
+		if (_capacityData != data || _capacitySlices != data.TransferSlice ||
+			_capacityVersion != data.TransferGroupVersion || _capacitySliceCount != data.TransferSlice.Count)
+		{
+			_capacityUsed = data.GetTransferGroup();
+			_capacityData = data;
+			_capacitySlices = data.TransferSlice;
+			_capacityVersion = data.TransferGroupVersion;
+			_capacitySliceCount = data.TransferSlice.Count;
+		}
+		return _capacityUsed;
 	}
 
 	internal void PlayPathExtension()
