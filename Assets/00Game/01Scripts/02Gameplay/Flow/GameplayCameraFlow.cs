@@ -24,7 +24,7 @@ public sealed class GameplayCameraFlow
         _pending = true;
     }
 
-    public void Update(Camera main, Camera top, IGameplayViewport viewportProvider, int level)
+    public void Update(Camera main, IGameplayViewport viewportProvider, int level)
     {
         if (!_ready || main == null || !main.orthographic) return;
         if (_pending) Canvas.ForceUpdateCanvases();
@@ -32,14 +32,13 @@ public sealed class GameplayCameraFlow
         Rect viewport = viewportProvider == null
             ? GameplayCameraLayout.Viewport(pixels, Screen.safeArea, 0, 0)
             : viewportProvider.GetGameplayViewport(main);
-        if (!_pending && main == _lastMain && top == _lastTop && pixels == _pixels &&
+        if (!_pending && main == _lastMain && pixels == _pixels &&
             viewport == _viewport && Mathf.Approximately(_aspect, main.aspect)) return;
-        GameplayCameraLayout.Fit(main, top, _bounds, viewport, level);
+        GameplayCameraLayout.Fit(main, _bounds, viewport, level);
         _viewport = viewport;
         _pixels = pixels;
         _aspect = main.aspect;
         _lastMain = main;
-        _lastTop = top;
         _pending = false;
     }
 }
