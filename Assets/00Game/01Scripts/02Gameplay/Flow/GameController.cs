@@ -142,10 +142,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp));
 	private LinkedCubeCable _linkedCable;
 	[SerializeField] private Camera _mainCamera;
-	[SerializeField] private Camera _topCamera;
+	// [SerializeField] private Camera _topCamera;
 
 	public Camera MainCamera => _mainCamera;
-	public Camera TopCamera => _topCamera;
+	// public Camera TopCamera => _topCamera;
 	private GameObject _uiCanvasInstance;
 	private UICanvas _uiCanvas;
 	private GameLevelPresentationFlow _presentation;
@@ -351,8 +351,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		IsLevelReady = true;
 		LevelStarted?.Invoke(CurrentLevelNumber);
 		if (Data == data && EndState == GameEndState.Playing)
-			Presentation.Play(data, _uiCanvasInstance, Scene.Boxes,
-				_topCamera != null ? _topCamera : _mainCamera, _gameLoader.NewPlayerTutorialPrefab).Forget();
+			Presentation.Play(data, _uiCanvasInstance, Scene.Boxes, _mainCamera, _gameLoader.NewPlayerTutorialPrefab).Forget();
 	}
 
 	private void Update()
@@ -382,7 +381,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		if (Data == null) return;
 		if (_mainCamera == null) ResolveGameplayCameras();
-		_cameraFlow.Update(_mainCamera, _topCamera, _uiCanvas == null ? null : _uiCanvas, CurrentLevelNumber);
+		_cameraFlow.Update(_mainCamera, _uiCanvas == null ? null : _uiCanvas, CurrentLevelNumber);
 	}
 
 	private void RefreshPathState()

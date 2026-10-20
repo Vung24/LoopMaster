@@ -54,7 +54,7 @@ public static class GameplayCameraLayout
 		return bounds;
 	}
 
-	public static void Fit(Camera main, Camera top, Bounds bounds, Rect viewport, int level)
+	public static void Fit(Camera main, Bounds bounds, Rect viewport, int level)
 	{
 		if (main == null || !main.orthographic) return;
 		Vector3 extents = bounds.extents;
@@ -68,13 +68,6 @@ public static class GameplayCameraLayout
 		main.orthographicSize = size;
 		main.transform.position = bounds.center - forward * distance;
 		main.farClipPlane = Mathf.Max(main.farClipPlane, distance + Project(extents, forward) + 2f);
-		if (top == null || top == main || !top.orthographic) return;
-		top.orthographicSize = size;
-		top.transform.SetPositionAndRotation(main.transform.position, main.transform.rotation);
-		top.rect = main.rect;
-		top.aspect = main.aspect;
-		top.nearClipPlane = main.nearClipPlane;
-		top.farClipPlane = main.farClipPlane;
 	}
 
 	private static float Project(Vector3 extents, Vector3 axis) =>
