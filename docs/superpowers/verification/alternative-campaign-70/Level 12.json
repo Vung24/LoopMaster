@@ -3,7 +3,7 @@
   "builder_version": 2,
   "seed": 713127,
   "learning_objective": "Luyện tập băng chuyền thẳng",
-  "sha256": "34b5d61af9c563194787ef233b03b9f16126d91ad7ef723ca46505606b54b9c9",
+  "sha256": "6132dd42b1274fdf6c4a67de320db4b5c48a0a606df718a45e4843c7efd5b823",
   "profile": {
     "Level": 12,
     "Boxes": 8,
@@ -11,7 +11,7 @@
     "Road": 3,
     "Singles": 0,
     "Longs": 0,
-    "Secrets": 0,
+    "Secrets": 25,
     "ColorLocks": 0,
     "Adjacent": 0,
     "Ice": 0,
@@ -21,21 +21,24 @@
     "Pair": 0,
     "Surprise": 0,
     "Hard": 0,
-    "Capacity": 5,
-    "GeometryReference": 228,
+    "Capacity": 6,
+    "GeometryReference": 76,
     "MixingMode": 0,
     "MixingRecipe": "generator_scramble"
   },
-  "mechanics": [],
+  "mechanics": [
+    "secret"
+  ],
   "color_type_policy": "normal_1_to_N_long_101_to_N_surprise_201_to_N",
   "empty_boxes": 0,
   "secret_eligible": 20,
-  "secret_count": 0,
+  "secret_count": 5,
+  "near_solved_normal_boxes": 1,
   "structural_validation": "passed",
   "warnings": [
     "Kiểm tra cấu trúc không đảm bảo màn chơi có lời giải. Hãy chơi thử trong Play Mode."
   ],
-  "capacity_display_review": "passed",
+  "capacity_display_review": "pending",
   "simulation_replay": "passed",
   "solution_clicks": [
     1,
@@ -45,14 +48,21 @@
     6,
     5,
     5,
-    7,
     3,
     7,
-    3
+    7,
+    7,
+    0,
+    4,
+    1,
+    1
   ],
   "wait_policy": "Wait for launch, landing, lock and surprise animations; allow conveyor circulation before the next click.",
-  "reference_click_count": 11,
+  "reference_click_count": 15,
+  "minimum_reference_clicks": 8,
   "settled_road_peak_groups": 0,
+  "challenge_intent": "Practice learned mechanics with capacity scaled to box count.",
+  "difficulty_limitations": "Reference length and mechanic counts are content filters, not minimum moves or measured human difficulty. Boosters remain optional.",
   "peak_limitations": "Settled-state samples only; transient peak requires Unity measurement.",
   "unity_replay": "pending",
   "visual_review": "pending",
@@ -60,8 +70,10 @@
   "completion_seconds": null,
   "restart_count": null,
   "acceptance": "draft_pending_unity_and_balance",
-  "capacity_display_maximum": 5,
+  "capacity_rules_review": "passed",
+  "capacity_rules_maximum": 6,
+  "capacity_map_spawn_review": "passed_not_spawned",
   "mixed_boxes": 7,
   "normal_mixed_boxes": 7,
-  "road_geometry_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4"
+  "road_geometry_sha256": "9a5e8394deb4ddbfc70ee2082b434e600bdf35e2ed393bb3199c9fb37d066b65"
 }
