@@ -152,12 +152,6 @@ public sealed class BoosterFlow
 		if (!CanUseBooster(false) || _engine == null) return false;
 		_engine.UsePathBooster();
 		_playAudio(_loader == null ? null : _loader.PathClip);
-		if (_loader != null && _loader.ToolPathBoxEffect != null)
-		{
-			GameObject effect = Instantiate(_loader.ToolPathBoxEffect, _gameRoot);
-			effect.SetActive(true);
-			Destroy(effect, 1.5f);
-		}
 		_refreshPathState();
 		return true;
 	}
