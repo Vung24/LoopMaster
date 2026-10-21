@@ -27,10 +27,6 @@ public class GameLoader : MonoBehaviour
 	public GameObject FinishLongCube => LoadPrefab("CubeLongFinish");
 	public GameObject GameRoad => LoadPrefab("GameRoad");
 	public GameObject RoadArrow => LoadPrefab("BoxArrow");
-	public GameObject MapArrow => LoadPrefab("MapArrow");
-	public GameObject MapEnter => LoadPrefab("MapEnter");
-	public GameObject MapExit => LoadPrefab("MapExit");
-	public GameObject Capacity => LoadPrefab("Capacity");
 	public GameObject FlyPath => LoadPrefab("FlyAddPath");
 	public GameObject GroupColorLock => LoadPrefab("KeyLockBox");
 	public GameObject GroupKey => LoadPrefab("Key");
@@ -59,10 +55,6 @@ public class GameLoader : MonoBehaviour
 	public AudioClip OnlyEnterRockBlast { get; private set; }
 	public AudioClip ColorLockOpen { get; private set; }
 
-	public Sprite LevelTitleBgHardImage;
-	public Sprite LevelTitleBgExpertImage;
-	public Sprite TopLeftArmHardImage;
-	public Sprite TopLeftArmExpertImage;
 	public Sprite SpeedSprite => _config != null ? _config.SpeedImage : (GameAssetsConfig.Instance != null ? GameAssetsConfig.Instance.SpeedImage : null);
 	public Sprite UnSpeedSprite => _config != null ? _config.UnSpeedImage : (GameAssetsConfig.Instance != null ? GameAssetsConfig.Instance.UnSpeedImage : null);
 

@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using System;
 
 public class GameController : MonoBehaviour, IGameNavigationSession
 {
@@ -12,14 +13,14 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	[SerializeField, Range(0.4f, 1f)] private float _sliceSpacingScale = 1f;
 	public static GameController Current;
 #if UNITY_EDITOR
-	public static System.Func<GameData> EditorPlaytestSource;
-	public static System.Func<GameData> EditorPlaytestResetSource;
+	public static Func<GameData> EditorPlaytestSource;
+	public static Func<GameData> EditorPlaytestResetSource;
 	public void InitializeEditorPlaytest(GameData data) => Initialize(data, true);
 #endif
 	public bool IsEditorPlaytest { get; private set; }
 	public GameData Data { get; private set; }
 	public bool IsLevelReady { get; private set; }
-	public System.Exception InitializationError { get; private set; }
+	public Exception InitializationError { get; private set; }
 	public GameObject UICanvasObjAsset;
 	public GameObject UICanvasLightObjAsset;
 	public string WinDialogAddress = "WinDialog";
@@ -72,12 +73,12 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && GamePrefs.GetInt(GamePrefKeys.FailTutorial, 0) == 0;
 	public bool CanReplayLevel => Data != null && (IsEditorPlaytest || Navigation.CanReplayLevel);
 	public bool CanLoadNextLevel => !IsEditorPlaytest && EndState == GameEndState.Won && Navigation.CanLoadNextLevel;
-	public event System.Action GameWon;
-	public event System.Action GameLost;
-	public event System.Action GameRevived;
-	public event System.Action<GameEndState> GameEnded;
-	public event System.Action<int> LevelStarted;
-	public event System.Action<int> LevelReplayed;
+	public event Action GameWon;
+	public event Action GameLost;
+	public event Action GameRevived;
+	public event Action<GameEndState> GameEnded;
+	public event Action<int> LevelStarted;
+	public event Action<int> LevelReplayed;
 	public event System.Action<int> LevelAdvanced;
 	public event System.Action<int> NextLevelUnavailable;
 	private GameLoader _gameLoader;
@@ -247,7 +248,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
         {
             ResolvePuzzleLoader();
             if (!_puzzleLoader.LoadDefault(this))
-                InitializationError = new System.InvalidOperationException("Alternative campaign level could not be loaded. Check the campaign report and Console.");
+                InitializationError = new InvalidOperationException("Alternative campaign level could not be loaded. Check the campaign report and Console.");
             return;
         }
 #endif
