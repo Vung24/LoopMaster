@@ -165,6 +165,8 @@ public sealed class GameResultUI : MonoBehaviour
 		_showFailRoutine = null;
 		if (!isActiveAndEnabled || version != _uiVersion || controller == null || controller.Data != data || controller.EndState != GameEndState.Failed) yield break;
 		if (_failDialog != null) _failDialog.Show();
+		if (AudioManager.Current != null && GameAssetsConfig.Instance != null)
+			AudioManager.Current.PlayOneShot(GameAssetsConfig.Instance.FailShow);
 		if (_preFailContent != null)
 		{
 			if (_failContent != null) _failContent.Hide();

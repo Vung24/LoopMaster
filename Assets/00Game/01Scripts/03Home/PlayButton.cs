@@ -358,10 +358,6 @@ public class PlayButton : MonoBehaviour
 		if (!entered) return;
 
 		_sweepAnimDone = true;
-		if (AudioManager.Current != null)
-		{
-			AudioManager.Current.StopMusic();
-		}
 
 	}
 

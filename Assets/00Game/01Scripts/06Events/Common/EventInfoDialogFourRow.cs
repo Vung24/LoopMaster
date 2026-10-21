@@ -44,6 +44,7 @@ namespace Snui
 		{
 			Transform[] tutorials = new Transform[] { tf_tutorial_1, tf_TP_tutorial_2, tf_TP_tutorial_3, tf_TP_tutorial_4, tf_TP_tutorial_5, tf_TP_tutorial_6, tf_TP_tutorial_7, tf_TP_tutorial_8 };
 			var seq = DOTween.Sequence();
+			seq.InsertCallback(0f, PlayWordsSound);
 			float delay = 0.06f;
 			for (int i = 0; i < tutorials.Length; i++)
 			{
@@ -51,9 +52,21 @@ namespace Snui
 				{
 					tutorials[i].localScale = Vector3.zero;
 					seq.Insert(i * delay, tutorials[i].DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack));
+					if (i % 2 == 0) seq.InsertCallback(i * delay, PlayContentSound);
 				}
 			}
-			seq.SetLink(gameObject);
+			seq.InsertCallback(tutorials.Length * delay, PlayWordsSound);
+			seq.SetLink(gameObject, LinkBehaviour.KillOnDisable);
+		}
+
+		private void PlayContentSound()
+		{
+			if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(ContentEffect, gameObject);
+		}
+
+		private void PlayWordsSound()
+		{
+			if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(WordsEffect, gameObject);
 		}
 
 		protected virtual void OnClickClose()

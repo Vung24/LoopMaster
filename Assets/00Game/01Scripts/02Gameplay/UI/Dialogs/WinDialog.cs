@@ -90,6 +90,7 @@ public class WinDialog : MonoBehaviour
 
 	public void Show()
 	{
+		if (BgmSource.Current != null) BgmSource.Current.Stop().Forget();
 		CancelPresentation();
 		ResolveReferences();
 		PrepareEffects();

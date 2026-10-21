@@ -54,7 +54,11 @@ public class HomeController : MonoBehaviour
 		}
 		return null;
 	}
-	private void Awake() { Current = this; }
+	private void Awake()
+	{
+		Current = this;
+		AudioManager.EnsureInitialized();
+	}
 	private void Start()
 	{
 		Initialize();
