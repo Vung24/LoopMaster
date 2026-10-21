@@ -53,24 +53,19 @@ public sealed class BoosterFlow
 	public bool CanUsePath => CanRequestPath &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_PATH);
 
-	public UndoUnusableReason GetUndoUnusableReason()
+	public UndoUnavailableReason GetUndoUnavailableReason()
 	{
 		if (!Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO))
 		{
-			return UndoUnusableReason.Locked;
-		}
-
-		if (!CanUseBooster(false) || !_isGameplaySettled() || IsBusy)
-		{
-			return UndoUnusableReason.GameplayBusy;
+			return UndoUnavailableReason.Locked;
 		}
 
 		if (_data == null || !_data.CanUndo())
 		{
-			return UndoUnusableReason.NoMovesToUndo;
+			return UndoUnavailableReason.NoMoves;
 		}
 
-		return UndoUnusableReason.None;
+		return UndoUnavailableReason.None;
 	}
 
 	public void GetRequestState(out bool undo, out bool shuffle, out bool path)
