@@ -79,26 +79,6 @@ public class CheatDelegate : MonoBehaviour
 
     public bool AddEventItems(int eventIndex, int amount)
     {
-        if (amount <= 0) return false;
-        if (eventIndex == 0)
-        {
-            var manager = Managers.SpecialCol;
-            if (manager == null || !manager.IsOngoing || manager.IsExpired || manager.ShouldShowTutorial()) return false;
-            long added = (long)amount * (manager.IsDouble ? 2 : 1);
-            if ((long)manager.CurrCount + manager.TempCount + added > int.MaxValue) return false;
-            int before = manager.TempCount;
-            manager.OnGameWon(new Dictionary<string, int> { { GameWinArgs.SpecialCollectible, amount } });
-            return manager.TempCount > before;
-        }
-        if (eventIndex == 1)
-        {
-            var manager = Managers.SpaceRace;
-            if (manager == null || !manager.IsOngoing || manager.IsWin || manager.IsFail ||
-                (long)manager.Score + manager.TempScore + amount > int.MaxValue) return false;
-            int before = manager.TempScore;
-            manager.OnGameWin(new Dictionary<string, int> { { GameWinArgs.SpaceRaceStar, amount } });
-            return manager.TempScore > before;
-        }
         return false;
     }
 

@@ -193,38 +193,16 @@ public class HomePage : MonoBehaviour
 		_eventController.ClearWidgets();
 		ConfigureEventLayout();
 		var widgets = new List<HomeEventBase>();
-		Snui.SpecialCol.SpecialProgress special = null;
-		Snui.ChampionArena.ChampionHomeIcon champion = null;
 		bool committed = false;
 		try
 		{
-			foreach (var manager in new BaseEventManager[] { Managers.Pass, Managers.StreakLine, Managers.Lava, Managers.SpaceRace })
+			foreach (var manager in new BaseEventManager[] { Managers.Pass, Managers.StreakLine })
 			{
-				if (manager == null || (manager == Managers.SpaceRace && EventPrefabUI.Load("HomeEventSpaceRace") == null)
-					|| !manager.ShouldShowIcon()) continue;
+				if (manager == null || !manager.ShouldShowIcon()) continue;
 				var icon = await manager.CreateIcon(_eventController.transform);
 				if (icon != null) widgets.Add(icon);
 				token.ThrowIfCancellationRequested();
 			}
-			if (Managers.DailyGift != null && EventPrefabUI.Load("DailyGiftWidget") != null && Managers.DailyGift.ShouldShowIcon())
-			{
-				var gift = await Managers.DailyGift.CreateIcon(_eventController.transform);
-				if (gift != null) widgets.Add(gift);
-				token.ThrowIfCancellationRequested();
-			}
-			if (Managers.SpecialCol != null && EventPrefabUI.Load("SpecialProgress") != null && !Managers.SpecialCol.IsClosed)
-			{
-					special = Snui.SpecialCol.SpecialProgress.Create(_eventController.transform);
-				token.ThrowIfCancellationRequested();
-			}
-			if (Managers.ChampionArena != null && EventPrefabUI.Load("ChampionHomeIcon") != null && (Managers.ChampionArena.ShouldShowIcon() ||
-				Managers.ChampionArena.CanStartEvent() || Managers.ChampionArena.IsExpired))
-			{
-				champion = await Snui.ChampionArena.ChampionHomeIcon.Create(_eventController.transform);
-				token.ThrowIfCancellationRequested();
-			}
-			_eventController.SetupSpecialProgress(special);
-			_eventController.SetupChampionHomeIcon(champion);
 			_eventController.SetupWidgets(widgets);
 			committed = true;
 		}
@@ -233,8 +211,6 @@ public class HomePage : MonoBehaviour
 			if (!committed)
 			{
 				foreach (var widget in widgets) if (widget != null) Destroy(widget.gameObject);
-				if (special != null) Destroy(special.gameObject);
-				if (champion != null) Destroy(champion.gameObject);
 			}
 		}
 	}
