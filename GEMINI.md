@@ -21,3 +21,9 @@
 - **Async Operations:** Use `Cysharp.Threading.Tasks` (`UniTask`), avoid raw `Task` and avoid unhandled `async void` (use `async UniTaskVoid` with `.Forget()` only at fire-and-forget entry points).
 - **DOTween Animations:** Always attach `.SetLink(gameObject)` to tweens and kill running tweens in `OnDestroy` or before playing new tweens to prevent memory leaks or missing target exceptions.
 - **Audio & Progress:** Use `AudioManager.Current` / `GameAudioPlayer.Current` and `GameProgressStore` for game states.
+
+## 4. Unity Agent Coding Guidelines & Skills
+- The full guidelines (§1–63) are available in `UNITY_AGENT_CODING_GUIDELINES_EN.md` (and Russian mirror `UNITY_AGENT_CODING_GUIDELINES_RU.md`).
+- Multi-file and large refactoring: use `/unity-refactor` skill (`.agents/skills/unity-refactor/SKILL.md`).
+- Guideline verification: use `/guideline-reviewer` skill (`.agents/skills/guideline-reviewer/SKILL.md`) with scopes `code`, `architecture`, `safety`, or `all`.
+

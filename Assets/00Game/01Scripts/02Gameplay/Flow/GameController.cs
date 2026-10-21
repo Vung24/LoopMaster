@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
@@ -56,9 +56,9 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool CanUsePathTool => Boosters.CanUsePath;
 	public bool CanRequestUndoTool => !IsBoosterShopOpen && Boosters.CanRequestUndo;
 
-	public UndoUnusableReason GetUndoUnusableReason()
+	public UndoUnavailableReason GetUndoUnavailableReason()
 	{
-		return Boosters.GetUndoUnusableReason();
+		return Boosters.GetUndoUnavailableReason();
 	}
 	public bool CanRequestShuffleTool => !IsBoosterShopOpen && Boosters.CanRequestShuffle;
 	public bool CanRequestPathTool => !IsBoosterShopOpen && Boosters.CanRequestPath;
@@ -81,6 +81,9 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public event System.Action<int> LevelAdvanced;
 	public event System.Action<int> NextLevelUnavailable;
 	private GameLoader _gameLoader;
+	private LevelBuilder _levelBuilder;
+	private LevelBuilder Builder => _levelBuilder ?? (_levelBuilder = new LevelBuilder(
+		_gameLoader, Scene, RefreshPathState, _cameraFlow, UpdateCamera));
 	private CoreGameplayEngine _engine;
 	private GameplaySceneBuilder _sceneBuilder;
 	private GameplaySceneBuilder Scene => _sceneBuilder ?? (_sceneBuilder = new GameplaySceneBuilder());
@@ -148,6 +151,21 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private SliceTransferFlow Transfers => _sliceTransferFlow ?? (_sliceTransferFlow = new SliceTransferFlow(
 		this, Scene.Boxes, IsGameStartActive,
 		IsGroupUnlockAnimationPlaying, UpdateCombo, RefreshPathState, RefreshGameplayAfterOperation, CheckGameOver, SetSpeedUp));
+	private BoxLaunch _boxLaunch;
+	private BoxLaunch BoxLaunchFlow => _boxLaunch ?? (_boxLaunch = new BoxLaunch(
+		() => IsGameplayActive,
+		() => IsSelectingShuffle,
+		box => Boosters.TryUseShuffle(box),
+		HideShuffleSelection,
+		() => Data,
+		() => _linkedCable,
+		IsGameplaySettled,
+		() => Transfers,
+		GetBox,
+		() => _sliceJumpDuration,
+		() => _sliceJumpHeight,
+		NotifyBoxClickedPresentation));
+
 	private LinkedCubeCable _linkedCable;
 	[SerializeField] private Camera _mainCamera;
 	// [SerializeField] private Camera _topCamera;
@@ -270,14 +288,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
 			_startupInitialization = lifetime;
 			var token = lifetime.Token;
-			await UniTask.NextFrame(token);
-			await _gameLoader.LoadAssetsAsync(data, token);
-			GameVibrationHelper.PrepareForGameplay();
-			await _gameLoader.PrewarmSlicePoolAsync(data, token);
-			await Scene.BuildAsync(data, _gameLoader, GameRoot, RefreshPathState, token);
-			_cameraFlow.Reset(data, GameRoot);
-			UpdateCamera();
-			await _gameLoader.WarmupSliceVisualsAsync(data, GameRoot, token);
+			await Builder.BuildAsync(data, GameRoot, token);
 			CompleteLevelInitialization(data);
 		}
 		catch (System.OperationCanceledException) when (lifetime != null && lifetime.IsCancellationRequested) { }
@@ -301,10 +312,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private void Initialize(GameData data, bool editorPlaytest)
 	{
 		if (!PrepareLevel(data, editorPlaytest)) return;
-		_gameLoader.LoadAssets(data);
-		_gameLoader.PrewarmSlicePool(data);
-		_gameLoader.PrewarmEffectPool(10);
-		Scene.Build(Data, _gameLoader, GameRoot, RefreshPathState);
+		Builder.BuildSync(data, GameRoot);
 		CompleteLevelInitialization(data);
 	}
 
@@ -344,12 +352,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		if (data.LinkedPair != null && GameRoot != null)
 		{
-			GameObject cablePrefab = _gameLoader.LinkedCubeCable;
-			if (cablePrefab == null) throw new System.InvalidOperationException("Missing CoreGamePrefabs/LinkedCubeCable prefab.");
-			GameObject cableRoot = Instantiate(cablePrefab, GameRoot);
-			_linkedCable = cableRoot.GetComponent<LinkedCubeCable>();
-			if (_linkedCable == null) throw new System.InvalidOperationException("LinkedCubeCable prefab requires its visual component.");
-			_linkedCable.Initialize(data);
+			_linkedCable = Builder.SpawnLinkedCable(data, GameRoot);
 		}
 		_cameraFlow.Reset(Data, GameRoot);
 		UpdateCamera();
@@ -417,59 +420,14 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public void OnClickBox(Box box)
 	{
-		if (!IsGameplayActive || box == null || box.Info == null) return;
-		if (IsSelectingShuffle)
-		{
-			Boosters.TryUseShuffle(box);
-			if (!IsSelectingShuffle) HideShuffleSelection();
-			return;
-		}
-		if (Data.ActiveLinkedLaunch != null)
-		{
-			box.PlayClickedAnim(false);
-			if (_linkedCable != null) _linkedCable.ShowBlocked(LinkedCubeLaunchFailure.Busy);
-			return;
-		}
-		if (box.Info.State != BoxState.Free) return;
-		CubeInfo top = box.Info.PeekTopCube();
-		if (top != null && top.LinkedPairId != 0)
-		{
-			LinkedCubePair pair = Data.LinkedPair;
-			if (!IsGameplaySettled())
-			{
-				box.PlayClickedAnim(false);
-				if (_linkedCable != null) _linkedCable.ShowBlocked(LinkedCubeLaunchFailure.Busy);
-				return;
-			}
-			if (!Transfers.TryLaunchLinked(box, _sliceJumpDuration, _sliceJumpHeight, out LinkedCubeLaunchFailure failure))
-			{
-				box.PlayClickedAnim(false);
-				if (_linkedCable != null) _linkedCable.ShowBlocked(failure);
-				Box partner = GetBox(box.Info == pair.FirstBox ? pair.SecondBox : pair.FirstBox);
-				if (partner != null) partner.PlayClickedAnim(false);
-			}
-			if (_presentation != null && _uiCanvasInstance != null)
-				_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
-			return;
-		}
-		if (!box.CanPopupSlice())
-		{
-			box.PlayClickedAnim(false);
-			if (Data != null && !Data.IsTransferHaveSpace())
-			{
-				GameplayToast.Show("Road đã đầy!");
-			}
-			else
-			{
-				GameplayToast.Show("Khối chưa thể di chuyển!");
-			}
-			return;
-		}
-		Transfers.Launch(box, _sliceJumpDuration, _sliceJumpHeight);
+		BoxLaunchFlow.OnClickBox(box);
+	}
+
+	private void NotifyBoxClickedPresentation()
+	{
 		if (_presentation != null && _uiCanvasInstance != null)
 			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
 	}
-
 	public void HandleBoxFinished(Box box)
 	{
 		if (box == null || box.Info == null || Data == null) return;
