@@ -6,7 +6,8 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	[SerializeField] private Mesh _bridgeMesh;
 	[SerializeField] private Material _bridgeMaterial;
 	[SerializeField] private Vector3 _memberSide = new Vector3(.5f, 0f, .36f);
-	private Renderer _bridgeRenderer;
+	[SerializeField, Min(.01f)] private float _cableDiameter = .2f;
+	private Renderer _firstHalfRenderer, _secondHalfRenderer;
 	private MaterialPropertyBlock _properties;
 	private GameData _data;
 	private LinkedCubePair _pair;
@@ -17,9 +18,10 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private float _consumedAt = -1f;
 	private bool _cachedReady;
 	private float _nextReadyCheckTime;
-	private Color _currentTintColor = Color.clear;
+	private Color _firstTintColor, _secondTintColor;
 	private bool _hasTintColor;
 
+	/// <summary>Creates a taut, two-color cable for the linked cube pair.</summary>
 	public void Initialize(GameData data)
 	{
 		_data = data;
@@ -29,8 +31,13 @@ public sealed class LinkedCubeCable : MonoBehaviour
 			throw new InvalidOperationException("Assign the bridge mesh and material on LinkedCubeCable.prefab.");
 		_properties = new MaterialPropertyBlock();
 		_bridge = CreateRoot("Bridge");
-		_bridgeRenderer = CreateMesh("SoftLink", _bridge, _bridgeMesh, _bridgeMaterial,
-			new Vector3(0f, -.38f, -.7f), Quaternion.identity, Vector3.one);
+		// The cylinder is two units tall; each half covers .53 units along the bridge.
+		Quaternion halfRotation = Quaternion.Euler(0f, 0f, -90f);
+		Vector3 halfScale = new Vector3(1f, .265f, 1f);
+		_firstHalfRenderer = CreateMesh("FirstHalf", _bridge, _bridgeMesh, _bridgeMaterial,
+			new Vector3(-.265f, 0f, 0f), halfRotation, halfScale);
+		_secondHalfRenderer = CreateMesh("SecondHalf", _bridge, _bridgeMesh, _bridgeMaterial,
+			new Vector3(.265f, 0f, 0f), halfRotation, halfScale);
 		_firstSocket = CreateRoot("Anchor_A");
 		_secondSocket = CreateRoot("Anchor_B");
 	}
@@ -89,7 +96,7 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		float pulse = 1f;
 		if (Time.time < _blockedUntil) pulse += .06f * Mathf.Sin(Time.time * 30f);
 		else if (ready) pulse += .015f * Mathf.Sin(Time.time * 4f);
-		float thickness = .75f * fade * pulse;
+		float thickness = _cableDiameter * fade * pulse;
 		_bridge.localPosition = (_firstAnchor + _secondAnchor) * .5f;
 		_bridge.localRotation = rotation;
 		_bridge.localScale = new Vector3(span.magnitude / 1.06f, thickness, thickness);
@@ -129,15 +136,28 @@ public sealed class LinkedCubeCable : MonoBehaviour
 
 	private void UpdateTint(bool ready)
 	{
-		Color color = _bridgeRenderer.sharedMaterial.color;
+		Color first = GetMemberTint(_pair.FirstCube, ready);
+		Color second = GetMemberTint(_pair.SecondCube, ready);
+		if (_hasTintColor && _firstTintColor == first && _secondTintColor == second) return;
+		_firstTintColor = first;
+		_secondTintColor = second;
+		_hasTintColor = true;
+		ApplyTint(_firstHalfRenderer, first);
+		ApplyTint(_secondHalfRenderer, second);
+	}
+
+	private Color GetMemberTint(CubeInfo member, bool ready)
+	{
+		Color color = GameAssetsConfig.GetCubeColor(member.Type);
 		if (Time.time < _blockedUntil) color = Color.Lerp(color, new Color(1f, .28f, .2f), .45f);
 		else if (!ready && _pair.State == LinkedCubePairState.Pending) color *= .82f;
-		if (!_hasTintColor || _currentTintColor != color)
-		{
-			_currentTintColor = color;
-			_hasTintColor = true;
-			_properties.SetColor("_Color", color);
-			_bridgeRenderer.SetPropertyBlock(_properties);
-		}
+		return color;
+	}
+
+	private void ApplyTint(Renderer renderer, Color color)
+	{
+		_properties.SetColor("_BaseColor", color);
+		_properties.SetColor("_Color", color);
+		renderer.SetPropertyBlock(_properties);
 	}
 }
