@@ -2097,11 +2097,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 224515223321708415}
   m_LocalEulerAnglesHint: {x: 0, y: -0, z: -0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 309, y: -49}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -30, y: -5}
   m_SizeDelta: {x: 90, y: 90}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 1, y: 1}
 --- !u!222 &222836221583550068
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2223,6 +2223,7 @@ MonoBehaviour:
   ClickScale: 1
   ClickAlpha: 1
   DisableAlpha: 1
+  AnimateWholeButton: 0
 --- !u!1 &1262812263555654
 GameObject:
   m_ObjectHideFlags: 0
@@ -13741,6 +13742,7 @@ MonoBehaviour:
   ClickScale: 1
   ClickAlpha: 1
   DisableAlpha: 1
+  AnimateWholeButton: 0
 --- !u!1 &1795263834792518
 GameObject:
   m_ObjectHideFlags: 0
@@ -13987,6 +13989,7 @@ MonoBehaviour:
   ClickScale: 1
   ClickAlpha: 1
   DisableAlpha: 1
+  AnimateWholeButton: 0
 --- !u!1 &1805086534103939
 GameObject:
   m_ObjectHideFlags: 0
@@ -16549,6 +16552,7 @@ MonoBehaviour:
   ClickScale: 1
   ClickAlpha: 1
   DisableAlpha: 1
+  AnimateWholeButton: 0
 --- !u!1 &1821807608486376
 GameObject:
   m_ObjectHideFlags: 0
@@ -16800,6 +16804,7 @@ GameObject:
   - component: {fileID: 114110219633721976}
   - component: {fileID: 114430667975949547}
   - component: {fileID: 114764855358125370}
+  - component: {fileID: 114820000000000001}
   - component: {fileID: 111378673778436874}
   m_Layer: 5
   m_Name: UICanvas
@@ -16824,7 +16829,7 @@ RectTransform:
   - {fileID: 224675668060892757}
   - {fileID: 224777905221063181}
   - {fileID: 224874353372460655}
-  - {fileID: 800100000000000002}
+  - {fileID: 578464416664027886}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -0, z: -0}
   m_AnchorMin: {x: 0, y: 0}
@@ -16910,9 +16915,6 @@ MonoBehaviour:
   _pauseButton: {fileID: 114302252538826728}
   _undoButton: {fileID: 114266132443918145}
   _shuffleButton: {fileID: 114808009808379704}
-  _shuffleSelection: {fileID: 800100000000000003}
-  _shuffleSelectionClose: {fileID: 800100000000000004}
-  _shuffleTargets: {fileID: 800100000000000005}
   _pathButton: {fileID: 114072449631752964}
   _speedButton: {fileID: 114347931935114203}
   _levelLabel: {fileID: 114965798630799042}
@@ -16926,6 +16928,22 @@ MonoBehaviour:
   _bottom: {fileID: 224874353372460655}
   _topFlag: {fileID: 224237992966446003}
   _bgGame: {fileID: 7050881461847759852}
+  _shuffleSelectionView: {fileID: 114820000000000001}
+--- !u!114 &114820000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1915427651029304}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b092c0ad22d846669385ac9ed5097abe, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _mask: {fileID: 801270977994821798}
+  _closeButton: {fileID: 760913771249741459}
+  _targets: {fileID: 760375666312208384}
 --- !u!111 &111378673778436874
 Animation:
   m_ObjectHideFlags: 0
@@ -17187,6 +17205,7 @@ MonoBehaviour:
   ClickScale: 1
   ClickAlpha: 0.3
   DisableAlpha: 1
+  AnimateWholeButton: 0
 --- !u!114 &114101824297899428
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17877,7 +17896,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
-
 --- !u!1001 &800100000000000001
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17895,28 +17913,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
---- !u!224 &800100000000000002 stripped
+--- !u!224 &578464416664027886 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 224503676670886639, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
   m_PrefabInstance: {fileID: 800100000000000001}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &800100000000000003 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1170981779165351, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
-  m_PrefabInstance: {fileID: 800100000000000001}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &800100000000000004 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 114219187152449170, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
-  m_PrefabInstance: {fileID: 800100000000000001}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
---- !u!114 &800100000000000005 stripped
+--- !u!114 &760375666312208384 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 114810000000000001, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
   m_PrefabInstance: {fileID: 800100000000000001}
@@ -17925,5 +17927,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &760913771249741459 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 114219187152449170, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
+  m_PrefabInstance: {fileID: 800100000000000001}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &801270977994821798 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1170981779165351, guid: e8c14e18de4ed3343ae256df424619cf, type: 3}
+  m_PrefabInstance: {fileID: 800100000000000001}
+  m_PrefabAsset: {fileID: 0}

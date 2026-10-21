@@ -48,9 +48,11 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 	}
 	public float SliceJumpTimeScale => GameplayFeedbackRules.GetTransferTimeScale(IsSpeedUpActive);
+	public Sprite SpeedButtonSprite => _gameLoader == null ? null : (IsSpeedUpActive ? _gameLoader.SpeedSprite : _gameLoader.UnSpeedSprite);
 	public bool CanUseUndoTool => Boosters.CanUseUndo;
 	public bool CanUseShuffleTool => Boosters.CanUseShuffle;
 	public bool IsSelectingShuffle => _boosterFlow != null && _boosterFlow.IsSelectingShuffle;
+	public bool CanSelectShuffleBox(Box box) => Boosters.CanSelectShuffleBox(box);
 	public bool CanUsePathTool => Boosters.CanUsePath;
 	public bool CanRequestUndoTool => !IsBoosterShopOpen && Boosters.CanRequestUndo;
 	public bool CanRequestShuffleTool => !IsBoosterShopOpen && Boosters.CanRequestShuffle;
@@ -378,6 +380,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private void LateUpdate()
 	{
 		UpdateCamera();
+		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
+		if (canvas != null) canvas.RefreshShuffleSelection();
 	}
 
 	public void UpdateCamera()
@@ -558,10 +562,11 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		if (!Boosters.TryUseShuffle()) return false;
 		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
-		if (canvas != null && canvas.ShowShuffleSelection(_gameLoader == null ? null : _gameLoader.ToolShuffleMask))
+		ResolveGameplayCameras();
+		if (canvas != null && canvas.ShowShuffleSelection(_mainCamera, Scene.Boxes))
 			return true;
 		CancelShuffleSelection();
-		Debug.LogError("Shuffle selection requires a UICanvas and GameAssetsConfig.ToolShuffleMaskPrefab.", this);
+		Debug.LogError("Shuffle selection requires a gameplay camera and the UICanvas ShuffleSelectionView reference.", this);
 		return false;
 	}
 
