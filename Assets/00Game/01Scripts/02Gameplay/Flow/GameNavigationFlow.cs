@@ -49,7 +49,8 @@ public sealed class GameNavigationFlow : IDisposable
     public bool IsCurrentLevelAbandoned => _session.Data != null && _session.Data == _abandonedData;
     public bool HasNextLevel => _levels.HasNext(_session.CurrentLevelNumber);
     public bool CanReplayLevel => !_disposed && _session.Data != null && !IsTransitioning &&
-        _session.EndState != GameEndState.Won && !_effects.IsLevelCompleted(_session.CurrentLevelNumber);
+        _session.EndState != GameEndState.Won && !_effects.IsLevelCompleted(_session.CurrentLevelNumber) &&
+        (Managers.Heart == null || Managers.Heart.IsHeartEnough());
     public bool CanLoadNextLevel => !_disposed && _session.EndState == GameEndState.Won &&
         !IsTransitioning && HasNextLevel;
     public bool ShouldReturnHomeAfterWin => !CanLoadNextLevel || _effects.ReturnHomeAfterWin;

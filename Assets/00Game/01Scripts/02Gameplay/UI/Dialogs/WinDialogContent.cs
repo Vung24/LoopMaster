@@ -90,9 +90,26 @@ public class WinDialogContent : DialogContent
 		return level >= 10;
 	}
 
+	private int ResolveCoinCount()
+	{
+		GameData data = _offeredData ?? (_controller != null ? _controller.Data : GameData.Current);
+		if (data != null)
+		{
+			int count = ConfigManager.GetFinishLevelCoinCount(data.GetHardLevel());
+			if (count > 0) return count;
+		}
+		if (_controller != null && _controller.Data != null)
+		{
+			int winCoins = _controller.GetWinRewardCoins(_controller.Data);
+			if (winCoins > 0) return winCoins;
+		}
+		int fallback = ConfigManager.GetFinishLevelCoinCount(PendingLevelChangeStore.PreviousHardLevel);
+		return fallback > 0 ? fallback : 20;
+	}
+
 	private void InitButtons()
 	{
-		_coinCount = 20;
+		_coinCount = ResolveCoinCount();
 
 		_showRvButton = ShouldShowRvBtn();
 
@@ -463,7 +480,13 @@ public class WinDialogContent : DialogContent
 		GameData data = _offeredData ?? (_controller != null ? _controller.Data : null);
 		if (_controller != null && data != null)
 		{
-			_controller.TryClaimWinReward(data, isDouble, out _);
+			if (!_controller.TryClaimWinReward(data, isDouble, out _))
+			{
+				if (!_controller.HasClaimedWinReward(data))
+				{
+					InventoryManager.Ensure()?.Add(InventoryKeys.COIN, coinsToGive, way);
+				}
+			}
 		}
 		else
 		{
@@ -735,12 +758,14 @@ public class WinDialogContent : DialogContent
 		if (_controller != null) _controller.LevelStarted -= OnLevelStarted;
 		_controller = controller;
 		if (_controller != null) _controller.LevelStarted += OnLevelStarted;
+		if (_offeredData == null && _controller != null) _offeredData = _controller.Data;
 		InitButtons();
 	}
 
 	public void SetLevel(int level, bool canLoadNext)
 	{
 		_canAdvance = canLoadNext;
+		if (_offeredData == null && _controller != null) _offeredData = _controller.Data;
 		InitButtons();
 	}
 

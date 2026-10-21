@@ -145,6 +145,8 @@ public class BaseHeartManager : BaseManager
 	public bool AddHeart()
 	{
 		HeartCount = Mathf.Min(MAX_HEART, HeartCount + 1);
+		if (HeartCount >= MAX_HEART)
+			LastHeartRefillTime = (int)TimeUtils.GetUnixTimestamp();
 		OnHeartChanged?.Invoke();
 		return true;
 	}

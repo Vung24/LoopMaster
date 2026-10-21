@@ -168,12 +168,42 @@ public sealed class PauseDialogContent : Snui.BasePopup
 				if (!_isConfirming || !isActiveAndEnabled || _controller == null || _controller.Data != data) return;
 				CancelConfirmation();
 				if (result != PauseConfirmDialogContent.RESULT_CONFIRM) return;
-				CompleteResume();
-				if (type == PauseConfirmType.Replay) _controller.ReplayLevel();
-				else _controller.ReturnHome();
+				if (type == PauseConfirmType.Replay)
+				{
+					HandleReplayAfterConfirmation(data).Forget();
+				}
+				else
+				{
+					CompleteResume();
+					_controller.ReturnHome();
+				}
 			};
 		}
 		catch { if (this != null && version == _modalVersion) CancelConfirmation(); throw; }
+	}
+
+	private async UniTaskVoid HandleReplayAfterConfirmation(GameData data)
+	{
+		if (Managers.Heart != null)
+		{
+			Managers.Heart.UpdateHeart();
+			if (!Managers.Heart.IsHeartEnough())
+			{
+				var dialog = await MoreHeartDialogContent.Show(transform.parent, JumpHeartDialogSourceScene.TryAgainBoosterIn);
+				if (dialog != null)
+				{
+					await UniTask.WaitUntil(() => dialog == null || dialog.Result != Snui.DialogContent.RESULT_UNKNOWN || !dialog.isActiveAndEnabled,
+						cancellationToken: this.GetCancellationTokenOnDestroy());
+				}
+			}
+		}
+		if (this == null || !isActiveAndEnabled || _controller == null || _controller.Data != data ||
+			(Managers.Heart != null && !Managers.Heart.IsHeartEnough()))
+		{
+			return;
+		}
+		CompleteResume();
+		_controller.ReplayLevel();
 	}
 
 	private void CancelConfirmation()
