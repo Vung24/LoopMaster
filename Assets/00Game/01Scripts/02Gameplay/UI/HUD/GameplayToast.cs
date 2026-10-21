@@ -61,6 +61,10 @@ public class GameplayToast : MonoBehaviour
     {
         CacheComponents();
         if (_label == null || _canvasGroup == null) return;
+        if (_label.text == message && _animation != null && _animation.IsActive() && _animation.IsPlaying() && _animation.Elapsed() < 0.25f)
+        {
+            return;
+        }
 
         _animation?.Kill();
         gameObject.SetActive(true);

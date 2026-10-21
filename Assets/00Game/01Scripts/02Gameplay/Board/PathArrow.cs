@@ -23,25 +23,36 @@ public class PathArrow : MonoBehaviour
 	{
 		if (GameData.Current == null || GameData.Current.PathPoints.Count == 0) return;
 
-		if (_isMoving) CompleteMove();
-
 		int next = (_pathIndex + 1) % GameData.Current.PathPoints.Count;
 		_pathIndex = next;
 		if (!GameData.Current.IsPathCircle &&
 			GameData.Current.IsPathSectionIndex(_pathIndex))
 		{
+			_isMoving = false;
+			_moveElapsed = 0f;
 			transform.position = GetPosByPathIndex(_pathIndex);
 			return;
 		}
 
-		_moveStartPosition = transform.position;
+		Vector3 startPos = _isMoving ? _moveTargetPosition : transform.position;
+		Quaternion startRot = _isMoving ? _moveTargetRotation : transform.rotation;
+		_moveStartPosition = startPos;
 		_moveTargetPosition = GetPosByPathIndex(next);
-		_moveStartRotation = transform.rotation;
+		_moveStartRotation = startRot;
 		Vector3 direction = _moveTargetPosition - _moveStartPosition;
 		_moveTargetRotation = direction.magnitude <= MinDirectionMagnitude
 			? _moveStartRotation
 			: Quaternion.LookRotation(direction, Vector3.up);
-		_moveElapsed = 0f;
+
+		if (_isMoving && _moveDuration > 0f)
+		{
+			_moveElapsed = Mathf.Max(0f, _moveElapsed - _moveDuration);
+		}
+		else
+		{
+			_moveElapsed = 0f;
+		}
+
 		_moveDuration = Mathf.Max(0.01f, interval);
 		_isMoving = true;
 	}
@@ -49,23 +60,30 @@ public class PathArrow : MonoBehaviour
 	private void Update()
 	{
 		if (!_isMoving) return;
-		_moveElapsed += Time.deltaTime;
+		float delta = Time.deltaTime;
+		if (delta <= 0f) return;
+		_moveElapsed += delta;
 		float progress = Mathf.Clamp01(_moveElapsed / _moveDuration);
 		transform.SetPositionAndRotation(
 			Vector3.Lerp(_moveStartPosition, _moveTargetPosition, progress),
 			Quaternion.Slerp(_moveStartRotation, _moveTargetRotation, progress));
-		if (progress >= 1f) CompleteMove();
+		if (progress >= 1f && _moveElapsed >= _moveDuration + 0.05f)
+		{
+			CompleteMove();
+		}
 	}
 
 	private void CompleteMove()
 	{
 		transform.SetPositionAndRotation(_moveTargetPosition, _moveTargetRotation);
 		_isMoving = false;
+		_moveElapsed = 0f;
 	}
 
 	private void OnDisable()
 	{
 		_isMoving = false;
+		_moveElapsed = 0f;
 	}
 
 	private Vector3 GetPosByPathIndex(int index)

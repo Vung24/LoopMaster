@@ -26,6 +26,19 @@ public class Slice : MonoBehaviour
 	private Vector3 _roadMoveTargetPosition;
 	private Quaternion _roadMoveStartRotation;
 	private Quaternion _roadMoveTargetRotation;
+
+	private struct RoadSegment
+	{
+		public Vector3 TargetPosition;
+		public Quaternion TargetRotation;
+		public float Duration;
+	}
+
+	private const int MaxPendingSegments = 4;
+	private readonly RoadSegment[] _pendingSegments = new RoadSegment[MaxPendingSegments];
+	private int _segmentHead;
+	private int _segmentCount;
+
 	[SerializeField] private Texture _longBoxSignTex;
 
 	public SliceInfo Info => _info;
@@ -135,17 +148,51 @@ public class Slice : MonoBehaviour
 			return;
 		}
 
-		Vector3 moveDirection = target - transform.position;
+		Vector3 anchor = _isRoadMoving
+			? (_segmentCount > 0 ? _pendingSegments[(_segmentHead + _segmentCount - 1) % MaxPendingSegments].TargetPosition : _roadMoveTargetPosition)
+			: transform.position;
+		Vector3 moveDirection = target - anchor;
 		Quaternion rotation = moveDirection.sqrMagnitude > 0.0001f
 			? Quaternion.LookRotation(moveDirection, Vector3.up) : transform.rotation;
-		StopMotion();
-		_roadMoveStartPosition = transform.position;
-		_roadMoveTargetPosition = target;
-		_roadMoveStartRotation = transform.rotation;
-		_roadMoveTargetRotation = rotation;
-		_roadMoveElapsed = 0f;
-		_roadMoveDuration = duration;
-		_isRoadMoving = true;
+
+		if (!_isRoadMoving)
+		{
+			_positionTween?.Kill();
+			_rotationTween?.Kill();
+			_scaleTween?.Kill();
+			_positionTween = null;
+			_rotationTween = null;
+			_scaleTween = null;
+			_isJumping = false;
+
+			_roadMoveStartPosition = transform.position;
+			_roadMoveTargetPosition = target;
+			_roadMoveStartRotation = transform.rotation;
+			_roadMoveTargetRotation = rotation;
+			_roadMoveElapsed = 0f;
+			_roadMoveDuration = duration;
+			_segmentHead = 0;
+			_segmentCount = 0;
+			_isRoadMoving = true;
+		}
+		else if (_segmentCount < MaxPendingSegments)
+		{
+			int tail = (_segmentHead + _segmentCount) % MaxPendingSegments;
+			_pendingSegments[tail] = new RoadSegment
+			{
+				TargetPosition = target,
+				TargetRotation = rotation,
+				Duration = duration
+			};
+			_segmentCount++;
+		}
+		else
+		{
+			int last = (_segmentHead + _segmentCount - 1) % MaxPendingSegments;
+			_pendingSegments[last].TargetPosition = target;
+			_pendingSegments[last].TargetRotation = rotation;
+			_pendingSegments[last].Duration += duration;
+		}
 	}
 
 	private void Update()
@@ -153,14 +200,46 @@ public class Slice : MonoBehaviour
 		if (!_isRoadMoving) return;
 		float delta = (DOTween.useSmoothDeltaTime ? Time.smoothDeltaTime : Time.deltaTime) * DOTween.timeScale;
 		if (delta <= 0f) return;
-		_roadMoveElapsed += delta;
-		float progress = Mathf.Clamp01(_roadMoveElapsed / _roadMoveDuration);
-		// Road position was Linear; rotation was OutQuad. Jump tweens stay separate.
-		float rotationProgress = progress * (2f - progress);
-		transform.SetPositionAndRotation(
-			Vector3.Lerp(_roadMoveStartPosition, _roadMoveTargetPosition, progress),
-			Quaternion.Slerp(_roadMoveStartRotation, _roadMoveTargetRotation, rotationProgress));
-		if (progress >= 1f) _isRoadMoving = false;
+
+		while (delta > 0f && _isRoadMoving)
+		{
+			float remaining = _roadMoveDuration - _roadMoveElapsed;
+			if (delta < remaining)
+			{
+				_roadMoveElapsed += delta;
+				float progress = Mathf.Clamp01(_roadMoveElapsed / _roadMoveDuration);
+				float rotationProgress = progress * (2f - progress);
+				transform.SetPositionAndRotation(
+					Vector3.Lerp(_roadMoveStartPosition, _roadMoveTargetPosition, progress),
+					Quaternion.Slerp(_roadMoveStartRotation, _roadMoveTargetRotation, rotationProgress));
+				delta = 0f;
+			}
+			else
+			{
+				transform.SetPositionAndRotation(_roadMoveTargetPosition, _roadMoveTargetRotation);
+				delta -= remaining;
+
+				if (_segmentCount > 0)
+				{
+					RoadSegment next = _pendingSegments[_segmentHead];
+					_segmentHead = (_segmentHead + 1) % MaxPendingSegments;
+					_segmentCount--;
+
+					_roadMoveStartPosition = _roadMoveTargetPosition;
+					_roadMoveTargetPosition = next.TargetPosition;
+					_roadMoveStartRotation = _roadMoveTargetRotation;
+					_roadMoveTargetRotation = next.TargetRotation;
+					_roadMoveDuration = next.Duration;
+					_roadMoveElapsed = 0f;
+				}
+				else
+				{
+					_isRoadMoving = false;
+					_roadMoveElapsed = 0f;
+					delta = 0f;
+				}
+			}
+		}
 	}
 
 	private void StartAnimation(Vector3 targetPosition, Quaternion targetRotation,
@@ -202,9 +281,18 @@ public class Slice : MonoBehaviour
 		if (_scaleTween != null) _scaleTween.timeScale = timeScale;
 	}
 
-	private void StopMotion()
+	private void ClearRoadMotion()
 	{
 		_isRoadMoving = false;
+		_roadMoveElapsed = 0f;
+		_roadMoveDuration = 0f;
+		_segmentHead = 0;
+		_segmentCount = 0;
+	}
+
+	private void StopMotion()
+	{
+		ClearRoadMotion();
 		_positionTween?.Kill();
 		_rotationTween?.Kill();
 		_scaleTween?.Kill();
