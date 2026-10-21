@@ -26,7 +26,7 @@ public class Capacity : MonoBehaviour
 		if (extended && _capacityText != null && isActiveAndEnabled)
 		{
 			ResetExtensionAnimation();
-			_extensionTween = AnimateExtension(_capacityText)
+			_extensionTween = AnimateExtension(_capacityText, transform)
 				.OnComplete(() => _extensionTween = null);
 		}
 	}
@@ -38,21 +38,44 @@ public class Capacity : MonoBehaviour
 		_extensionTween = null;
 	}
 
-	internal static Tween AnimateExtension(TMP_Text label)
+	internal static Tween AnimateExtension(TMP_Text label, Transform container = null)
 	{
-		Vector3 scale = label.transform.localScale;
+		if (label == null) return null;
+		Vector3 textScale = label.transform.localScale;
 		Color color = label.color;
 		label.color = new Color(0.45f, 1f, 0.55f, color.a);
-		return DOTween.Sequence()
-			.Append(label.transform.DOScale(scale * 1.3f, 0.18f).SetEase(Ease.OutBack))
-			.Append(label.transform.DOScale(scale, 0.3f).SetEase(Ease.OutQuad))
-			.Join(label.DOColor(color, 0.3f))
-			.OnKill(() =>
-			{
-				if (label == null) return;
-				label.transform.localScale = scale;
-				label.color = color;
-			});
+
+		Sequence seq = DOTween.Sequence();
+		seq.Append(label.transform.DOScale(textScale * 1.5f, 0.2f).SetEase(Ease.OutQuad))
+			.Append(label.transform.DOScale(textScale * 0.96f, 0.13f).SetEase(Ease.OutQuad))
+			.Append(label.transform.DOScale(textScale * 1.02f, 0.13f).SetEase(Ease.OutQuad))
+			.Append(label.transform.DOScale(textScale, 0.13f).SetEase(Ease.OutQuad))
+			.Join(label.DOColor(color, 0.3f));
+
+		if (container != null)
+		{
+			Vector3 containerScale = container.localScale;
+			Sequence containerSeq = DOTween.Sequence()
+				.Append(container.DOScale(containerScale * 0.88f, 0.10f))
+				.Append(container.DOScale(containerScale * 1.08f, 0.27f))
+				.Append(container.DOScale(containerScale * 0.96f, 0.13f))
+				.Append(container.DOScale(containerScale * 1.02f, 0.13f))
+				.Append(container.DOScale(containerScale, 0.10f))
+				.OnKill(() =>
+				{
+					if (container != null) container.localScale = containerScale;
+				});
+			seq.Join(containerSeq);
+		}
+
+		seq.OnKill(() =>
+		{
+			if (label == null) return;
+			label.transform.localScale = textScale;
+			label.color = color;
+		});
+
+		return seq;
 	}
 
 	private void OnDisable() => ResetExtensionAnimation();

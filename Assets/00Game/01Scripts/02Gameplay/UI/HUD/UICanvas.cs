@@ -366,45 +366,73 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		RectTransform source = _pathButton == null ? null : _pathButton.transform as RectTransform;
 		GameLoader loader = _controller == null ? null : _controller.GetComponent<GameLoader>();
 		GameObject prefab = loader == null ? null : loader.FlyPath;
-		Image artwork = prefab == null ? null : HierarchyReferenceCache.ChildComponent<Image>(prefab.transform, "Icon");
-		if (source == null || _capacityLabel == null || artwork == null || artwork.sprite == null)
+		if (source == null || _capacityLabel == null || prefab == null)
 		{
-			Debug.LogWarning("Path flight needs the Path button, capacity label and FlyAddPath/Icon sprite.", this);
+			Debug.LogWarning("Path flight needs the Path button, capacity label and FlyAddPath prefab.", this);
 			return;
 		}
 
-		// Copy only the item artwork: no particle objects or behaviours from the effect prefab.
-		_pathFlightItem = new GameObject("FlyAddPath", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+		_pathFlightItem = Instantiate(prefab, transform);
+		_pathFlightItem.name = "FlyAddPath";
 		_pathFlightItem.layer = gameObject.layer;
 		RectTransform item = (RectTransform)_pathFlightItem.transform;
 		item.SetParent(transform, false);
 		item.SetAsLastSibling();
-		Image icon = item.GetComponent<Image>();
-		icon.sprite = artwork.sprite;
-		icon.preserveAspect = true;
-		icon.raycastTarget = false;
-		item.sizeDelta = artwork.rectTransform.rect.size;
-		Vector3 start = transform.InverseTransformPoint(source.TransformPoint(source.rect.center));
-		Vector3 center = ((RectTransform)transform).rect.center;
-		float sourceWidth = transform.InverseTransformVector(source.TransformVector(Vector3.right * source.rect.width)).magnitude;
-		Vector3 scale = Vector3.one * (sourceWidth / Mathf.Max(1f, item.rect.width));
-		item.localPosition = start;
-		item.localScale = scale;
-		Vector3 target = transform.InverseTransformPoint(_capacityLabel.rectTransform.TransformPoint(
-			_capacityLabel.rectTransform.rect.center));
-		Vector3 control = (center + target) * 0.5f + new Vector3(-60f, 60f, 0f);
-		float flightProgress = 0f;
-		_pathFlightTween = DOTween.Sequence().SetLink(gameObject)
-			.Append(item.DOLocalMove(center, 0.35f).SetEase(Ease.OutCubic))
-			.Append(item.DOScale(scale * 2.2f, 0.4f).SetEase(Ease.OutQuad))
-			.AppendInterval(0.12f)
-			.Append(DOTween.To(() => flightProgress, progress =>
-			{
-				flightProgress = progress;
-				item.localPosition = EvaluateQuadraticBezier(center, control, target, progress);
-			}, 1f, 0.5f).SetEase(Ease.InQuad))
-			.Join(item.DOScale(scale * 0.25f, 0.5f).SetEase(Ease.InQuad))
-			.OnComplete(OnPathFlightCompleted);
+
+		Transform iconTransform = HierarchyReferenceCache.Child(item, "Icon");
+		Transform starTrail = HierarchyReferenceCache.Child(item, "StarTrail");
+		if (starTrail != null) starTrail.gameObject.SetActive(false);
+
+		Image iconImage = iconTransform == null ? null : iconTransform.GetComponent<Image>();
+		if (iconImage != null) iconImage.raycastTarget = false;
+
+		Vector3 start = source.TransformPoint(source.rect.center);
+		Transform centerNode = HierarchyReferenceCache.Descendant(transform, "Center");
+		Vector3 center = centerNode != null
+			? centerNode.position
+			: transform.TransformPoint(((RectTransform)transform).rect.center);
+
+		float dip = _canvas != null && _canvas.renderMode == RenderMode.ScreenSpaceOverlay
+			? 50f * _canvas.scaleFactor
+			: 0.5f;
+		Vector3 dipPos = new Vector3(center.x, center.y - dip, center.z);
+		Vector3 target = _capacityLabel.transform.position;
+
+		item.position = start;
+		item.localScale = Vector3.one * 0.8f;
+		if (iconTransform != null) iconTransform.localScale = Vector3.one * 0.2f;
+
+		Sequence seq = DOTween.Sequence().SetLink(gameObject);
+
+		// Phase 1: Fly to center and expand concurrently (0.30s)
+		seq.Append(item.DOMove(center, 0.30f));
+		if (iconTransform != null)
+		{
+			seq.Join(iconTransform.DOScale(Vector3.one * 1.1f, 0.30f).SetEase(Ease.OutQuad));
+		}
+
+		// Phase 2: Anticipation dip and settle at center (0.33s)
+		seq.Append(item.DOMove(dipPos, 0.33f).SetEase(Ease.OutSine));
+		if (iconTransform != null)
+		{
+			seq.Join(iconTransform.DOScale(Vector3.one * 1.0f, 0.33f));
+		}
+
+		// Activate StarTrail particle
+		seq.AppendCallback(() =>
+		{
+			if (starTrail != null) starTrail.gameObject.SetActive(true);
+		});
+
+		// Phase 3: Fast swoop into Capacity destination and shrink (0.33s)
+		seq.Append(item.DOMove(target, 0.33f).SetEase(Ease.InQuad));
+		if (iconTransform != null)
+		{
+			seq.Join(iconTransform.DOScale(Vector3.one * 0.3f, 0.33f));
+		}
+
+		seq.OnComplete(OnPathFlightCompleted);
+		_pathFlightTween = seq;
 	}
 
 	private void OnPathFlightCompleted()
@@ -415,19 +443,23 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			Destroy(_pathFlightItem);
 			_pathFlightItem = null;
 		}
-		_capacityExtensionTween = Capacity.AnimateExtension(_capacityLabel)
+
+		GameLoader loader = _controller == null ? null : _controller.GetComponent<GameLoader>();
+		if (loader != null && loader.ToolPathBoxEffect != null)
+		{
+			Transform effectParent = CapacityNode != null ? CapacityNode : transform;
+			GameObject effect = Instantiate(loader.ToolPathBoxEffect, effectParent);
+			effect.SetActive(true);
+			Destroy(effect, 1.5f);
+		}
+
+		_capacityExtensionTween = Capacity.AnimateExtension(_capacityLabel, CapacityNode)
 			.OnComplete(OnCapacityExtensionCompleted);
 	}
 
 	private void OnCapacityExtensionCompleted()
 	{
 		_capacityExtensionTween = null;
-	}
-
-	private static Vector3 EvaluateQuadraticBezier(Vector3 p0, Vector3 p1, Vector3 p2, float t)
-	{
-		float u = 1f - t;
-		return (u * u * p0) + (2f * u * t * p1) + (t * t * p2);
 	}
 
 	private void CancelPathPresentation()
