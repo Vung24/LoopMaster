@@ -110,6 +110,7 @@ public class GameLoader : MonoBehaviour
 		_config = GameAssetsConfig.Instance;
 		BoxFinishEffect = _config == null ? null : _config.BoxFinishEffectPrefab;
 		BoxNormalEffect = _config == null ? null : _config.BoxNormalEffectPrefab;
+		ToolShuffleMask = _config == null ? null : _config.ToolShuffleMaskPrefab;
 		LoadAudio(gameData);
 		LoadCustomerAssets(gameData);
 	}

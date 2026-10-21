@@ -25,6 +25,7 @@ public class GameAssetsConfig : ScriptableObject
 	public Material[] CubeMats;
 	public GameObject BoxFinishEffectPrefab;
 	public GameObject BoxNormalEffectPrefab;
+	public GameObject ToolShuffleMaskPrefab;
 	public bool EnableBoxComboEffects = true;
 	public AudioClip SlicePopIn;
 	public AudioClip SlicePopOut;
@@ -44,6 +45,9 @@ public class GameAssetsConfig : ScriptableObject
 	public AudioClip DecelerateAudio;
 	public AudioClip AccelerateShortAudio;
 	public AudioClip ButtonClickAudio;
+	public AudioClip HomeBgm;
+	public AudioClip GameBgm;
+	public AudioClip[] CommonAudioClips;
 	public Sprite SpeedImage;
 	public Sprite UnSpeedImage;
 	public Material[] LongBoxCubeMats;

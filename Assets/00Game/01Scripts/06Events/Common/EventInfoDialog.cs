@@ -46,6 +46,7 @@ namespace Snui
 		{
 			Transform[] bones = new Transform[] { tf_bone1, tf_bone2, tf_bone3, tf_bone4, tf_bone5, tf_bone6, tf_bone7, tf_bone8, tf_bone9 };
 			var seq = DOTween.Sequence();
+			seq.InsertCallback(0f, PlayWordsSound);
 			float delay = 0.05f;
 			for (int i = 0; i < bones.Length; i++)
 			{
@@ -53,14 +54,26 @@ namespace Snui
 				{
 					bones[i].localScale = Vector3.zero;
 					seq.Insert(i * delay, bones[i].DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack));
+					if (i % 3 == 1) seq.InsertCallback(i * delay, PlayContentSound);
 				}
 			}
 			if (BtnText != null)
 			{
 				BtnText.localScale = Vector3.zero;
 				seq.Insert(bones.Length * delay, BtnText.DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack));
+				seq.InsertCallback(bones.Length * delay, PlayWordsSound);
 			}
-			seq.SetLink(gameObject);
+			seq.SetLink(gameObject, LinkBehaviour.KillOnDisable);
+		}
+
+		private void PlayContentSound()
+		{
+			if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(ContentEffect, gameObject);
+		}
+
+		private void PlayWordsSound()
+		{
+			if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(WordsEffect, gameObject);
 		}
 
 		protected virtual void OnClickClose()

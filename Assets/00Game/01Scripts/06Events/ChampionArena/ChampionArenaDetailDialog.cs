@@ -122,9 +122,21 @@ namespace Snui.ChampionArena
 		{
 			base.Start();
 			Managers.ChampionArena?.CheckEventState();
+			int previousScore = Managers.ChampionArena == null ? 0 : Managers.ChampionArena.LastScore;
 			Managers.ChampionArena?.TryClaimStageRewards();
 			RefreshData();
 			UpdateUI();
+			PlayProgressSound(previousScore);
+		}
+
+		private void PlayProgressSound(int previousScore)
+		{
+			var manager = Managers.ChampionArena;
+			if (manager == null || _score <= previousScore || AudioManager.Current == null) return;
+			AudioClip clip = _expSingleClip;
+			if (manager.GetCompletedStageCount(_score) > manager.GetCompletedStageCount(previousScore))
+				clip = _expMaxClip;
+			AudioManager.Current.PlayOneShot(clip, gameObject);
 		}
 
 		public void RefreshData()

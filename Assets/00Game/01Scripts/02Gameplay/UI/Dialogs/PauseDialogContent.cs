@@ -303,6 +303,7 @@ public static class GameAudioSettings
 	private const string MusicKey = GamePrefKeys.Music;
 	private const string EffectsKey = GamePrefKeys.Effects;
 	private static readonly Dictionary<AudioSource, bool> OriginalMusicMute = new Dictionary<AudioSource, bool>();
+	private static readonly Dictionary<AudioSource, bool> OriginalEffectsMute = new Dictionary<AudioSource, bool>();
 
 	public static bool MusicEnabled { get; private set; } = GamePrefs.GetInt(MusicKey, 1) != 0;
 	public static bool EffectsEnabled { get; private set; } = GamePrefs.GetInt(EffectsKey, 1) != 0;
@@ -312,6 +313,7 @@ public static class GameAudioSettings
 		MusicEnabled = enabled;
 		GamePrefs.SetInt(MusicKey, enabled ? 1 : 0);
 		ApplyMusicPreference();
+		if (BgmSource.Current != null) BgmSource.Current.RefreshMusicPreference();
 		GamePrefs.Save();
 	}
 
@@ -319,13 +321,24 @@ public static class GameAudioSettings
 	{
 		EffectsEnabled = enabled;
 		GamePrefs.SetInt(EffectsKey, enabled ? 1 : 0);
+		ApplyEffectsPreference();
 		GamePrefs.Save();
 	}
 
 	public static void ApplyMusicPreference()
 	{
+		ApplyPreference(OriginalMusicMute, MusicEnabled);
+	}
+
+	public static void ApplyEffectsPreference()
+	{
+		ApplyPreference(OriginalEffectsMute, EffectsEnabled);
+	}
+
+	private static void ApplyPreference(Dictionary<AudioSource, bool> sources, bool enabled)
+	{
 		List<AudioSource> destroyedSources = null;
-		foreach (KeyValuePair<AudioSource, bool> entry in OriginalMusicMute)
+		foreach (KeyValuePair<AudioSource, bool> entry in sources)
 		{
 			AudioSource source = entry.Key;
 			if (source == null)
@@ -334,10 +347,10 @@ public static class GameAudioSettings
 				destroyedSources.Add(source);
 				continue;
 			}
-			source.mute = entry.Value || !MusicEnabled;
+			source.mute = entry.Value || !enabled;
 		}
 		if (destroyedSources == null) return;
-		for (int i = 0; i < destroyedSources.Count; i++) OriginalMusicMute.Remove(destroyedSources[i]);
+		for (int i = 0; i < destroyedSources.Count; i++) sources.Remove(destroyedSources[i]);
 	}
 
 	public static void RegisterMusicSource(AudioSource source)
@@ -349,6 +362,39 @@ public static class GameAudioSettings
 
 	public static void UnregisterMusicSource(AudioSource source)
 	{
-		if (source != null) OriginalMusicMute.Remove(source);
+		if (!ReferenceEquals(source, null)) OriginalMusicMute.Remove(source);
+	}
+
+	public static void RegisterEffectsSource(AudioSource source)
+	{
+		if (source == null || OriginalEffectsMute.ContainsKey(source)) return;
+		OriginalEffectsMute[source] = source.mute;
+		source.mute = source.mute || !EffectsEnabled;
+	}
+
+	public static void UnregisterEffectsSource(AudioSource source)
+	{
+		if (!ReferenceEquals(source, null)) OriginalEffectsMute.Remove(source);
+	}
+
+	public static void PauseEffects()
+	{
+		foreach (AudioSource source in OriginalEffectsMute.Keys)
+			if (source != null) source.Pause();
+	}
+
+	public static void UnPauseEffects()
+	{
+		foreach (AudioSource source in OriginalEffectsMute.Keys)
+			if (source != null) source.UnPause();
+	}
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ResetAudioSettings()
+	{
+		MusicEnabled = GamePrefs.GetInt(MusicKey, 1) != 0;
+		EffectsEnabled = GamePrefs.GetInt(EffectsKey, 1) != 0;
+		ApplyMusicPreference();
+		ApplyEffectsPreference();
 	}
 }
