@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -111,7 +111,18 @@ public class ToolBase : MonoBehaviour
 		SetActive(_num, !locked && count > 0);
 		if (_count != null) _count.SetText(count.ToString());
 		SetActive(_priceNode, false);
-		if (_button != null) _button.interactable = !locked && (count == 0 || _canUse);
+		if (_button != null) _button.interactable = !locked;
+
+		if (_icon != null)
+		{
+			Graphic graphic = _icon.GetComponent<Graphic>();
+			if (graphic != null)
+			{
+				Color color = graphic.color;
+				color.a = (!locked && count > 0 && !_canUse) ? 0.6f : 1f;
+				graphic.color = color;
+			}
+		}
 	}
 
 	public void UpdateCanUseState(bool canUse)

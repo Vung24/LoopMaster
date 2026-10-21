@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
@@ -55,6 +55,11 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool CanSelectShuffleBox(Box box) => Boosters.CanSelectShuffleBox(box);
 	public bool CanUsePathTool => Boosters.CanUsePath;
 	public bool CanRequestUndoTool => !IsBoosterShopOpen && Boosters.CanRequestUndo;
+
+	public UndoUnusableReason GetUndoUnusableReason()
+	{
+		return Boosters.GetUndoUnusableReason();
+	}
 	public bool CanRequestShuffleTool => !IsBoosterShopOpen && Boosters.CanRequestShuffle;
 	public bool CanRequestPathTool => !IsBoosterShopOpen && Boosters.CanRequestPath;
 	public void GetToolRequestState(out bool undo, out bool shuffle, out bool path)
@@ -447,7 +452,19 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 				_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
 			return;
 		}
-		if (!box.CanPopupSlice()) return;
+		if (!box.CanPopupSlice())
+		{
+			box.PlayClickedAnim(false);
+			if (Data != null && !Data.IsTransferHaveSpace())
+			{
+				GameplayToast.Show("Road đã đầy!");
+			}
+			else
+			{
+				GameplayToast.Show("Khối chưa thể di chuyển!");
+			}
+			return;
+		}
 		Transfers.Launch(box, _sliceJumpDuration, _sliceJumpHeight);
 		if (_presentation != null && _uiCanvasInstance != null)
 			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);

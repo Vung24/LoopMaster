@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,6 +52,26 @@ public sealed class BoosterFlow
 	}
 	public bool CanUsePath => CanRequestPath &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_PATH);
+
+	public UndoUnusableReason GetUndoUnusableReason()
+	{
+		if (!Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO))
+		{
+			return UndoUnusableReason.Locked;
+		}
+
+		if (!CanUseBooster(false) || !_isGameplaySettled() || IsBusy)
+		{
+			return UndoUnusableReason.GameplayBusy;
+		}
+
+		if (_data == null || !_data.CanUndo())
+		{
+			return UndoUnusableReason.NoMovesToUndo;
+		}
+
+		return UndoUnusableReason.None;
+	}
 
 	public void GetRequestState(out bool undo, out bool shuffle, out bool path)
 	{
