@@ -45,8 +45,7 @@ public sealed class BoosterFlow
 	{
 		for (int i = 0; i < _boxes.Count; i++)
 		{
-			Box box = _boxes[i];
-			if (box != null && box.Info != null && box.Info.CanShuffle())
+			if (IsShuffleTarget(_boxes[i]))
 				return true;
 		}
 		return false;
@@ -128,12 +127,24 @@ public sealed class BoosterFlow
 
 	public bool TryUseShuffle(Box box)
 	{
-		if (!IsSelectingShuffle || box == null || box.Info == null ||
-			!CanUseBooster(true, true) || box.Info.State != BoxState.Free ||
-			!_boxes.Contains(box) || !box.Info.CanShuffle()) return false;
+		if (!CanSelectShuffleBox(box)) return false;
 		// Selection itself never spends inventory. Commit only the chosen box.
 		CancelShuffleSelection();
 		return Inventory.TryUseBooster(InventoryKeys.TOOL_SHUFFLE, () => ApplyToolShuffle(box));
+	}
+
+	public bool CanSelectShuffleBox(Box box)
+	{
+		return IsSelectingShuffle && CanUseBooster(true, true) &&
+			Inventory.CanUseBooster(InventoryKeys.TOOL_SHUFFLE) &&
+			_boxes.Contains(box) && IsShuffleTarget(box);
+	}
+
+	private bool IsShuffleTarget(Box box)
+	{
+		return box != null && box.isActiveAndEnabled && box.Info != null &&
+			box.Info.State == BoxState.Free && _data != null &&
+			_data.Boxes.Contains(box.Info) && box.Info.CanShuffle();
 	}
 
 	private bool ApplyToolPath()

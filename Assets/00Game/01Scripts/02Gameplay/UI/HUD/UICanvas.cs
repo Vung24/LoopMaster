@@ -57,10 +57,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _pathTool;
 	private Image _speedIcon;
 	private Sprite _lastSpeedSprite;
-	[SerializeField] private GameObject _shuffleSelection;
-	[SerializeField] private Button _shuffleSelectionClose;
-	[SerializeField] private RawImage _shuffleTargets;
-	private ShuffleSelectionHighlight _shuffleHighlight;
+	[SerializeField] private ShuffleSelectionView _shuffleSelectionView;
 
 	public SafeArea SafeArea => _safeArea;
 
@@ -95,8 +92,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 	private void OnDisable()
 	{
-		if (_controller != null) _controller.CancelShuffleSelection();
-		HideShuffleSelection();
+		if (_shuffleSelectionView != null) _shuffleSelectionView.CancelSelection();
 		CancelPathPresentation();
 		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
 		if (shadowBackground != null) shadowBackground.enabled = false;
@@ -139,6 +135,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		_capacityData = null;
 		_capacitySlices = null;
 		_controller = controller;
+		if (_shuffleSelectionView != null) _shuffleSelectionView.Bind(controller);
 		CacheLegacyPrefabReferences();
 		_undoTool = BindTool(_undoButton, InventoryKeys.TOOL_UNDO);
 		_shuffleTool = BindTool(_shuffleButton, InventoryKeys.TOOL_SHUFFLE);
@@ -496,60 +493,23 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 	public void RefreshShuffleSelection()
 	{
-		if (_shuffleHighlight == null) return;
-		if (_controller == null || !_controller.IsSelectingShuffle)
-		{
-			HideShuffleSelection();
-			return;
-		}
-		_shuffleHighlight.Refresh(_controller);
+		if (_shuffleSelectionView != null) _shuffleSelectionView.Refresh();
 	}
 
 	public bool ShowShuffleSelection(Camera camera, IReadOnlyList<Box> boxes)
 	{
-		HideShuffleSelection();
-		if (_shuffleSelection == null || _shuffleSelectionClose == null || _shuffleTargets == null)
+		if (_shuffleSelectionView == null)
 		{
-			Debug.LogError("UICanvas requires its ShuffleMask, close button and ShuffleTargets references.", this);
+			Debug.LogError("UICanvas requires its ShuffleSelectionView reference.", this);
 			return false;
 		}
-		// Physics input passes through the mask; eligible boxes render above its dim.
-		Button backgroundButton = _shuffleSelection.GetComponent<Button>();
-		if (backgroundButton != null) backgroundButton.enabled = false;
-		foreach (Graphic graphic in _shuffleSelection.GetComponentsInChildren<Graphic>(true))
-			graphic.raycastTarget = graphic.transform.IsChildOf(_shuffleSelectionClose.transform);
-		Image background = _shuffleSelection.GetComponent<Image>();
-		if (background != null) background.color = new Color(0f, 0f, 0f, 0.9411765f);
-		if (camera == null || LayerMask.NameToLayer("Top") < 0)
-		{
-			Debug.LogError("Shuffle highlight requires the gameplay camera and the Top layer.", this);
-			HideShuffleSelection();
-			return false;
-		}
-		_shuffleHighlight = new ShuffleSelectionHighlight(camera, _shuffleTargets, boxes);
-		_shuffleHighlight.Refresh(_controller);
-		Snui_Text.EnsureFontAssets(_shuffleSelection.transform);
-		_shuffleSelectionClose.onClick.AddListener(CloseShuffleSelection);
-		_shuffleSelection.SetActive(true);
-		return true;
-	}
-
-	private void CloseShuffleSelection()
-	{
-		if (_controller != null) _controller.CancelShuffleSelection();
-		else HideShuffleSelection();
+		_shuffleSelectionView.Bind(_controller);
+		return _shuffleSelectionView.Show(camera, boxes);
 	}
 
 	public void HideShuffleSelection()
 	{
-		_shuffleHighlight?.Dispose();
-		_shuffleHighlight = null;
-		if (_shuffleSelectionClose != null)
-			_shuffleSelectionClose.onClick.RemoveListener(CloseShuffleSelection);
-		if (_shuffleSelection != null)
-		{
-			_shuffleSelection.SetActive(false);
-		}
+		if (_shuffleSelectionView != null) _shuffleSelectionView.Hide();
 	}
 
 	private void UseShuffle()
