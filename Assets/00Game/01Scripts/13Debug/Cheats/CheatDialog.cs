@@ -142,12 +142,10 @@ namespace Snui
             var infinity = _inventoryIcon == null ? null : HierarchyReferenceCache.Child(_inventoryIcon.transform, "Infinity");
             if (infinity != null) infinity.gameObject.SetActive(type.IsTimeLimited());
             if (_eventItemIcon != null)
-                _eventItemIcon.sprite = (_eventIndex == 0 ? Managers.SpecialCol?.GetCollectibleSprite() : null) ?? _defaultEventSprite;
+                _eventItemIcon.sprite = _defaultEventSprite;
             if (_info != null)
             {
-                string eventName = _eventIndex == 0 ? "Special Collectible" : "Space Race";
-                int eventCount = _eventIndex == 0 ? (Managers.SpecialCol?.TempCount ?? 0) : (Managers.SpaceRace?.TempScore ?? 0);
-                _info.text = $"{type.Key}: {_commands.GetAmount(type)} (tap icon to select)\n{eventName}: +{eventCount} pending (tap icon to switch)\n{_message}";
+                _info.text = $"{type.Key}: {_commands.GetAmount(type)} (tap icon to select)\n{_message}";
             }
             bool active = !_busy && GameController.Current?.Data != null && GameController.Current.EndState == GameEndState.Playing;
             if (_winBtn != null) _winBtn.interactable = active;

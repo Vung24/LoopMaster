@@ -14,13 +14,9 @@ namespace Snui
 		public int OffsetX = 0;
 		public int SpacingY = 10;
 		public bool CenterAlignIcons;
-		protected Snui.SpecialCol.SpecialProgress _specialProgress;
-		protected Snui.ChampionArena.ChampionHomeIcon _championHomeIcon;
 		protected List<HomeEventBase> _eventWidgets = new List<HomeEventBase>();
 		private float _widgetScale = 1f;
 
-		public Snui.SpecialCol.SpecialProgress SpecialProgress => _specialProgress;
-		public Snui.ChampionArena.ChampionHomeIcon ChampionHomeIcon => _championHomeIcon;
 		public List<HomeEventBase> EventWidgets => _eventWidgets;
 
 		public static bool CanShowForceGuide() => ForceGuideCount == 0;
@@ -35,28 +31,6 @@ namespace Snui
 			}
 		}
 
-		public void SetupSpecialProgress(Snui.SpecialCol.SpecialProgress specialProgress)
-		{
-			_specialProgress = specialProgress;
-			if (_specialProgress != null)
-			{
-				_specialProgress.transform.SetParent(transform, false);
-			}
-		}
-
-		public void SetupChampionHomeIcon(Snui.ChampionArena.ChampionHomeIcon championHomeIcon)
-		{
-			if (_championHomeIcon != null) _championHomeIcon.OnDestroyEvent.RemoveListener(OnChampionDestroyed);
-			_championHomeIcon = championHomeIcon;
-			if (_championHomeIcon != null)
-			{
-				_championHomeIcon.transform.SetParent(transform, false);
-				_championHomeIcon.OnDestroyEvent.AddListener(OnChampionDestroyed);
-			}
-		}
-
-		private void OnChampionDestroyed() { _championHomeIcon = null; ReLayout(); }
-
 		public void ClearWidgets()
 		{
 			foreach (var widget in _eventWidgets)
@@ -67,14 +41,6 @@ namespace Snui
 				Destroy(widget.gameObject);
 			}
 			_eventWidgets.Clear();
-			if (_specialProgress != null) { _specialProgress.gameObject.SetActive(false); Destroy(_specialProgress.gameObject); }
-			if (_championHomeIcon != null)
-			{
-				_championHomeIcon.OnDestroyEvent.RemoveListener(OnChampionDestroyed);
-				_championHomeIcon.gameObject.SetActive(false); Destroy(_championHomeIcon.gameObject);
-			}
-			_specialProgress = null;
-			_championHomeIcon = null;
 		}
 
 		public void SetupWidgets(List<HomeEventBase> widgets)
@@ -117,7 +83,6 @@ namespace Snui
 			{
 				cg.alpha = 1f;
 			}
-			_championHomeIcon?.PlayEnterAnimation();
 
 			List<UniTask> tasks = new List<UniTask>();
 			for (int i = 0; i < _eventWidgets.Count; i++)
@@ -171,10 +136,7 @@ namespace Snui
 
 		public async UniTask PlayUnlockAnimation()
 		{
-			if (_specialProgress != null)
-			{
-				await _specialProgress.ShowUnlockAnimation();
-			}
+			await UniTask.CompletedTask;
 		}
 
 		public async UniTask PlayAddAnimation()
@@ -242,19 +204,6 @@ namespace Snui
 
 		public void ReLayout()
 		{
-			if (_specialProgress != null)
-			{
-				RectTransform spRt = _specialProgress.GetComponent<RectTransform>();
-				if (spRt != null)
-				{
-					spRt.anchorMin = spRt.anchorMax = new Vector2(0.5f, 1f);
-					var parentRect = transform as RectTransform;
-					float fit = parentRect != null && spRt.rect.width > 0 ? Mathf.Min(1f, (parentRect.rect.width - 28f) / spRt.rect.width) : 1f;
-					spRt.localScale = Vector3.one * Mathf.Max(0.1f, fit);
-					spRt.anchoredPosition = new Vector2(0f, 10f - TopPadding);
-				}
-			}
-
 			List<HomeEventBase> leftWidgets = _eventWidgets.FindAll(w => w != null && w.IsLeftSide);
 			List<HomeEventBase> rightWidgets = _eventWidgets.FindAll(w => w != null && !w.IsLeftSide);
 
@@ -268,13 +217,8 @@ namespace Snui
 				}
 			}
 
-			float startY = (_specialProgress != null ? -128f : 0f) - TopPadding;
+			float startY = -TopPadding;
 			float itemHeight = (int)(SpacingY + _widgetScale * WidgetHeight);
-			if (_championHomeIcon != null && _championHomeIcon.transform is RectTransform championRect)
-			{
-				championRect.anchorMin = championRect.anchorMax = new Vector2(1f, 1f);
-				championRect.anchoredPosition = new Vector2(OffsetX, startY);
-			}
 
 			for (int i = 0; i < leftWidgets.Count; i++)
 			{

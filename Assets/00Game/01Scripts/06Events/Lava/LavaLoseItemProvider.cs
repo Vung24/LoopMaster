@@ -9,9 +9,9 @@ public sealed class LavaLoseItemProvider : ILoseItemProvider
     public GameObject GetPrefab(ILoseItemContainer container) => container != null ? container.LoseLavaPrefab : null;
     public void OnItemInstantiated(GameObject instance) { }
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    // [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     public static void AutoRegister()
     {
-        LoseItemRegistry.Register(new LavaLoseItemProvider());
+        // LoseItemRegistry.Register(new LavaLoseItemProvider());
     }
 }
