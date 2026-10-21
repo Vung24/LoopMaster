@@ -41,6 +41,7 @@ namespace Snui.StreakLine
 			if (_dog != null)
 			{
 				_audioSource = _dog.GetComponent<AudioSource>();
+				GameAudioSettings.RegisterEffectsSource(_audioSource);
 				_dogSpine = _dog.GetComponent<SkeletonGraphic>() ?? _dog.GetComponentInChildren<SkeletonGraphic>(true);
 				_dog.gameObject.SetActive(true);
 			}
@@ -128,7 +129,7 @@ namespace Snui.StreakLine
 		{
 			if (_audioSource == null) return;
 			_audioSource.DOKill();
-			_audioSource.mute = !GameAudioSettings.EffectsEnabled;
+			GameAudioSettings.ApplyEffectsPreference();
 			_audioSource.volume = 0;
 			_audioSource.Play();
 			_audioSource.DOFade(1, duration).SetLink(gameObject);
@@ -175,6 +176,7 @@ namespace Snui.StreakLine
 			if (ScrollView != null) ScrollView.ScrollPositionChanged -= UpdateBackgrounds;
 			if (_dog != null) _dog.DOKill();
 			if (_audioSource != null) _audioSource.DOKill();
+			GameAudioSettings.UnregisterEffectsSource(_audioSource);
 			base.OnDestroy();
 		}
 	}

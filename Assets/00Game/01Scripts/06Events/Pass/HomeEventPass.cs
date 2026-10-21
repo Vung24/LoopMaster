@@ -10,6 +10,7 @@ public class HomeEventPass : HomeEventBase
     private SkeletonGraphic _iconSpine;
     private Image _progressBar;
     private bool _dialogOpen;
+    private int _lastAudioPoints;
     protected override void Awake()
     {
         base.Awake();
@@ -38,6 +39,12 @@ public class HomeEventPass : HomeEventBase
         if (_progressBar != null) _progressBar.fillAmount = manager.IsFinalBundleFinished() ? 1 :
             Mathf.Clamp01((float)manager.GetCurrentPoints() / Mathf.Max(1, manager.GetNextRequirePoints()));
         SetNotifierCount(manager.GetUnclaimedRewardCount());
+        int totalPoints = manager.GetTotalPoints();
+        if (isActiveAndEnabled && totalPoints > _lastAudioPoints && totalPoints > manager.GetLastTotalPoints())
+        {
+            if (AudioManager.Current != null) AudioManager.Current.PlayOneShot(_startSound, gameObject);
+        }
+        if (isActiveAndEnabled) _lastAudioPoints = totalPoints;
     }
     protected override void OnClick() => ShowDialog().Forget();
     public async UniTask ShowDialog()

@@ -120,9 +120,9 @@ namespace Snui.Lava
 		{
 			base.Start();
 
-			if (_winClip != null && GameAudioPlayer.Current != null)
+			if (_winClip != null && AudioManager.Current != null)
 			{
-				GameAudioPlayer.Current.PlayOneShot(_winClip);
+				AudioManager.Current.PlayOneShot(_winClip, gameObject);
 			}
 
 			if (_fullButton != null)

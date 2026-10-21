@@ -30,6 +30,7 @@ public sealed class BoosterFlow
 	private InventoryManager Inventory => _inventory != null ? _inventory : (_inventory = InventoryManager.Ensure());
 
 	public bool IsBusy { get; private set; }
+	public bool IsSelectingShuffle { get; private set; }
 	public bool CanRequestUndo => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
 		(Inventory.GetAmount(InventoryKeys.TOOL_UNDO) == 0 || (_isGameplaySettled() && _data.CanUndo()));
 	public bool CanRequestShuffle => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE) &&
@@ -102,6 +103,7 @@ public sealed class BoosterFlow
 
 	public void Cancel()
 	{
+		CancelShuffleSelection();
 		_operationVersion++;
 		if (_completion != null && _host != null) _host.StopCoroutine(_completion);
 		_completion = null;
@@ -112,7 +114,27 @@ public sealed class BoosterFlow
 
 	public bool TryUsePath() => Inventory.TryUseBooster(InventoryKeys.TOOL_PATH, ApplyToolPath);
 	public bool TryUseUndo() => Inventory.TryUseBooster(InventoryKeys.TOOL_UNDO, ApplyToolUndo);
-	public bool TryUseShuffle() => Inventory.TryUseBooster(InventoryKeys.TOOL_SHUFFLE, ApplyToolShuffle);
+	public bool TryUseShuffle()
+	{
+		if (!CanUseShuffle) return false;
+		IsSelectingShuffle = true;
+		return true;
+	}
+
+	public void CancelShuffleSelection()
+	{
+		IsSelectingShuffle = false;
+	}
+
+	public bool TryUseShuffle(Box box)
+	{
+		if (!IsSelectingShuffle || box == null || box.Info == null ||
+			!CanUseBooster(true, true) || box.Info.State != BoxState.Free ||
+			!_boxes.Contains(box) || !box.Info.CanShuffle()) return false;
+		// Selection itself never spends inventory. Commit only the chosen box.
+		CancelShuffleSelection();
+		return Inventory.TryUseBooster(InventoryKeys.TOOL_SHUFFLE, () => ApplyToolShuffle(box));
+	}
 
 	private bool ApplyToolPath()
 	{
@@ -279,31 +301,30 @@ public sealed class BoosterFlow
 		_undoVisuals.Clear();
 	}
 
-	private bool ApplyToolShuffle()
+	private bool ApplyToolShuffle(Box box)
 	{
 		if (!CanUseBooster(true) || _engine == null) return false;
-		List<Box> shuffleBoxes = _boxes.Where(box =>
-			box != null && box.Info != null && box.Info.CanShuffle()).ToList();
-		if (shuffleBoxes.Count == 0) return false;
 
 		IsBusy = true;
-		int shuffledCount = _engine.UseShuffleBooster();
+		int shuffledCount = _engine.UseShuffleBooster(box.Info);
 		if (shuffledCount <= 0)
 		{
 			IsBusy = false;
 			return false;
 		}
 
-		foreach (Box box in shuffleBoxes) box.PlayShuffleLayout(0.6f);
+		box.Info.State = BoxState.OnUnlocking;
+		box.PlayShuffleLayout(0.6f);
 		_playAudio(_loader == null ? null : _loader.ShuffleClip);
 		_completion = _host.StartCoroutine(FinishBoosterUse(0.65f,
-			shuffleBoxes.Select(box => box.Info).Where(info => info != null).ToList()));
+			new List<BoxInfo> { box.Info }));
 		return true;
 	}
 
-	private bool CanUseBooster(bool requireSettled)
+	private bool CanUseBooster(bool requireSettled, bool allowShuffleSelection = false)
 	{
-		return Time.timeScale > 0f && _isGameRunning() && !IsBusy && _data != null &&
+		return Time.timeScale > 0f && _isGameRunning() && !IsBusy &&
+			(!IsSelectingShuffle || allowShuffleSelection) && _data != null &&
 			_data.ActiveLinkedLaunch == null &&
 			(_data.LinkedPair == null || _isGameplaySettled()) &&
 			(!requireSettled || _isGameplaySettled());

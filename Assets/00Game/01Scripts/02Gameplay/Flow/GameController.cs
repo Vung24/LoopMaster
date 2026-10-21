@@ -50,6 +50,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public float SliceJumpTimeScale => GameplayFeedbackRules.GetTransferTimeScale(IsSpeedUpActive);
 	public bool CanUseUndoTool => Boosters.CanUseUndo;
 	public bool CanUseShuffleTool => Boosters.CanUseShuffle;
+	public bool IsSelectingShuffle => _boosterFlow != null && _boosterFlow.IsSelectingShuffle;
 	public bool CanUsePathTool => Boosters.CanUsePath;
 	public bool CanRequestUndoTool => !IsBoosterShopOpen && Boosters.CanRequestUndo;
 	public bool CanRequestShuffleTool => !IsBoosterShopOpen && Boosters.CanRequestShuffle;
@@ -157,6 +158,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void Awake()
 	{
+		AudioManager.EnsureInitialized();
 		EventRuntime.EnsureInitialized();
 		SpecialStreakManager.Ensure();
 		LevelBoxManager.EnsureInitialized();
@@ -312,6 +314,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
 		StopAllCoroutines();
+		CancelShuffleSelection();
 		_winRewards.BeginLevel(data);
 		bool enteringEventLevel = Data != data && !editorPlaytest;
 		Data = data;
@@ -406,6 +409,12 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public void OnClickBox(Box box)
 	{
 		if (!IsGameplayActive || box == null || box.Info == null) return;
+		if (IsSelectingShuffle)
+		{
+			Boosters.TryUseShuffle(box);
+			if (!IsSelectingShuffle) HideShuffleSelection();
+			return;
+		}
 		if (Data.ActiveLinkedLaunch != null)
 		{
 			box.PlayClickedAnim(false);
@@ -498,6 +507,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 		if (GameplayFeedbackRules.ShouldPlaySpeedTransition(CurrentLevelNumber, previous, next))
 			PlayBoosterAudio(_gameLoader == null ? null : (next ? _gameLoader.AccClip : _gameLoader.DecClip));
+		if (!previous && next)
+			PlayBoosterAudio(_gameLoader == null ? null : _gameLoader.AccShortClip);
 	}
 
 	public void OnClickToolPath()
@@ -545,7 +556,25 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool UseToolShuffle()
 	{
-		return Boosters.TryUseShuffle();
+		if (!Boosters.TryUseShuffle()) return false;
+		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
+		if (canvas != null && canvas.ShowShuffleSelection(_gameLoader == null ? null : _gameLoader.ToolShuffleMask))
+			return true;
+		CancelShuffleSelection();
+		Debug.LogError("Shuffle selection requires a UICanvas and GameAssetsConfig.ToolShuffleMaskPrefab.", this);
+		return false;
+	}
+
+	public void CancelShuffleSelection()
+	{
+		_boosterFlow?.CancelShuffleSelection();
+		HideShuffleSelection();
+	}
+
+	private void HideShuffleSelection()
+	{
+		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
+		if (canvas != null) canvas.HideShuffleSelection();
 	}
 
 	private void RefreshGameplayAfterOperation()
@@ -716,6 +745,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		_isGameStart = true;
 		_conveyorFlow?.EndFailureSlowdown();
 		RefreshPathState();
+		if (BgmSource.Current != null) BgmSource.Current.Play();
+		PlayBoosterAudio(_gameLoader == null ? null : _gameLoader.PathClip);
 		GameRevived?.Invoke();
 		return true;
 	}
@@ -736,6 +767,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			Conveyor.BeginFailureSlowdown(GetTickInterval(false));
 		ComboInCount = 0;
 		_comboTime = 0f;
+		CancelShuffleSelection();
 		_boosterFlow?.Cancel();
 		_sliceTransferFlow?.Cancel();
 		if (Data != null)
@@ -752,7 +784,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 		RefreshPathState();
 		if (state == GameEndState.Failed)
+		{
+			if (BgmSource.Current != null) BgmSource.Current.Stop().Forget();
 			PlayBoosterAudio(_gameLoader == null ? null : _gameLoader.Fail);
+		}
 		if (state == GameEndState.Won)
 		{
 			_winRewards.Prepare(Data);
@@ -796,6 +831,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		_navigation?.Dispose();
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
+		CancelShuffleSelection();
 		_boosterFlow?.Cancel();
 		_sliceTransferFlow?.Cancel();
 		_groupLocks?.Clear();
@@ -809,6 +845,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void OnDisable()
 	{
+		CancelShuffleSelection();
 		_sliceTransferFlow?.StopVibrationWindows();
 		_boosterUI?.Cancel();
 		_presentation?.Cancel();
