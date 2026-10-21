@@ -14,6 +14,7 @@ public class SplashController : MonoBehaviour
 	{
 		QualitySettings.vSyncCount = 0;
 		Application.targetFrameRate = 60;
+		QualitySettings.antiAliasing = 4;
 		DOTween.SetTweensCapacity(500, 100);
 		DOTween.defaultRecyclable = true;
 #if !UNITY_EDITOR

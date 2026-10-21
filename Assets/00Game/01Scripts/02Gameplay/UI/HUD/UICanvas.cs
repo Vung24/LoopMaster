@@ -58,6 +58,9 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private Image _speedIcon;
 	private Sprite _lastSpeedSprite;
 	[SerializeField] private ShuffleSelectionView _shuffleSelectionView;
+	[SerializeField] private GameplayToast _toast;
+
+	public GameplayToast Toast => _toast != null ? _toast : (_toast = GetComponentInChildren<GameplayToast>(true));
 
 	public SafeArea SafeArea => _safeArea;
 
@@ -387,15 +390,10 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (iconImage != null) iconImage.raycastTarget = false;
 
 		Vector3 start = source.TransformPoint(source.rect.center);
-		Transform centerNode = HierarchyReferenceCache.Descendant(transform, "Center");
-		Vector3 center = centerNode != null
-			? centerNode.position
+		RectTransform safeAreaRect = _safeArea == null ? null : _safeArea.transform as RectTransform;
+		Vector3 center = safeAreaRect != null
+			? safeAreaRect.TransformPoint(safeAreaRect.rect.center)
 			: transform.TransformPoint(((RectTransform)transform).rect.center);
-
-		float dip = _canvas != null && _canvas.renderMode == RenderMode.ScreenSpaceOverlay
-			? 50f * _canvas.scaleFactor
-			: 0.5f;
-		Vector3 dipPos = new Vector3(center.x, center.y - dip, center.z);
 		Vector3 target = _capacityLabel.transform.position;
 
 		item.position = start;
@@ -411,8 +409,8 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			seq.Join(iconTransform.DOScale(Vector3.one * 1.1f, 0.30f).SetEase(Ease.OutQuad));
 		}
 
-		// Phase 2: Anticipation dip and settle at center (0.33s)
-		seq.Append(item.DOMove(dipPos, 0.33f).SetEase(Ease.OutSine));
+		// Phase 2: Settle at center (0.33s)
+		seq.Append(item.DOMove(center, 0.33f));
 		if (iconTransform != null)
 		{
 			seq.Join(iconTransform.DOScale(Vector3.one * 1.0f, 0.33f));
@@ -520,7 +518,23 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 	private void UseUndo()
 	{
-		if (_controller != null) _controller.OnClickToolUndo();
+		if (_controller == null) return;
+		if (_controller.CanRequestUndoTool)
+		{
+			_controller.OnClickToolUndo();
+			return;
+		}
+
+		UndoUnusableReason reason = _controller.GetUndoUnusableReason();
+		if (reason != UndoUnusableReason.None)
+		{
+			int unlockLevel = InventoryManager.GetToolUnlockLevel(InventoryKeys.TOOL_UNDO);
+			string message = UndoUnusableReasonHelper.GetMessage(reason, unlockLevel);
+			if (!string.IsNullOrEmpty(message))
+			{
+				GameplayToast.Show(message);
+			}
+		}
 	}
 
 	public void RefreshShuffleSelection()
