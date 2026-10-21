@@ -5,16 +5,11 @@ public class PathArrow : MonoBehaviour
 	private const float MinDirectionMagnitude = 0.00001f;
 	private const float PathHeightOffset = -0.45f;
 	private int _pathIndex;
-	private bool _isMoving;
-	private float _moveElapsed;
-	private float _moveDuration;
-	private Vector3 _moveStartPosition;
-	private Vector3 _moveTargetPosition;
-	private Quaternion _moveStartRotation;
-	private Quaternion _moveTargetRotation;
+	private readonly RoadMotion _roadMotion = new RoadMotion(false);
 
 	public void Init(int index)
 	{
+		_roadMotion.Reset(transform.position, transform.rotation);
 		_pathIndex = index;
 		MoveNextPath(0.01f);
 	}
@@ -28,62 +23,36 @@ public class PathArrow : MonoBehaviour
 		if (!GameData.Current.IsPathCircle &&
 			GameData.Current.IsPathSectionIndex(_pathIndex))
 		{
-			_isMoving = false;
-			_moveElapsed = 0f;
+			_roadMotion.Reset(transform.position, transform.rotation);
 			transform.position = GetPosByPathIndex(_pathIndex);
 			return;
 		}
 
-		Vector3 startPos = _isMoving ? _moveTargetPosition : transform.position;
-		Quaternion startRot = _isMoving ? _moveTargetRotation : transform.rotation;
-		_moveStartPosition = startPos;
-		_moveTargetPosition = GetPosByPathIndex(next);
-		_moveStartRotation = startRot;
-		Vector3 direction = _moveTargetPosition - _moveStartPosition;
-		_moveTargetRotation = direction.magnitude <= MinDirectionMagnitude
-			? _moveStartRotation
-			: Quaternion.LookRotation(direction, Vector3.up);
-
-		if (_isMoving && _moveDuration > 0f)
+		if (!_roadMotion.IsMoving)
+			_roadMotion.Reset(transform.position, transform.rotation);
+		Vector3 startPosition = transform.position;
+		Quaternion rotation = transform.rotation;
+		if (_roadMotion.IsMoving)
 		{
-			_moveElapsed = Mathf.Max(0f, _moveElapsed - _moveDuration);
+			startPosition = _roadMotion.TailPosition;
+			rotation = _roadMotion.TailRotation;
 		}
-		else
-		{
-			_moveElapsed = 0f;
-		}
-
-		_moveDuration = Mathf.Max(0.01f, interval);
-		_isMoving = true;
+		Vector3 targetPosition = GetPosByPathIndex(next);
+		Vector3 direction = targetPosition - startPosition;
+		if (direction.magnitude > MinDirectionMagnitude)
+			rotation = Quaternion.LookRotation(direction, Vector3.up);
+		_roadMotion.Enqueue(targetPosition, rotation, Mathf.Max(0.000001f, interval));
 	}
 
-	private void Update()
+	internal void AdvanceRoadVisual(float delta)
 	{
-		if (!_isMoving) return;
-		float delta = Time.deltaTime;
-		if (delta <= 0f) return;
-		_moveElapsed += delta;
-		float progress = Mathf.Clamp01(_moveElapsed / _moveDuration);
-		transform.SetPositionAndRotation(
-			Vector3.Lerp(_moveStartPosition, _moveTargetPosition, progress),
-			Quaternion.Slerp(_moveStartRotation, _moveTargetRotation, progress));
-		if (progress >= 1f && _moveElapsed >= _moveDuration + 0.05f)
-		{
-			CompleteMove();
-		}
-	}
-
-	private void CompleteMove()
-	{
-		transform.SetPositionAndRotation(_moveTargetPosition, _moveTargetRotation);
-		_isMoving = false;
-		_moveElapsed = 0f;
+		if (!isActiveAndEnabled || !_roadMotion.Advance(delta)) return;
+		transform.SetPositionAndRotation(_roadMotion.Position, _roadMotion.Rotation);
 	}
 
 	private void OnDisable()
 	{
-		_isMoving = false;
-		_moveElapsed = 0f;
+		_roadMotion.Reset(transform.position, transform.rotation);
 	}
 
 	private Vector3 GetPosByPathIndex(int index)
