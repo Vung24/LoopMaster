@@ -40,6 +40,9 @@ public sealed class GameLevelPresentationFlow
 		{
 			// Keep tutorial/intro animations from running beneath the scene loading cover.
 			await UniTask.WaitUntil(() => LoadingPanel.Current == null, cancellationToken: lifetime.Token);
+			if (BgmSource.Current != null) BgmSource.Current.Play();
+			if (AudioManager.Current != null && GameAssetsConfig.Instance != null)
+				AudioManager.Current.PlayOneShot(GameAssetsConfig.Instance.StartShakeAudio);
 			await ShowFeatureTutorial(data, lifetime.Token);
 			lifetime.Token.ThrowIfCancellationRequested();
 			string address = data.GetHardLevel() == HardLevel.Hard ? "LevelHardPanel" :

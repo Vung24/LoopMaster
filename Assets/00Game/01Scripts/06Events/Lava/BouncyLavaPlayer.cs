@@ -11,9 +11,9 @@ public class BouncyLavaPlayer : Snui.Lava.LavaPlayer
 
 	public void DOJumpTo(Vector3 targetPos, float duration = 0.5f, float jumpHeight = 80f, float jumpDuration = 0.25f)
 	{
-		if (JumpClip != null && GameAudioPlayer.Current != null)
+		if (JumpClip != null && AudioManager.Current != null)
 		{
-			GameAudioPlayer.Current.PlayOneShot(JumpClip);
+			AudioManager.Current.PlayOneShot(JumpClip, gameObject);
 		}
 
 		Vector3 localScale = transform.localScale;
@@ -56,6 +56,7 @@ public class BouncyLavaPlayer : Snui.Lava.LavaPlayer
 
 		Sequence moveSeq = DOTween.Sequence();
 		moveSeq.AppendInterval(0.1f);
+		moveSeq.AppendCallback(PlayFallSound);
 		moveSeq.Append(transform.DOLocalMoveY(targetY - 120f, 0.4f).SetEase(Ease.InQuad));
 
 		Sequence scaleSeq = DOTween.Sequence();
@@ -76,9 +77,9 @@ public class BouncyLavaPlayer : Snui.Lava.LavaPlayer
 
 	public void OnWaterSplashEvent()
 	{
-		if (SplashClip != null && GameAudioPlayer.Current != null)
+		if (SplashClip != null && AudioManager.Current != null)
 		{
-			GameAudioPlayer.Current.PlayOneShot(SplashClip);
+			AudioManager.Current.PlayOneShot(SplashClip, gameObject);
 		}
 
 		if (_waterSplashGraphic != null)
@@ -109,6 +110,12 @@ public class BouncyLavaPlayer : Snui.Lava.LavaPlayer
 		Sequence seq = DOTween.Sequence();
 		seq.Append(CreateFallTween(isRightSide, pos, pos.y, 0.5f, splashDelay));
 		seq.SetLink(gameObject);
+	}
+
+	private void PlayFallSound()
+	{
+		if (FallClip != null && AudioManager.Current != null)
+			AudioManager.Current.PlayOneShot(FallClip, gameObject);
 	}
 }
 

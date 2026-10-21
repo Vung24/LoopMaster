@@ -32,22 +32,16 @@ public sealed class CoreGameplayEngine
 		return true;
 	}
 
-	public int UseShuffleBooster()
+	public int UseShuffleBooster(BoxInfo box = null)
 	{
 		if (_data.ActiveLinkedLaunch != null) return 0;
-		if (_data.Boxes.Any(box => box != null && box.State != BoxState.Free)) return 0;
-		List<BoxInfo> boxes = _data.Boxes.Where(box => box != null && box.CanShuffle()).ToList();
-		if (boxes.Count == 0) return 0;
+		if (_data.Boxes.Any(candidate => candidate != null && candidate.State != BoxState.Free)) return 0;
+		if (box == null || !_data.Boxes.Contains(box) || !box.CanShuffle()) return 0;
+		if (!box.ShuffleCubes()) return 0;
 
 		_data.UndoData.Clear();
-		int shuffledCount = 0;
-		foreach (BoxInfo box in boxes)
-		{
-			if (!box.ShuffleCubes()) continue;
-			shuffledCount++;
-			_data.ToolShuffleUsedCount++;
-		}
-		return shuffledCount;
+		_data.ToolShuffleUsedCount++;
+		return 1;
 	}
 
 	public bool UndoLastMove()

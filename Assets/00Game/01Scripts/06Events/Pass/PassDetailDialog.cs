@@ -60,6 +60,7 @@ public class PassDetailDialog : BasePopup
     {
         if (!ShouldShowUnlockVipAnim || !_manager.IsVip()) return;
         ShouldShowUnlockVipAnim = false;
+        PassUI.Sound(ClaimJumpSound);
         if (_adapter != null) await _adapter.PlayVipUnlock();
     }
     public void Refresh()

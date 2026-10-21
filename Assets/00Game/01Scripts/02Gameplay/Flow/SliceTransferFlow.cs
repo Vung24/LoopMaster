@@ -439,11 +439,12 @@ public sealed class SliceTransferFlow
 				}
 			}
 
-			await UniTask.WaitForSeconds(0.3f, delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: _hostToken);
 			if (!IsCurrent(operation.Version) || box == null || box.Info == null) return;
 			box.RemoveEmptyCube();
 			box.CheckHiddenSecret();
 
+			// Reveal the exposed secret while slices are airborne; retain the source/Undo guard.
+			await UniTask.WaitForSeconds(0.3f, delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: _hostToken);
 			while (HasAirborneSlices(created))
 			{
 				if (!IsCurrent(operation.Version)) return;

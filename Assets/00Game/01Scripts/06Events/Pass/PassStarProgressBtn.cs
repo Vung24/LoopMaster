@@ -13,6 +13,7 @@ namespace Snui
         public ParticleSystem SparkEffect, FrameEffect;
         public Transform TrailEffect, TutorialFingerTf;
         private int _displayStage;
+        private int _displayCoins = -1;
         private Animation _animation;
         private void Awake()
         {
@@ -48,6 +49,8 @@ namespace Snui
             PassUI.Text(transform, "Value", count + "/" + goal);
             int coins = manager.GetCurrentFinalBundleCoin() > 0 ? Mathf.Clamp((_displayStage - manager.GetNormalStageCount()) * manager.FinalStageCoin, 0, manager.FinalTotalCoinCount) : 0;
             PassUI.Text(transform, "Count", coins.ToString());
+            if (_displayCoins >= 0 && coins > _displayCoins) PassUI.Sound(CoinSound);
+            _displayCoins = coins;
             if (StageText != null) PassUI.Text(StageText.transform.parent, "Level", _displayStage.ToString());
         }
         public async UniTask AnimateCountTo(int count)

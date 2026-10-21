@@ -54,6 +54,8 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
+	private GameObject _shuffleSelection;
+	private Button _shuffleSelectionClose;
 
 	public SafeArea SafeArea => _safeArea;
 
@@ -88,6 +90,8 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 	private void OnDisable()
 	{
+		if (_controller != null) _controller.CancelShuffleSelection();
+		HideShuffleSelection();
 		CancelPathPresentation();
 		GameBackgroundController shadowBackground = GetComponent<GameBackgroundController>();
 		if (shadowBackground != null) shadowBackground.enabled = false;
@@ -170,6 +174,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (_top == null) _top = HierarchyReferenceCache.Child(_safeArea != null ? _safeArea.transform : null, "Top");
 		if (_bottom == null) _bottom = HierarchyReferenceCache.Child(transform, "Bottom");
 		if (_topFlag == null) _topFlag = HierarchyReferenceCache.Descendant(transform, "TopFlag") as RectTransform;
+		if (_capacityNode == null) _capacityNode = HierarchyReferenceCache.Descendant(transform, "Capacity");
 		if (_pauseButton == null) _pauseButton = ResolveButton(_top, _bottom, "PauseBtn");
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");
@@ -269,6 +274,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	{
 		if (_controller == null) _controller = GameController.Current;
 		if (_controller == null) return;
+		if (!_controller.IsSelectingShuffle) HideShuffleSelection();
 
 		int level = _controller.CurrentLevelNumber;
 		if (level > 0 && _levelLabel != null && level != _displayedLevel)
@@ -445,6 +451,52 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private void UseUndo()
 	{
 		if (_controller != null) _controller.OnClickToolUndo();
+	}
+
+	public bool ShowShuffleSelection(GameObject prefab)
+	{
+		HideShuffleSelection();
+		if (prefab == null) return false;
+		_shuffleSelection = Instantiate(prefab, transform);
+		_shuffleSelectionClose = HierarchyReferenceCache.DescendantComponent<Button>(
+			_shuffleSelection.transform, "CloseBtn");
+		if (_shuffleSelectionClose == null)
+		{
+			Debug.LogError("ShuffleMask requires ShuffleTips/Bg/CloseBtn.", prefab);
+			HideShuffleSelection();
+			return false;
+		}
+		// The recovered HUD uses an overlay canvas. Keep the board visible and
+		// let its physics input pass through the mask; only the tips intercept UI input.
+		Button backgroundButton = _shuffleSelection.GetComponent<Button>();
+		if (backgroundButton != null) backgroundButton.enabled = false;
+		foreach (Graphic graphic in _shuffleSelection.GetComponentsInChildren<Graphic>(true))
+			graphic.raycastTarget = graphic.transform.IsChildOf(_shuffleSelectionClose.transform);
+		Image background = _shuffleSelection.GetComponent<Image>();
+		if (background != null) background.color = new Color(0f, 0f, 0f, 0.35f);
+		Snui_Text.EnsureFontAssets(_shuffleSelection.transform);
+		_shuffleSelectionClose.onClick.AddListener(CloseShuffleSelection);
+		_shuffleSelection.SetActive(true);
+		return true;
+	}
+
+	private void CloseShuffleSelection()
+	{
+		if (_controller != null) _controller.CancelShuffleSelection();
+		else HideShuffleSelection();
+	}
+
+	public void HideShuffleSelection()
+	{
+		if (_shuffleSelectionClose != null)
+			_shuffleSelectionClose.onClick.RemoveListener(CloseShuffleSelection);
+		_shuffleSelectionClose = null;
+		if (_shuffleSelection != null)
+		{
+			_shuffleSelection.SetActive(false);
+			Destroy(_shuffleSelection);
+		}
+		_shuffleSelection = null;
 	}
 
 	private void UseShuffle()

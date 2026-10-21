@@ -58,9 +58,9 @@ namespace Snui.Lava
 
 		public Tween DOJump(Vector3 endValue, float jumpPower, int numJumps, float duration)
 		{
-			if (JumpClip != null && GameAudioPlayer.Current != null)
+			if (JumpClip != null && AudioManager.Current != null)
 			{
-				GameAudioPlayer.Current.PlayOneShot(JumpClip);
+				AudioManager.Current.PlayOneShot(JumpClip, gameObject);
 			}
 			return transform.DOLocalJump(endValue, jumpPower, numJumps, duration);
 		}
