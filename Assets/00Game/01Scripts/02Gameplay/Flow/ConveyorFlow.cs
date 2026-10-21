@@ -103,9 +103,15 @@ public sealed class ConveyorFlow
 
 	public void Tick(float delta, float normalInterval, float speedInterval)
 	{
-		if (Data == null || !_canTick() || delta <= 0f) return;
+		if (Data == null || delta <= 0f) return;
+		if (!_canTick())
+		{
+			AdvanceRoadVisuals(delta);
+			return;
+		}
 		_normalTickTime = Mathf.Min(0.5f, _normalTickTime + delta);
 		_speedTickTime = Mathf.Min(0.5f, _speedTickTime + delta);
+		float visualTime = 0f;
 		const float tolerance = 0.000001f;
 		while (_canTick())
 		{
@@ -118,15 +124,39 @@ public sealed class ConveyorFlow
 			if (!normalDue && !speedDue) break;
 			if (normalDue && (!speedDue || normalLag >= speedLag - tolerance))
 			{
+				AdvanceVisualsToTick(delta, normalLag, ref visualTime);
 				_normalTickTime = Mathf.Max(0f, normalLag);
 				UpdateNormalTick(normalTickInterval);
 			}
 			else
 			{
+				AdvanceVisualsToTick(delta, speedLag, ref visualTime);
 				_speedTickTime = Mathf.Max(0f, speedLag);
 				UpdateSpeedUpTick(speedTickInterval);
 			}
 		}
+		AdvanceRoadVisuals(delta - visualTime);
+	}
+
+	private void AdvanceVisualsToTick(float delta, float lag, ref float visualTime)
+	{
+		// Lag is measured from frame end. The cap drops old scheduler time;
+		// it must not grant extra moves or count either clock twice visually.
+		float issueTime = Mathf.Clamp(delta - lag, visualTime, delta);
+		AdvanceRoadVisuals(issueTime - visualTime);
+		visualTime = issueTime;
+	}
+
+	internal void AdvanceRoadVisuals(float delta)
+	{
+		if (Data == null || delta <= 0f) return;
+		for (int i = 0; i < Data.TransferSlice.Count; i++)
+		{
+			SliceInfo info = Data.TransferSlice[i];
+			if (info != null && info.SliceSc != null) info.SliceSc.AdvanceRoadVisual(delta);
+		}
+		for (int i = 0; i < _pathArrows.Count; i++)
+			if (_pathArrows[i] != null) _pathArrows[i].AdvanceRoadVisual(delta);
 	}
 
 	private void UpdateNormalTick(float interval)

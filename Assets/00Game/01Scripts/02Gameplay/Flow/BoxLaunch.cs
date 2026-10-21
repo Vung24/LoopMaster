@@ -43,7 +43,12 @@ public sealed class BoxLaunch
 		_getJumpDuration = getJumpDuration;
 		_getJumpHeight = getJumpHeight;
 		_notifyBoxClicked = notifyBoxClicked;
-		_showToast = showToast ?? GameplayToast.Show;
+		_showToast = showToast ?? DefaultShowToast;
+	}
+
+	private static void DefaultShowToast(string message)
+	{
+		GameplayToast.Show(message);
 	}
 
 	public void OnClickBox(Box box)

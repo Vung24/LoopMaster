@@ -76,6 +76,42 @@ Verification Checklist
 
 - Preserve existing behavior when simplifying code.
 
+## Anti-Pattern Rules: Eliminate Delegate Hell & Lambda Overuse
+
+### Explicit Dependencies Instead of Delegate Soup
+
+- Do not pass a collection of `Func<T>` / `Action<T>` callbacks into constructors or initialization methods as a pseudo-decoupling mechanism. Dependencies and state ownership must remain explicit and easy to trace.
+- Do not replace ordinary property access with a delegate such as `Func<GameData> getData`. Pass the required owner or data directly. When data can change, make its lifetime explicit: use the authoritative owner for live state, or pass the current value to the operation that needs it.
+- More than two dependency or state-query callbacks is a design review signal, not an automatic requirement to introduce a context interface. First check whether the class has too many responsibilities or whether values belong in operation parameters.
+- Prefer direct dependencies and action-method parameters. Use a small, cohesive context object/interface only when related operations genuinely share that context and it reduces existing complexity.
+- Do not create a broad `IGameplayContext` that exposes unrelated systems, duplicates authoritative state, or acts as a service locator. Do not introduce an interface solely to reduce the constructor parameter count.
+- Keep delegates for genuine callbacks, completion notifications, or small interchangeable behaviors. Give retained callbacks a clear owner and lifetime; release references or unsubscribe at the appropriate lifecycle boundary.
+
+### Explicit Initialization and Readable Getters
+
+- Do not use expression-bodied members (`=>`) for lazy initialization, singleton caching, or dependency creation, such as a getter containing `_flow ?? (_flow = new Flow(...))`.
+- Initialize dependencies explicitly in `Awake()`, `Start()`, or a named `Initialize(...)` method. Choose the stage based on actual dependency readiness; do not rely on the relative `Awake()` order of different GameObjects.
+- Getters and state queries must not initialize systems, mutate gameplay state, or trigger other side effects. Put those operations in intention-revealing methods.
+- Do not use expression-bodied members for multi-condition boolean logic spanning multiple lines. Use a standard getter with guard clauses or a named boolean method so each decision can be inspected and debugged.
+- Simple, side-effect-free expression-bodied members remain acceptable, for example `IsRunning => state == GameState.Running`.
+- Use block-bodied named methods for gameplay commands and multi-step operations. Keep short callback lambdas limited to cases where they clearly improve readability.
+
+### Method Groups and Callback Identity
+
+- Prefer a method group when its signature and behavior match the required delegate: use `OnCompleted` instead of `() => OnCompleted()`, and `ApplyDamage` instead of `amount => ApplyDamage(amount)`.
+- Use a lambda only when it performs a necessary adaptation, such as supplying an additional argument or transforming callback data. Extract multi-step logic into a named method.
+- For event subscriptions, preserve the handler identity needed for unsubscription. Do not subscribe and unsubscribe with separately created lambda expressions.
+- A method group is a readability choice, not proof of zero allocations. Cache a delegate when repeated conversion would otherwise allocate in a measured or clearly high-frequency path, and respect its target object's lifetime.
+
+### Avoid Callback Allocations in Hot Paths
+
+- Do not create capturing lambdas, closures, or recurring delegate allocations in `Update()`, `FixedUpdate()`, ticking loops, per-item loops, or frequent gameplay operations.
+- Prefer explicit loops over repeated LINQ queries with predicate lambdas in hot paths. Also avoid associated iterator, temporary collection, and materialization allocations.
+- Create stable callbacks once during explicit initialization when needed. Reuse them only while their owner and captured dependencies remain valid; do not cache stale level or scene state.
+- Do not assume every lambda allocates or that every non-capturing lambda or method group is allocation-free. Compiler behavior, delegate conversion, and the called API all matter.
+- Validate meaningful allocation claims with the Unity Profiler, including the `GC.Alloc` samples for the relevant operation. Do not claim zero allocations without measurement.
+- Keep changes local and behavior-preserving. These rules do not require unrelated rewrites of existing callbacks or speculative caching.
+
 ## Method Naming: Avoid Unnecessary Try Prefixes
 
 - Do not prefix method names with Try unless failure is an expected, recoverable outcome that the caller needs to handle.

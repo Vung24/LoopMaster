@@ -56,7 +56,7 @@ public sealed class LevelBuilder
 		if (cablePrefab == null)
 			throw new System.InvalidOperationException("Missing CoreGamePrefabs/LinkedCubeCable prefab.");
 
-		GameObject cableRoot = Object.Instantiate(cablePrefab, gameRoot);
+		GameObject cableRoot = UnityEngine.Object.Instantiate(cablePrefab, gameRoot);
 		LinkedCubeCable linkedCable = cableRoot.GetComponent<LinkedCubeCable>();
 		if (linkedCable == null)
 			throw new System.InvalidOperationException("LinkedCubeCable prefab requires its visual component.");
