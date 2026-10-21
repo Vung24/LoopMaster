@@ -17,6 +17,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	[SerializeField] private Button _undoButton;
 	[SerializeField] private Button _shuffleButton;
 	[SerializeField] private Button _pathButton;
+	[SerializeField] private Button _speedButton;
 	[SerializeField] private TMP_Text _levelLabel;
 	[SerializeField] private TMP_Text _capacityLabel;
 	[SerializeField] private Image _capacityFill;
@@ -54,8 +55,12 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
-	private GameObject _shuffleSelection;
-	private Button _shuffleSelectionClose;
+	private Image _speedIcon;
+	private Sprite _lastSpeedSprite;
+	[SerializeField] private GameObject _shuffleSelection;
+	[SerializeField] private Button _shuffleSelectionClose;
+	[SerializeField] private RawImage _shuffleTargets;
+	private ShuffleSelectionHighlight _shuffleHighlight;
 
 	public SafeArea SafeArea => _safeArea;
 
@@ -146,6 +151,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		BindButton(_undoButton, UseUndo);
 		BindButton(_shuffleButton, UseShuffle);
 		BindButton(_pathButton, UsePath);
+		BindButton(_speedButton, ToggleSpeed);
 		RefreshDisplay();
 	}
 
@@ -179,6 +185,12 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (_undoButton == null) _undoButton = ResolveButton(_top, _bottom, "Undo");
 		if (_shuffleButton == null) _shuffleButton = ResolveButton(_top, _bottom, "Shuffle");
 		if (_pathButton == null) _pathButton = ResolveButton(_top, _bottom, "Path");
+		if (_speedButton == null) _speedButton = ResolveButton(_top, _bottom, "Speed");
+		if (_speedButton != null && _speedIcon == null)
+		{
+			_speedIcon = _speedButton.targetGraphic as Image;
+			if (_speedIcon == null) _speedIcon = _speedButton.GetComponent<Image>();
+		}
 	}
 
 	private static Button ResolveButton(Transform top, Transform bottom, string name)
@@ -204,7 +216,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 		var hitAreas = new HashSet<Graphic>();
 		foreach (Button button in new[] { _pauseButton, _undoButton,
-			_shuffleButton, _pathButton })
+			_shuffleButton, _pathButton, _speedButton })
 		{
 			if (button == null) continue;
 			button.gameObject.SetActive(true);
@@ -312,6 +324,11 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 		bool active = _controller.IsGameplayActive;
 		if (_pauseButton != null) _pauseButton.interactable = active;
+		if (_speedButton != null)
+		{
+			_speedButton.interactable = active;
+			RefreshSpeedButtonDisplay();
+		}
 		if (_undoTool != null || _shuffleTool != null || _pathTool != null)
 		{
 			_controller.GetToolRequestState(out bool undo, out bool shuffle, out bool path);
@@ -430,6 +447,30 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		}
 	}
 
+	private void ToggleSpeed()
+	{
+		if (_controller == null || !_controller.IsGameplayActive) return;
+		_controller.SetSpeedUp(!_controller.IsSpeedUpActive);
+		RefreshSpeedButtonDisplay();
+	}
+
+	private void RefreshSpeedButtonDisplay()
+	{
+		if (_controller == null) return;
+		if (_speedIcon == null && _speedButton != null)
+		{
+			_speedIcon = _speedButton.targetGraphic as Image;
+			if (_speedIcon == null) _speedIcon = _speedButton.GetComponent<Image>();
+		}
+		if (_speedIcon == null) return;
+		Sprite speedSprite = _controller.SpeedButtonSprite;
+		if (speedSprite != null && _lastSpeedSprite != speedSprite)
+		{
+			_lastSpeedSprite = speedSprite;
+			_speedIcon.sprite = speedSprite;
+		}
+	}
+
 	private void ShowPauseDialog() => LoadPauseDialog().Forget();
 	private async UniTask LoadPauseDialog()
 	{
@@ -453,27 +494,40 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (_controller != null) _controller.OnClickToolUndo();
 	}
 
-	public bool ShowShuffleSelection(GameObject prefab)
+	public void RefreshShuffleSelection()
+	{
+		if (_shuffleHighlight == null) return;
+		if (_controller == null || !_controller.IsSelectingShuffle)
+		{
+			HideShuffleSelection();
+			return;
+		}
+		_shuffleHighlight.Refresh(_controller);
+	}
+
+	public bool ShowShuffleSelection(Camera camera, IReadOnlyList<Box> boxes)
 	{
 		HideShuffleSelection();
-		if (prefab == null) return false;
-		_shuffleSelection = Instantiate(prefab, transform);
-		_shuffleSelectionClose = HierarchyReferenceCache.DescendantComponent<Button>(
-			_shuffleSelection.transform, "CloseBtn");
-		if (_shuffleSelectionClose == null)
+		if (_shuffleSelection == null || _shuffleSelectionClose == null || _shuffleTargets == null)
 		{
-			Debug.LogError("ShuffleMask requires ShuffleTips/Bg/CloseBtn.", prefab);
-			HideShuffleSelection();
+			Debug.LogError("UICanvas requires its ShuffleMask, close button and ShuffleTargets references.", this);
 			return false;
 		}
-		// The recovered HUD uses an overlay canvas. Keep the board visible and
-		// let its physics input pass through the mask; only the tips intercept UI input.
+		// Physics input passes through the mask; eligible boxes render above its dim.
 		Button backgroundButton = _shuffleSelection.GetComponent<Button>();
 		if (backgroundButton != null) backgroundButton.enabled = false;
 		foreach (Graphic graphic in _shuffleSelection.GetComponentsInChildren<Graphic>(true))
 			graphic.raycastTarget = graphic.transform.IsChildOf(_shuffleSelectionClose.transform);
 		Image background = _shuffleSelection.GetComponent<Image>();
-		if (background != null) background.color = new Color(0f, 0f, 0f, 0.35f);
+		if (background != null) background.color = new Color(0f, 0f, 0f, 0.9411765f);
+		if (camera == null || LayerMask.NameToLayer("Top") < 0)
+		{
+			Debug.LogError("Shuffle highlight requires the gameplay camera and the Top layer.", this);
+			HideShuffleSelection();
+			return false;
+		}
+		_shuffleHighlight = new ShuffleSelectionHighlight(camera, _shuffleTargets, boxes);
+		_shuffleHighlight.Refresh(_controller);
 		Snui_Text.EnsureFontAssets(_shuffleSelection.transform);
 		_shuffleSelectionClose.onClick.AddListener(CloseShuffleSelection);
 		_shuffleSelection.SetActive(true);
@@ -488,15 +542,14 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 
 	public void HideShuffleSelection()
 	{
+		_shuffleHighlight?.Dispose();
+		_shuffleHighlight = null;
 		if (_shuffleSelectionClose != null)
 			_shuffleSelectionClose.onClick.RemoveListener(CloseShuffleSelection);
-		_shuffleSelectionClose = null;
 		if (_shuffleSelection != null)
 		{
 			_shuffleSelection.SetActive(false);
-			Destroy(_shuffleSelection);
 		}
-		_shuffleSelection = null;
 	}
 
 	private void UseShuffle()

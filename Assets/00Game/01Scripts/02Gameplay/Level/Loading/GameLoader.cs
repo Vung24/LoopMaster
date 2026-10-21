@@ -63,6 +63,8 @@ public class GameLoader : MonoBehaviour
 	public Sprite LevelTitleBgExpertImage;
 	public Sprite TopLeftArmHardImage;
 	public Sprite TopLeftArmExpertImage;
+	public Sprite SpeedSprite => _config != null ? _config.SpeedImage : (GameAssetsConfig.Instance != null ? GameAssetsConfig.Instance.SpeedImage : null);
+	public Sprite UnSpeedSprite => _config != null ? _config.UnSpeedImage : (GameAssetsConfig.Instance != null ? GameAssetsConfig.Instance.UnSpeedImage : null);
 
 	public void LoadAssets(GameData gameData)
 	{
