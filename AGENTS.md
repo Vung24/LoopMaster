@@ -82,3 +82,70 @@ Verification Checklist
 - Use Try only when the method reports success or failure through its return value (normally bool), with out parameters when a result is needed.
 - Prefer direct, descriptive action names such as Initialize, Move, Build, or Get when Try semantics are unnecessary. Do not add Try wrappers merely for defensive null checks or to silently skip broken required setup.
 - Preserve existing public APIs and framework methods such as TryGetComponent; this rule does not require unrelated renames.
+
+## Unity Agent Coding Guidelines Contract
+
+Goal: clear gameplay code, explicit state, local change, testability, and the smallest architecture that solves the real problem.
+The reasoning, examples, and full rule set (§1–63) are in `UNITY_AGENT_CODING_GUIDELINES_EN.md` (Russian mirror: `UNITY_AGENT_CODING_GUIDELINES_RU.md`). Read the relevant section there when a decision is not obvious from this file.
+
+### Hard Rules
+- One primary responsibility per class/component. No God Objects / God `MonoBehaviour`s.
+- Guard clauses over nested conditions; happy path readable top to bottom; about 2 nesting levels at most.
+- One authoritative owner for each piece of runtime state. UI, Animator, VFX, and audio derive from gameplay state, never the reverse.
+- Change state through intention-revealing operations (`health.ApplyDamage(amount)`, `inventory.TryAdd(item)`), not public setters driven by an outside manager.
+- Mutually exclusive states are an `enum` or state objects, not a pile of booleans.
+- Dependencies are explicit. No hidden globals, service locators, or ScriptableObjects used as mutable global runtime state.
+- Unity lifecycle methods (`Awake`, `Start`, `Update`, …) only orchestrate. Gameplay rules live in plain C# testable without a scene; test them through observable behavior (Given / When / Then), not internal call chains.
+- Config/definition assets (`WeaponDefinition`) stay separate from runtime state (`WeaponState`). Save/network formats map to and from the domain model; they do not shape it.
+- No interface, event, layer, pattern, or generic framework for a hypothetical future need. Start with a direct call; add indirection only when it removes complexity that exists now.
+- No pass-through layers, global EventBus, `Shared`/`Utils` dumping grounds, clever one-liners, or nested ternaries.
+- Optimize only with profiler evidence or a clear scale requirement, and keep optimized code behind a small boundary.
+
+### Size Signals (heuristics, not hard limits)
+| Signal | Reconsider when |
+|---|---|
+| Method | more than 30–40 lines, or mixes levels of abstraction |
+| Class | 5+ unrelated dependencies |
+| File | more than 300–400 lines, or its name differs from the single type it contains |
+| Cognitive Complexity | above 10 simplify; above 15 refactor or justify |
+
+### Naming
+- Use game-design vocabulary (`TryAcquireTarget`, `AddThreat`, `ActivateCheckpoint`), not `Manager` / `Helper` / `Process()` / `Handle()` when a precise name exists.
+- Full words, not abbreviations (`damageMultiplier`, not `dmgMul`), except domain words (`HP`, `UI`, `id`) and loop indices.
+- Names must not lie: `Get*`, properties, `Is*`, `Has*`, `Can*` have no side effects; `Is*` / `Has*` / `Can*` return `bool`; `Try*` returns `bool` plus an `out` result; a plural name holds a collection; events are past facts (`Died`), commands are imperatives (`ApplyDamage`).
+- After changing what a method does, re-check its name.
+- Comments explain *why*, not *what*.
+
+### Findability for Agents
+- One file, one type, matching names.
+- A short `/// <summary>` on public feature entry points.
+- A 5–10 line `README.md` in large feature folders: what lives here, where the entry points are.
+- A small glossary mapping game-design terms to code symbols (`Stagger -> StaggerState`).
+
+### Unity Traps
+- Never use `?.`, `??`, `??=`, `is null`, or `is not null` on `UnityEngine.Object`: they bypass Unity's overloaded `==`, so a destroyed object looks alive. Use `== null` / `!= null` (Microsoft.Unity.Analyzers: UNT0007, UNT0008, UNT0029).
+- Never delete and recreate a script to move or rename it: move the `.cs` together with its `.meta` (it holds the GUID that scenes and prefabs reference), or move it through Unity.
+- Renaming a serialized field requires `[FormerlySerializedAs("oldName")]`.
+- A new "Missing script" warning or an unexpected scene/prefab diff is a regression.
+- Unsubscribe from events at the matching lifecycle boundary. Give coroutines and async work an owner and a stop path. Make critical initialization order explicit.
+- No `Find*`, repeated `GetComponent`, heavy LINQ, or allocations in per-frame hot paths without reason; cache stable references.
+- Use `.asmdef` files to enforce feature/layer boundaries; keep Editor-only code in its own asmdef.
+
+### Refactoring Workflow
+1. **Pick targets by evidence:** complex *and* frequently changed files first.
+   `git log --since=12.months --format= --name-only -- "*.cs" | sort | uniq -c | sort -rn | head -20`
+2. **Pin behavior before changing it:** a characterization (EditMode) test, or a written manual check you will repeat.
+3. **One kind of refactoring per step** (rename, extract, move, split); each step compiles on its own and never mixes in behavior changes.
+4. **Prefer the IDE/Roslyn refactoring engine** for rename, move, and extract over hand-written text edits.
+5. **Verify after every step:** clean compile, no new console errors or analyzer warnings, tests pass. Run `dotnet run --project Rules/Verification/CoreRulesVerification.csproj` and compile verification.
+6. **Quote real compiler/test output;** never summarize a run that did not happen.
+7. **Stop and ask** before behavior changes, serialized-data migrations, or scene/prefab edits.
+
+### Done Checklist
+- [ ] The touched code is simpler, or at least not harder to read, than before.
+- [ ] No new God class, boolean state pile, hidden global, pass-through layer, or speculative abstraction.
+- [ ] Every touched name still describes what the code does.
+- [ ] No touched file grew past ~400 lines; file names match their types.
+- [ ] `.meta` files are intact; renamed serialized fields have `[FormerlySerializedAs]`.
+- [ ] The project compiles with no new errors or warnings, and tests pass (output quoted).
+

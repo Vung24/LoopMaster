@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -525,14 +525,21 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			return;
 		}
 
-		UndoUnusableReason reason = _controller.GetUndoUnusableReason();
-		if (reason != UndoUnusableReason.None)
+		UndoUnavailableReason reason = _controller.GetUndoUnavailableReason();
+		if (reason != UndoUnavailableReason.None)
 		{
 			int unlockLevel = InventoryManager.GetToolUnlockLevel(InventoryKeys.TOOL_UNDO);
-			string message = UndoUnusableReasonHelper.GetMessage(reason, unlockLevel);
+			string message = UndoUnavailableReasonHelper.GetMessage(reason, unlockLevel);
 			if (!string.IsNullOrEmpty(message))
 			{
-				GameplayToast.Show(message);
+				if (Toast != null)
+				{
+					Toast.PlayToast(message, 1.6f, 45f);
+				}
+				else
+				{
+					GameplayToast.Show(message);
+				}
 			}
 		}
 	}
