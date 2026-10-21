@@ -4,17 +4,7 @@ using System.Collections.Generic;
 
 public class GameWinArgs
 {
-	public const string ChampionArenaScore = "championArenaScore";
-	public const string SpecialCollectible = "specialCollectible";
-	public const string SpaceRaceStar = "spaceRaceStar";
-	public const string KeyHunterDrivers = "keyhunterDrivers";
 	public const string PassPoints = "passPoints";
-	public const string PowerRushScore = "powerRush";
-	public const string TeamGoalScore = "teamGoal";
-	public const string TeamBattleScore = "teamBattle";
-	public const string SpecialCount = "specialCount";
-	public const string ChallengeStar = "challengeStar";
-	public const string SurfingRushScore = "surfingRushScore";
 
 	public static bool TryGet(object args, string key, out int intVal)
 	{

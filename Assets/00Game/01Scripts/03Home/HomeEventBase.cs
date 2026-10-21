@@ -18,26 +18,6 @@ namespace Snui
 			Right = 1
 		}
 
-		public enum BgColor
-		{
-			Blue = 0,
-			Blue2 = 1,
-			Green = 2,
-			Green2 = 3,
-			Purple = 4,
-			Cyan = 5
-		}
-
-		private static readonly Dictionary<BgColor, Color> bgColorMap = new Dictionary<BgColor, Color>
-		{
-			{ BgColor.Blue, ColorUtils.RGB(0x2B96FF) },
-			{ BgColor.Blue2, ColorUtils.RGB(0x3E5ED6) },
-			{ BgColor.Green, ColorUtils.RGB(0x3A7B22) },
-			{ BgColor.Green2, ColorUtils.RGB(0x198269) },
-			{ BgColor.Purple, ColorUtils.RGB(0x844ED3) },
-			{ BgColor.Cyan, ColorUtils.RGB(0x26BF9C) }
-		};
-
 		public SideDirection Direction;
 		public UnityEvent<HomeEventBase> OnDestroyEvent = new UnityEvent<HomeEventBase>();
 		[SerializeField] protected Button _button;
@@ -125,14 +105,6 @@ namespace Snui
 			{
 				_textBar.SetStyle(HomeIconTextBar.Style.Timer);
 				_textBar.CountdownHelper?.StartCountdown(time);
-			}
-		}
-
-		protected void SetBgColor(BgColor color)
-		{
-			if (_bgImage != null && bgColorMap.TryGetValue(color, out Color c))
-			{
-				_bgImage.color = c;
 			}
 		}
 
