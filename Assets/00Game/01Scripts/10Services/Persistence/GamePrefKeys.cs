@@ -44,17 +44,9 @@ public static class GamePrefKeys
     public const string SpecialStreak = "events.special_streak";
     public const string LevelBoxBaseline = "events.level_box.baseline";
     public const string LevelBoxViewed = "events.level_box.viewed_level";
-    public const string ChampionArena = "events.champion_arena";
-    public const string DailyGiftDay = "events.daily_gift.day";
-    public const string DailyGiftTime = "events.daily_gift.claim_time";
-    public const string DailyGiftLaunch = "events.daily_gift.first_launch";
     public const string PassState = "events.pass";
     public const string PassTutorial = "tutorial.pass";
     public const string StreakLine = "events.streak_line";
-    public const string Collectible = "events.collectible";
-    public const string CollectibleTutorial = "tutorial.collectible";
-    public const string CollectibleGameTutorial = "tutorial.collectible_game";
-    public const string CollectibleDoubleEnd = "events.collectible.double_end";
     public const string DailyCheckIn = "events.daily_check_in";
     public const string Coins = "inventory.coin";
     public const string Undo = "inventory.undo";
@@ -106,17 +98,9 @@ public static class GamePrefKeys
         { SpecialStreak, "offline_special_streak_data_v1" },
         { LevelBoxBaseline, "offline_LevelBoxBaseline_v1" },
         { LevelBoxViewed, "LevelBoxLastViewedLevel" },
-        { ChampionArena, "champion_arena_data" },
-        { DailyGiftDay, "daily_gift_sign_day" },
-        { DailyGiftTime, "daily_gift_sign_time" },
-        { DailyGiftLaunch, "daily_gift_first_launch_time" },
         { PassState, "pass_state" },
         { PassTutorial, "pass_tutorial_shown" },
         { StreakLine, "streak_line_data" },
-        { Collectible, "special_collectible_data" },
-        { CollectibleTutorial, "special_col_tutorial_shown" },
-        { CollectibleGameTutorial, "special_col_game_tutorial_shown" },
-        { CollectibleDoubleEnd, "doubleSpecial_expire" },
         { DailyCheckIn, "DailyCheckInData" },
         { Coins, "offline_inventory_coin" },
         { Undo, "offline_tool_undo_count" },

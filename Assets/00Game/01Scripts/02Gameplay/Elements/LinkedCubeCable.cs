@@ -4,15 +4,21 @@ using UnityEngine;
 public sealed class LinkedCubeCable : MonoBehaviour
 {
 	[SerializeField] private Mesh _bridgeMesh;
+	[SerializeField] private Mesh _jointMesh;
 	[SerializeField] private Material _bridgeMaterial;
 	[SerializeField] private Vector3 _memberSide = new Vector3(.5f, 0f, .36f);
-	[SerializeField, Min(.01f)] private float _cableDiameter = .2f;
+	[SerializeField, Min(.01f)] private float _cableDiameter = .14f;
+	private const int BendSegmentCount = 5;
 	private Renderer _firstHalfRenderer, _secondHalfRenderer;
+	private Renderer _firstStubRenderer, _secondStubRenderer;
+	private Renderer _firstMountRenderer, _secondMountRenderer;
+	private Renderer[] _firstBendRenderers, _secondBendRenderers;
 	private MaterialPropertyBlock _properties;
 	private GameData _data;
 	private LinkedCubePair _pair;
 	private Transform _bridge, _firstSocket, _secondSocket;
 	private Vector3 _firstAnchor, _secondAnchor;
+	private Vector3 _firstElbow, _secondElbow;
 	private bool _hasFirst, _hasSecond;
 	private float _blockedUntil;
 	private float _consumedAt = -1f;
@@ -21,25 +27,40 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private Color _firstTintColor, _secondTintColor;
 	private bool _hasTintColor;
 
-	/// <summary>Creates a taut, two-color cable for the linked cube pair.</summary>
+	/// <summary>Creates a two-color cable with side exits and a straight middle span.</summary>
 	public void Initialize(GameData data)
 	{
 		_data = data;
 		_pair = data.LinkedPair;
 		if (_pair == null) { enabled = false; return; }
-		if (_bridgeMesh == null || _bridgeMaterial == null)
-			throw new InvalidOperationException("Assign the bridge mesh and material on LinkedCubeCable.prefab.");
+		if (_bridgeMesh == null || _jointMesh == null || _bridgeMaterial == null)
+			throw new InvalidOperationException("Assign the cylinder mesh, joint mesh and material on LinkedCubeCable.prefab.");
 		_properties = new MaterialPropertyBlock();
 		_bridge = CreateRoot("Bridge");
-		// The cylinder is two units tall; each half covers .53 units along the bridge.
-		Quaternion halfRotation = Quaternion.Euler(0f, 0f, -90f);
-		Vector3 halfScale = new Vector3(1f, .265f, 1f);
-		_firstHalfRenderer = CreateMesh("FirstHalf", _bridge, _bridgeMesh, _bridgeMaterial,
-			new Vector3(-.265f, 0f, 0f), halfRotation, halfScale);
-		_secondHalfRenderer = CreateMesh("SecondHalf", _bridge, _bridgeMesh, _bridgeMaterial,
-			new Vector3(.265f, 0f, 0f), halfRotation, halfScale);
+		_firstHalfRenderer = CreatePart("FirstHalf", _bridgeMesh);
+		_secondHalfRenderer = CreatePart("SecondHalf", _bridgeMesh);
+		_firstStubRenderer = CreatePart("FirstSideExit", _bridgeMesh);
+		_secondStubRenderer = CreatePart("SecondSideExit", _bridgeMesh);
+		_firstMountRenderer = CreatePart("FirstMount", _jointMesh);
+		_secondMountRenderer = CreatePart("SecondMount", _jointMesh);
+		_firstBendRenderers = CreateBend("FirstBend");
+		_secondBendRenderers = CreateBend("SecondBend");
 		_firstSocket = CreateRoot("Anchor_A");
 		_secondSocket = CreateRoot("Anchor_B");
+	}
+
+	private Renderer[] CreateBend(string name)
+	{
+		var renderers = new Renderer[BendSegmentCount];
+		for (int i = 0; i < renderers.Length; i++)
+			renderers[i] = CreatePart(name + i, _bridgeMesh);
+		return renderers;
+	}
+
+	private Renderer CreatePart(string name, Mesh mesh)
+	{
+		return CreateMesh(name, _bridge, mesh, _bridgeMaterial,
+			Vector3.zero, Quaternion.identity, Vector3.one);
 	}
 
 	public void ShowBlocked(LinkedCubeLaunchFailure reason)
@@ -78,15 +99,13 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		float fade = consumed ? Mathf.Clamp01(1f - (Time.time - _consumedAt) / .18f) : 1f;
 		Vector3 firstCenter = MemberCenter(_pair.FirstCube, _firstAnchor);
 		Vector3 secondCenter = MemberCenter(_pair.SecondCube, _secondAnchor);
-		UpdateAnchor(_pair.FirstCube, secondCenter, ref _firstAnchor, ref _hasFirst);
-		UpdateAnchor(_pair.SecondCube, firstCenter, ref _secondAnchor, ref _hasSecond);
+		UpdateAnchor(_pair.FirstCube, secondCenter, ref _firstAnchor, ref _firstElbow, ref _hasFirst);
+		UpdateAnchor(_pair.SecondCube, firstCenter, ref _secondAnchor, ref _secondElbow, ref _hasSecond);
 		bool show = fade > 0f && _hasFirst && _hasSecond;
 		SetVisible(_bridge, show);
 		SetVisible(_firstSocket, show);
 		SetVisible(_secondSocket, show);
 		if (!show) return;
-		Vector3 span = _secondAnchor - _firstAnchor;
-		Quaternion rotation = span.sqrMagnitude > .0001f ? Quaternion.FromToRotation(Vector3.right, span.normalized) : Quaternion.identity;
 		if (Time.time >= _nextReadyCheckTime)
 		{
 			_cachedReady = LinkedCubeLaunch.CanBegin(_data, _pair.FirstBox, out _);
@@ -97,14 +116,56 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		if (Time.time < _blockedUntil) pulse += .06f * Mathf.Sin(Time.time * 30f);
 		else if (ready) pulse += .015f * Mathf.Sin(Time.time * 4f);
 		float thickness = _cableDiameter * fade * pulse;
-		_bridge.localPosition = (_firstAnchor + _secondAnchor) * .5f;
-		_bridge.localRotation = rotation;
-		_bridge.localScale = new Vector3(span.magnitude / 1.06f, thickness, thickness);
+		UpdateBend(_firstBendRenderers, _firstAnchor, _firstElbow, _secondElbow, thickness,
+			out Vector3 firstExit, out Vector3 firstMiddle);
+		UpdateBend(_secondBendRenderers, _secondAnchor, _secondElbow, _firstElbow, thickness,
+			out Vector3 secondExit, out Vector3 secondMiddle);
+		Vector3 midpoint = (firstMiddle + secondMiddle) * .5f;
+		SetSegment(_firstStubRenderer.transform, _firstAnchor, firstExit, thickness);
+		SetSegment(_firstHalfRenderer.transform, firstMiddle, midpoint, thickness);
+		SetSegment(_secondHalfRenderer.transform, midpoint, secondMiddle, thickness);
+		SetSegment(_secondStubRenderer.transform, secondExit, _secondAnchor, thickness);
+		SetMount(_firstMountRenderer.transform, _firstAnchor, thickness * 1.2f);
+		SetMount(_secondMountRenderer.transform, _secondAnchor, thickness * 1.2f);
 		_firstSocket.localPosition = _firstAnchor;
 		_secondSocket.localPosition = _secondAnchor;
-		_firstSocket.localRotation = _secondSocket.localRotation = rotation;
-		_firstSocket.localScale = _secondSocket.localScale = Vector3.one * thickness;
-		UpdateTint(ready);
+		UpdateTint();
+	}
+
+	private static void UpdateBend(Renderer[] renderers, Vector3 anchor, Vector3 elbow,
+		Vector3 partnerElbow, float diameter, out Vector3 start, out Vector3 end)
+	{
+		Vector3 incoming = anchor - elbow;
+		Vector3 outgoing = partnerElbow - elbow;
+		float trim = Mathf.Min(.12f, incoming.magnitude * .45f, outgoing.magnitude * .2f);
+		start = elbow + incoming.normalized * trim;
+		end = elbow + outgoing.normalized * trim;
+		Vector3 previous = start;
+		for (int i = 0; i < renderers.Length; i++)
+		{
+			float progress = (i + 1f) / renderers.Length;
+			Vector3 first = Vector3.Lerp(start, elbow, progress);
+			Vector3 second = Vector3.Lerp(elbow, end, progress);
+			Vector3 current = Vector3.Lerp(first, second, progress);
+			SetSegment(renderers[i].transform, previous, current, diameter);
+			previous = current;
+		}
+	}
+
+	private static void SetSegment(Transform segment, Vector3 start, Vector3 end, float diameter)
+	{
+		Vector3 span = end - start;
+		segment.localPosition = (start + end) * .5f;
+		segment.localRotation = Quaternion.identity;
+		if (span.sqrMagnitude > .0001f)
+			segment.localRotation = Quaternion.FromToRotation(Vector3.up, span.normalized);
+		segment.localScale = new Vector3(diameter, span.magnitude * .5f, diameter);
+	}
+
+	private static void SetMount(Transform joint, Vector3 position, float diameter)
+	{
+		joint.localPosition = position;
+		joint.localScale = Vector3.one * diameter;
 	}
 
 	private static void SetVisible(Transform part, bool visible)
@@ -118,46 +179,57 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		return transform.TransformPoint(fallback);
 	}
 
-	private void UpdateAnchor(CubeInfo member, Vector3 partnerCenter, ref Vector3 local, ref bool captured)
+	private void UpdateAnchor(CubeInfo member, Vector3 partnerCenter,
+		ref Vector3 local, ref Vector3 elbow, ref bool captured)
 	{
 		if (member == null || member.Size <= 0 || member.CubeSc == null) return;
 		Transform cube = member.CubeSc.transform;
-		Vector3 direction = cube.InverseTransformDirection(partnerCenter - cube.position);
-		direction.y = 0f;
-		if (direction.sqrMagnitude < .0001f) direction = Vector3.right;
-		direction.Normalize();
-		float xEdge = _memberSide.x / Mathf.Max(.0001f, Mathf.Abs(direction.x));
-		float zEdge = _memberSide.z / Mathf.Max(.0001f, Mathf.Abs(direction.z));
-		Vector3 side = direction * Mathf.Min(xEdge, zEdge);
+		Vector3 direction = cube.InverseTransformPoint(partnerCenter);
+		// Prefer the side face so slot differences do not drag the exit towards a corner.
+		Vector3 outward = Vector3.right * Mathf.Sign(direction.x);
+		float edge = _memberSide.x;
+		if (Mathf.Abs(direction.x) < .0001f)
+		{
+			outward = Vector3.forward * Mathf.Sign(direction.z);
+			edge = _memberSide.z;
+		}
+		float radius = _cableDiameter * .5f * 1.06f;
+		Vector3 side = outward * Mathf.Max(0f, edge - radius);
 		side.y = _memberSide.y;
 		local = transform.InverseTransformPoint(cube.TransformPoint(side));
+		Vector3 bend = outward * (edge + radius + .045f);
+		bend.y = _memberSide.y;
+		elbow = transform.InverseTransformPoint(cube.TransformPoint(bend));
 		captured = true;
 	}
 
-	private void UpdateTint(bool ready)
+	private void UpdateTint()
 	{
-		Color first = GetMemberTint(_pair.FirstCube, ready);
-		Color second = GetMemberTint(_pair.SecondCube, ready);
+		Color first = GameAssetsConfig.GetCubeColor(_pair.FirstCube.Type);
+		Color second = GameAssetsConfig.GetCubeColor(_pair.SecondCube.Type);
 		if (_hasTintColor && _firstTintColor == first && _secondTintColor == second) return;
 		_firstTintColor = first;
 		_secondTintColor = second;
 		_hasTintColor = true;
 		ApplyTint(_firstHalfRenderer, first);
 		ApplyTint(_secondHalfRenderer, second);
-	}
-
-	private Color GetMemberTint(CubeInfo member, bool ready)
-	{
-		Color color = GameAssetsConfig.GetCubeColor(member.Type);
-		if (Time.time < _blockedUntil) color = Color.Lerp(color, new Color(1f, .28f, .2f), .45f);
-		else if (!ready && _pair.State == LinkedCubePairState.Pending) color *= .82f;
-		return color;
+		ApplyTint(_firstStubRenderer, first);
+		ApplyTint(_firstMountRenderer, first);
+		ApplyTint(_secondStubRenderer, second);
+		ApplyTint(_secondMountRenderer, second);
+		for (int i = 0; i < BendSegmentCount; i++)
+		{
+			ApplyTint(_firstBendRenderers[i], first);
+			ApplyTint(_secondBendRenderers[i], second);
+		}
 	}
 
 	private void ApplyTint(Renderer renderer, Color color)
 	{
 		_properties.SetColor("_BaseColor", color);
 		_properties.SetColor("_Color", color);
+		_properties.SetFloat("_Glossiness", .25f);
+		_properties.SetFloat("_SpecularHighlights", 0f);
 		renderer.SetPropertyBlock(_properties);
 	}
 }

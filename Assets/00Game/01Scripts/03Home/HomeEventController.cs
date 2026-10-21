@@ -61,21 +61,6 @@ namespace Snui
 			ReLayout();
 		}
 
-		public void ReplaceWidget(HomeEventBase oldWidget, HomeEventBase newWidget)
-		{
-			int idx = _eventWidgets.IndexOf(oldWidget);
-			if (idx >= 0)
-			{
-				_eventWidgets[idx] = newWidget;
-				if (newWidget != null)
-				{
-					newWidget.transform.SetParent(transform, false);
-					newWidget.OnDestroyEvent.AddListener(OnWidgetDestroyed);
-				}
-				ReLayout();
-			}
-		}
-
 		public async UniTask PlayEnterAnimation(bool shouldWaitAnim = false)
 		{
 			var cg = GetComponent<CanvasGroup>();
@@ -96,61 +81,6 @@ namespace Snui
 			{
 				await UniTask.WhenAll(tasks);
 			}
-		}
-
-		public async UniTask PlayEnterAnimation<T>(float delay = 0.04f)
-		{
-			var cg = GetComponent<CanvasGroup>();
-			if (cg != null)
-			{
-				cg.alpha = 1f;
-			}
-
-			List<UniTask> tasks = new List<UniTask>();
-			int idx = 0;
-			foreach (var w in _eventWidgets)
-			{
-				if (w is T)
-				{
-					tasks.Add(w.PlayEnterAnimation(idx * delay));
-					idx++;
-				}
-			}
-			await UniTask.WhenAll(tasks);
-		}
-
-		public async UniTask PlayExitAnimation<T>(float delay = 0.04f)
-		{
-			List<UniTask> tasks = new List<UniTask>();
-			int idx = 0;
-			foreach (var w in _eventWidgets)
-			{
-				if (w is T)
-				{
-					tasks.Add(w.PlayExitAnimation(idx * delay));
-					idx++;
-				}
-			}
-			await UniTask.WhenAll(tasks);
-		}
-
-		public async UniTask PlayUnlockAnimation()
-		{
-			await UniTask.CompletedTask;
-		}
-
-		public async UniTask PlayAddAnimation()
-		{
-			var snapshot = new List<HomeEventBase>(_eventWidgets);
-			List<UniTask> tasks = new List<UniTask>();
-			foreach (var widget in snapshot)
-			{
-				if (widget != null)
-				{
-					tasks.Add(widget.PlayAddAnimation());
-				}
-			}
-			await UniTask.WhenAll(tasks);
 		}
 
 		public async UniTask ShowPopupDialog(CancellationToken cancellationToken = default)

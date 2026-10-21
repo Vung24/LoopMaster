@@ -4,7 +4,17 @@ using UnityEngine;
 public class TimeFormatter
 {
 	private static TimeFormatter _instance;
-	public static TimeFormatter Instance => _instance ??= new TimeFormatter();
+	public static TimeFormatter Instance
+	{
+		get
+		{
+			if (_instance == null)
+			{
+				_instance = new TimeFormatter();
+			}
+			return _instance;
+		}
+	}
 
 	public static string FormatTimeLeft(long seconds)
 	{
@@ -18,17 +28,13 @@ public class TimeFormatter
 
 		if (days > 0)
 		{
-			return hours > 0 ? $"{days}d:{hours}h" : $"{days}";
+			return hours > 0 ? $"{days}d:{hours:D2}h" : $"{days}d";
 		}
 		if (hours > 0)
 		{
-			return minutes > 0 ? $"{hours}:{minutes}" : $"{hours}";
+			return $"{hours:D2}:{minutes:D2}:{secs:D2}";
 		}
-		if (minutes > 0)
-		{
-			return secs > 0 ? $"{minutes}:{secs}" : $"{minutes}";
-		}
-		return $"{secs}s";
+		return $"{minutes:D2}:{secs:D2}";
 	}
 
 	public static string FormatRewardDuration(long seconds)
