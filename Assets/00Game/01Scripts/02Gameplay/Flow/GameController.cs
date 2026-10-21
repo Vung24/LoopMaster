@@ -362,6 +362,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		EndState = GameEndState.Playing;
 		GameProgressStore.RecordStarted(CurrentLevelNumber);
 		IsLevelReady = true;
+		if (!IsEditorPlaytest)
+		{
+			HeartManager.EnsureInitialized()?.UseHeart();
+		}
 		LevelStarted?.Invoke(CurrentLevelNumber);
 		if (Data == data && EndState == GameEndState.Playing)
 			Presentation.Play(data, _uiCanvasInstance, Scene.Boxes, _mainCamera, _gameLoader.NewPlayerTutorialPrefab).Forget();
@@ -369,8 +373,12 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void Update()
 	{
-		if (!IsGameplayActive && !IsFailureConveyorActive) return;
 		float delta = Time.deltaTime;
+		if (!IsGameplayActive && !IsFailureConveyorActive)
+		{
+			if (_conveyorFlow != null) _conveyorFlow.AdvanceRoadVisuals(delta);
+			return;
+		}
 		if (IsGameplayActive)
 		{
 			Data.Duration += delta;
@@ -426,7 +434,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private void NotifyBoxClickedPresentation()
 	{
 		if (_presentation != null && _uiCanvasInstance != null)
-			_presentation.OnBoxClicked(UICanvas.Current != null ? UICanvas.Current.CapacityNode : _uiCanvas?.CapacityNode);
+		{
+			Transform capacityNode = UICanvas.Current != null ? UICanvas.Current.CapacityNode : (_uiCanvas != null ? _uiCanvas.CapacityNode : null);
+			_presentation.OnBoxClicked(capacityNode);
+		}
 	}
 	public void HandleBoxFinished(Box box)
 	{
@@ -770,6 +781,10 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		}
 		if (state == GameEndState.Won)
 		{
+			if (!IsEditorPlaytest)
+			{
+				HeartManager.EnsureInitialized()?.AddHeart();
+			}
 			_winRewards.Prepare(Data);
 			LevelBoxManager.EnsureInitialized();
 			SpecialStreakManager.Ensure().OnGameWon(CurrentLevelNumber);
