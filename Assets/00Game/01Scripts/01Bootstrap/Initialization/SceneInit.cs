@@ -12,6 +12,7 @@ public sealed class SceneInit
 
 	public async UniTask LoadAsync(CancellationToken cancellationToken)
 	{
+		AudioManager.EnsureInitialized();
 		ResourceRequest configRequest = Resources.LoadAsync<GameAssetsConfig>("GameAssetsConfig");
 		ResourceRequest catalogRequest = Resources.LoadAsync<BuiltinLevelCatalog>(BuiltinLevelCatalog.ResourceName);
 		await UniTask.WaitUntil(() => configRequest.isDone && catalogRequest.isDone,

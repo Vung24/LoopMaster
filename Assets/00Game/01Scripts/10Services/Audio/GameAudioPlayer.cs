@@ -26,22 +26,26 @@ public class GameAudioPlayer : MonoBehaviour
 		_sharedSource = GetComponent<AudioSource>();
 		if (_sharedSource == null) _sharedSource = gameObject.AddComponent<AudioSource>();
 		_sharedSource.playOnAwake = false;
+		_sharedSource.spatialBlend = 0f;
+		GameAudioSettings.RegisterEffectsSource(_sharedSource);
 		GameAudioSettings.ApplyMusicPreference();
 	}
 
 	private void OnDestroy()
 	{
 		if (Current == this) Current = null;
+		GameAudioSettings.UnregisterEffectsSource(_sharedSource);
 	}
 
 	private void OnDisable()
 	{
 		Array.Clear(_nextAllowedAudioTime, 0, _nextAllowedAudioTime.Length);
+		if (_sharedSource != null) _sharedSource.Stop();
 	}
 
 	public void PlayOneShot(AudioClip clip)
 	{
-		if (GameAudioSettings.EffectsEnabled && clip != null && _sharedSource != null && _sharedSource.isActiveAndEnabled)
+		if (GameAudioSettings.EffectsEnabled && !IsAudioPaused && clip != null && _sharedSource != null && _sharedSource.isActiveAndEnabled)
 		{
 			_sharedSource.pitch = 1f;
 			_sharedSource.PlayOneShot(clip);
@@ -81,12 +85,15 @@ public class GameAudioPlayer : MonoBehaviour
 
 	public void PlayBoxAudio(AudioSource source, AudioClip clip, float pitch = 1f)
 	{
-		if (!GameAudioSettings.EffectsEnabled || clip == null) return;
+		if (IsAudioPaused || !GameAudioSettings.EffectsEnabled || clip == null) return;
 		AudioSource target = source != null ? source : _sharedSource;
 		if (target == null || !target.isActiveAndEnabled) return;
+		GameAudioSettings.RegisterEffectsSource(target);
 		target.pitch = Mathf.Clamp(pitch, -3f, 3f);
 		target.PlayOneShot(clip);
 	}
+
+	private static bool IsAudioPaused => AudioManager.Current != null && AudioManager.Current.IsPaused;
 
 	private bool TryRequest(RequestKey key)
 	{

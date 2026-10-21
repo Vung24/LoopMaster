@@ -90,11 +90,14 @@ public static class GameSceneManager
 		try
 		{
 			DOTween.KillAll(false);
+			UniTask stopMusic = default;
+			if (BgmSource.Current != null) stopMusic = BgmSource.Current.Stop();
 
 			if (withAnimation)
 			{
 				await ShowSceneLoading();
 			}
+			await stopMusic;
 
 			await LoadSceneAndWait(sceneType, scenePath);
 			CurSceneType = sceneType;
@@ -111,6 +114,12 @@ public static class GameSceneManager
 			}
 
 			await LoadingPanel.DismissCurrent();
+			if (BgmSource.Current != null) BgmSource.Current.Play();
+		}
+		catch
+		{
+			if (BgmSource.Current != null) BgmSource.Current.Play();
+			throw;
 		}
 		finally
 		{
