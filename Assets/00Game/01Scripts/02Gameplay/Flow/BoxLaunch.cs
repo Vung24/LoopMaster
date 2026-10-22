@@ -1,35 +1,35 @@
 using UnityEngine;
-
+using System;
 public sealed class BoxLaunch
 {
-	private readonly System.Func<bool> _isGameplayActive;
-	private readonly System.Func<bool> _isSelectingShuffle;
-	private readonly System.Action<Box> _tryUseShuffle;
-	private readonly System.Action _hideShuffleSelection;
-	private readonly System.Func<GameData> _getData;
-	private readonly System.Func<LinkedCubeCable> _getLinkedCable;
-	private readonly System.Func<bool> _isGameplaySettled;
-	private readonly System.Func<SliceTransferFlow> _getTransfers;
-	private readonly System.Func<BoxInfo, Box> _getBox;
-	private readonly System.Func<float> _getJumpDuration;
-	private readonly System.Func<float> _getJumpHeight;
-	private readonly System.Action _notifyBoxClicked;
-	private readonly System.Action<string> _showToast;
+	private readonly Func<bool> _isGameplayActive;
+	private readonly Func<bool> _isSelectingShuffle;
+	private readonly Action<Box> _tryUseShuffle;
+	private readonly Action _hideShuffleSelection;
+	private readonly Func<GameData> _getData;
+	private readonly Func<LinkedCubeCable> _getLinkedCable;
+	private readonly Func<bool> _isGameplaySettled;
+	private readonly Func<SliceTransferFlow> _getTransfers;
+	private readonly Func<BoxInfo, Box> _getBox;
+	private readonly Func<float> _getJumpDuration;
+	private readonly Func<float> _getJumpHeight;
+	private readonly Action _notifyBoxClicked;
+	private readonly Action<string> _showToast;
 
 	public BoxLaunch(
-		System.Func<bool> isGameplayActive,
-		System.Func<bool> isSelectingShuffle,
-		System.Action<Box> tryUseShuffle,
-		System.Action hideShuffleSelection,
-		System.Func<GameData> getData,
-		System.Func<LinkedCubeCable> getLinkedCable,
-		System.Func<bool> isGameplaySettled,
-		System.Func<SliceTransferFlow> getTransfers,
-		System.Func<BoxInfo, Box> getBox,
-		System.Func<float> getJumpDuration,
-		System.Func<float> getJumpHeight,
-		System.Action notifyBoxClicked,
-		System.Action<string> showToast = null)
+		Func<bool> isGameplayActive,
+		Func<bool> isSelectingShuffle,
+		Action<Box> tryUseShuffle,
+		Action hideShuffleSelection,
+		Func<GameData> getData,
+		Func<LinkedCubeCable> getLinkedCable,
+		Func<bool> isGameplaySettled,
+		Func<SliceTransferFlow> getTransfers,
+		Func<BoxInfo, Box> getBox,
+		Func<float> getJumpDuration,
+		Func<float> getJumpHeight,
+		Action notifyBoxClicked,
+		Action<string> showToast = null)
 	{
 		_isGameplayActive = isGameplayActive;
 		_isSelectingShuffle = isSelectingShuffle;

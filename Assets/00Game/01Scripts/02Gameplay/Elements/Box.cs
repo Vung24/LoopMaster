@@ -80,6 +80,8 @@ public class Box : MonoBehaviour
 		if (_info.BoxType != BoxType.Single) transform.rotation = Quaternion.Euler(_info.Rotation);
 		InitSpecial();
 		CreateCube();
+		CubeInfo top = _info.PeekTopCube();
+		if (top != null && top.LinkedPairId > 0 && top.IsSecret) CheckHiddenSecret();
 	}
 
 	private void InitSpecial()

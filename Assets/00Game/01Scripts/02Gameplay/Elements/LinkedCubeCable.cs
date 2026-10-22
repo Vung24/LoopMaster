@@ -205,8 +205,8 @@ public sealed class LinkedCubeCable : MonoBehaviour
 
 	private void UpdateTint()
 	{
-		Color first = GameAssetsConfig.GetCubeColor(_pair.FirstCube.Type);
-		Color second = GameAssetsConfig.GetCubeColor(_pair.SecondCube.Type);
+		Color first = GetMemberTint(_pair.FirstCube);
+		Color second = GetMemberTint(_pair.SecondCube);
 		if (_hasTintColor && _firstTintColor == first && _secondTintColor == second) return;
 		_firstTintColor = first;
 		_secondTintColor = second;
@@ -222,6 +222,18 @@ public sealed class LinkedCubeCable : MonoBehaviour
 			ApplyTint(_firstBendRenderers[i], first);
 			ApplyTint(_secondBendRenderers[i], second);
 		}
+	}
+
+	private static Color GetMemberTint(CubeInfo member)
+	{
+		if (member == null) return Color.white;
+		if (!member.IsSecret) return GameAssetsConfig.GetCubeColor(member.Type);
+
+		Material secretMaterial = GameAssetsConfig.GetSecretMat();
+		if (secretMaterial == null) return Color.white;
+		if (secretMaterial.HasProperty("_BaseColor")) return secretMaterial.GetColor("_BaseColor");
+		if (secretMaterial.HasProperty("_Color")) return secretMaterial.GetColor("_Color");
+		return Color.white;
 	}
 
 	private void ApplyTint(Renderer renderer, Color color)

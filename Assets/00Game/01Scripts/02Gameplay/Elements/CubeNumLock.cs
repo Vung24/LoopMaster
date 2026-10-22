@@ -12,6 +12,7 @@ public class CubeNumLock : MonoBehaviour
 	[SerializeField] private ParticleSystem _decParticle;
 	private CubeInfo _cubeInfo;
 	private BoxInfo _boxInfo;
+	private Transform _numLock;
 	private bool _onPlayingUnlockAnim;
 	private bool _isLoaded;
 	private CancellationToken _token;
@@ -26,6 +27,7 @@ public class CubeNumLock : MonoBehaviour
 	{
 		if (_isLoaded) return;
 		_token = destroyCancellationToken;
+		_numLock = HierarchyReferenceCache.Child(transform, "NumLock");
 		if (_canvas == null) _canvas = HierarchyReferenceCache.Child(transform, "Canvas");
 		if (_countText == null && _canvas != null)
 			_countText = HierarchyReferenceCache.Component<TMP_Text>(HierarchyReferenceCache.Child(_canvas, "Count"));
@@ -104,9 +106,11 @@ public class CubeNumLock : MonoBehaviour
 		await UniTask.WaitForSeconds(0.45f, cancellationToken: _token);
 		GameVibrationHelper.PlayLockUnlock();
 		await UniTask.WaitForSeconds(0.35f, cancellationToken: _token);
+		if (_numLock != null) _numLock.gameObject.SetActive(false);
 		if (_canvas != null) _canvas.gameObject.SetActive(false);
 		await UniTask.WaitForSeconds(0.4f, cancellationToken: _token);
-		Destroy(gameObject);
+		// Let the burst finish without delaying the gameplay unlock.
+		Destroy(gameObject, 0.5f);
 	}
 
 	private void RefreshCount()

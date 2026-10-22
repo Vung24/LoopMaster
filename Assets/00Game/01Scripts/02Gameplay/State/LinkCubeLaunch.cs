@@ -66,6 +66,7 @@ public sealed class LinkedCubeLaunch
 		failure = LinkedCubeLaunchFailure.BlockedPartner;
 		if (pair.FirstBox.PeekTopCube() != pair.FirstCube || pair.SecondBox.PeekTopCube() != pair.SecondCube)
 			return false;
+		if (pair.FirstCube.IsSecret || pair.SecondCube.IsSecret) return false;
 		failure = LinkedCubeLaunchFailure.InvalidState;
 		if (!pair.FirstBox.CanPopup() || !pair.SecondBox.CanPopup() ||
 			!IsFullOrdinaryMember(pair.FirstCube) || !IsFullOrdinaryMember(pair.SecondCube))
