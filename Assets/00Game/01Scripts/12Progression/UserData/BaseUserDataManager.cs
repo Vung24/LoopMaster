@@ -88,23 +88,7 @@ public abstract class BaseUserDataManager : MonoBehaviour, IGameManager
 
 	public void DeleteAll()
 	{
-		string[] keys =
-		{
-			nameof(CurrentPuzzleIndex), nameof(NormalPuzzleIndex),
-			nameof(CurrentLevelPlayCount), nameof(IsSoundOn), nameof(IsMusicOn),
-			nameof(IsVibrate), nameof(ColorBlindnessModeSwitch),
-			nameof(RateUsEnabled), nameof(FinishLevelCountToday),
-			nameof(UserDataManager.HasShowSpeedUpTutorial), nameof(UserDataManager.HasShowFailTutorial),
-			nameof(UserDataManager.FeatureTutorialState)
-		};
-		InventoryManager.Ensure().ClearRewardData();
-		LevelBoxManager.ClearOfflineData();
-		SpecialStreakManager.ClearOfflineData();
-		GameProgressStore.DeleteProgress();
-		InventoryManager.Ensure().ResetInventory();
-		GamePrefs.DeleteKey(GamePrefKeys.FreeRevive);
-		foreach (string key in keys) GamePrefs.DeleteKey(GamePrefKeys.UserData(key));
-		GamePrefs.Save();
+		CheatDelegate.ResetAllData(false);
 	}
 
 	public int GetInt(string key, int defaultValue = 0) => GamePrefs.GetInt(GamePrefKeys.UserData(key), defaultValue);
