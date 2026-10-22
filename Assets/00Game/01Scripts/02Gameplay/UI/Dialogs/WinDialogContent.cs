@@ -514,7 +514,16 @@ public class WinDialogContent : DialogContent
 	{
 		bool cancelled = await UniTask.Delay(TimeSpan.FromSeconds(0.4f), ignoreTimeScale: true,
 			cancellationToken: _token).SuppressCancellationThrow();
-		if (!cancelled && this != null && isActiveAndEnabled) Dismiss(RESULT_CLOSE);
+		if (cancelled) return;
+
+		// Keep the reward open until its audio finishes, including after application pause.
+		while (AudioManager.Current != null &&
+			(AudioManager.Current.IsPaused || AudioManager.Current.IsPlaying(gameObject)))
+		{
+			if (await UniTask.NextFrame(cancellationToken: _token).SuppressCancellationThrow()) return;
+		}
+
+		if (this != null && isActiveAndEnabled) Dismiss(RESULT_CLOSE);
 	}
 
 	private void ReleaseClaimHud()

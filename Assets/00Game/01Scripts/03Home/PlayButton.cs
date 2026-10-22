@@ -40,6 +40,7 @@ public class PlayButton : MonoBehaviour
 
 	private void Awake()
 	{
+		InitializeButtonCanvas();
 		if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
 		if (_btn == null) _btn = GetComponent<Button>();
 		if (_animation == null) _animation = GetComponent<Animation>();
@@ -98,6 +99,30 @@ public class PlayButton : MonoBehaviour
 				_normalOutlineColor = realtime.OutlineColor;
 			}
 		}
+	}
+
+	private void InitializeButtonCanvas()
+	{
+		Canvas parentCanvas = transform.parent == null ? null : transform.parent.GetComponentInParent<Canvas>();
+		if (parentCanvas == null) return;
+
+		// Keep reward arrival scale tweens and animated graphics out of the Home canvas batch.
+		Canvas buttonCanvas = GetComponent<Canvas>();
+		if (buttonCanvas == null)
+		{
+			buttonCanvas = gameObject.AddComponent<Canvas>();
+			buttonCanvas.additionalShaderChannels = parentCanvas.additionalShaderChannels;
+		}
+
+		if (GetComponent<GraphicRaycaster>() != null) return;
+		GraphicRaycaster parentRaycaster = parentCanvas.GetComponent<GraphicRaycaster>();
+		if (parentRaycaster == null) return;
+
+		// Graphics on a nested canvas need their own raycaster to keep Play clickable.
+		GraphicRaycaster raycaster = gameObject.AddComponent<GraphicRaycaster>();
+		raycaster.ignoreReversedGraphics = parentRaycaster.ignoreReversedGraphics;
+		raycaster.blockingObjects = parentRaycaster.blockingObjects;
+		raycaster.blockingMask = parentRaycaster.blockingMask;
 	}
 
 	public void Bind(HomePage home)
