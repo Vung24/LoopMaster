@@ -3,18 +3,18 @@
   "puzzle_id": 54,
   "layout": {
     "HardLevel": 0,
-    "Size": 19.175,
-    "PathLength": 7,
+    "Size": 18.5461979,
+    "PathLength": 8,
     "PathSectionDistance": 0.2,
     "Boxes": [
       {
         "BoxType": 0,
-        "PathIndex": 25,
-        "PathIndexV2": 26,
+        "PathIndex": 5,
+        "PathIndexV2": 6,
         "Position": [
           -2.175,
           0.0,
-          1.02500021
+          -3.07499981
         ],
         "Rotation": [
           0.0,
@@ -23,13 +23,6 @@
         ],
         "Cubes": [
           {
-            "Type": 5,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
             "Type": 2,
             "IsSecret": 0,
             "GroupKeyId": 0,
@@ -37,14 +30,21 @@
             "IsFixed": 0
           },
           {
-            "Type": 2,
+            "Type": 1,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 3,
+            "Type": 1,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 6,
             "IsSecret": 0,
             "GroupKeyId": 1,
             "NumLock": 0,
@@ -82,8 +82,15 @@
             "IsFixed": 0
           },
           {
-            "Type": 5,
+            "Type": 6,
             "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 6,
+            "IsSecret": 1,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
@@ -93,14 +100,8 @@
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 5,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
+            "IsFixed": 0,
+            "LinkedPairId": 1
           }
         ],
         "LinkedCubes": [],
@@ -113,12 +114,12 @@
       },
       {
         "BoxType": 0,
-        "PathIndex": 5,
-        "PathIndexV2": 6,
+        "PathIndex": 25,
+        "PathIndexV2": 26,
         "Position": [
           -2.175,
           0.0,
-          -3.07499981
+          1.02500021
         ],
         "Rotation": [
           0.0,
@@ -127,11 +128,33 @@
         ],
         "Cubes": [
           {
-            "Type": 6,
+            "Type": 7,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
+          },
+          {
+            "Type": 5,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 2,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 2,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 1
           }
         ],
         "LinkedCubes": [],
@@ -158,14 +181,7 @@
         ],
         "Cubes": [
           {
-            "Type": 2,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 2,
+            "Type": 3,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -173,13 +189,20 @@
           },
           {
             "Type": 3,
-            "IsSecret": 1,
+            "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 6,
+            "Type": 3,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 3,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -210,28 +233,28 @@
         ],
         "Cubes": [
           {
-            "Type": 1,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 1,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
             "Type": 5,
-            "IsSecret": 1,
+            "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 6,
+            "Type": 7,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 7,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 7,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -262,21 +285,28 @@
         ],
         "Cubes": [
           {
+            "Type": 5,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 4,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
             "Type": 1,
-            "IsSecret": 0,
+            "IsSecret": 1,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 3,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 6,
+            "Type": 5,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -305,7 +335,36 @@
           90.0,
           0.0
         ],
-        "Cubes": [],
+        "Cubes": [
+          {
+            "Type": 6,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 4,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 4,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 2,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          }
+        ],
         "LinkedCubes": [],
         "LockColor": 0,
         "IsEnterOnly": 0,
@@ -328,36 +387,7 @@
           90.0,
           0.0
         ],
-        "Cubes": [
-          {
-            "Type": 4,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 4,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 4,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 3,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
+        "Cubes": [],
         "LinkedCubes": [],
         "LockColor": 0,
         "IsEnterOnly": 0,
@@ -531,10 +561,10 @@
       {
         "Id": 1,
         "BoxIndexes": [
-          2,
-          1
+          6,
+          5
         ],
-        "LockedByColor": 3
+        "LockedByColor": 6
       }
     ],
     "Covers": [],
@@ -545,7 +575,7 @@
         "Position": [
           -4.76837158E-07,
           0.2,
-          12.12
+          11.4911985
         ],
         "Rotation": [
           0.0,

@@ -46,8 +46,8 @@ public sealed partial class LoopLevelEditorWindow
     private static readonly PaletteEntry[][] PaletteCategories = {
         new[] {
             new PaletteEntry("Box", "Hộp thường", "4 ô (2x2)", "📦", new Color(0.2f, 0.7f, 1f)),
-            new PaletteEntry("LongColorBox", "Hộp dài", "64 ô dài", "📏", new Color(0.7f, 0.4f, 1f)),
-            new PaletteEntry("SingleTypeBox", "Hộp đơn", "6 ô (1x1)", "📦", new Color(1f, 0.6f, 0.2f)),
+            new PaletteEntry("LongColorBox", "Hộp dài", "6 ô", "📏", new Color(0.7f, 0.4f, 1f)),
+            new PaletteEntry("SingleTypeBox", "Hộp đơn", "Hàng đợi tối đa 64 khối", "📦", new Color(1f, 0.6f, 0.2f)),
             new PaletteEntry("OnlyEnterBox", "Hộp chỉ vào", "Một chiều vào", "⬇️", new Color(0.2f, 0.85f, 0.4f)),
             new PaletteEntry("LimitedColorBox", "Hộp hạn chế", "Màu cố định", "🎨", new Color(1f, 0.35f, 0.7f))
         },

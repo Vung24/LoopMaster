@@ -114,6 +114,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     private void OnUndoRedo()
     {
+        ClearManualCubePins();
         _linkedFirstBox = _linkedFirstCube = -1;
         CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver();
         CancelRoadSketch();
@@ -170,12 +171,15 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
         }
         string json = root.ToString(Formatting.Indented);
         if (json == _document.Json) return;
+        if (A.Array(A.Layout(previousDocument), "Boxes").Count != A.Array(A.Layout(root), "Boxes").Count)
+            ClearManualCubePins();
         Undo.RecordObject(_document, action); _document.Json = json;
         EditorUtility.SetDirty(_document); _cachedJson = null; _root = null;
         _hasValidation = false; SyncDirty(); Repaint(); SceneView.RepaintAll();
     }
     private void SetDocument(JObject root, string path, string diskText)
     {
+        ClearManualCubePins();
         _linkedFirstBox = _linkedFirstCube = -1;
         CancelCanvasGesture(); ClearWorkspaceProposal(); ClearCanvasSelection(); StopDraftSolver(); _canvasFramed = false;
         CancelRoadSketch();
@@ -213,6 +217,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             JObject root = A.Parse(_rawText);
             var errors = A.Validate(root, out _);
             if (errors.Count > 0) throw new FormatException(string.Join("\n", errors));
+            ClearManualCubePins();
             Commit(root, "Áp dụng JSON màn chơi"); _rawText = _rawBase = _document.Json;
             _status = "Đã áp dụng JSON."; SyncDirty(); return true;
         }
@@ -271,6 +276,9 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     }
     public override void DiscardChanges()
     {
+        ClearManualCubePins();
+        ClearWorkspaceProposal();
+        StopDraftSolver();
         if (_document != null && _savedJson != null) _document.Json = _savedJson;
         _cachedJson = null; _root = null; _rawText = _rawBase = null;
         base.DiscardChanges(); Repaint(); SceneView.RepaintAll();
@@ -423,6 +431,12 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
     {
         Event e = Event.current;
         if (e.type != EventType.KeyDown) return;
+        if (e.keyCode == KeyCode.Escape && _tableDragBox >= 0)
+        {
+            CancelCanvasGesture();
+            e.Use();
+            return;
+        }
         if ((e.control || e.command) && e.keyCode == KeyCode.S)
         {
             TrySave(e.shift); e.Use(); return;

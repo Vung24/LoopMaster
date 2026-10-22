@@ -23,20 +23,20 @@ JSON gameplay hiện ở `Assets/00Game/Resources/LevelData/` sau khi chuyển v
 Từ thư mục gốc dự án:
 
 ```powershell
-dotnet run --project Rules/Verification/CoreRulesVerification.csproj --no-restore
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/LevelEditor/compile-runtime.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/compile.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-samples.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-playmode.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-samples.ps1 -All
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-playmode.ps1 -All
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-playmode.ps1 -Session
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-playmode.ps1 -Session -NoDomainReload
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-samples.ps1 -Baselines
-powershell -NoProfile -ExecutionPolicy Bypass -File Rules/AlternativeCampaign70/run-samples.ps1 -Audit
+dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj --no-restore
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/LevelEditor/compile-runtime.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/compile.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-samples.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-playmode.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-samples.ps1 -All
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-playmode.ps1 -All
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-playmode.ps1 -Session
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-playmode.ps1 -Session -NoDomainReload
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-samples.ps1 -Baselines
+powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/AlternativeCampaign70/run-samples.ps1 -Audit
 ```
 
-Các runner dùng project Unity kiểm chứng riêng và product/company riêng; không chạy vào phiên Unity đang mở của người dùng. `Rules` và `.utmp` là các thư mục công cụ cục bộ vốn đang được gitignore trong dự án. Log Unity chi tiết ở `Rules/AlternativeCampaign70/`.
+Các runner dùng project Unity kiểm chứng riêng và product/company riêng; không chạy vào phiên Unity đang mở của người dùng. `Rules` và `.utmp` là các thư mục công cụ cục bộ vốn đang được gitignore trong dự án. Log Unity chi tiết ở `../LoopMaster-ProjectData/AlternativeCampaign70/`.
 
 Builder không tin cờ `verified` của generator chung. Nó từ chối ứng viên không có replay thắng, không coi hết ngân sách tìm kiếm là vô nghiệm và không tự chứng nhận ứng viên thất bại. Sinh đủ campaign qua menu yêu cầu bộ mẫu có bằng chứng Unity còn khớp hash và có số liệu tham chiếu.
 

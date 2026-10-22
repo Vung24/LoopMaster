@@ -23,7 +23,8 @@ public static class AlternativeCampaign70Audit
         int combinationCount = 0;
         int threeMechanicCount = 0, fourMechanicCount = 0, hardCount = 0, totalSecrets = 0;
         int nearSolvedTotal = 0;
-        int linkedLevels = 0, lastLinkedLevel = 0;
+        int linkedLevels = 0, multipleLinkedLevels = 0, totalLinkedPairs = 0, normalSingleBufferLevels = 0;
+        var gentleLevels = new JArray();
         int runtime=0, capacityDisplays=0, capacityRules=0, addSpaceReviews=0;
         for(int level=1;level<=70;level++)
         {
@@ -33,10 +34,9 @@ public static class AlternativeCampaign70Audit
                 Require(mechanics.Count >= (level < 20 ? 1 : 2),level,"Hard/Expert needs learned special mechanics");
             if (p.Pair > 0)
             {
-                if (level >= 18 && level != 21 && level != 22 && level != 46)
-                    Require(level-lastLinkedLevel >= 2,level,"linked cube practice must be spaced apart");
                 linkedLevels++;
-                lastLinkedLevel=level;
+                totalLinkedPairs += p.Pair;
+                if (p.Pair > 1) multipleLinkedLevels++;
             }
             if (level >= 6 && !CampaignLearningCurve.IsRecovery(level))
                 Require(mechanics.Count >= 1,level,"practice must reuse a learned mechanic");
@@ -79,8 +79,8 @@ public static class AlternativeCampaign70Audit
             Require(puzzle.Boxes.Count==p.Boxes && puzzle.HardLevel==p.Hard,level,"box count or hard label");
             Require(A.Int(layout,"PathLength")==p.Capacity,level,"road capacity");
             if (level >= 5 && p.Hard == 0)
-                Require(p.Capacity >= 5 && p.Capacity <= 7,level,"Normal capacity must stay within the authored 5-7 range");
-            Require(p.Capacity <= 7,level,"excess road capacity");
+                Require(p.Capacity >= 5 && p.Capacity <= 8,level,"Normal capacity must stay within the authored 5-8 range");
+            Require(p.Capacity <= 8,level,"excess road capacity");
             int indicators = 0;
             foreach (JObject item in A.Array(layout,"MapData"))
                 if (item.Value<string>("Name")=="Capacity") indicators++;
@@ -126,7 +126,7 @@ public static class AlternativeCampaign70Audit
                 }
             }
             if (CampaignSecretLayout.UsesLinkedSecrets(level))
-                Require(hiddenLinkedMembers == (level == 22 ? 2 : 1),level,"linked secret lesson has the wrong hidden member count");
+                Require(hiddenLinkedMembers == (level == 22 ? 2 : p.Pair),level,"linked secret lesson has the wrong hidden member count");
             if (level <= 20) Require(hiddenLinkedMembers == 0,level,"linked hidden must follow Hard 20");
             if (level == 7)
             {
@@ -173,16 +173,27 @@ public static class AlternativeCampaign70Audit
             if (level >= 5)
                 Require(normalMixed >= Math.Max(2, (p.Boxes-p.Singles-p.Longs)/2) && clicks.Count >= p.Boxes,
                     level,"shallow puzzle content");
-            // Reveal layout can shorten a valid solution without changing the board's
-            // color dependencies. Keep the old click band as a balance review signal.
+            // Paired releases can shorten a solution without reducing its dependencies.
+            // Click counts are content filters, not measured human difficulty.
             report["reference_length_review"] = clicks.Count < AlternativeCampaign70Builder.MinimumReferenceClicks(p)
-                ? "below_previous_target_pending_human_balance" : "within_reference_target";
+                ? "below_depth_floor" : "within_reference_target";
+            report["minimum_reference_clicks"] = AlternativeCampaign70Builder.MinimumReferenceClicks(p);
             report["mechanic_introduction"] = CampaignLearningCurve.IsIntroduction(level);
             report["post_challenge_recovery"] = CampaignLearningCurve.IsRecovery(level);
+            if (p.Hard == 0 && level >= 3)
+            {
+                int emptyBoxes = 0;
+                foreach (BoxData box in puzzle.Boxes)
+                    if (box.Cubes.Count == 0) emptyBoxes++;
+                Require(emptyBoxes == 1 && p.Colors == p.Boxes - p.Singles - p.Longs - 1,
+                    level,"easy level needs one empty box and one normal-color buffer");
+                normalSingleBufferLevels++;
+            }
             if (CampaignLearningCurve.IsGentle(level))
             {
-                Require(p.Hard == 0 && p.Capacity >= 6 && clicks.Count <= p.Boxes * 2,
+                Require(p.Hard == 0 && p.Capacity >= p.Boxes && p.Capacity <= p.Boxes + 1 && clicks.Count <= p.Boxes * 2,
                     level,"teaching/recovery level must be forgiving and short");
+                gentleLevels.Add(level);
             }
             if (CampaignLearningCurve.IsIntroduction(level))
                 Require(p.Boxes <= 7 && p.Colors <= 5,level,"mechanic introduction needs a small board");
@@ -243,7 +254,7 @@ public static class AlternativeCampaign70Audit
             ["final_acceptance"]="pending_visual_lifecycle_and_human_balance" };
         File.WriteAllText(Path.Combine(AlternativeCampaign70Builder.ReportFolder,"campaign-audit.json"),summary.ToString(Formatting.Indented));
         Require(roadShapes.Count>=24,0,"insufficient distinct road contours");
-        Require(linkedLevels<=20,0,"linked cubes are used too frequently");
+        Require(linkedLevels>=30 && multipleLinkedLevels>=20,0,"linked practice needs broader reuse and multiple pairs");
         File.WriteAllText(Path.Combine(AlternativeCampaign70Builder.ReportFolder,"content-distribution.json"),
             new JObject { ["builder_version"]=AlternativeCampaign70Builder.Version,
                 ["distinct_road_geometries"]=roadShapes.Count, ["colors_equal_boxes_levels"]=equalColorBoxCount,
@@ -252,6 +263,10 @@ public static class AlternativeCampaign70Audit
                 ["levels_with_four_or_more_mechanics"]=fourMechanicCount,
                 ["hard_or_expert_levels"]=hardCount, ["total_secret_cubes"]=totalSecrets,
                 ["linked_cube_levels"]=linkedLevels,
+                ["levels_with_multiple_linked_pairs"]=multipleLinkedLevels,
+                ["total_linked_pairs"]=totalLinkedPairs,
+                ["normal_levels_with_one_empty_box"]=normalSingleBufferLevels,
+                ["gentle_levels"]=gentleLevels,
                 ["near_solved_normal_boxes"]=nearSolvedTotal,
                 ["capacity_histogram"]=JObject.FromObject(capacities), ["box_count_histogram"]=JObject.FromObject(boxCounts),
                 ["levels"]=content }.ToString(Formatting.Indented));
@@ -301,19 +316,23 @@ public static class AlternativeCampaign70Audit
         for(int b=0;b<puzzle.Boxes.Count;b++)
             if(puzzle.Boxes[b].IsAdjacentLocked>0)
                 Require(AdjacentLockRules.GetSourceIndexes(puzzle.Boxes,b).Count>0,level,"adjacent lock without a geometric source");
-        if(p.Pair>0)
+        for (int pairId = 1; pairId <= p.Pair; pairId++)
         {
             int first=-1,second=-1,firstCube=-1,secondCube=-1;
             for(int b=0;b<puzzle.Boxes.Count;b++)
             for(int c=0;c<puzzle.Boxes[b].Cubes.Count;c++)
             {
-                if(puzzle.Boxes[b].Cubes[c].LinkedPairId==0) continue;
+                if(puzzle.Boxes[b].Cubes[c].LinkedPairId!=pairId) continue;
                 if(first<0) { first=b; firstCube=c; } else { second=b; secondCube=c; }
             }
-            Require(first>=0 && second>=0 && Vector3.Distance(puzzle.Boxes[first].Position,puzzle.Boxes[second].Position)<=2.2f,level,"linked member distance");
+            Require(first>=0 && second>=0 && first!=second && Vector3.Distance(puzzle.Boxes[first].Position,puzzle.Boxes[second].Position)<=2.2f,level,"linked member distance");
             Require(puzzle.Boxes[first].LockColor==0 && puzzle.Boxes[second].LockColor==0 &&
                 puzzle.Boxes[first].IsAdjacentLocked==0 && puzzle.Boxes[second].IsAdjacentLocked==0,
                 level,"linked pair must be independent of color/adjacent admission locks");
+            foreach (CubeData cube in puzzle.Boxes[first].Cubes)
+                Require(cube.GroupKeyId == 0,level,"group key needs a box independent of linked admission");
+            foreach (CubeData cube in puzzle.Boxes[second].Cubes)
+                Require(cube.GroupKeyId == 0,level,"group key needs a box independent of linked admission");
             bool same=puzzle.Boxes[first].Cubes[firstCube].Type==puzzle.Boxes[second].Cubes[secondCube].Type;
             if(level==15)
             {
@@ -323,7 +342,7 @@ public static class AlternativeCampaign70Audit
             }
             if(level==17) Require(!same,level,"different-color linked lesson");
             if(level==16) Require((firstCube==puzzle.Boxes[first].Cubes.Count-1)!=(secondCube==puzzle.Boxes[second].Cubes.Count-1),level,"one buried linked partner");
-            if(level==59) Require(grouped.Contains(first)!=grouped.Contains(second),level,"pair must cross door boundary");
+            if(level==59 && pairId==1) Require(grouped.Contains(first)!=grouped.Contains(second),level,"first pair must cross door boundary");
         }
     }
     private static void Require(bool value,int level,string message)

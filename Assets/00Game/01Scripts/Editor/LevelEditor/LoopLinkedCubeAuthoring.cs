@@ -80,6 +80,41 @@ public static class LoopLinkedCubeAuthoring
         return false;
     }
 
+    /// <summary>Returns every complete pair for canvas previews and selection.</summary>
+    public static List<LinkedCubePairRef> GetLinkedPairs(JObject layout)
+    {
+        var firstMembers = new Dictionary<int, LinkedCubePairRef>();
+        var pairs = new List<LinkedCubePairRef>();
+        if (layout == null) return pairs;
+        JArray boxes = A.Array(layout, "Boxes");
+        for (int box = 0; box < boxes.Count; box++)
+        {
+            JArray cubes = A.Array((JObject)boxes[box], "Cubes");
+            for (int cube = 0; cube < cubes.Count; cube++)
+            {
+                int id = A.Int((JObject)cubes[cube], "LinkedPairId");
+                if (id <= 0) continue;
+                if (firstMembers.TryGetValue(id, out LinkedCubePairRef first))
+                    pairs.Add(new LinkedCubePairRef(id, first.BoxA, first.CubeA, box, cube));
+                else firstMembers.Add(id, new LinkedCubePairRef(id, box, cube, -1, -1));
+            }
+        }
+        return pairs;
+    }
+
+    /// <summary>Selects the pair belonging to the selected box, if it has one.</summary>
+    public static bool TryGetLinkedPairForBox(JObject layout, int box, out LinkedCubePairRef pairRef)
+    {
+        foreach (LinkedCubePairRef pair in GetLinkedPairs(layout))
+        {
+            if (pair.BoxA != box && pair.BoxB != box) continue;
+            pairRef = pair;
+            return true;
+        }
+        pairRef = default;
+        return false;
+    }
+
     public static bool TryLinkTopCubes(JObject root, int boxA, int boxB, out string error)
     {
         error = null;
@@ -131,8 +166,12 @@ public static class LoopLinkedCubeAuthoring
         if (firstBox == secondBox) throw new FormatException("Chọn hai khối ở hai hộp khác nhau.");
         JObject first = GetCube(boxes, firstBox, firstCube), second = GetCube(boxes, secondBox, secondCube);
 
-        // Remove any prior pair to satisfy prototype limit
-        Unlink(root, 1);
+		if (HasLinkedCube((JObject)boxes[firstBox]) || HasLinkedCube((JObject)boxes[secondBox]))
+			throw new FormatException("Unlink the selected boxes before creating a different pair.");
+		int nextId = 1;
+		foreach (JObject box in boxes)
+		foreach (JObject cube in A.Array(box, "Cubes"))
+			nextId = Math.Max(nextId, checked(A.Int(cube, "LinkedPairId") + 1));
 
         int oldFirst = A.Int(first, "LinkedPairId"), oldSecond = A.Int(second, "LinkedPairId");
         int oldSecretA = A.Int(first, "IsSecret"), oldSecretB = A.Int(second, "IsSecret");
@@ -143,8 +182,8 @@ public static class LoopLinkedCubeAuthoring
         first["GroupKeyId"] = 0; first["NumLock"] = 0; first["IsFixed"] = 0;
         second["GroupKeyId"] = 0; second["NumLock"] = 0; second["IsFixed"] = 0;
 
-        first["LinkedPairId"] = 1;
-        second["LinkedPairId"] = 1;
+		first["LinkedPairId"] = nextId;
+		second["LinkedPairId"] = nextId;
         try
         {
             LinkedCubePair.Validate(ExportedPuzzleJsonDecoder.Decode(root.ToString(Newtonsoft.Json.Formatting.None)));

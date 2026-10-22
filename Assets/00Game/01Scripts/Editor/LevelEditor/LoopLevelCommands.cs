@@ -32,7 +32,7 @@ public static class LoopLevelCommands
             CubeInfo top = box.PeekTopCube();
             if (top != null && top.LinkedPairId > 0)
             {
-                if (data.LinkedPair != null && box == data.LinkedPair.FirstBox && LinkedCubeLaunch.CanBegin(data, box, out _)) count++;
+                if (box.LinkedPair != null && box == box.LinkedPair.FirstBox && LinkedCubeLaunch.CanBegin(data, box, out _)) count++;
                 continue;
             }
             if (box.State != BoxState.Free || box.IsEmpty() || !box.CanPopup()) continue;
@@ -388,129 +388,11 @@ public static class LoopLevelCommands
         return boxes.Count - 1;
     }
 
+    /// <summary>Balances normal/long colors by their target capacities (legacy API name retained).</summary>
     public static void BalanceCubesToSetsOfFour(JObject root, out int modified, out string report)
     {
-        modified = 0;
-        JObject layout = A.Layout(root);
-        JArray boxes = A.Array(layout, "Boxes");
-        if (boxes.Count == 0)
-        {
-            report = "Chưa có hộp nào để cân bằng.";
-            return;
-        }
-
-        var colorCounts = new Dictionary<int, int>();
-        for (int b = 0; b < boxes.Count; b++)
-        {
-            JObject box = (JObject)boxes[b];
-            if (A.Int(box, "BoxType") == 1) continue;
-            JArray cubes = A.Array(box, "Cubes");
-            for (int c = 0; c < cubes.Count; c++)
-            {
-                int type = A.Int((JObject)cubes[c], "Type");
-                if (type <= 0 || (type >= 201 && type <= 299)) continue;
-                if (!colorCounts.ContainsKey(type)) colorCounts[type] = 0;
-                colorCounts[type]++;
-            }
-        }
-
-        var reportLines = new List<string>();
-        foreach (var kv in colorCounts)
-        {
-            int color = kv.Key;
-            int count = kv.Value;
-            int rem = count % 4;
-            if (rem == 0) continue;
-
-            int needed = (4 - rem) % 4;
-            if (needed <= 2)
-            {
-                int added = 0;
-                for (int b = 0; b < boxes.Count && added < needed; b++)
-                {
-                    JObject box = (JObject)boxes[b];
-                    if (A.Int(box, "BoxType") != 0) continue;
-                    JArray cubes = A.Array(box, "Cubes");
-                    if (cubes.Count < 4)
-                    {
-                        cubes.Add(A.NewCube(color));
-                        box["Cubes"] = cubes;
-                        added++;
-                        modified++;
-                    }
-                }
-                if (added == needed)
-                {
-                    reportLines.Add("Màu " + color + ": thêm " + added + " khối -> tròn " + (count + added));
-                }
-                else
-                {
-                    // Rollback partial adds and remove remainder instead
-                    for (int b = boxes.Count - 1; b >= 0 && added > 0; b--)
-                    {
-                        JObject box = (JObject)boxes[b];
-                        if (A.Int(box, "BoxType") != 0) continue;
-                        JArray cubes = A.Array(box, "Cubes");
-                        if (cubes.Count > 0 && A.Int((JObject)cubes[cubes.Count - 1], "Type") == color)
-                        {
-                            cubes.RemoveAt(cubes.Count - 1);
-                            added--;
-                            modified--;
-                        }
-                    }
-                    int removed = 0;
-                    for (int b = boxes.Count - 1; b >= 0 && removed < rem; b--)
-                    {
-                        JObject box = (JObject)boxes[b];
-                        if (A.Int(box, "BoxType") != 0) continue;
-                        JArray cubes = A.Array(box, "Cubes");
-                        for (int c = cubes.Count - 1; c >= 0 && removed < rem; c--)
-                        {
-                            if (A.Int((JObject)cubes[c], "Type") == color)
-                            {
-                                cubes.RemoveAt(c);
-                                removed++;
-                                modified++;
-                            }
-                        }
-                        if (cubes.Count > 0)
-                        {
-                            ((JObject)cubes[cubes.Count - 1])["IsSecret"] = 0;
-                        }
-                    }
-                    reportLines.Add("Màu " + color + ": bớt " + removed + " khối (do bàn đầy) -> tròn " + (count - removed));
-                }
-            }
-            else
-            {
-                int removed = 0;
-                for (int b = boxes.Count - 1; b >= 0 && removed < rem; b--)
-                {
-                    JObject box = (JObject)boxes[b];
-                    if (A.Int(box, "BoxType") != 0) continue;
-                    JArray cubes = A.Array(box, "Cubes");
-                    for (int c = cubes.Count - 1; c >= 0 && removed < rem; c--)
-                    {
-                        if (A.Int((JObject)cubes[c], "Type") == color)
-                        {
-                            cubes.RemoveAt(c);
-                            removed++;
-                            modified++;
-                        }
-                    }
-                    if (cubes.Count > 0)
-                    {
-                        ((JObject)cubes[cubes.Count - 1])["IsSecret"] = 0;
-                    }
-                }
-                reportLines.Add("Màu " + color + ": bớt " + removed + " khối -> tròn " + (count - removed));
-            }
-        }
-
-        if (reportLines.Count == 0) report = "Tất cả các màu đã tròn bộ 4 (Hợp lệ).";
-        else report = string.Join("; ", reportLines);
+        LoopLevelColorBalance.Balance(root, out modified, out report);
     }
-
     public static void DistributeSolvableCubes(JObject root, IEnumerable<int> selection, int colorCount, int seed, int secretPercent = 0, int setsOfFour = -1)
     {
         JArray boxes = A.Array(A.Layout(root), "Boxes");

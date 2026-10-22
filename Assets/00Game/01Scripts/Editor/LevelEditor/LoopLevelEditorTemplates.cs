@@ -389,16 +389,20 @@ public sealed partial class LoopLevelEditorWindow
     private void DrawBoardTable(JObject layout)
     {
         EditorGUILayout.LabelField("Mọi hộp: từ dưới lên trên. ? khối ẩn | K chìa khóa nhóm", EditorStyles.miniLabel);
+        if (_workspace && _canvasTool == 0)
+            EditorGUILayout.LabelField("Kéo cube sang hộp khác: thả lên cube để đổi chỗ, thả vào + để chuyển. Kéo trong cùng hộp để đổi thứ tự.", EditorStyles.wordWrappedMiniLabel);
         JArray boxes = A.Array(layout, "Boxes");
         for (int b = 0; b < boxes.Count; b++)
         {
             JObject box = (JObject)boxes[b]; JArray cubes = A.Array(box, "Cubes");
             using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
             {
-                if (GUILayout.Toggle(_box == b, b + ": " + BoxTypeLabel(A.Int(box, "BoxType")), "Button", GUILayout.Width(90))) _box = b;
+                string boxLabel = b + ": " + BoxTypeLabel(A.Int(box, "BoxType"));
+                if (_manualPinnedBoxes.Contains(b)) boxLabel = "📌 " + boxLabel;
+                if (GUILayout.Toggle(_box == b, boxLabel, "Button", GUILayout.Width(90))) _box = b;
                 int first = Math.Max(0, cubes.Count - 8);
                 if (first > 0) GUILayout.Label("...", GUILayout.Width(18));
-                int end = cubes.Count + (cubes.Count < A.CubeCapacity(box) && _cubeBrushMode == 0 && (!_workspace || _canvasTool == 2) ? 1 : 0);
+                int end = cubes.Count + (cubes.Count < A.CubeCapacity(box) && _cubeBrushMode == 0 && (!_workspace || _canvasTool == 0 || _canvasTool == 2) ? 1 : 0);
                 for (int c = first; c < end; c++)
                 {
                     bool occupied = c < cubes.Count; JObject cube = occupied ? (JObject)cubes[c] : null;
@@ -412,10 +416,10 @@ public sealed partial class LoopLevelEditorWindow
                     int dragControl = GUIUtility.GetControlID("LoopCubeDrag".GetHashCode(), FocusType.Passive, cell);
                     if (GUI.enabled && _workspace && _canvasTool == 0 && occupied && e.type == EventType.MouseDown && e.button == 0 && cell.Contains(e.mousePosition))
                     { _box = b; _tableDragBox = b; _tableDragCube = c; _tableDragControl = dragControl; GUIUtility.hotControl = dragControl; e.Use(); }
-                    if (GUI.enabled && _workspace && _canvasTool == 0 && occupied && _tableDragBox == b && e.rawType == EventType.MouseUp && cell.Contains(e.mousePosition))
+                    if (GUI.enabled && _workspace && _canvasTool == 0 && _tableDragBox >= 0 && e.rawType == EventType.MouseUp && cell.Contains(e.mousePosition))
                     {
-                        LoopLevelCommands.MoveCube(box, _tableDragCube, c);
-                        _tableDragBox = _tableDragCube = -1; GUIUtility.hotControl = 0; e.Use(); return;
+                        CompleteTableCubeDrop(layout, b, c);
+                        e.Use(); return;
                     }
                     if (GUI.enabled && occupied && e.type == EventType.MouseDown && e.button == 1 && cell.Contains(e.mousePosition))
                     { A.RemoveCube(box, c); _box = b; e.Use(); return; }
