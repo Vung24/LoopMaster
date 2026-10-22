@@ -18,7 +18,6 @@ public class Slice : MonoBehaviour
 	private Tween _positionTween;
 	private Tween _rotationTween;
 	private Tween _scaleTween;
-	private bool _isJumping;
 	private readonly RoadMotion _roadMotion = new RoadMotion(false);
 
 	[SerializeField] private Texture _longBoxSignTex;
@@ -162,7 +161,6 @@ public class Slice : MonoBehaviour
 			.SetEase(rotationEase).SetTarget(gameObject).SetLink(gameObject);
 		if (jumpHeight > 0f)
 		{
-			_isJumping = true;
 			_scaleTween = transform.DOScale(targetScale, duration)
 				.SetEase(Ease.OutQuad).SetTarget(gameObject).SetLink(gameObject);
 			_positionTween = transform.DOJump(targetPosition, jumpHeight, 1, duration)
@@ -176,7 +174,6 @@ public class Slice : MonoBehaviour
 		_positionTween.OnComplete(() =>
 		{
 			_positionTween = null;
-			_isJumping = false;
 			completed?.Invoke();
 		});
 	}
@@ -194,7 +191,6 @@ public class Slice : MonoBehaviour
 		_positionTween = null;
 		_rotationTween = null;
 		_scaleTween = null;
-		_isJumping = false;
 	}
 
 	private void Dismiss()
