@@ -1,19 +1,19 @@
 {
   "builder_version": 2,
-  "distinct_road_geometries": 53,
+  "distinct_road_geometries": 45,
   "colors_equal_boxes_levels": 9,
   "levels_with_multiple_mechanics": 39,
   "levels_with_three_or_more_mechanics": 23,
   "levels_with_four_or_more_mechanics": 13,
   "hard_or_expert_levels": 14,
-  "total_secret_cubes": 250,
+  "total_secret_cubes": 254,
   "linked_cube_levels": 16,
-  "near_solved_normal_boxes": 58,
+  "near_solved_normal_boxes": 57,
   "capacity_histogram": {
     "4": 16,
     "5": 3,
-    "6": 16,
-    "7": 35
+    "6": 15,
+    "7": 36
   },
   "box_count_histogram": {
     "2": 2,
@@ -22,8 +22,8 @@
     "6": 15,
     "7": 9,
     "8": 13,
-    "9": 4,
-    "10": 12,
+    "9": 5,
+    "10": 11,
     "12": 9,
     "13": 2
   },
@@ -117,18 +117,18 @@
     {
       "level": 7,
       "boxes": 6,
-      "normal_colors": 5,
-      "capacity": 6,
+      "normal_colors": 3,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 5,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 9,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 0,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "5988d4535f463072408ca3046c7c81367907bc5371f8047878128f128568bcae",
-      "reference_clicks": 10
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 9
     },
     {
       "level": 8,
@@ -175,7 +175,7 @@
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "8f04c3ec215f8d8ef23e85ed520b527f698764310af7d394a81c853325bfaee0",
+      "road_sha256": "a0d2dc6a99e3ff5bba01a2a5d9d287ffd2c410d564e0ec4a224aeb99f386a22f",
       "reference_clicks": 12
     },
     {
@@ -189,7 +189,7 @@
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
-      "road_sha256": "b1113fb312de45d50eb02e08e4e016c73f0392ce1c1131c2c628773494c6d153",
+      "road_sha256": "8b19af471ecd8f3d7d59413cd2cf5b4eea9d621d18b9b77a66015a116970016e",
       "reference_clicks": 10
     },
     {
@@ -205,7 +205,7 @@
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "753db50e9f70e7250eb1de2174e70aa7b24b5bec1e6146238d1e25a4ba38c7f1",
+      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
       "reference_clicks": 12
     },
     {
@@ -286,7 +286,7 @@
         "secret",
         "linked_pair"
       ],
-      "road_sha256": "b553648f1ded6330f7b51bd751c641b3be8b8d0478376ceb8cffd134882cc0d0",
+      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
       "reference_clicks": 12
     },
     {
@@ -323,20 +323,20 @@
     },
     {
       "level": 20,
-      "boxes": 10,
-      "normal_colors": 8,
+      "boxes": 9,
+      "normal_colors": 7,
       "capacity": 4,
       "hard": 1,
       "mixed_boxes": 8,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 191,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "linked_pair"
       ],
-      "road_sha256": "717d8e0f3a29bae0db1894f805c8030188406a9ce733f03d2e20184975370c92",
-      "reference_clicks": 20
+      "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
+      "reference_clicks": 17
     },
     {
       "level": 21,
@@ -352,7 +352,7 @@
         "linked_pair",
         "linked_secret"
       ],
-      "road_sha256": "59ae28b692700e6361adb4b73c231ecd214716c7468c2cd164d9961acac860b3",
+      "road_sha256": "8b19af471ecd8f3d7d59413cd2cf5b4eea9d621d18b9b77a66015a116970016e",
       "reference_clicks": 9
     },
     {
@@ -402,7 +402,7 @@
         "secret",
         "color_lock"
       ],
-      "road_sha256": "0a72d3b8146965f3a1d78a9040fc2cf089d9fc238b42e56884fa6df1b23fa538",
+      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
       "reference_clicks": 13
     },
     {
@@ -447,13 +447,13 @@
       "hard": 0,
       "mixed_boxes": 10,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 171,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "color_lock"
       ],
-      "road_sha256": "e8a7e01393c8b48100b1be893a2ebc197a5263bed2be45767613311888199c91",
+      "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
       "reference_clicks": 21
     },
     {
@@ -485,8 +485,8 @@
       "mechanics": [
         "adjacent_lock"
       ],
-      "road_sha256": "8f04c3ec215f8d8ef23e85ed520b527f698764310af7d394a81c853325bfaee0",
-      "reference_clicks": 10
+      "road_sha256": "a0d2dc6a99e3ff5bba01a2a5d9d287ffd2c410d564e0ec4a224aeb99f386a22f",
+      "reference_clicks": 12
     },
     {
       "level": 30,
@@ -496,13 +496,13 @@
       "hard": 1,
       "mixed_boxes": 10,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 49,
+      "geometry_reference": 0,
       "mixing_recipe": "layered_cycle_0012",
       "mechanics": [
         "secret",
         "adjacent_lock"
       ],
-      "road_sha256": "e63ebfc4be9ff8dd8526d14cc997b864dabe51d706c563145e7be48e71284b1f",
+      "road_sha256": "e3a197b3153d8ed12ec5f43e0788b94fbe5bc9f594835b11a570930ab6170c3e",
       "reference_clicks": 25
     },
     {
@@ -518,8 +518,8 @@
       "mechanics": [
         "adjacent_lock"
       ],
-      "road_sha256": "0a72d3b8146965f3a1d78a9040fc2cf089d9fc238b42e56884fa6df1b23fa538",
-      "reference_clicks": 14
+      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
+      "reference_clicks": 12
     },
     {
       "level": 32,
@@ -536,7 +536,7 @@
         "color_lock",
         "adjacent_lock"
       ],
-      "road_sha256": "97d1cfc215cb58f01805863d8e0e04730e5753a7495ad22b31381f1a58994ca7",
+      "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
       "reference_clicks": 24
     },
     {
@@ -781,7 +781,7 @@
         "linked_pair",
         "linked_secret"
       ],
-      "road_sha256": "59ae28b692700e6361adb4b73c231ecd214716c7468c2cd164d9961acac860b3",
+      "road_sha256": "8b19af471ecd8f3d7d59413cd2cf5b4eea9d621d18b9b77a66015a116970016e",
       "reference_clicks": 10
     },
     {
@@ -833,7 +833,7 @@
       "mechanics": [
         "single"
       ],
-      "road_sha256": "8ac2f75116778272fe23a32ef655d38b0a960ddd4ba9d94b67bea8a78c93374e",
+      "road_sha256": "23620f577f94e305c525fd4d3f9db08c69d55cd312b3a686b120418c7f6cf867",
       "reference_clicks": 9
     },
     {
@@ -844,13 +844,13 @@
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 160,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
         "secret"
       ],
-      "road_sha256": "1426df821a8ce35fd6ac94c34b93249924ff21434fb14259d2738d82727e8c5c",
+      "road_sha256": "5dd6c358cf335442819b75222baadca7ec412a0889a1498d66fa422d3c8d3294",
       "reference_clicks": 15
     },
     {
@@ -879,7 +879,7 @@
       "hard": 0,
       "mixed_boxes": 10,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 171,
+      "geometry_reference": 0,
       "mixing_recipe": "layered_cycle_0012",
       "mechanics": [
         "secret",
@@ -888,7 +888,7 @@
         "linked_pair",
         "linked_secret"
       ],
-      "road_sha256": "e8a7e01393c8b48100b1be893a2ebc197a5263bed2be45767613311888199c91",
+      "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
       "reference_clicks": 20
     },
     {
@@ -915,14 +915,14 @@
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 100,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "group_door"
       ],
-      "road_sha256": "bb0e94e1f3d6545dccdeee5cfa0320b9242b6af4dd911bc458e4ed32c183fc22",
-      "reference_clicks": 15
+      "road_sha256": "21c5bf3f83e5db2892de51377b7d24eb75720be7dd2f7aa018c8171c5f1e3268",
+      "reference_clicks": 16
     },
     {
       "level": 55,
@@ -967,13 +967,13 @@
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 27,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "surprise"
       ],
-      "road_sha256": "3d1d70226ab4b8831f324ed7e8bf0db707a7a15561972f8b6e1d2916a31e67c3",
+      "road_sha256": "21c5bf3f83e5db2892de51377b7d24eb75720be7dd2f7aa018c8171c5f1e3268",
       "reference_clicks": 15
     },
     {
@@ -984,7 +984,7 @@
       "hard": 0,
       "mixed_boxes": 10,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 180,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
@@ -992,7 +992,7 @@
         "ice",
         "surprise"
       ],
-      "road_sha256": "ed725c18b887aff5211df97dbc675378fe951e0eb7b031f6082d00cbf2889aeb",
+      "road_sha256": "4c62bff08984605e1954eee729c53aa6fd4a3ae8a12342b99de506a012337908",
       "reference_clicks": 26
     },
     {
@@ -1042,13 +1042,13 @@
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 263,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
         "ice"
       ],
-      "road_sha256": "6ef32074dc89bf28ff067ec961fc29978a395f91000d3964fc57408b958eedbe",
+      "road_sha256": "804e794ca5915d5441a9eb2829f354a1029b4b9df2c61f40fe3d3aa21c0da100",
       "reference_clicks": 16
     },
     {
@@ -1114,13 +1114,13 @@
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 176,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
         "color_lock"
       ],
-      "road_sha256": "3c0660bf95f22fb688ca98b4261bfcd5f4534a137de37461b71a72f4e92e65c5",
+      "road_sha256": "5dd6c358cf335442819b75222baadca7ec412a0889a1498d66fa422d3c8d3294",
       "reference_clicks": 13
     },
     {
@@ -1187,13 +1187,13 @@
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 228,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
         "group_door"
       ],
-      "road_sha256": "ed7da8f80d8fdd8a17d664ba708ca29b09ddb13d5c0c9a88e00f8c4e018dc652",
+      "road_sha256": "804e794ca5915d5441a9eb2829f354a1029b4b9df2c61f40fe3d3aa21c0da100",
       "reference_clicks": 15
     },
     {

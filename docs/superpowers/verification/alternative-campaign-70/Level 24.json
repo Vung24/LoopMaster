@@ -3,7 +3,7 @@
   "builder_version": 2,
   "seed": 733154,
   "learning_objective": "Luyện tập khóa màu đơn sắc",
-  "sha256": "9ecb143ecfd7c55483db5c52cbf40aea0cb2f83e3e8334a1054a9a6dd9fc6966",
+  "sha256": "da76b05598ecde5f6640e0b275bed37a36a0746db340ef22afe0c7913827fdfa",
   "profile": {
     "Level": 24,
     "Boxes": 7,
@@ -69,16 +69,10 @@
   "completion_seconds": null,
   "restart_count": null,
   "acceptance": "draft_pending_visual_lifecycle_and_human_balance",
-  "reference_length_review": "within_reference_target",
-  "mixed_boxes": 6,
-  "normal_mixed_boxes": 6,
-  "road_geometry_sha256": "0a72d3b8146965f3a1d78a9040fc2cf089d9fc238b42e56884fa6df1b23fa538",
   "runtime_peak_groups": 3,
-  "automated_replay_wall_seconds": 9.8293,
+  "automated_replay_wall_seconds": 15.3780365,
   "runtime_time_scale": 4,
-  "transition_timing_differences": 0,
-  "runtime_legal_no_effect_clicks": 0,
-  "runtime_replanning_count": 0,
+  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement.",
   "runtime_solution_clicks": [
     0,
     2,
@@ -95,5 +89,13 @@
     2
   ],
   "runtime_wait_policy": "Wait for the reference settled state or two conveyor circuits plus animation margin. Replan from a paused snapshot of the actual settled board on divergence (max 12 replans, 300 legal clicks). Require legal clicks and natural final win; no boosters or board edits. Replay wall time includes planning pauses.",
-  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement."
+  "transition_timing_differences": 0,
+  "runtime_legal_no_effect_clicks": 0,
+  "runtime_replanning_count": 0,
+  "reference_length_review": "within_reference_target",
+  "mechanic_introduction": false,
+  "post_challenge_recovery": false,
+  "mixed_boxes": 6,
+  "normal_mixed_boxes": 6,
+  "road_geometry_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd"
 }

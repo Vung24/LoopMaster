@@ -3,7 +3,7 @@
   "builder_version": 2,
   "seed": 752019,
   "learning_objective": "Chuỗi khóa màu liên hoàn",
-  "sha256": "e08dbfe3cc59625be2d1894d9dd588b14a33b5d20ba79bd86278a36b3d7d9e97",
+  "sha256": "f398e7050e8db753f7571656a2a290d7e625958de9dc06385510247590a1d6bc",
   "profile": {
     "Level": 27,
     "Boxes": 10,
@@ -22,7 +22,7 @@
     "Surprise": 0,
     "Hard": 0,
     "Capacity": 6,
-    "GeometryReference": 171,
+    "GeometryReference": 0,
     "MixingMode": 0,
     "MixingRecipe": "generator_scramble"
   },
@@ -77,17 +77,10 @@
   "completion_seconds": null,
   "restart_count": null,
   "acceptance": "draft_pending_visual_lifecycle_and_human_balance",
-  "content_revision": "2026-10-22 layered secrets and linked reveal curriculum",
-  "mixed_boxes": 10,
-  "normal_mixed_boxes": 10,
-  "road_geometry_sha256": "e8a7e01393c8b48100b1be893a2ebc197a5263bed2be45767613311888199c91",
-  "reference_length_review": "within_reference_target",
   "runtime_peak_groups": 5,
-  "automated_replay_wall_seconds": 19.3598785,
+  "automated_replay_wall_seconds": 28.65892,
   "runtime_time_scale": 4,
-  "transition_timing_differences": 0,
-  "runtime_legal_no_effect_clicks": 0,
-  "runtime_replanning_count": 0,
+  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement.",
   "runtime_solution_clicks": [
     2,
     0,
@@ -112,5 +105,13 @@
     6
   ],
   "runtime_wait_policy": "Wait for the reference settled state or two conveyor circuits plus animation margin. Replan from a paused snapshot of the actual settled board on divergence (max 12 replans, 300 legal clicks). Require legal clicks and natural final win; no boosters or board edits. Replay wall time includes planning pauses.",
-  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement."
+  "transition_timing_differences": 0,
+  "runtime_legal_no_effect_clicks": 0,
+  "runtime_replanning_count": 0,
+  "reference_length_review": "within_reference_target",
+  "mechanic_introduction": false,
+  "post_challenge_recovery": false,
+  "mixed_boxes": 10,
+  "normal_mixed_boxes": 10,
+  "road_geometry_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4"
 }

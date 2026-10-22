@@ -29,6 +29,8 @@ public static class AlternativeCampaign70Audit
         {
             AlternativeCampaign70Builder.Profile p=AlternativeCampaign70Builder.Profile.Get(level);
             List<string> mechanics = AlternativeCampaign70Builder.GetMechanics(p);
+            if (p.Hard > 0)
+                Require(mechanics.Count >= (level < 20 ? 1 : 2),level,"Hard/Expert needs learned special mechanics");
             if (p.Pair > 0)
             {
                 if (level >= 18 && level != 21 && level != 22 && level != 46)
@@ -64,6 +66,7 @@ public static class AlternativeCampaign70Audit
             Require(p.MixingMode==0 || ((string)report["profile"]?["MixingRecipe"] ?? "").StartsWith("layered_cycle_",StringComparison.Ordinal),
                 level,"missing layered mixing recipe");
             report["profile"]["MixingMode"]=p.MixingMode;
+            report["profile"]["Road"]=p.Road;
             report["mechanics"]=new JArray(mechanics);
             report["learning_objective"]=AlternativeCampaign70Builder.LearningObjective(level);
             Require(A.Int(root,"level_number")==level && A.Int(root,"puzzle_id")==level,level,"identity");
@@ -125,6 +128,21 @@ public static class AlternativeCampaign70Audit
             if (CampaignSecretLayout.UsesLinkedSecrets(level))
                 Require(hiddenLinkedMembers == (level == 22 ? 2 : 1),level,"linked secret lesson has the wrong hidden member count");
             if (level <= 20) Require(hiddenLinkedMembers == 0,level,"linked hidden must follow Hard 20");
+            if (level == 7)
+            {
+                Require(p.Hard == 0 && p.Boxes == 6 && p.Colors == 5 && p.Capacity == p.Boxes,
+                    level,"bottom-secret lesson needs five colors and capacity equal to box count");
+                int emptyBoxes = 0;
+                foreach (BoxData box in puzzle.Boxes)
+                {
+                    if (box.Cubes.Count == 0) { emptyBoxes++; continue; }
+                    Require(box.Cubes.Count == 4 && box.Cubes[0].IsSecret == 1,
+                        level,"occupied boxes need four cubes and a hidden bottom");
+                    for (int index = 1; index < box.Cubes.Count; index++)
+                        Require(box.Cubes[index].IsSecret == 0,level,"only the bottom cube should be hidden");
+                }
+                Require(emptyBoxes == 1,level,"easy bottom-secret lesson needs exactly one empty box");
+            }
             totalSecrets += hidden;
             foreach(KeyValuePair<int,int> entry in stock)
                 Require(entry.Value%(CubeData.IsLongBoxColor(entry.Key)?6:4)==0,level,"color stock must fill complete target boxes");
@@ -242,6 +260,7 @@ public static class AlternativeCampaign70Audit
 
     public static void CheckGeometry(JObject root,Puzzle puzzle,AlternativeCampaign70Builder.Profile p,int level)
     {
+        Require(CampaignBoxEntries.GetProblems(root).Count == 0,level,"shared entry slot or long box-to-road flight");
         JArray boxes=A.Array(A.Layout(root),"Boxes");
         foreach(JObject path in A.Array(A.Layout(root),"Paths"))
         {
