@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -195,6 +195,7 @@ public sealed class BoosterFlow
 			if (slice != null && _data.TransferSlice.Contains(slice) && slice.SliceSc != null)
 				roadVisuals.Add(slice.SliceSc);
 		}
+		int initialSourceSliceCount = source != null ? source.GetCurrentSliceVisualCount() : 0;
 		int restoredType = undo.Type;
 		// Capture visual origins before the engine clears undo history and restores the data.
 		var returnOrigins = new List<(Vector3 position, Quaternion rotation, Vector3 scale)>();
@@ -205,7 +206,7 @@ public sealed class BoosterFlow
 			Box destination = item == null || item.Box == null ? null : _getBox(item.Box);
 			if (destination == null || item.Size <= 0) continue;
 			for (int i = 0; i < item.Size; i++)
-				returnOrigins.Add((destination.GetTopSlicePos() - destination.transform.forward * (0.08f * i),
+				returnOrigins.Add((destination.GetUndoDepartureSlicePos(i),
 					destination.transform.rotation, Vector3.one));
 		}
 
@@ -220,7 +221,7 @@ public sealed class BoosterFlow
 			if (slice != null) slice.DismissForUndo();
 		if (source != null && _loader != null && _loader.Slice != null && returnOrigins.Count > 0)
 		{
-			_undoPresentation = DOTween.Sequence();
+			_undoPresentation = DOTween.Sequence().SetLink(_host.gameObject);
 			for (int i = 0; i < returnOrigins.Count; i++)
 			{
 				var origin = returnOrigins[i];
@@ -231,7 +232,8 @@ public sealed class BoosterFlow
 				if (slice != null) slice.PrepareVisual(restoredType);
 				visual.SetActive(true);
 				float delay = returnOrigins.Count <= 1 ? 0f : 0.08f * i / (returnOrigins.Count - 1);
-				_undoPresentation.Insert(delay, visual.transform.DOJump(source.GetTopSlicePos(), 0.8f, 1, 0.32f).SetEase(Ease.OutQuad));
+				Vector3 targetPos = source.GetUndoLandingSlicePos(initialSourceSliceCount + i);
+				_undoPresentation.Insert(delay, visual.transform.DOJump(targetPos, 0.8f, 1, 0.32f).SetEase(Ease.OutQuad));
 				_undoPresentation.Insert(delay, visual.transform.DORotateQuaternion(source.transform.rotation, 0.32f));
 				_undoPresentation.Insert(delay, visual.transform.DOScale(Vector3.one, 0.32f));
 			}
@@ -257,21 +259,38 @@ public sealed class BoosterFlow
 	private bool ApplyLinkedUndo()
 	{
 		if (!_engine.TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
-		var origins = new List<(Vector3 position, Quaternion rotation, Vector3 scale, int color, Box source)>();
+		var origins = new List<(Vector3 position, Quaternion rotation, Vector3 scale, int color, Box source, Vector3 targetPosition)>();
+		var destOffsets = new Dictionary<Box, int>();
+		var initialSourceCounts = new Dictionary<Box, int>();
+		var sourceOffsets = new Dictionary<Box, int>();
 		var roadVisuals = new List<Slice>();
 		foreach (LinkedCubeUndoEntry entry in plan.Entries)
 		{
 			Box source = _getBox(entry.Source);
 			Box destination = entry.Destination == null ? null : _getBox(entry.Destination);
 			if (source == null || entry.Destination != null && destination == null) return false;
+			if (!initialSourceCounts.ContainsKey(source))
+			{
+				initialSourceCounts[source] = source.GetCurrentSliceVisualCount();
+				sourceOffsets[source] = 0;
+			}
+			int landingIndex = initialSourceCounts[source] + sourceOffsets[source]++;
+			Vector3 landingPos = source.GetUndoLandingSlicePos(landingIndex);
 			if (entry.Destination == null)
 			{
 				Slice slice = entry.Slice.SliceSc;
 				if (slice == null) continue;
-				origins.Add((slice.transform.position, slice.transform.rotation, slice.transform.localScale, entry.Color, source));
+				origins.Add((slice.transform.position, slice.transform.rotation, slice.transform.localScale, entry.Color, source, landingPos));
 				roadVisuals.Add(slice);
 			}
-			else origins.Add((destination.GetTopSlicePos(), destination.transform.rotation, Vector3.one, entry.Color, source));
+			else
+			{
+				if (!destOffsets.TryGetValue(destination, out int destOffset))
+					destOffset = 0;
+				destOffsets[destination] = destOffset + 1;
+				Vector3 departurePos = destination.GetUndoDepartureSlicePos(destOffset);
+				origins.Add((departurePos, destination.transform.rotation, Vector3.one, entry.Color, source, landingPos));
+			}
 		}
 		if (!_engine.TryUndoLinked(plan)) return false;
 		IsBusy = true;
@@ -289,7 +308,7 @@ public sealed class BoosterFlow
 				if (slice != null) slice.PrepareVisual(origin.color);
 				visual.SetActive(true);
 				float delay = origins.Count <= 1 ? 0f : .08f * i / (origins.Count - 1);
-				_undoPresentation.Insert(delay, visual.transform.DOJump(origin.source.GetTopSlicePos(), .8f, 1, .32f).SetEase(Ease.OutQuad));
+				_undoPresentation.Insert(delay, visual.transform.DOJump(origin.targetPosition, .8f, 1, .32f).SetEase(Ease.OutQuad));
 				_undoPresentation.Insert(delay, visual.transform.DORotateQuaternion(origin.source.transform.rotation, .32f));
 				_undoPresentation.Insert(delay, visual.transform.DOScale(Vector3.one, .32f));
 			}

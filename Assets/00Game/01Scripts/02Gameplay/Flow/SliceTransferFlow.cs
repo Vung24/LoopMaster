@@ -277,7 +277,7 @@ public sealed class SliceTransferFlow
 		failure = LinkedCubeLaunchFailure.Busy;
 		if (!_isGameRunning() || _host == null || !_host.isActiveAndEnabled || _data == null || _launches.Count != 0)
 			return false;
-		LinkedCubePair pair = _data.LinkedPair;
+		LinkedCubePair pair = source == null || source.Info == null ? null : source.Info.LinkedPair;
 		if (pair == null) { failure = LinkedCubeLaunchFailure.InvalidState; return false; }
 		Box first = GetBox(pair.FirstBox), second = GetBox(pair.SecondBox);
 		if (first == null || second == null || pair.FirstCube == null || pair.SecondCube == null ||

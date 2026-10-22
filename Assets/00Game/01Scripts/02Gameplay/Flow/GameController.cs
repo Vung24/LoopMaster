@@ -159,7 +159,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		box => Boosters.TryUseShuffle(box),
 		HideShuffleSelection,
 		() => Data,
-		() => _linkedCable,
+		GetLinkedCable,
 		IsGameplaySettled,
 		() => Transfers,
 		GetBox,
@@ -167,7 +167,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		() => _sliceJumpHeight,
 		NotifyBoxClickedPresentation));
 
-	private LinkedCubeCable _linkedCable;
+	private readonly List<LinkedCubeCable> _linkedCables = new List<LinkedCubeCable>();
 	[SerializeField] private Camera _mainCamera;
 	// [SerializeField] private Camera _topCamera;
 
@@ -353,7 +353,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		if (data.LinkedPair != null && GameRoot != null)
 		{
-			_linkedCable = Builder.SpawnLinkedCable(data, GameRoot);
+			foreach (LinkedCubePair pair in data.LinkedPairs)
+				_linkedCables.Add(Builder.SpawnLinkedCable(data, pair, GameRoot));
 		}
 		_cameraFlow.Reset(Data, GameRoot);
 		UpdateCamera();
@@ -799,7 +800,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void ClearRuntimeObjects()
 	{
-		_linkedCable = null;
+		_linkedCables.Clear();
 		_groupLocks?.Clear();
 		// Return active slices before clearing the level so replay/next level reuse them.
 		if (GameRoot != null)
@@ -810,6 +811,17 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			_sliceBuffer.Clear();
 		}
 		Scene.Clear(GameRoot);
+	}
+
+	private LinkedCubeCable GetLinkedCable(BoxInfo box)
+	{
+		if (box == null || box.LinkedPair == null) return null;
+		for (int index = 0; index < _linkedCables.Count; index++)
+		{
+			LinkedCubeCable cable = _linkedCables[index];
+			if (cable != null && cable.Pair == box.LinkedPair) return cable;
+		}
+		return null;
 	}
 
 	private void OnDestroy()

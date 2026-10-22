@@ -65,7 +65,7 @@ public sealed class DebugLevelSolver
                 CubeInfo top = source.PeekTopCube();
                 if (top != null && top.LinkedPairId > 0)
                 {
-                    LinkedCubePair pair = node.Data.LinkedPair;
+                    LinkedCubePair pair = source.LinkedPair;
                     if (pair == null || pair.State != LinkedCubePairState.Pending || i != pair.FirstBoxIndex) continue;
                 }
                 else if (!source.CanPopup() || source.IsFinished() || source.GetTopCubes(false).Count == 0 ||
@@ -95,7 +95,8 @@ public sealed class DebugLevelSolver
         var key = new StringBuilder();
         key.Append(data.ExtraPathLength).Append('|');
         bool linked = data.LinkedPair != null;
-        if (linked) key.Append("L").Append(data.LinkedPair.Id).Append(':').Append((int)data.LinkedPair.State);
+        foreach (LinkedCubePair pair in data.LinkedPairs)
+            key.Append("L").Append(pair.Id).Append(':').Append((int)pair.State);
         foreach (GroupInfo group in data.Groups) key.Append(group.IsLocked ? '1' : '0');
         foreach (BoxInfo box in data.Boxes)
         {
