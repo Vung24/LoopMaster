@@ -485,17 +485,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		bool next = speedUp && Data != null && EndState == GameEndState.Playing && !IsLevelIntroPlaying;
 		bool previous = IsSpeedUpActive;
 		Conveyor.SetSpeedUp(next);
-		if (previous != next)
-		{
-			if (GameRoot != null)
-			{
-				GameRoot.GetComponentsInChildren<Slice>(false, _sliceBuffer);
-				float timeScale = SliceJumpTimeScale;
-				for (int i = 0; i < _sliceBuffer.Count; i++)
-					if (_sliceBuffer[i] != null) _sliceBuffer[i].SetJumpTimeScale(timeScale);
-				_sliceBuffer.Clear();
-			}
-		}
 		if (GameplayFeedbackRules.ShouldPlaySpeedTransition(CurrentLevelNumber, previous, next))
 			PlayBoosterAudio(_gameLoader == null ? null : (next ? _gameLoader.AccClip : _gameLoader.DecClip));
 		if (!previous && next)
