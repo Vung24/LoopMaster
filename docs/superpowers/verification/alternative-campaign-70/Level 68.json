@@ -133,5 +133,7 @@
     0
   ],
   "runtime_wait_policy": "Wait for the reference settled state or two conveyor circuits plus animation margin. Replan from a paused snapshot of the actual settled board on divergence (max 12 replans, 300 legal clicks). Require legal clicks and natural final win; no boosters or board edits. Replay wall time includes planning pauses.",
-  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement."
+  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement.",
+  "mechanic_introduction": false,
+  "post_challenge_recovery": false
 }

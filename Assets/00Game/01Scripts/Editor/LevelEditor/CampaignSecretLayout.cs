@@ -17,6 +17,16 @@ public static class CampaignSecretLayout
             foreach (JObject cube in cubes) cube["IsSecret"] = 0;
         }
 
+        if (level == 7)
+        {
+            foreach (JObject box in boxes)
+            {
+                JArray cubes = A.Array(box, "Cubes");
+                if (cubes.Count > 1) cubes[0]["IsSecret"] = 1;
+            }
+            return;
+        }
+
         ArrangeLinkedSecrets(boxes, level);
         // Round-robin depths spread mysteries across boxes instead of hiding one whole stack.
         int offset = (int)((uint)seed % (uint)Math.Max(1, boxes.Count));

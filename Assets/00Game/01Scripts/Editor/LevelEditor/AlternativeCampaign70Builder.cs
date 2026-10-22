@@ -33,12 +33,12 @@ public static class AlternativeCampaign70Builder
 4,5,4,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 5,5,4,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 6,5,4,0,0,0,15,0,0,0,0,0,0,0,0,0,6,0
-7,6,5,0,0,0,20,0,0,0,0,0,0,0,0,0,6,0
+7,6,5,0,0,0,100,0,0,0,0,0,0,0,0,0,6,0
 8,6,5,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
 9,7,6,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
 10,6,6,1,0,0,15,0,0,0,0,0,0,0,0,1,4,2
-11,6,4,3,0,0,0,0,0,0,0,0,0,0,0,0,7,0
-12,7,6,3,0,0,20,0,0,0,0,0,0,0,0,0,6,0
+11,6,4,4,0,0,0,0,0,0,0,0,0,0,0,0,7,0
+12,7,6,4,0,0,20,0,0,0,0,0,0,0,0,0,6,0
 13,7,6,5,0,0,25,0,0,0,0,0,0,0,0,0,6,0
 14,8,7,5,0,0,25,0,0,0,0,0,0,0,0,0,6,0
 15,6,4,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0
@@ -56,9 +56,9 @@ public static class AlternativeCampaign70Builder
 27,10,9,4,0,0,35,2,0,0,0,0,0,0,0,0,6,0
 28,9,8,0,0,0,20,0,0,0,0,0,0,0,0,0,7,0
 29,6,4,1,0,0,0,0,1,0,0,0,0,0,0,0,7,0
-30,10,10,1,0,0,30,0,2,0,0,0,0,0,0,1,4,1
+30,9,7,1,0,0,30,0,2,0,0,0,0,0,0,1,4,0
 31,7,5,5,0,0,0,0,1,0,0,0,0,0,0,0,7,0
-32,10,9,3,0,0,35,1,2,0,0,0,0,0,0,0,6,0
+32,10,9,4,0,0,35,1,2,0,0,0,0,0,0,0,6,0
 33,9,8,0,0,0,35,0,2,0,0,0,0,1,0,0,6,0
 34,10,10,0,0,0,40,2,1,0,0,0,0,0,0,0,6,1
 35,12,11,2,0,0,50,2,1,0,0,0,0,0,0,1,4,0
@@ -371,6 +371,7 @@ public static class AlternativeCampaign70Builder
         layout["Version"] = 4;
         layout["HardLevel"] = p.Hard;
         AlternativeCampaign70Geometry.Apply(layout, p, seed, ProjectRoot);
+        if (CampaignBoxEntries.Repair(root, p.Road)) p.GeometryReference = 0;
         MixFullBoardStacks(layout, p, seed);
         NormalizeSpecialBoxes(A.Array(layout, "Boxes"), p);
         MixFullNormalSection(A.Array(layout, "Boxes"), seed);
@@ -384,6 +385,7 @@ public static class AlternativeCampaign70Builder
             A.Array((JObject)tutorial[1], "Cubes").Add(A.NewCube(1));
         }
         NormalizePalette(A.Array(layout, "Boxes"));
+        if (p.Level == 7) ArrangeBottomSecretLesson(A.Array(layout, "Boxes"));
         ApplySpecialMechanics(root, p, seed);
         int mixed = 0;
         foreach (JObject box in A.Array(layout, "Boxes"))
@@ -396,6 +398,24 @@ public static class AlternativeCampaign70Builder
         if (errors.Count != 0) throw new FormatException(string.Join("\n", errors));
         AlternativeCampaign70Audit.CheckGeometry(root, ExportedPuzzleJsonDecoder.Decode(root.ToString()), p, p.Level);
         return root;
+    }
+
+    private static void ArrangeBottomSecretLesson(JArray boxes)
+    {
+        if (boxes.Count != 6) throw new FormatException("Bottom-secret lesson needs six boxes.");
+        for (int box = 0; box < boxes.Count; box++)
+        {
+            JArray cubes = A.Array((JObject)boxes[box], "Cubes");
+            cubes.Clear();
+            if (box == 5) continue;
+            int color = box + 1;
+            int nextColor = (box + 1) % 5 + 1;
+            int coveringColor = (box + 2) % 5 + 1;
+            cubes.Add(A.NewCube(color));
+            cubes.Add(A.NewCube(nextColor));
+            cubes.Add(A.NewCube(nextColor));
+            cubes.Add(A.NewCube(coveringColor));
+        }
     }
 
     public static int CountNearSolvedBoxes(JArray boxes)
@@ -942,6 +962,7 @@ public static class AlternativeCampaign70Builder
         switch (level)
         {
             case 6: return "Làm quen hidden: ít màu, một lớp ẩn và màu gợi ý rõ";
+            case 7: return "Năm box đầy với hidden ở đáy, một box trống, capacity bằng sáu box";
             case 10: return "Thử thách ngắn: đọc lớp màu và mở secret";
             case 15: return "Làm quen linked thường trên board nhỏ và đường rộng";
             case 17: return "Luyện linked thường và hidden riêng lẻ, chưa có linked hidden";

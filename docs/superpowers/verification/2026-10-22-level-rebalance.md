@@ -1,52 +1,57 @@
-# Level rebalance — 2026-10-22
+# Cân chỉnh bộ level — 22/10/2026
 
-55 of the 70 gameplay JSON files were revised. Existing level identities, asset GUIDs, gameplay rules, packages and project settings are preserved. Changes use the existing linked-secret gameplay support.
+## Bố cục và đường bay
 
-## Shorter opening lessons
+Đã sửa 22 level có đoạn nối từ miệng box tới path quá dài: 10, 11, 12, 17, 20, 21, 24, 27, 29, 30, 31, 32, 46, 49, 50, 52, 54, 57, 58, 61, 65 và 69. 21 màn giữ nguyên khối và mechanic, chỉ chỉnh bố cục/điểm nối. Riêng Hard 30 được tạo lại với 9 box, 7 màu, hidden và hai khóa kề để có lời giải trên source gameplay hiện tại.
 
-Reference clicks are successful simulated solution lengths, not minimum moves or measured player completion times.
+Mỗi box phải có index riêng, `PathIndexV2 = PathIndex + 1`, và khoảng cách ngang từ miệng box tới điểm nối không quá **1,6 đơn vị Unity**. Đoạn dài nhất trước khi sửa là **5,58 đơn vị**. Bố cục không đạt sẽ được thay bằng hai dãy quay ra path phía ngoài; cửa nhóm vẫn liền nhau và hai thành viên linked vẫn ở gần nhau. Generator và audit đều kiểm tra điều kiện này để không xuất lại kiểu nhiều cột bay qua nhau như ảnh tham chiếu.
 
-| Level | Boxes before → after | Reference clicks before → after |
-|---|---|---|
-| 5 | 6 → 5 | 11 → 7 |
-| 6 | 7 → 5 | 15 → 10 |
-| 7 | 8 → 6 | 27 → 10 |
-| 8 | 7 → 6 | 23 → 12 |
-| 9 | 9 → 7 | 18 → 12 |
-| 10 | 7 → 6 | 14 → 12 |
-| 11 | 8 → 6 | 38 → 11 |
-| 12 | 8 → 7 | 15 → 12 |
-| 13 | 10 → 7 | 24 → 13 |
-| 14 | 9 → 8 | 16 → 15 |
+Level 11, 12 và 32 cũng bỏ lựa chọn đường thẳng một bên làm bố cục mặc định. Bộ hiện tại vẫn có 45 đường bao khác nhau. `atlas.png` là sơ đồ footprint; không thay thế kiểm tra Game View và animation.
 
-Level 10 keeps its first Hard label and four-slot road, with a compact generated six-box layout. Level 46 becomes an eight-box, six-color recovery lesson with a wide seven-slot road and two buried linked secrets. The two levels now have different layouts, capacities and central mechanics.
+## Level 7
 
-## Secret placement and mechanic combinations
+- Normal, 6 box, 5 màu, capacity 6 bằng số box.
+- 5 box đầy, mỗi box 4 khối; chừa đúng 1 box trống.
+- 20 khối tổng cộng, mỗi màu 4 khối. Mỗi stack có ba lớp màu, khối đáy secret, các khối phía trên lộ màu.
+- Lời giải tham chiếu mô phỏng: **11 lượt**. Đây không phải số lượt tối ưu hoặc thời gian chơi thực tế.
 
-Secret selection proceeds by depth across boxes, keeping the initial top cubes visible. Keys, ice counters and special colors stay readable. A normal cube matching the cube directly above it is excluded from secret selection, so a mystery does not fragment an otherwise readable same-color run. Percentage settings apply to these eligible color boundaries rather than all buried cubes. There are 359 secret cubes, compared with 581 before this revision.
+Tiêu chí cân màn dễ theo yêu cầu mới: thường dư 1 box trống, capacity ngang số box hoặc hơn một chút. Level 7 đã áp dụng chính xác tiêu chí này. Rà các màn dạy/nghỉ khác còn thấy ngoại lệ ở 15, 22, 26, 38, 41, 46, 49, 50, 57, 61, 63, 65, 67, 69; chưa đồng loạt đổi dữ liệu những màn này trong lượt chỉnh level 7.
 
-| Level | Linked secret lesson |
-|---|---|
-| 17 | One visible linked member and one buried secret member |
-| 33 | One buried linked secret with adjacent locks |
-| 46 | Both linked members hidden, under one and two covering cubes |
-| 52 | One buried linked secret combined with ice and color locks |
-| 59 | One buried linked secret combined with a group door and color lock |
+## Thứ tự học mechanic
 
-Levels 15–16 retain ordinary links for introduction. Other linked levels retain ordinary pairs to keep the campaign from repeating the same reveal pattern. Each pair still has exactly two members in separate normal boxes; cube colors and counts are preserved when changing the secret/link assignment on an existing board.
+Hidden bắt đầu ở 6; linked thường được giới thiệu ở 15, luyện tiếp ở 16–17. Không có khối vừa linked vừa hidden ở level 1–20. **Linked hidden bắt đầu ở 21**, ngay sau Hard 20: một đầu ẩn, một đầu rõ; 22 luyện hai đầu ẩn trên board nhỏ. Sau đó mới phối với khóa kề ở 33, luyện nhẹ ở 46, ice/khóa màu ở 52 và cửa nhóm ở 59.
 
-The editor generator uses the same placement policy. Failed generation preserves the existing level report. When the archived campaign specification is absent, learning objectives come from the published reports, with explicit objectives for the revised linked-secret lessons.
+| Màn giới thiệu | Mechanic chính | Box | Lượt tham chiếu |
+|---|---|---:|---:|
+| 6 | Hidden | 5 | 10 |
+| 15 | Linked thường | 6 | 7 |
+| 21 | Linked hidden | 6 | 9 |
+| 23 | Một khóa màu | 6 | 12 |
+| 29 | Một khóa kề | 6 | 10 |
+| 37 | Một khối ice | 6 | 9 |
+| 41 | Box dài | 7 | 11 |
+| 49 | Một box đơn | 6 | 9 |
+| 53 | Một cửa nhóm hai box | 6 | 9 |
+| 56 | Một màu surprise | 6 | 10 |
 
-A one-line compile fix in `SROptions.Cheats.cs` changes the debug level display from the nonexistent `BuiltinLevelCatalog.Count` to the existing `HighestLevel` property. No gameplay behavior depends on this display.
+Box dài dùng tối thiểu hai box theo ràng buộc của generator hiện có. Các màn giới thiệu đều là Normal, chỉ có 5–7 box, ít màu và đường rộng. Các số lượt là lời giải mô phỏng đã kiểm tra, không phải số lượt tối ưu hoặc thời gian người chơi thực tế.
 
-## Verification
+## Hard/Expert và màn nghỉ
 
-- Unity audit: `70 structural/simulation/contracts passed`, including successful final-JSON solution replay, color stock, box footprints, path mappings and linked member constraints.
-- Generator geometry smoke checks: `PASS generator geometry catalog smoke checks`.
-- Player and level editor compile: `PASS player and level editor compilation`.
-- Initial core verification: `No-Find policy verified: 0 violations across Assets/00Game/01Scripts.` and `Core game verification passed.` A later repeat was blocked by Windows Application Control (`0x800711C7`), including outside the sandbox.
-- Unity Play Mode: levels 5–14 passed. Full campaign replay and linked-secret lifecycle results are recorded in the per-level reports and the final note below.
+Hard 10 dùng hidden đã học. Từ Hard 20 trở đi phải có ít nhất hai mechanic đã được giới thiệu; các màn cuối tiếp tục phối nhiều mechanic. Không dùng một màn ghép màu thường làm Hard/Expert.
 
-The prior reference-click bands are retained as review signals. Levels 45, 60–65 and 68 have shorter valid reference solutions after secret placement changes; they require human balance review. Audit still rejects shallow color layouts and verifies the actual solution instead of padding its length to fit an old target.
+Mọi Hard/Expert có màn kế tiếp trong bộ đều được nối bằng một màn Normal nhỏ hơn: **10→11, 20→21, 25→26, 30→31, 35→36, 40→41, 45→46, 55→56, 60→61, 62→63, 64→65, 66→67, 68→69**. Level 70 kết thúc bộ. Đoạn 60–70 luân phiên khó và nghỉ, không còn chuỗi Hard liên tiếp.
 
-Human completion time, restart rate and final visual acceptance remain unverified. In the Editor, review the first-time secret reveal at level 6, blocked linked taps and reveal/Undo at 17, both reveal depths and restart at 46, and interaction with ice/color locks and group doors at 52/59. Inspect cable halves before reveal to confirm they conceal secret colors.
+Màn nghỉ có tối đa 8 box, tối đa 6 màu thường, đường 6–7 slot và lời giải tham chiếu không quá hai lần số box. Level 20 vẫn là Hard, 9 box/7 màu/4 slot; level 21 chỉ còn 6 box/4 màu/7 slot. Level 10 và 46 khác nhau về bố cục, sức chứa đường và mechanic trung tâm.
+
+## Kiểm tra
+
+- Audit từng đạt 70 structural/simulation/contracts; lần chạy với source gameplay hiện tại phát hiện lời giải cũ của 33, 47 và 68 không còn hợp lệ. Đã tìm lại lời giải 33 và 47; Expert 68 đang được kiểm tra riêng. Chưa kết luận audit cuối toàn bộ chiến dịch thành công.
+- Compile: `PASS player and level editor compilation`. Manifest kiểm thử đã đồng bộ file runtime hiện có; có cảnh báo tham chiếu assembly/field chưa dùng từ project kiểm thử.
+- No-Find: `PASS No-Find source scan: 0 violations`.
+- Metadata: `PASS campaign script metadata GUIDs`.
+- Unity Play Mode: bản cuối level 7 chơi thắng với 11 lượt, không booster và không cần lập lại kế hoạch; restart khi đang bay, disable/enable rồi replay đều phục hồi trạng thái đầu. Smoke destruction cũng đạt. Level 30 đã chơi lại thành công.
+
+CoreRulesVerification đã chạy thành công ở đầu đợt chỉnh. Lượt lặp sau bị Windows Application Control chặn DLL với mã `0x800711C7`, kể cả khi chạy ngoài sandbox; không báo lượt lặp đó là thành công.
+
+Chưa đo độ khó, thời gian hoàn thành hay tỷ lệ restart bằng người chơi. Cần xem trực tiếp reveal/Undo ở 7 và 21–22, màu dây linked trước reveal, đường bay ở 11–12, và cảm giác chuyển từ Hard sang màn nghỉ. Các mục tiêu lượt cũ của một số màn cuối được giữ làm tín hiệu cần playtest, không kéo dài lời giải để khớp chỉ tiêu cũ.

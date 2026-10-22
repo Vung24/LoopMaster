@@ -21,7 +21,7 @@ public static class CampaignLearningCurve
     public static bool IsGentle(int level)
     {
         if (IsIntroduction(level) || IsRecovery(level)) return true;
-        return level == 16 || level == 17 || level == 22 || level == 24 || level == 38 ||
+        return level == 7 || level == 16 || level == 17 || level == 22 || level == 24 || level == 38 ||
             level == 42 || level == 50 || level == 54 || level == 57;
     }
 }

@@ -1,0 +1,4 @@
+System.InvalidOperationException: Campaign level 68: final JSON replay
+  at AlternativeCampaign70Audit.Require (System.Boolean value, System.Int32 level, System.String message) [0x00020] in C:\Users\Laptop\Downloads\LoopMaster\Rules\AlternativeCampaign70\UnityVerification\Assets\Editor\AlternativeCampaign70Audit.cs:330 
+  at AlternativeCampaign70Audit.Run () [0x0045f] in C:\Users\Laptop\Downloads\LoopMaster\Rules\AlternativeCampaign70\UnityVerification\Assets\Editor\AlternativeCampaign70Audit.cs:77 
+  at AlternativeCampaign70Validation.RunAudit () [0x00019] in C:\Users\Laptop\Downloads\LoopMaster\Rules\AlternativeCampaign70\UnityVerification\Assets\Editor\AlternativeCampaign70Validation.cs:158 

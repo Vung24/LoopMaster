@@ -73,9 +73,7 @@
   "runtime_peak_groups": 3,
   "automated_replay_wall_seconds": 12.9084549,
   "runtime_time_scale": 4,
-  "transition_timing_differences": 0,
-  "runtime_legal_no_effect_clicks": 0,
-  "runtime_replanning_count": 0,
+  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement.",
   "runtime_solution_clicks": [
     0,
     1,
@@ -94,9 +92,13 @@
     1
   ],
   "runtime_wait_policy": "Wait for the reference settled state or two conveyor circuits plus animation margin. Replan from a paused snapshot of the actual settled board on divergence (max 12 replans, 300 legal clicks). Require legal clicks and natural final win; no boosters or board edits. Replay wall time includes planning pauses.",
-  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement.",
+  "transition_timing_differences": 0,
+  "runtime_legal_no_effect_clicks": 0,
+  "runtime_replanning_count": 0,
+  "reference_length_review": "within_reference_target",
+  "mechanic_introduction": false,
+  "post_challenge_recovery": false,
   "mixed_boxes": 7,
   "normal_mixed_boxes": 7,
-  "road_geometry_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4",
-  "reference_length_review": "within_reference_target"
+  "road_geometry_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4"
 }
