@@ -204,7 +204,7 @@ GameObject:
   - component: {fileID: 223117928073140879}
   - component: {fileID: 114697953033724501}
   - component: {fileID: 114366462590583001}
-  m_Layer: 5
+  m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -222,7 +222,7 @@ GameObject:
   - component: {fileID: 224973898181408929}
   - component: {fileID: 222769489794726067}
   - component: {fileID: 114741082714611702}
-  m_Layer: 5
+  m_Layer: 0
   m_Name: Count
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -265,6 +265,7 @@ MonoBehaviour:
   _cubePrefab: {fileID: 1682172127585714, guid: 037743f0c6d333b439509a9ce9be4ade, type: 3}
   _boxCard: {fileID: 4837171120848853}
   _anim: {fileID: 111556031464109294}
+  _singleBoxText: {fileID: 114741082714611702}
 --- !u!65 &65719982427698077
 BoxCollider:
   serializedVersion: 3
