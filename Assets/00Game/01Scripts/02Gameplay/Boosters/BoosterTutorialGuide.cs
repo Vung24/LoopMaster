@@ -341,7 +341,6 @@ public sealed class BoosterTutorialGuide : MonoBehaviour
     private void OnDisable()
     {
         _disableLifetime.Cancel();
-        _dimTween?.Kill();
         SetDim(false, animate: false);
         if (_controller != null && _controller.IsSelectingShuffle) _controller.CancelShuffleSelection();
         RestoreToolHighlight();
