@@ -37,11 +37,6 @@ public class NewPlayerTutorial : MonoBehaviour
 
 	private void Awake()
 	{
-		if (_textNode == null) _textNode = HierarchyReferenceCache.Descendant(transform, "TextNode");
-		if (_arrowTextNode == null) _arrowTextNode = HierarchyReferenceCache.Descendant(transform, "ArrowTextNode");
-		if (_bigArrow == null) _bigArrow = HierarchyReferenceCache.Descendant(transform, "BigArrow");
-		if (_bgMask == null) _bgMask = HierarchyReferenceCache.Descendant(transform, "BgMask");
-		if (_topMask == null) _topMask = HierarchyReferenceCache.Descendant(transform, "TopMask");
 		if (_finger == null) _finger = GetComponentInChildren<Finger>(true);
 		if (_bgBtn == null && _bgMask != null) _bgBtn = _bgMask.GetComponent<Button>();
 		if (_tapBtn == null)

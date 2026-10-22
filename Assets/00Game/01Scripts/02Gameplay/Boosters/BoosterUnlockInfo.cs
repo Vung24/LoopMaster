@@ -9,10 +9,10 @@ public readonly struct BoosterUnlockInfo
     public readonly string IconAddress;
     public readonly string IntroPreferenceKey;
     public readonly string FreeUsePreferenceKey;
-    public readonly UnityEngine.Sprite Icon;
+    public readonly Sprite Icon;
 
     public BoosterUnlockInfo(string key, int unlockLevel, string title, string description, string iconAddress,
-        UnityEngine.Sprite icon = null)
+        Sprite icon = null)
     {
         Key = key;
         UnlockLevel = unlockLevel;
