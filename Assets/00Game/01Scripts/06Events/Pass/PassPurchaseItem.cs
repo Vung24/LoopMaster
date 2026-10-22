@@ -14,6 +14,8 @@ namespace Snui
         [SerializeField] private Transform _boxNode;
         [SerializeField] private TMPro.TMP_Text _countText;
         [SerializeField] private UnityEngine.UI.Image _heartImage;
+        private RectTransform _heartRect;
+        private Vector2 _heartWithTeamPosition;
 
         protected override void Awake()
         {
@@ -27,6 +29,11 @@ namespace Snui
             if (_boxNode == null) _boxNode = HierarchyReferenceCache.Child(transform, "Box") ?? HierarchyReferenceCache.Descendant(transform, "Box");
             if (_countText == null) _countText = HierarchyReferenceCache.ChildComponent<TMPro.TMP_Text>(transform, "Count") ?? HierarchyReferenceCache.DescendantComponent<TMPro.TMP_Text>(transform, "Count");
             if (_heartImage == null && _heartNode != null) _heartImage = _heartNode.GetComponent<UnityEngine.UI.Image>();
+            if (_heartNode != null)
+            {
+                _heartRect = _heartNode as RectTransform;
+                if (_heartRect != null) _heartWithTeamPosition = _heartRect.anchoredPosition;
+            }
             if (_button != null) _button.onClick.AddListener(Purchase);
         }
         public void Init(int row) => Refresh();
@@ -53,6 +60,13 @@ namespace Snui
 
             if (_boxNode != null) _boxNode.gameObject.SetActive(Managers.Pass.IsTeamEnable());
             else PassUI.Active(transform, "Box", Managers.Pass.IsTeamEnable());
+
+            if (_heartRect != null)
+            {
+                // The prefab offsets the heart below the team gift; center it when shown alone.
+                if (Managers.Pass.IsTeamEnable()) _heartRect.anchoredPosition = _heartWithTeamPosition;
+                else _heartRect.anchoredPosition = new Vector2(0f, 8f);
+            }
 
             if (_countText != null) _countText.text = "8";
             else PassUI.Text(transform, "Count", "8");

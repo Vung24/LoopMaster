@@ -1384,10 +1384,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0229ea418210c2966b4a5e97a87f9751, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LevelTitleBgHardImage: {fileID: 21300000, guid: 29d46fa573652f644b097f7012f69256, type: 2}
-  LevelTitleBgExpertImage: {fileID: 21300000, guid: 7db2d1782cc93934c87c5756309bbbb2, type: 2}
-  TopLeftArmHardImage: {fileID: 21300000, guid: f54a01ca8cb05bf458a38f07d9450efd, type: 2}
-  TopLeftArmExpertImage: {fileID: 21300000, guid: 4f8726aace2868344857eedf19db2ad5, type: 2}
 --- !u!114 &67
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1467,7 +1463,7 @@ GameObject:
   - component: {fileID: 30574885}
   - component: {fileID: 30574884}
   m_Layer: 5
-  m_Name: BackgroundCamera
+  m_Name: BgCamera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1782,7 +1778,7 @@ GameObject:
   - component: {fileID: 1733990220}
   - component: {fileID: 1733990219}
   m_Layer: 5
-  m_Name: BackgroundCanvas
+  m_Name: BgCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

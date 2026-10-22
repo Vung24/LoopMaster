@@ -458,7 +458,8 @@ public class GameData
 				{
 					CubeInfo cube = cubes[j];
 					if (cube == null) continue;
-					if (cube.IsSecret || cube.NumLock > 0) break;
+					if (cube.NumLock > 0) break;
+					if (cube.IsSecret) return false;
 
 					int type = cube.Type;
 					_noSolutionCounts.TryGetValue(type, out int count);

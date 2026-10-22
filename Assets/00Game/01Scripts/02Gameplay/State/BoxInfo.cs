@@ -85,8 +85,9 @@ public class BoxInfo
 		for (int i = CubeInfos.Count - 1; i >= 0; i--)
 		{
 			CubeInfo cube = CubeInfos[i];
-			if (cube.IsSecret || cube.NumLock > 0) yield break;
+			if (cube.NumLock > 0) yield break;
 			yield return cube;
+			if (cube.IsSecret) yield break;
 		}
 	}
 

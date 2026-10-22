@@ -3,7 +3,7 @@
   "builder_version": 2,
   "seed": 756208,
   "learning_objective": "Khối băng + khóa màu + Secret",
-  "sha256": "4e9710b5168d64992941f1e069a74be9e97664fe45a4473b00123d19abc3c62c",
+  "sha256": "8ef00824bc15c8b8d7c42e99de6b8a23d914e6bce68c733f0453eebd81ba02b0",
   "profile": {
     "Level": 39,
     "Boxes": 9,
@@ -34,7 +34,7 @@
   "color_type_policy": "normal_1_to_N_long_101_to_N_surprise_201_to_N",
   "empty_boxes": 0,
   "secret_eligible": 23,
-  "secret_count": 8,
+  "secret_count": 5,
   "near_solved_normal_boxes": 1,
   "structural_validation": "passed",
   "warnings": [
@@ -60,11 +60,10 @@
     8,
     3,
     2,
-    2,
     2
   ],
   "wait_policy": "Wait for launch, landing, lock and surprise animations; allow conveyor circulation before the next click.",
-  "reference_click_count": 19,
+  "reference_click_count": 18,
   "minimum_reference_clicks": 9,
   "settled_road_peak_groups": 3,
   "challenge_intent": "Practice learned mechanics with capacity scaled to box count.",
@@ -76,8 +75,13 @@
   "completion_seconds": null,
   "restart_count": null,
   "acceptance": "draft_pending_visual_lifecycle_and_human_balance",
+  "content_revision": "2026-10-22 layered secrets and linked reveal curriculum",
+  "mixed_boxes": 9,
+  "normal_mixed_boxes": 9,
+  "road_geometry_sha256": "ca0daab2ab3923da72a5f20a297f54789c62b00cd4fe0a4794fefd06d5208649",
+  "reference_length_review": "within_reference_target",
   "runtime_peak_groups": 5,
-  "automated_replay_wall_seconds": 22.4203033,
+  "automated_replay_wall_seconds": 21.7072754,
   "runtime_time_scale": 4,
   "transition_timing_differences": 0,
   "runtime_legal_no_effect_clicks": 0,
@@ -100,15 +104,8 @@
     8,
     3,
     2,
-    2,
     2
   ],
   "runtime_wait_policy": "Wait for the reference settled state or two conveyor circuits plus animation margin. Replan from a paused snapshot of the actual settled board on divergence (max 12 replans, 300 legal clicks). Require legal clicks and natural final win; no boosters or board edits. Replay wall time includes planning pauses.",
-  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement.",
-  "capacity_rules_review": "passed",
-  "capacity_rules_maximum": 6,
-  "capacity_map_spawn_review": "passed_not_spawned",
-  "mixed_boxes": 9,
-  "normal_mixed_boxes": 9,
-  "road_geometry_sha256": "ca0daab2ab3923da72a5f20a297f54789c62b00cd4fe0a4794fefd06d5208649"
+  "runtime_context": "Isolated Play Mode fixture, actual GameController.OnClickBox and animations; tutorial bypassed; accelerated replay is not human balance measurement."
 }
