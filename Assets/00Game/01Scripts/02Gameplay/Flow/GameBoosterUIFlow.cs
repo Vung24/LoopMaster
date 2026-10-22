@@ -23,7 +23,7 @@ public sealed class GameBoosterUIFlow
     private async UniTask RequestAsync(string key, bool canRequest, Func<bool> use)
     {
         if (!canRequest || IsOpen || _controller == null) return;
-        if (InventoryManager.Ensure().GetAmount(key) > 0)
+        if (InventoryManager.Ensure().CanUseBooster(key))
         {
             use?.Invoke();
             return;

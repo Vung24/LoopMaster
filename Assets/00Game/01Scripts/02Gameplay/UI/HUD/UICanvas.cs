@@ -55,6 +55,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 	private ToolBase _undoTool;
 	private ToolBase _shuffleTool;
 	private ToolBase _pathTool;
+	private readonly Dictionary<string, ToolBase> _toolsByKey = new Dictionary<string, ToolBase>();
 	private Image _speedIcon;
 	private Sprite _lastSpeedSprite;
 	[SerializeField] private ShuffleSelectionView _shuffleSelectionView;
@@ -143,6 +144,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		_undoTool = BindTool(_undoButton, InventoryKeys.TOOL_UNDO);
 		_shuffleTool = BindTool(_shuffleButton, InventoryKeys.TOOL_SHUFFLE);
 		_pathTool = BindTool(_pathButton, InventoryKeys.TOOL_PATH);
+		CacheTools();
 		ConfigureBackground();
 		ConfigureInput();
 		ConfigureCanvasCamera();
@@ -582,6 +584,29 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 		if (tool == null) tool = button.gameObject.AddComponent<ToolBase>();
 		tool.Bind(key);
 		return tool;
+	}
+
+	private void CacheTools()
+	{
+		_toolsByKey.Clear();
+		foreach (ToolBase tool in GetComponentsInChildren<ToolBase>(true))
+			if (!string.IsNullOrEmpty(tool.Key)) _toolsByKey[tool.Key] = tool;
+	}
+
+	/// <summary>Resolves a bound HUD booster for unlock presentation.</summary>
+	public ToolBase GetTool(string key)
+	{
+		if (string.IsNullOrEmpty(key)) return null;
+		if (_toolsByKey.TryGetValue(key, out ToolBase tool) && tool != null) return tool;
+		CacheTools();
+		_toolsByKey.TryGetValue(key, out tool);
+		return tool;
+	}
+
+	public RectTransform GetToolRectTransform(string key)
+	{
+		ToolBase tool = GetTool(key);
+		return tool == null ? null : tool.transform as RectTransform;
 	}
 
 	private static void BindButton(Button button, UnityEngine.Events.UnityAction callback)
