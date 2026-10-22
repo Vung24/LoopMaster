@@ -23,11 +23,11 @@
 
 Inspect current source and callers alongside:
 
-- `Rules/RoadSpeedData/decompiled.c`
-- `Rules/SliceCatchUpData/Methods/GameController__UpdateTick.c` and movement/group-selection methods in that directory
-- `Rules/SliceCatchUpData/UnityVerification/Assets/Editor/SliceCatchUpValidation.cs`
-- `Rules/ProgressData/FullProjectVerification.csproj`
-- `Rules/Verification/CoreRulesVerification.csproj`
+- `../LoopMaster-ProjectData/RoadSpeedData/decompiled.c`
+- `../LoopMaster-ProjectData/SliceCatchUpData/Methods/GameController__UpdateTick.c` and movement/group-selection methods in that directory
+- `../LoopMaster-ProjectData/SliceCatchUpData/UnityVerification/Assets/Editor/SliceCatchUpValidation.cs`
+- `../LoopMaster-ProjectData/ProgressData/FullProjectVerification.csproj`
+- `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 
 Native `UpdateTick` uses at most one normal and one speed tick per call. This is historical evidence, not sufficient justification to change the current scheduler during a visual fix. Current intervals can be shorter than a frame: with normal interval `0.05s` and spacing scale `0.4`, the fast interval is `0.0128s`. A one-tick-per-frame limit would reduce throughput at 60 FPS.
 
@@ -70,11 +70,11 @@ The selected direction above fixes the clock ownership and continuity rules. Bef
 - A frame greater than `0.2s` uses the same ordered timeline processing without a separate teleport branch. Persistent early successors can also overload visual time, so after enqueueing, older remaining segment time is bounded to `0.2s` by proportional duration shortening. Scale active elapsed by the same factor to preserve the current pose. Exclude the newest segment from this acceleration so its nominal cadence is retained, including slow arrows. This is an intentional visual timing change under overload; no waypoints are removed.
 - Storage has 288 slots. Once a segment has a successor, its remaining completion horizon is at most `0.2s` and can only shorten. At most two logical clocks dispatch at the supported minimum interval; allowing `0.5s` retained backlog plus `0.2s` older visual debt gives `2 * ceil(0.7 / 0.00512) + 4 = 278` slots, below capacity. Unsupported direct callers exhausting storage fail explicitly instead of overwriting targets. New jump/section/reset/disable boundaries clear the route.
 - Follow-up reproduced in Unity: a follower returning from automatic catch-up to normal membership had logical spacing `1` but persistent visual spacing `1.559999` on a straight fixture. On requested cadence changes, proportionally shorten all remaining route durations and active elapsed so the newest permitted target is reached at the next tick of the new cadence. This preserves the handoff pose and every waypoint while eliminating old-clock phase debt; unchanged-cadence successors retain nominal timing except the documented overload rule. Reset also clears cadence history.
-- Verification lives in `Rules/SmoothSliceVerification/`: it builds a fresh runtime source inventory to avoid stale generated project entries, runs actual classes in a separate Unity project, and compares against a frozen pre-change `BaselineConveyorFlow`. Main project assets/settings/packages are untouched. This folder is locally ignored by the repository's existing `.gitignore`.
+- Verification lives in `../LoopMaster-ProjectData/SmoothSliceVerification/`: it builds a fresh runtime source inventory to avoid stale generated project entries, runs actual classes in a separate Unity project, and compares against a frozen pre-change `BaselineConveyorFlow`. Main project assets/settings/packages are untouched. This folder is locally ignored by the repository's existing `.gitignore`.
 
 ## Task 1: Capture baseline and reproduce failures
 
-**Files:** Read movement source/callers; extend focused Unity verification under `Rules/` as needed.
+**Files:** Read movement source/callers; extend focused Unity verification under `../LoopMaster-ProjectData/` as needed.
 
 - [x] Read `GameController.Update`, interval calculation, speed switches, failure slowdown, conveyor group selection, transfer landing/box admission, and slice/arrow initialization and cleanup.
 - [ ] Capture baseline tick order/counts, logical indices, launch count, box admission events, and end-state transitions for deterministic fixtures. Partial: indices, residuals and admission/end-check callback traces are compared; full scene admission/end-state events remain pending.
@@ -126,8 +126,8 @@ The selected direction above fixes the clock ownership and continuity rules. Bef
 
 ### Automated checks
 
-- [x] Run `dotnet run --project Rules/Verification/CoreRulesVerification.csproj` for linked rules and `VerifyNoFindPolicy()`.
-- [ ] Run `dotnet build Rules/ProgressData/FullProjectVerification.csproj --no-restore` to compile runtime classes. Report environmental reference failures separately from code failures.
+- [x] Run `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj` for linked rules and `VerifyNoFindPolicy()`.
+- [ ] Run `dotnet build ../LoopMaster-ProjectData/ProgressData/FullProjectVerification.csproj --no-restore` to compile runtime classes. Report environmental reference failures separately from code failures.
 - [x] Add and run focused Unity checks against actual changed runtime classes. Reuse existing fixture patterns; inspect launcher scripts before use because they may prepare a separate project or copy settings. Keep the user's main project settings untouched.
 - [x] Compare equal simulated elapsed time at 30/60/90/120 FPS, including minimum spacing and speed intervals shorter than a frame. Declare numeric tolerances explicitly.
 - [x] Cover delta `0`, ordinary deltas, `0.05s`, `0.2s`, `0.201s`, and a spike beyond the existing accumulator cap. Preserve baseline cap behavior; do not claim discarded time is retained. Assert ordered same-frame visual catch-up and no extra logical moves.
@@ -163,13 +163,13 @@ Changed runtime files: new `Board/RoadMotion.cs` and its `.meta`; `Elements/Slic
 
 Actual commands/results:
 
-- `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`: `No-Find policy verified: 0 violations across Assets/00Game/01Scripts.` and `Core game verification passed.`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File Rules/SmoothSliceVerification/verify-unity.ps1`: `PASS: 65032 checks against actual runtime classes in Unity.` Runs in Play Mode in an isolated project with real transforms, Slice, PathArrow, ConveyorFlow, CoreGameplayEngine, and DOTween. Source DLLs are built from a fresh inventory; the final build reported `2 Warning(s), 0 Error(s)` (existing MSB3277 framework-reference conflicts). The stale original generated verification project is not used to claim a successful build.
+- `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`: `No-Find policy verified: 0 violations across Assets/00Game/01Scripts.` and `Core game verification passed.`
+- `powershell -NoProfile -ExecutionPolicy Bypass -File ../LoopMaster-ProjectData/SmoothSliceVerification/verify-unity.ps1`: `PASS: 65032 checks against actual runtime classes in Unity.` Runs in Play Mode in an isolated project with real transforms, Slice, PathArrow, ConveyorFlow, CoreGameplayEngine, and DOTween. Source DLLs are built from a fresh inventory; the final build reported `2 Warning(s), 0 Error(s)` (existing MSB3277 framework-reference conflicts). The stale original generated verification project is not used to claim a successful build.
 - Original generated `Assembly-CSharp.csproj --no-restore` baseline build failed without compiler diagnostics; the separate fresh-inventory build above is the actual successful runtime compile.
 - Before the cadence fix, the added group-join regression failed: `logic gap 1, visual gap 1.559999`. After the fix, it passes at tolerance `0.002` world units after the handoff cycle and stays aligned.
 - Tests cover eight queued waypoints through right angles, handoff continuity, minimum `0.00512s` intervals at 30/60/90/120 FPS, spikes through `0.8s` respecting the `0.5s` scheduler cap, actual popup-box blocking/resume, gating, pool/disable/reinitialization/section cleanup, slow-to-fast arrows, and transfer/box jump interruption and callbacks. Two thousand deterministic frames compare logical indices, both scheduler residuals, and admission/end-check callback traces against the frozen original scheduler.
 - Guideline reviews: `code`, `safety`, and `architecture` passed, including the follow-up cadence synchronization change. Task-scoped `git diff --check` passed.
 
-Local test sources, runner, build logs, pre-fix reproduction, and latest results are under `Rules/SmoothSliceVerification/` (ignored by the existing repository policy). The Unity dependency fixture reports pre-existing Coffee.UIParticle `OnParticleUpdateJobScheduled` import messages; this is not a clean-main-Editor-console claim.
+Local test sources, runner, build logs, pre-fix reproduction, and latest results are under `../LoopMaster-ProjectData/SmoothSliceVerification/` (ignored by the existing repository policy). The Unity dependency fixture reports pre-existing Coffee.UIParticle `OnParticleUpdateJobScheduled` import messages; this is not a clean-main-Editor-console claim.
 
 Remaining acceptance: observe real levels with normal/manual-speed catch-up through corners, wrapping and disconnected sections; exercise actual linked launches, box reservation, full-road and win/lose UI transitions; capture warmed-up Unity Profiler `GC.Alloc` and frame timing. The headless fixture validates movement and callbacks, not complete scene content or the subjective rotation/animation feel. No performance improvement or zero-allocation claim is made.

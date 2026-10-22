@@ -21,7 +21,7 @@
 - **Method Naming:** Avoid unnecessary `Try` prefixes; use descriptive action names (`UpdateTint`, `CanBegin`, `RevealSecretAsync`).
 - **DOTween Lifecycles:** Always attach `.SetLink(gameObject)` and cleanly kill active sequences before playing new ones or during `OnDestroy` / `Cancel`.
 - **Async Operations:** Use `UniTask` (`Cysharp.Threading.Tasks`) with proper `CancellationToken` propagation; avoid unhandled `async void`.
-- **Verification Rule:** Must pass `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`.
+- **Verification Rule:** Must pass `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`.
 
 ## Review Focus
 
@@ -42,7 +42,7 @@
 **Steps:**
 - [ ] Inspect `LinkedCubePair.Validate()` to confirm `cube.IsSecret > 0` is valid for linked pair members. Add explicit doc comments and rule tests ensuring `IsSecret` is permitted while `GroupKeyId != 0`, `NumLock != 0`, and `IsFixed != 0` remain rejected.
 - [ ] In `LinkCubeLaunch.CanBegin()`, verify the check `!IsFullOrdinaryMember(pair.FirstCube) || !IsFullOrdinaryMember(pair.SecondCube)`. Ensure that when either cube is top-of-box but still `IsSecret`, `failure` is reported as `LinkedCubeLaunchFailure.BlockedPartner` so tapping provides the standard shake feedback.
-- [ ] Run `dotnet run --project Rules/Verification/CoreRulesVerification.csproj` to confirm compliance.
+- [ ] Run `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj` to confirm compliance.
 
 ---
 
@@ -108,8 +108,8 @@
 ### Task 5: Core Rules Verification & Integration Tests
 
 **Files:**
-- Test / Verify: `Rules/Verification/CoreRulesVerification.csproj`
-- Test: EditMode or simulation tests in `Assets/00Game/01Scripts/Editor` or `Rules/Verification`
+- Test / Verify: `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
+- Test: EditMode or simulation tests in `Assets/00Game/01Scripts/Editor` or `../LoopMaster-ProjectData/Verification`
 
 **Steps:**
 - [ ] Create automated verification test cases:
@@ -117,5 +117,5 @@
   - Test Case B: Linked pair with 2 Secret cubes. Verify both must reach top and reveal before launch is permitted.
   - Test Case C: Verify cable half tints: secret tint while secret, true color after reveal.
   - Test Case D: Undo test: linked pair launch undo returns revealed cubes to top; burial undo returns cube to secret state.
-- [ ] Run `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`.
+- [ ] Run `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`.
 - [ ] Ensure 0 compilation warnings and 0 rule violations.
