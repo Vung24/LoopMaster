@@ -19,7 +19,7 @@ public class Slice : MonoBehaviour
 	private Tween _rotationTween;
 	private Tween _scaleTween;
 	private bool _isJumping;
-	private readonly RoadMotion _roadMotion = new RoadMotion(true);
+	private readonly RoadMotion _roadMotion = new RoadMotion(false);
 
 	[SerializeField] private Texture _longBoxSignTex;
 

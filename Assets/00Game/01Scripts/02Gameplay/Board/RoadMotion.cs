@@ -9,7 +9,6 @@ internal sealed class RoadMotion
 	// requests, plus active/initial segments. Catch-up only shortens existing durations.
 	private const int Capacity = 288;
 	private readonly Segment[] _segments = new Segment[Capacity];
-	private readonly bool _easeRotation;
 	private int _head;
 	private int _count;
 	private float _elapsed;
@@ -24,9 +23,8 @@ internal sealed class RoadMotion
 		public float Duration;
 	}
 
-	public RoadMotion(bool easeRotation)
+	public RoadMotion(bool easeRotation = false)
 	{
-		_easeRotation = easeRotation;
 	}
 
 	public bool IsMoving => _count > 0;
@@ -88,10 +86,8 @@ internal sealed class RoadMotion
 	private void ApplyProgress(Segment current)
 	{
 		float progress = Mathf.Clamp01(_elapsed / current.Duration);
-		float rotationProgress = progress;
-		if (_easeRotation) rotationProgress = progress * (2f - progress);
 		Position = Vector3.Lerp(_startPosition, current.Position, progress);
-		Rotation = Quaternion.Slerp(_startRotation, current.Rotation, rotationProgress);
+		Rotation = Quaternion.Slerp(_startRotation, current.Rotation, progress);
 	}
 
 	private void LimitQueuedDuration()
@@ -115,19 +111,26 @@ internal sealed class RoadMotion
 
 	private void SynchronizeArrival(float duration)
 	{
-		float remaining = -_elapsed;
-		for (int i = 0; i < _count; i++)
+		if (_count <= 1) return;
+		float remaining = _segments[_head].Duration - _elapsed;
+		for (int i = 1; i < _count; i++)
 			remaining += _segments[(_head + i) % Capacity].Duration;
 		if (remaining <= duration) return;
 
-		// A slice returning from catch-up must meet the group's next tick, rather
-		// than carry its old fast-clock phase forever. Keep the whole unfinished route.
-		float scale = duration / remaining;
-		for (int i = 0; i < _count; i++)
+		// Scale only unstarted queued segments so in-flight pose and velocity do not jump
+		float unstartedRemaining = 0f;
+		for (int i = 1; i < _count; i++)
+			unstartedRemaining += _segments[(_head + i) % Capacity].Duration;
+
+		if (unstartedRemaining > 0.0001f)
 		{
-			int index = (_head + i) % Capacity;
-			_segments[index].Duration *= scale;
+			float targetUnstarted = Mathf.Max(0.001f, duration - (_segments[_head].Duration - _elapsed));
+			float scale = targetUnstarted / unstartedRemaining;
+			for (int i = 1; i < _count; i++)
+			{
+				int index = (_head + i) % Capacity;
+				_segments[index].Duration *= scale;
+			}
 		}
-		_elapsed *= scale;
 	}
 }
