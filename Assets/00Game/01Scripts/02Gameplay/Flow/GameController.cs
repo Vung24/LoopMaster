@@ -177,7 +177,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private UICanvas _uiCanvas;
 	private GameLevelPresentationFlow _presentation;
 	private GameLevelPresentationFlow Presentation => _presentation ?? (_presentation =
-		new GameLevelPresentationFlow(destroyCancellationToken));
+		new GameLevelPresentationFlow(this, destroyCancellationToken));
 	private GameBoosterUIFlow _boosterUI;
 	private GameBoosterUIFlow BoosterUI => _boosterUI ?? (_boosterUI = new GameBoosterUIFlow(this));
 	private bool IsBoosterShopOpen => _boosterUI != null && _boosterUI.IsOpen;
@@ -695,7 +695,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		ReplayLevel();
 	}
 
-	private bool IsGameplaySettled()
+	/// <summary>Reports whether moves and lock transitions have settled for the next action.</summary>
+	public bool IsGameplaySettled()
 	{
 		if (Data != null && Data.ActiveLinkedLaunch != null) return false;
 		if (Data == null || Data.OnJumpingCube > 0 || (_groupLocks != null && _groupLocks.IsBusy)) return false;

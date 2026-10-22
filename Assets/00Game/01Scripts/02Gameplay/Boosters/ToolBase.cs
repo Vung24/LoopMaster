@@ -20,8 +20,19 @@ public class ToolBase : MonoBehaviour
 	private bool _lastLocked;
 	private bool _lastCanUse;
 	private int _lastCount;
+	private bool _introLocked;
+	private bool _lastFree;
+	private Image _iconImage;
 
 	public string Key => _key;
+	public Sprite IconSprite => _iconImage == null ? null : _iconImage.sprite;
+	public RectTransform IconRectTransform => _iconImage == null ? null : _iconImage.rectTransform;
+
+	public void SetIntroLocked(bool locked)
+	{
+		_introLocked = locked;
+		UpdateState();
+	}
 
 	private void Awake()
 	{
@@ -59,7 +70,16 @@ public class ToolBase : MonoBehaviour
 
 	private void CacheLegacyPrefabReferences()
 	{
-		if (_icon == null) _icon = HierarchyReferenceCache.Descendant(transform, "Icon");
+		if (_icon == null) _icon = HierarchyReferenceCache.Child(transform, "Icon");
+		if (_icon == null) _icon = HierarchyReferenceCache.Child(transform, "Image");
+		if (_iconImage == null)
+		{
+			// Legacy tool prefabs keep their booster artwork in Image; Price/Icon is a coin.
+			Transform artwork = HierarchyReferenceCache.Child(transform, "Image");
+			if (artwork != null) _iconImage = artwork.GetComponent<Image>();
+			if (_iconImage == null && _icon != null)
+				_iconImage = _icon.GetComponent<Image>();
+		}
 		if (_lock == null) _lock = HierarchyReferenceCache.Descendant(transform, "Locked");
 		if (_addIcon == null) _addIcon = HierarchyReferenceCache.Descendant(transform, "Add");
 		if (_num == null) _num = HierarchyReferenceCache.Descendant(transform, "Num");
@@ -95,19 +115,21 @@ public class ToolBase : MonoBehaviour
 		if (key == _key) UpdateState();
 	}
 
-	private bool IsLocked() => _inventory == null || !_inventory.IsBoosterUnlocked(_key);
+	private bool IsLocked() => _introLocked || _inventory == null || !_inventory.IsBoosterUnlocked(_key);
 
 	private void UpdateState()
 	{
 		bool locked = IsLocked();
 		int count = _inventory == null ? 0 : _inventory.GetAmount(_key);
-		if (_hasRendered && locked == _lastLocked && count == _lastCount && _canUse == _lastCanUse) return;
+		bool free = BoosterUnlockProgress.IsFirstUseFree(_key);
+		if (_hasRendered && locked == _lastLocked && count == _lastCount && _canUse == _lastCanUse && free == _lastFree) return;
 		_hasRendered = true;
 		_lastLocked = locked;
 		_lastCount = count;
+		_lastFree = free;
 		_lastCanUse = _canUse;
 		SetLock(locked);
-		SetActive(_addIcon, !locked && count == 0);
+		SetActive(_addIcon, !locked && count == 0 && !free);
 		SetActive(_num, !locked && count > 0);
 		if (_count != null) _count.SetText(count.ToString());
 		SetActive(_priceNode, false);

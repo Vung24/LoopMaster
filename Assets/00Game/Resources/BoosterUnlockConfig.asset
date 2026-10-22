@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2bed18c5804923b0f8b8e08968fe27, type: 3}
+  m_Name: BoosterUnlockConfig
+  m_EditorClassIdentifier:
+  _boosters:
+  - _key: undo
+    _unlockLevel: 4
+    _title: UNDO
+    _description: Revert your last move to try a different path.
+    _icon: {fileID: 21300000, guid: 5781242e3f5e26e498a6cabe54a92bc3, type: 2}
+    _iconAddress: img_booster_undo
+  - _key: shuffle
+    _unlockLevel: 7
+    _title: SHUFFLE
+    _description: Mix and randomize slice colors across boxes.
+    _icon: {fileID: 21300000, guid: 177d328b71b14ab4d928a32b5e178599, type: 2}
+    _iconAddress: img_booster_shuffle
+  - _key: path
+    _unlockLevel: 9
+    _title: EXTRA SLOT
+    _description: Add an extra holding slot to your road.
+    _icon: {fileID: 21300000, guid: 03a07902f2bc34c4b858b0f031eebe68, type: 2}
+    _iconAddress: img_booster_path

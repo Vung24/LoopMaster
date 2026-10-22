@@ -73,13 +73,8 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 	private static bool IsInventoryKey(string key) => key == InventoryKeys.COIN || IsBoosterKey(key);
 	public static int GetToolUnlockLevel(string key)
 	{
-		switch (key)
-		{
-			case InventoryKeys.TOOL_UNDO: return 4;
-			case InventoryKeys.TOOL_SHUFFLE: return 7;
-			case InventoryKeys.TOOL_PATH: return 9;
-			default: return 0;
-		}
+		if (BoosterUnlockConfig.TryGetInfo(key, out BoosterUnlockInfo info)) return info.UnlockLevel;
+		return 0;
 	}
 
 	public bool IsBoosterUnlocked(string key)
@@ -92,7 +87,11 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 			return controller.IsEditorPlaytest || controller.CurrentLevelNumber >= unlockLevel;
 		return GameProgressStore.HighestUnlockedLevel >= unlockLevel;
 	}
-	public bool CanUseBooster(string key) => !IsMutationBlocked && IsBoosterUnlocked(key) && GetAmount(key) > 0;
+	public bool CanUseBooster(string key)
+	{
+		if (IsMutationBlocked || !IsBoosterUnlocked(key)) return false;
+		return GetAmount(key) > 0 || BoosterUnlockProgress.IsFirstUseFree(key);
+	}
 	public int GetAmount(string key, int def = 0) => IsInventoryKey(key)
 		? Math.Max(0, GamePrefs.GetInt(CountKey(key), def)) : Math.Max(0, def);
 	private static string CountKey(string key) => GamePrefKeys.Inventory(key);
@@ -123,14 +122,16 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 	{
 		if (apply == null || !CanUseBooster(key)) return false;
 		int count = GetAmount(key);
+		bool free = BoosterUnlockProgress.IsFirstUseFree(key);
 		_isApplyingBooster = true;
 		try
 		{
 			if (!apply()) return false;
-			WriteCount(key, count - 1);
+			if (free) BoosterUnlockProgress.ConsumeFirstUseFree(key);
+			else WriteCount(key, count - 1);
 		}
 		finally { _isApplyingBooster = false; }
-		OnInventoryChanged.Invoke(key, -1);
+		OnInventoryChanged.Invoke(key, free ? 0 : -1);
 		return true;
 	}
 

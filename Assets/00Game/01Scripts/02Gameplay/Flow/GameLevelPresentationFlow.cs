@@ -8,6 +8,7 @@ using static UnityEngine.Object;
 public sealed class GameLevelPresentationFlow
 {
     private readonly CancellationToken _destroyToken;
+    private readonly GameController _controller;
     private GameObject _canvas;
     private IReadOnlyList<Box> _boxes;
     private NewPlayerTutorial _newPlayerTutorial;
@@ -16,8 +17,9 @@ public sealed class GameLevelPresentationFlow
     private CancellationTokenSource _levelPresentation;
     public bool IsPlaying { get; private set; }
 
-    public GameLevelPresentationFlow(CancellationToken destroyToken)
+    public GameLevelPresentationFlow(GameController controller, CancellationToken destroyToken)
     {
+        _controller = controller;
         _destroyToken = destroyToken;
     }
 
@@ -36,6 +38,7 @@ public sealed class GameLevelPresentationFlow
 		var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_destroyToken);
 		_levelPresentation = lifetime;
 		IsPlaying = true;
+		MonitorInterruption(lifetime).Forget();
 		try
 		{
 			// Keep tutorial/intro animations from running beneath the scene loading cover.
@@ -61,6 +64,8 @@ public sealed class GameLevelPresentationFlow
 				_difficultyPanel = null;
 			}
 			lifetime.Token.ThrowIfCancellationRequested();
+			await ShowBoosterIntroduction(data, lifetime.Token);
+			lifetime.Token.ThrowIfCancellationRequested();
 			CheckNewPlayerTutorial(data, gameCamera, tutorialPrefab);
 		}
 		catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
@@ -71,8 +76,80 @@ public sealed class GameLevelPresentationFlow
 				_levelPresentation = null;
 				IsPlaying = false;
 			}
+			lifetime.Cancel();
 			lifetime.Dispose();
 		}
+	}
+
+	private async UniTask MonitorInterruption(CancellationTokenSource lifetime)
+	{
+		try
+		{
+			await UniTask.WaitUntil(PresentationInterrupted, cancellationToken: lifetime.Token);
+			if (_levelPresentation == lifetime) Cancel();
+		}
+		catch (OperationCanceledException) { }
+	}
+
+	private bool PresentationInterrupted()
+	{
+		return Time.timeScale <= 0f || _controller == null || !_controller.isActiveAndEnabled ||
+			_canvas == null || !_canvas.activeInHierarchy || _controller.EndState != GameEndState.Playing;
+	}
+
+	private async UniTask ShowBoosterIntroduction(GameData data, CancellationToken token)
+	{
+		string key = BoosterUnlockConfig.GetBoosterForLevel(data.GetPuzzleActualLevel());
+		if (key == null) return;
+		BoosterUnlockConfig.TryGetInfo(key, out BoosterUnlockInfo info);
+		if (Snui.CheatManager.SkipTutorial)
+		{
+			BoosterUnlockProgress.MarkIntroSeen(key);
+			return;
+		}
+		UICanvas canvas = _canvas.GetComponent<UICanvas>();
+		ToolBase tool = canvas == null ? null : canvas.GetTool(key);
+		Sprite icon = info.Icon;
+		if (icon == null && tool != null) icon = tool.IconSprite;
+		if (tool == null || icon == null)
+		{
+			Debug.LogError("Booster introduction requires a bound HUD tool with an icon: " + key, _controller);
+			return;
+		}
+		if (!BoosterUnlockProgress.HasSeenIntro(key))
+		{
+			tool.SetIntroLocked(true);
+			try
+			{
+				await UniTask.Delay(400, cancellationToken: token);
+				GameObject instance = await Snui.PopupAssets.Instantiate("FeatureUnlockDialog", _canvas.transform, token);
+				FeatureUnlockDialog dialog = instance.GetComponent<FeatureUnlockDialog>();
+				_featureUnlockDialog = dialog;
+				Vector3 origin = Vector3.zero;
+				if (dialog != null)
+				{
+					dialog.InitBooster(info.Title, info.Description, icon);
+					origin = dialog.IconPosition;
+					await UniTask.WaitUntil(() => dialog == null || !dialog.gameObject.activeInHierarchy, cancellationToken: token);
+					if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
+				}
+				else
+				{
+					Destroy(instance);
+				}
+				await BoosterFlyPresenter.PlayFlight(_canvas.transform, icon, origin,
+					tool.transform as RectTransform, token);
+				token.ThrowIfCancellationRequested();
+				BoosterUnlockProgress.MarkIntroSeen(key);
+			}
+			finally
+			{
+				if (tool != null) tool.SetIntroLocked(false);
+			}
+		}
+		// Guidance must allow the regular gameplay commands and conveyor to run.
+		IsPlaying = false;
+		await BoosterTutorialGuide.PlayGuide(_controller, canvas, _boxes, key, token);
 	}
 
 	public FeatureType IsFeatureTutorial(GameData data) => Snui.CheatManager.SkipTutorial ? FeatureType.None : FeatureUnlockDialog.GetUnseenFeature(data,

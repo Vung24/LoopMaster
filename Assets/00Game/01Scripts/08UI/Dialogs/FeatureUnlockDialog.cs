@@ -67,6 +67,31 @@ public class FeatureUnlockDialog : BasePopup
         Snui.Snui_Text.EnsureFontAssets(transform);
     }
 
+    public void InitBooster(string title, string description, Sprite icon)
+    {
+        _featureType = FeatureType.None;
+        foreach (TMP_Text text in new[] { _titleText1, _titleText2, _titleText3 })
+            if (text != null) text.text = title;
+        if (_descriptionText != null) _descriptionText.text = description;
+        if (_featureImage != null)
+        {
+            _featureImage.sprite = icon;
+            _featureImage.preserveAspect = true;
+        }
+        TMP_Text subTitle = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "SubTitle");
+        if (subTitle != null) subTitle.text = "New booster unlocked!";
+        foreach (Button button in new[] { _continueButton, _fullButton })
+        {
+            if (button == null) continue;
+            button.onClick.RemoveListener(OnClickContinueButton);
+            button.onClick.AddListener(OnClickContinueButton);
+        }
+        if (_continueButton != null) _continueButton.GetComponent<BreathAnim>()?.Play(0f, 3f);
+        Snui.Snui_Text.EnsureFontAssets(transform);
+    }
+
+    public Vector3 IconPosition => _featureImage != null ? _featureImage.transform.position : transform.position;
+
     private void OnClickContinueButton()
     {
         TryClose();
