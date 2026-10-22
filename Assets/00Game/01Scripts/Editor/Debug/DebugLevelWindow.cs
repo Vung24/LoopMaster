@@ -12,8 +12,8 @@ public static class DebugLevelWindow
     [MenuItem("Tools/LoopMaster/Reset Player Progress (Level 1)")]
     public static void ResetPlayerProgress()
     {
-        GameProgressStore.DeleteProgress();
-        Debug.Log("[LoopMaster] Player progress reset to Level 1.");
+        CheatDelegate.ResetAllData(EditorApplication.isPlaying);
+        Debug.Log("[LoopMaster] All player progress, inventory, events, and tutorials reset to Level 1.");
     }
 }
 
@@ -102,9 +102,9 @@ public sealed class DebugLevelPanel
         {
             if (GUILayout.Button("Reset Progress (Level 1)"))
             {
-                GameProgressStore.DeleteProgress();
+                CheatDelegate.ResetAllData(EditorApplication.isPlaying);
                 _targetLevelInput = 1;
-                _status = "Progress reset to Level 1.";
+                _status = "All progress, inventory, events, and tutorials reset to Level 1.";
                 Debug.Log("[Debug Level] " + _status);
             }
             if (GUILayout.Button("Refresh Catalog"))
@@ -137,7 +137,7 @@ public sealed class DebugLevelPanel
                     return;
                 }
             }
-            GameProgressStore.SetProgress(level);
+            if (level == 1) CheatDelegate.ResetAllData(false); else GameProgressStore.SetProgress(level);
             _status = EditorApplication.isPlaying ? "Playing Level " + level + "; progress saved." :
                 "Saved progress set to Level " + level + ".";
             Debug.Log("[Debug Level] " + _status);

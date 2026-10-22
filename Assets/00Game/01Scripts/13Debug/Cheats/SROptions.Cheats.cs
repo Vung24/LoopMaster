@@ -109,6 +109,47 @@ public partial class SROptions
         }
     }
 
+    [Category("01. Gameplay & Levels"), DisplayName("Reset All Progress (Level 1)"), Sort(9)]
+    public void ResetAllProgress()
+    {
+        CheatManager.Ensure().Commands.ResetAllProgress().Forget();
+        TargetLevel = 1;
+        OnPropertyChanged(nameof(TargetLevel));
+        OnPropertyChanged(nameof(CurrentLevelStatus));
+        OnPropertyChanged(nameof(CurrentCoins));
+        OnPropertyChanged(nameof(BoostersStatus));
+        OnPropertyChanged(nameof(HeartsStatus));
+        OnPropertyChanged(nameof(SkipTutorial));
+    }
+
+    #endregion
+
+    #region Booster Unlock Test
+
+    [Category("05. Booster Unlock Test"), DisplayName("Test Undo Unlock"), Sort(40)]
+    public void TestUndoUnlock()
+    {
+        StartBoosterUnlockTest(InventoryKeys.TOOL_UNDO);
+    }
+
+    [Category("05. Booster Unlock Test"), DisplayName("Test Shuffle Unlock"), Sort(41)]
+    public void TestShuffleUnlock()
+    {
+        StartBoosterUnlockTest(InventoryKeys.TOOL_SHUFFLE);
+    }
+
+    [Category("05. Booster Unlock Test"), DisplayName("Test Extra Slot Unlock"), Sort(42)]
+    public void TestPathUnlock()
+    {
+        StartBoosterUnlockTest(InventoryKeys.TOOL_PATH);
+    }
+
+    private void StartBoosterUnlockTest(string key)
+    {
+        CheatManager.Ensure().Commands.TestBoosterUnlock(key).Forget();
+        OnPropertyChanged(nameof(SkipTutorial));
+    }
+
     #endregion
 
     #region 02. Currencies & Boosters
