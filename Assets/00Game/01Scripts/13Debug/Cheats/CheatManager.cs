@@ -1,16 +1,13 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Cysharp.Threading.Tasks;
+using SRDebugger;
 
 namespace Snui
 {
-	public class CheatManager : MonoBehaviour
-	{
+    public class CheatManager : MonoBehaviour
+    {
         public static CheatManager Current { get; private set; }
-        public CheatDialog Dialog { get; private set; }
         public CheatDelegate Commands { get; private set; }
-        private bool _loading;
-        private int _version;
         internal static int RequestedLevel;
         public static bool SkipTutorial
         {
@@ -38,28 +35,31 @@ namespace Snui
         }
 
         [ContextMenu("Toggle Cheat Menu")]
-        public void Toggle() => LoadDialog().Forget();
-        private async UniTask LoadDialog()
+        public void Toggle()
         {
-            if (Dialog != null) { Dialog.Close(); return; }
-            if (_loading) return;
-            _loading = true;
-            int version = _version;
-            try
+            if (SRDebug.Instance == null) return;
+            if (SRDebug.Instance.IsDebugPanelVisible)
             {
-                var dialog = await PopupAssets.Instantiate<CheatDialog>("CheatDialog", transform, this.GetCancellationTokenOnDestroy());
-                if (this == null || version != _version) { Destroy(dialog.gameObject); return; }
-                Dialog = dialog;
-                Dialog.Initialize(Commands);
+                SRDebug.Instance.HideDebugPanel();
             }
-            finally { if (this != null) _loading = false; }
+            else
+            {
+                SRDebug.Instance.ShowDebugPanel(DefaultTabs.Options);
+            }
         }
 
-        private void OnSceneChanged(Scene previous, Scene next) { _version++; if (Dialog != null) Dialog.Close(); }
+        private void OnSceneChanged(Scene previous, Scene next)
+        {
+            if (SRDebug.Instance != null && SRDebug.Instance.IsDebugPanelVisible)
+            {
+                SRDebug.Instance.HideDebugPanel();
+            }
+        }
+
         private void OnDestroy()
         {
             SceneManager.activeSceneChanged -= OnSceneChanged;
             if (Current == this) Current = null;
         }
-	}
+    }
 }
