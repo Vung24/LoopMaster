@@ -10,7 +10,7 @@ public static class GameplayFeedbackRules
     public const float ConveyorNormalInterval = 0.05f;
     public const float ConveyorFastInterval = 0.032f;
     public const float SpeedUpMultiplier = 1.5f;
-    public static float GetTransferTimeScale(bool speedUp) => speedUp ? SpeedUpMultiplier : 1f;
+    public static float GetTransferTimeScale(bool speedUp) => 1f;
     public static float GetConveyorInterval(float normal, bool speedUp, float spacingScale = 1f) =>
 		Math.Max(0.02f, normal) * Math.Max(0.4f, Math.Min(1f, spacingScale)) *
         (speedUp ? ConveyorFastInterval / ConveyorNormalInterval : 1f);

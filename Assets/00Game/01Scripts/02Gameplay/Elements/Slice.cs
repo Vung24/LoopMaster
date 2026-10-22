@@ -7,6 +7,7 @@ using DG.Tweening;
 public class Slice : MonoBehaviour
 {
 	private static readonly Vector3 RoadScale = new Vector3(0.68f, 0.6f, 1.2f);
+	private const float JumpDuration = GameplayFeedbackRules.SliceJumpDuration;
 	private const float JumpArcHeight = GameplayFeedbackRules.SliceJumpHeight;
 
 	public UnityEvent OnSliceDismiss = new UnityEvent();
@@ -18,7 +19,6 @@ public class Slice : MonoBehaviour
 	private Tween _rotationTween;
 	private Tween _scaleTween;
 	private bool _isJumping;
-	private bool _scaleJumpWithConveyor;
 	private readonly RoadMotion _roadMotion = new RoadMotion(true);
 
 	[SerializeField] private Texture _longBoxSignTex;
@@ -60,7 +60,7 @@ public class Slice : MonoBehaviour
 		}
 	}
 
-	public UniTask JumpToTransfer(int targetPathIndex, float delayTime, float jumpHeight = JumpArcHeight,
+	public UniTask JumpToTransfer(int targetPathIndex, float delayTime = JumpDuration, float jumpHeight = JumpArcHeight,
 		Action landed = null, bool commitLogicOnComplete = true)
 	{
 		if (_info == null || GameData.Current == null) return default;
@@ -81,11 +81,11 @@ public class Slice : MonoBehaviour
 				_info.IsMoved = false;
 			}
 			landed?.Invoke();
-		}, jumpHeight, Ease.InQuad, false);
+		}, jumpHeight, Ease.InQuad);
 		return default;
 	}
 
-	public UniTask JumpToBox(Box box, float delayTime, Action landed = null, float jumpHeight = JumpArcHeight)
+	public UniTask JumpToBox(Box box, float delayTime = JumpDuration, Action landed = null, float jumpHeight = JumpArcHeight)
 	{
 		if (_info == null || box == null) return default;
 		if (GameData.Current != null) GameData.Current.RemoveTransferSlice(_info);
@@ -155,7 +155,7 @@ public class Slice : MonoBehaviour
 
 	private void StartAnimation(Vector3 targetPosition, Quaternion targetRotation,
 		Vector3 targetScale, float duration, Action completed, float jumpHeight = 0f,
-		Ease rotationEase = Ease.OutQuad, bool scaleJumpWithConveyor = true)
+		Ease rotationEase = Ease.OutQuad)
 	{
 		StopMotion();
 		_rotationTween = transform.DORotate(targetRotation.eulerAngles, duration)
@@ -163,12 +163,10 @@ public class Slice : MonoBehaviour
 		if (jumpHeight > 0f)
 		{
 			_isJumping = true;
-			_scaleJumpWithConveyor = scaleJumpWithConveyor;
 			_scaleTween = transform.DOScale(targetScale, duration)
 				.SetEase(Ease.OutQuad).SetTarget(gameObject).SetLink(gameObject);
 			_positionTween = transform.DOJump(targetPosition, jumpHeight, 1, duration)
 				.SetEase(Ease.OutQuad).SetTarget(gameObject).SetLink(gameObject);
-			SetJumpTimeScale(GameController.Current == null ? 1f : GameController.Current.SliceJumpTimeScale);
 		}
 		else
 		{
@@ -185,11 +183,6 @@ public class Slice : MonoBehaviour
 
 	public void SetJumpTimeScale(float timeScale)
 	{
-		if (!_isJumping || !_scaleJumpWithConveyor) return;
-		timeScale = Mathf.Max(0.01f, timeScale);
-		if (_positionTween != null) _positionTween.timeScale = timeScale;
-		if (_rotationTween != null) _rotationTween.timeScale = timeScale;
-		if (_scaleTween != null) _scaleTween.timeScale = timeScale;
 	}
 
 	private void StopMotion()
@@ -221,7 +214,6 @@ public class Slice : MonoBehaviour
 		StopMotion();
 		if (_info != null && _info.SliceSc == this) _info.SliceSc = null;
 		_info = null;
-		_scaleJumpWithConveyor = false;
 	}
 
 	private static int WrapPathIndex(int index)
