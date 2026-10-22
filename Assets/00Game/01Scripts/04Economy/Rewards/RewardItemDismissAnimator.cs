@@ -10,9 +10,12 @@ public class RewardItemDismissAnimator : BaseRewardItemDismissAnimator
 
     protected override Vector3 GetTargetPos(RewardCell cell)
     {
-        Transform target = IsHeartHudTarget(cell.RewardItem?.Type)
-            ? Snui_HeartHud.Current.GetIconNode()
-            : HomeController.Current?.HomePage?.PlayButton?.transform;
+        if (IsHeartHudTarget(cell.RewardItem?.Type))
+        {
+            // Infinite hearts hide the normal icon, but its position remains the HUD destination.
+            return cell.transform.parent.InverseTransformPoint(Snui_HeartHud.Current.GetIconPos());
+        }
+        Transform target = HomeController.Current?.HomePage?.PlayButton?.transform;
         // Both endpoints must use the cell parent's space, including SafeArea offsets.
         return target != null && target.gameObject.activeInHierarchy
             ? cell.transform.parent.InverseTransformPoint(target.position) : cell.transform.localPosition;
