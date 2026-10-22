@@ -1,9 +1,13 @@
 LoopMaster Coding & Agent Instructions
+Project Data & Verification Index
+- Read `../LoopMaster-ProjectData/DATA_INDEX.md` for current data folders, verification entry points, and naming conventions.
+- `../LoopMaster-ProjectData/Verification` contains executable gameplay checks; `../LoopMaster-ProjectData/*Data` and `../LoopMaster-ProjectData/ReferenceData` contain feature reference data and tools.
+- Use feature-based data names in new folders and references. Keep technical gameplay meanings such as post-challenge recovery distinct from reference-data provenance.
 Hierarchy Resolution Rule: NEVER USE Find
 - Never write transform.Find(...) or GameObject.Find(...) in C# scripts.
 - Use serialized fields ([SerializeField]) or GetComponent / GetComponentInChildren.
 - When dynamic name-based lookup is needed, use HierarchyReferenceCache (Child, Descendant, Path, ChildComponent, DescendantComponent).
-- Backend verification Rules/Verification/CoreRulesVerification.csproj enforces VerifyNoFindPolicy().
+- Backend verification ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj enforces VerifyNoFindPolicy().
 Unity Version & Project Consistency
 - Target Unity 2022.3 LTS and the project's existing C# language level and installed packages.
 - Prefer existing project utilities and patterns over introducing new libraries, managers, or architectural frameworks.
@@ -173,7 +177,7 @@ The reasoning, examples, and full rule set (§1–63) are in `UNITY_AGENT_CODING
 2. **Pin behavior before changing it:** a characterization (EditMode) test, or a written manual check you will repeat.
 3. **One kind of refactoring per step** (rename, extract, move, split); each step compiles on its own and never mixes in behavior changes.
 4. **Prefer the IDE/Roslyn refactoring engine** for rename, move, and extract over hand-written text edits.
-5. **Verify after every step:** clean compile, no new console errors or analyzer warnings, tests pass. Run `dotnet run --project Rules/Verification/CoreRulesVerification.csproj` and compile verification.
+5. **Verify after every step:** clean compile, no new console errors or analyzer warnings, tests pass. Run `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj` and compile verification.
 6. **Quote real compiler/test output;** never summarize a run that did not happen.
 7. **Stop and ask** before behavior changes, serialized-data migrations, or scene/prefab edits.
 

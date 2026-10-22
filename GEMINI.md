@@ -14,8 +14,8 @@
      - `HierarchyReferenceCache.Component<T>(node)` for null-safe component access.
 
 ## 2. Backend & Rule Verification
-- The project enforces this rule programmatically via `VerifyNoFindPolicy()` in `Rules/Verification/Program.cs`.
-- Running `dotnet run --project Rules/Verification/CoreRulesVerification.csproj` will automatically scan all runtime scripts under `Assets/00Game/01Scripts` and fail if any `transform.Find` or `GameObject.Find` is detected.
+- The project enforces this rule programmatically via `VerifyNoFindPolicy()` in `../LoopMaster-ProjectData/Verification/Program.cs`.
+- Running `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj` will automatically scan all runtime scripts under `Assets/00Game/01Scripts` and fail if any `transform.Find` or `GameObject.Find` is detected.
 
 ## 3. General Architecture & Standards
 - **Async Operations:** Use `Cysharp.Threading.Tasks` (`UniTask`), avoid raw `Task` and avoid unhandled `async void` (use `async UniTaskVoid` with `.Forget()` only at fire-and-forget entry points).

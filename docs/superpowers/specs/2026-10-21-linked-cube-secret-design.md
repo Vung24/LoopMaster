@@ -102,5 +102,5 @@ In `LinkCubeLaunch.CanBegin(data, tappedBox, out failure)`:
 
 ## 5. Constraints & Compliance
 - **Hierarchy Resolution:** STRICTLY NO `transform.Find` or `GameObject.Find`. Use `HierarchyReferenceCache` or serialized fields.
-- **Verification Rule:** Must compile cleanly and pass `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`.
+- **Verification Rule:** Must compile cleanly and pass `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`.
 - **DOTween Lifecycles:** All tweens must have `.SetLink(gameObject)` and clean cleanup.

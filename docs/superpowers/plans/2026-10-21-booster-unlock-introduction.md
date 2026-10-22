@@ -28,7 +28,7 @@
 - **Method Naming:** Avoid unnecessary `Try` prefixes; use descriptive action names (`GetPendingUnlockKey`, `ShowIntro`, `PlayFlight`).
 - **DOTween Lifecycles:** Always attach `.SetLink(gameObject)` and cleanly kill active sequences before playing new ones or during `OnDestroy` / `Cancel`.
 - **Async Operations:** Use `UniTask` (`Cysharp.Threading.Tasks`) with proper `CancellationToken` propagation; avoid unhandled `async void`.
-- **Verification Rule:** Must pass `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`.
+- **Verification Rule:** Must pass `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`.
 
 ## Extensibility & Performance Principles
 
@@ -112,7 +112,7 @@ Create `Assets/00Game/01Scripts/02Gameplay/Boosters/BoosterUnlockProgress.cs`:
 
 - [ ] **Step 3: Verify No-Find Policy & Compile**
 
-Run: `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`
+Run: `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 Expected: `No-Find policy verified: 0 violations`.
 
 - [ ] **Step 4: Commit**
@@ -165,7 +165,7 @@ If a dedicated prefab is not yet instantiated, implement a runtime programmatic 
 
 - [ ] **Step 3: Verify No-Find Policy**
 
-Run: `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`
+Run: `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 Expected: `No-Find policy verified: 0 violations`.
 
 - [ ] **Step 4: Commit**
@@ -229,7 +229,7 @@ Create `Assets/00Game/01Scripts/02Gameplay/Boosters/BoosterFlyPresenter.cs`:
 
 - [ ] **Step 3: Verify No-Find Policy & Compile**
 
-Run: `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`
+Run: `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 Expected: 0 violations.
 
 - [ ] **Step 4: Commit**
@@ -312,7 +312,7 @@ Ensure `OnDestroy` and token cancellation kills any active tweens, restores rayc
 
 - [ ] **Step 4: Verify No-Find Policy**
 
-Run: `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`
+Run: `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 Expected: 0 violations.
 
 - [ ] **Step 5: Commit**
@@ -374,7 +374,7 @@ In `GameLevelPresentationFlow.Play(...)`:
 
 - [ ] **Step 2: Run Backend & CoreRules Verification**
 
-Run: `dotnet run --project Rules/Verification/CoreRulesVerification.csproj`
+Run: `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 Expected: `No-Find policy verified: 0 violations`.
 
 - [ ] **Step 3: Verification with Unit/Flow Checks**

@@ -21,7 +21,7 @@
 
 ## Global Constraints
 
-- **STRICT NO `Find` POLICY:** Never use `transform.Find` or `GameObject.Find` in C# scripts. Enforced by `Rules/Verification/CoreRulesVerification.csproj`.
+- **STRICT NO `Find` POLICY:** Never use `transform.Find` or `GameObject.Find` in C# scripts. Enforced by `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`.
 - **Target Unity 2022.3 LTS:** Maintain existing C# language level, packages, and conventions.
 - **Authoritative State:** Conveyor path indexing and logical state must remain separate from visual animation.
 - **DOTween Safety:** Attach `.SetLink(gameObject)` and clean up tweens safely.
@@ -35,7 +35,7 @@
 2. **Jump In-Flight Continuity:** Slices mid-jump to box or transfer when Speed Up is toggled must complete their parabolic flight smoothly at constant 0.4s without warping or sudden speed bursts.
 3. **Curved Road Traversal:** When running at high speed (0.032s / 31.25 steps/sec), rotation around bends must be smooth and continuous, without 31 Hz angular vibration.
 4. **Failure Slowdown Compatibility:** When `BeginFailureSlowdown` or `EndFailureSlowdown` is active, slow-motion intervals must still override normal and speed clocks properly.
-5. **No-Find Rule Compliance:** Running `dotnet run --project Rules/Verification/CoreRulesVerification.csproj` must report 0 violations.
+5. **No-Find Rule Compliance:** Running `dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj` must report 0 violations.
 
 ---
 
@@ -43,7 +43,7 @@
 
 **Files:**
 - Modify: `Assets/00Game/01Scripts/02Gameplay/Flow/ConveyorFlow.cs:96-103`
-- Test: `Rules/Verification/CoreRulesVerification.csproj`
+- Test: `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 
 **Interfaces:**
 - Consumes: `ConveyorFlow.IsSpeedUpActive`, `_normalTickTime`, `_speedTickTime`.
@@ -74,7 +74,7 @@ public void SetSpeedUp(bool speedUp)
 - [ ] **Step 3: Verify clock continuity under toggle**
 Run:
 ```powershell
-Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project Rules/Verification/CoreRulesVerification.csproj
+Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj
 ```
 Expected: PASS with 0 violations.
 
@@ -86,7 +86,7 @@ Expected: PASS with 0 violations.
 - Modify: `Assets/00Game/01Scripts/02Gameplay/Flow/GameController.cs:483-504`
 - Modify: `Assets/00Game/01Scripts/02Gameplay/Elements/Slice.cs:20-22, 63-100, 156-193`
 - Modify: `Assets/00Game/01Scripts/02Gameplay/Rules/GameplayFeedbackRules.cs:18-35`
-- Test: `Rules/Verification/CoreRulesVerification.csproj`
+- Test: `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 
 **Interfaces:**
 - Consumes: `Slice.JumpToBox`, `Slice.JumpToTransfer`, `GameController.SetSpeedUp`.
@@ -120,7 +120,7 @@ In `Assets/00Game/01Scripts/02Gameplay/Rules/GameplayFeedbackRules.cs`, ensure `
 - [ ] **Step 4: Verify compilation and tests**
 Run:
 ```powershell
-Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project Rules/Verification/CoreRulesVerification.csproj
+Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj
 ```
 Expected: PASS with 0 violations.
 
@@ -131,7 +131,7 @@ Expected: PASS with 0 violations.
 **Files:**
 - Modify: `Assets/00Game/01Scripts/02Gameplay/Board/RoadMotion.cs:12-30, 48-61, 88-96, 116-133`
 - Modify: `Assets/00Game/01Scripts/02Gameplay/Elements/Slice.cs:22`
-- Test: `Rules/Verification/CoreRulesVerification.csproj`
+- Test: `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 
 **Interfaces:**
 - Consumes: `RoadMotion.Enqueue`, `RoadMotion.Advance`, `RoadMotion.ApplyProgress`.
@@ -184,7 +184,7 @@ private void SynchronizeArrival(float duration)
 - [ ] **Step 3: Verify CoreRules and No-Find compliance**
 Run:
 ```powershell
-Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project Rules/Verification/CoreRulesVerification.csproj
+Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj
 ```
 Expected: PASS with 0 violations.
 
@@ -193,13 +193,13 @@ Expected: PASS with 0 violations.
 ### Task 4: End-to-End Smoothness & Visual Verification
 
 **Files:**
-- Verify: `Rules/Verification/CoreRulesVerification.csproj`
+- Verify: `../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj`
 - Check: Unity Editor Play Mode logs / script compilation status
 
 - [ ] **Step 1: Run comprehensive backend verification**
 Run:
 ```powershell
-Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project Rules/Verification/CoreRulesVerification.csproj
+Set-Location "c:\Users\Laptop\Downloads\LoopMaster"; dotnet run --project ../LoopMaster-ProjectData/Verification/CoreRulesVerification.csproj
 ```
 Confirm:
 1. `No-Find policy verified: 0 violations across Assets/00Game/01Scripts.`
