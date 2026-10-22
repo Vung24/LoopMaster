@@ -83,11 +83,15 @@ public static class CampaignBoxEntries
         for (int index = 0; index < boxes.Count; index++)
             if (assigned.Add(index)) packets.Add(new List<int> { index });
 
-        var linkedBoxes = new List<int>();
+        var linkedBoxes = new Dictionary<int, int>();
         for (int index = 0; index < boxes.Count; index++)
         foreach (JObject cube in A.Array((JObject)boxes[index], "Cubes"))
-            if (A.Int(cube, "LinkedPairId") > 0) linkedBoxes.Add(index);
-        if (linkedBoxes.Count == 2) JoinLinkedPackets(packets, linkedBoxes[0], linkedBoxes[1]);
+        {
+            int pairId = A.Int(cube, "LinkedPairId");
+            if (pairId <= 0) continue;
+            if (linkedBoxes.TryGetValue(pairId, out int first)) JoinLinkedPackets(packets, first, index);
+            else linkedBoxes.Add(pairId, index);
+        }
 
         int leftCount = (boxes.Count + 1) / 2;
         int partition = -1;

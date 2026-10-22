@@ -27,6 +27,9 @@ public sealed partial class LoopLevelEditorWindow
     private JObject _canvasDraft;
     private JObject _canvasProposal;
     private string _proposalBase, _proposalAction;
+    private string _proposalReport;
+    private bool _draftSolverUsesProposal;
+    private JObject _draftSolverProposal;
     private string _canvasBase;
     private Vector2 _canvasDown, _canvasPanStart;
     private Vector3 _canvasWorldDown;
@@ -69,10 +72,18 @@ public sealed partial class LoopLevelEditorWindow
         Repaint();
     }
     private void OnLostFocus() { CancelCanvasGesture(); }
-    private void ClearWorkspaceProposal() { _canvasProposal = null; _proposalBase = _proposalAction = null; }
+    private void ClearWorkspaceProposal()
+    {
+        if (_draftSolverUsesProposal) StopDraftSolver();
+        _draftSolverProposal = null;
+        _canvasProposal = null;
+        _proposalBase = _proposalAction = _proposalReport = null;
+        _hasValidation = false;
+    }
     private void PreviewWorkspaceCommand(string name, Action<JObject> edit, bool moved = false)
     {
         CancelCanvasGesture();
+        ClearWorkspaceProposal();
         try
         {
             JObject original = Root(), next = (JObject)original.DeepClone(); edit(next);
@@ -120,6 +131,7 @@ public sealed partial class LoopLevelEditorWindow
                     if (GUILayout.Button("Áp dụng", GUILayout.Width(80))) ApplyWorkspaceProposal();
                     if (GUILayout.Button("Hủy", GUILayout.Width(55))) { ClearWorkspaceProposal(); GUIUtility.ExitGUI(); }
                 }
+                if (!string.IsNullOrEmpty(_proposalReport)) EditorGUILayout.HelpBox(_proposalReport, MessageType.Info);
             }
             _canvasSelection = LoopLevelCommands.Selection(root, _canvasSelection).ToList();
             if (_box >= 0 && _box < A.Array(layout, "Boxes").Count && !_canvasSelection.Contains(_box)) SetCanvasSelection(new[] { _box });
@@ -173,6 +185,7 @@ public sealed partial class LoopLevelEditorWindow
             }
             using (new EditorGUI.DisabledScope(_canvasProposal != null))
             {
+                if (_canvasTool == 2) DrawManualCubeTools();
                 DrawPrefabPalette(root);
 
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
@@ -202,14 +215,8 @@ public sealed partial class LoopLevelEditorWindow
                     }
                     if (GUILayout.Button("⚡ Tự động gắn ô đường (Auto-Bind)", GUILayout.Height(22)))
                         WorkspaceCommand("Tự động liên kết ô đường gần nhất", next => LoopLevelBoardLayout.AutoBindBoxesToRoad(A.Layout(next)));
-                    if (GUILayout.Button("⚡ Cân bằng bộ 4 (Solvable)", GUILayout.Height(22)))
-                    {
-                        WorkspaceCommand("Cân bằng bộ 4", next =>
-                        {
-                            LoopLevelCommands.BalanceCubesToSetsOfFour(next, out _, out string report);
-                            _status = report;
-                        });
-                    }
+                    if (GUILayout.Button("Xem trước cân bằng bộ 4/6", GUILayout.Height(22)))
+                        PreviewWorkspaceCommand("Cân bằng màu theo bộ 4/6", PreviewColorBalance);
                 }
 
                 _showAdvancedTools = EditorGUILayout.Foldout(_showAdvancedTools, "⚙️ Tiện ích căn chỉnh & đường bao (Tùy chọn)", true);
@@ -602,7 +609,7 @@ public sealed partial class LoopLevelEditorWindow
                     { Handles.color = Color.yellow; Handles.DrawDottedLine(project(exit), project(slots[binding - 1]), 3); }
                 }
             }
-            if (LoopLinkedCubeAuthoring.TryGetLinkedPair(layout, out LinkedCubePairRef pairRef))
+            foreach (LinkedCubePairRef pairRef in LoopLinkedCubeAuthoring.GetLinkedPairs(layout))
             {
                 if (pairRef.BoxA >= 0 && pairRef.BoxA < boxes.Count && pairRef.BoxB >= 0 && pairRef.BoxB < boxes.Count)
                 {
@@ -1164,7 +1171,7 @@ public sealed partial class LoopLevelEditorWindow
             GUILayout.Label("Nguồn mở khóa: "+(sources.Count==0?"chưa có":string.Join(", ",sources)),EditorStyles.wordWrappedMiniLabel);
         }
         Header("Cube đôi (Linked Cube Pair)");
-        bool hasBoardPair = LoopLinkedCubeAuthoring.TryGetLinkedPair(layout, out LinkedCubePairRef boardPair);
+        bool hasBoxPair = LoopLinkedCubeAuthoring.TryGetLinkedPairForBox(layout, _box, out LinkedCubePairRef boardPair);
         bool boxHasLinkedCube = false;
         int linkedCubeIndex = -1;
         JArray boxCubes = A.Array(box, "Cubes");
@@ -1178,7 +1185,7 @@ public sealed partial class LoopLevelEditorWindow
             }
         }
 
-        if (boxHasLinkedCube && hasBoardPair)
+        if (boxHasLinkedCube && hasBoxPair)
         {
             int partnerBox = (_box == boardPair.BoxA) ? boardPair.BoxB : boardPair.BoxA;
             int partnerCube = (_box == boardPair.BoxA) ? boardPair.CubeB : boardPair.CubeA;
@@ -1195,20 +1202,13 @@ public sealed partial class LoopLevelEditorWindow
                 }
             }
         }
-        else if (hasBoardPair)
-        {
-            EditorGUILayout.LabelField($"Bàn chơi đã có 1 cặp Cube đôi (Hộp {boardPair.BoxA} ↔ Hộp {boardPair.BoxB}).", EditorStyles.wordWrappedMiniLabel);
-            if (GUILayout.Button($"Xem cặp hiện có (Hộp {boardPair.BoxA} & {boardPair.BoxB})"))
-            {
-                SetCanvasSelection(new[] { boardPair.BoxA, boardPair.BoxB });
-            }
-        }
         else
         {
             var otherEligibleBoxes = new List<int>();
             for (int b = 0; b < boxes.Count; b++)
             {
-                if (b != _box && A.Int((JObject)boxes[b], "BoxType") == 0 && A.Array((JObject)boxes[b], "Cubes").Count > 0)
+                if (b != _box && A.Int((JObject)boxes[b], "BoxType") == 0 &&
+                    !LoopLinkedCubeAuthoring.HasLinkedCube((JObject)boxes[b]) && A.Array((JObject)boxes[b], "Cubes").Count > 0)
                 {
                     otherEligibleBoxes.Add(b);
                 }
@@ -1309,7 +1309,11 @@ public sealed partial class LoopLevelEditorWindow
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.LabelField("Cube đôi:", GUILayout.Width(75));
-            bool hasPair = LoopLinkedCubeAuthoring.TryGetLinkedPair(A.Layout(root), out LinkedCubePairRef selectedPair);
+            LinkedCubePairRef selectedPair;
+            bool hasPair;
+            if (_canvasSelection.Count > 0)
+                hasPair = LoopLinkedCubeAuthoring.TryGetLinkedPairForBox(A.Layout(root), _canvasSelection[0], out selectedPair);
+            else hasPair = LoopLinkedCubeAuthoring.TryGetLinkedPair(A.Layout(root), out selectedPair);
             bool canLinkTwo = _canvasSelection.Count == 2;
             using (new EditorGUI.DisabledScope(!canLinkTwo))
             {
@@ -1334,7 +1338,7 @@ public sealed partial class LoopLevelEditorWindow
                 {
                     WorkspaceCommand("Hủy nối Cube đôi", next =>
                     {
-                        LoopLinkedCubeAuthoring.Unlink(next, 1);
+                        LoopLinkedCubeAuthoring.Unlink(next, selectedPair.Id);
                         _status = "Đã gỡ bỏ liên kết Cube đôi.";
                     });
                 }
@@ -1625,14 +1629,9 @@ public sealed partial class LoopLevelEditorWindow
             {
                 Color prevCol = GUI.backgroundColor;
                 GUI.backgroundColor = new Color(1f, 0.75f, 0.2f);
-                if (GUILayout.Button("⚡ Tự động cân bằng tất cả màu về bộ 4 (Khắc phục lỗi !)", GUILayout.Height(24)))
-                {
-                    WorkspaceCommand("Cân bằng tất cả màu về bộ 4", next =>
-                    {
-                        LoopLevelCommands.BalanceCubesToSetsOfFour(next, out _, out string report);
-                        _status = report;
-                    });
-                }
+                using (new EditorGUI.DisabledScope(_canvasProposal != null))
+                    if (GUILayout.Button("Xem trước cân bằng màu theo bộ 4/6", GUILayout.Height(24)))
+                        PreviewWorkspaceCommand("Cân bằng màu theo bộ 4/6", PreviewColorBalance);
                 GUI.backgroundColor = prevCol;
             }
         }
@@ -1653,9 +1652,9 @@ public sealed partial class LoopLevelEditorWindow
         GUILayout.Label(boxes.Count + " hộp · Kiểm tra cấu trúc và lời giải", EditorStyles.wordWrappedMiniLabel);
         using(new EditorGUILayout.HorizontalScope())
         {
-            if(GUILayout.Button("Kiểm tra cấu trúc")){_errors=A.Validate(root,out _warnings);_hasValidation=true;}
+            if(GUILayout.Button("Kiểm tra cấu trúc")){_errors=A.Validate(_canvasProposal ?? root,out _warnings);_hasValidation=true;}
             _solverBudget=EditorGUILayout.IntField("Trạng thái tối đa",_solverBudget,GUILayout.Width(230));
-            if(_draftSearch==null){if(GUILayout.Button("Tìm lời giải bản nháp"))StartDraftSolver(root);}
+            if(_draftSearch==null){if(GUILayout.Button(_canvasProposal == null ? "Tìm lời giải bản nháp" : "Tìm lời giải bản xem trước"))StartDraftSolver(_canvasProposal ?? root);}
             else if(GUILayout.Button("Hủy tìm")){StopDraftSolver();_draftSolverStatus="Đã hủy; chưa kiểm chứng.";}
         }
         if(_hasValidation)foreach(string error in _errors.Take(5))EditorGUILayout.HelpBox(error,MessageType.Error);
@@ -1669,15 +1668,19 @@ public sealed partial class LoopLevelEditorWindow
             }
         }
         if(A.Array(layout,"MapData").Count>0)GUILayout.Label("MapData được giữ nguyên; kiểm tra trang trí và camera trong Game View.",EditorStyles.wordWrappedMiniLabel);
-        if(!string.IsNullOrEmpty(_draftSolverStatus))GUILayout.Label(_draftSolverJson==_document.Json?_draftSolverStatus:"Bản nháp đã đổi — cần tìm lời giải lại.",EditorStyles.wordWrappedMiniLabel);
+        if(!string.IsNullOrEmpty(_draftSolverStatus))GUILayout.Label(IsDraftSolverCurrent() ? _draftSolverStatus : "Dữ liệu đã đổi — cần tìm lời giải lại.",EditorStyles.wordWrappedMiniLabel);
     }
     private void StartDraftSolver(JObject root)
     {
-        StopDraftSolver();List<string> errors=A.Validate(root,out _);if(errors.Count>0){_status=string.Join("\n",errors.Take(3));return;}
+        StopDraftSolver();
+        _draftSolverUsesProposal = ReferenceEquals(root, _canvasProposal);
+        _draftSolverProposal = _draftSolverUsesProposal ? root : null;
+        _draftSolverJson = root.ToString(Formatting.Indented);
+        List<string> errors=A.Validate(root,out _);if(errors.Count>0){_status=string.Join("\n",errors.Take(3));_draftSolverStatus = "Dữ liệu có lỗi cấu trúc; chưa tìm lời giải.";return;}
         JObject layout=A.Layout(root);
         if(A.Array(layout,"Covers").Count>0||A.Array(layout,"Boxes").OfType<JObject>().Any(b=>A.Array(b,"LinkedCubes").Count>0||A.Array(b,"MultiColorLock").Count>0||A.Array(b,"Cubes").OfType<JObject>().Any(c=>A.Int(c,"IsFixed")>0)))
-        {_draftSolverJson=_document.Json;_draftSolverStatus="Có cơ chế chưa được kiểm chứng bởi mô phỏng này. Hãy chơi thử.";return;}
-        _draftSolverJson=_document.Json;_draftSolverStatus="Đang tìm…";
+        {_draftSolverStatus="Có cơ chế chưa được kiểm chứng bởi mô phỏng này. Hãy chơi thử.";return;}
+        _draftSolverStatus="Đang tìm…";
         _draftSimulation=LoopLevelGenerator.DecodeDetached(root);_draftSolver=new DebugLevelSolver(_draftSimulation,Mathf.Clamp(_solverBudget,100,50000));
         _draftSearch=_draftSolver.Search();EditorApplication.update+=TickDraftSolver;
     }
@@ -1689,7 +1692,7 @@ public sealed partial class LoopLevelEditorWindow
     private void TickDraftSolver()
     {
         if(_draftSearch==null)return;
-        if(_document==null||_document.Json!=_draftSolverJson){StopDraftSolver();_draftSolverStatus="Bản nháp đã đổi; đã hủy tìm.";return;}
+        if(!IsDraftSolverCurrent()){StopDraftSolver();_draftSolverStatus="Dữ liệu đã đổi; đã hủy tìm.";return;}
         try
         {
             var timer=System.Diagnostics.Stopwatch.StartNew();bool running=true;
@@ -1711,6 +1714,18 @@ public sealed partial class LoopLevelEditorWindow
         }
         catch(Exception ex){StopDraftSolver();_draftSolverStatus="Không thể kiểm chứng: "+ex.Message;}
         Repaint();
+    }
+
+    private bool IsDraftSolverCurrent()
+    {
+        if (_document == null) return false;
+        if (_draftSolverUsesProposal)
+        {
+            if (_canvasProposal == null || _proposalBase != _document.Json) return false;
+            // A preview is replaced as a whole; its editing controls stay disabled until Apply/Cancel.
+            return ReferenceEquals(_draftSolverProposal, _canvasProposal);
+        }
+        return _canvasProposal == null && _draftSolverJson == _document.Json;
     }
 
     private void DrawWorkspaceRoadInspector(JObject root, JObject layout, JArray paths, JArray boxes)

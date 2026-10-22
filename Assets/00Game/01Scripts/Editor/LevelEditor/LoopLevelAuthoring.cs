@@ -1065,10 +1065,10 @@ public static class LoopLevelAuthoring
                     // Resolve automatic entrances using the same path builder as gameplay.
                     // DecodeDetached restores GameData.Current even when validation throws.
                     GameData preview = LoopLevelGenerator.DecodeDetached(root);
-                    LinkedCubePair pair = preview.LinkedPair;
-                    if (preview.PathPoints.Count < 2 || pair.FirstBox.PathIndex < 0 || pair.SecondBox.PathIndex < 0 ||
-                        pair.FirstBox.PathIndex >= preview.PathPoints.Count || pair.SecondBox.PathIndex >= preview.PathPoints.Count)
-                        errors.Add("Cube đôi cần hai điểm vào băng chuyền hợp lệ.");
+                    foreach (LinkedCubePair pair in preview.LinkedPairs)
+                        if (preview.PathPoints.Count < 2 || pair.FirstBox.PathIndex < 0 || pair.SecondBox.PathIndex < 0 ||
+                            pair.FirstBox.PathIndex >= preview.PathPoints.Count || pair.SecondBox.PathIndex >= preview.PathPoints.Count)
+                            errors.Add("Cube đôi cần hai điểm vào băng chuyền hợp lệ: " + pair.Id);
                 }
                 warnings.Add("Cube đôi: kiểm tra hai khay kề nhau trong Game View; dây phải rõ và không xuyên khay thứ ba. Validator chưa kiểm tra hình học này.");
             }

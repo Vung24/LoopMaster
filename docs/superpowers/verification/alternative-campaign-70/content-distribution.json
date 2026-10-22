@@ -1,29 +1,72 @@
 {
   "builder_version": 2,
-  "distinct_road_geometries": 45,
-  "colors_equal_boxes_levels": 9,
-  "levels_with_multiple_mechanics": 39,
-  "levels_with_three_or_more_mechanics": 23,
-  "levels_with_four_or_more_mechanics": 13,
+  "distinct_road_geometries": 39,
+  "colors_equal_boxes_levels": 3,
+  "levels_with_multiple_mechanics": 46,
+  "levels_with_three_or_more_mechanics": 37,
+  "levels_with_four_or_more_mechanics": 22,
   "hard_or_expert_levels": 14,
-  "total_secret_cubes": 254,
-  "linked_cube_levels": 16,
-  "near_solved_normal_boxes": 57,
+  "total_secret_cubes": 447,
+  "linked_cube_levels": 41,
+  "levels_with_multiple_linked_pairs": 29,
+  "total_linked_pairs": 77,
+  "normal_levels_with_one_empty_box": 54,
+  "gentle_levels": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    11,
+    15,
+    16,
+    17,
+    18,
+    19,
+    21,
+    22,
+    23,
+    24,
+    26,
+    29,
+    31,
+    36,
+    37,
+    38,
+    41,
+    42,
+    46,
+    49,
+    50,
+    53,
+    54,
+    56,
+    57,
+    61,
+    63,
+    65,
+    67,
+    69
+  ],
+  "near_solved_normal_boxes": 61,
   "capacity_histogram": {
     "4": 16,
-    "5": 3,
-    "6": 15,
-    "7": 36
+    "5": 4,
+    "6": 26,
+    "7": 15,
+    "8": 9
   },
   "box_count_histogram": {
     "2": 2,
     "4": 1,
     "5": 3,
     "6": 15,
-    "7": 9,
-    "8": 13,
-    "9": 5,
-    "10": 11,
+    "7": 12,
+    "8": 10,
+    "9": 6,
+    "10": 10,
     "12": 9,
     "13": 2
   },
@@ -68,7 +111,7 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
       "road_sha256": "3b661ff9f0469629297a630b2fd5bab155dfd24b6dc6972538b0dd66abeb0ac3",
-      "reference_clicks": 5
+      "reference_clicks": 6
     },
     {
       "level": 4,
@@ -82,7 +125,7 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
       "road_sha256": "b04517f516d6b043272c8276af3c96feb8284c4f6157b843bef144d3db31c785",
-      "reference_clicks": 8
+      "reference_clicks": 9
     },
     {
       "level": 5,
@@ -92,35 +135,35 @@
       "hard": 0,
       "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 5,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
-      "road_sha256": "3e03b50461fba2faaf3480cc1029b9f53cf2ca364a4549f54d7f9afefcb3f80d",
-      "reference_clicks": 7
+      "road_sha256": "a0d2dc6a99e3ff5bba01a2a5d9d287ffd2c410d564e0ec4a224aeb99f386a22f",
+      "reference_clicks": 9
     },
     {
       "level": 6,
       "boxes": 5,
       "normal_colors": 4,
-      "capacity": 6,
+      "capacity": 5,
       "hard": 0,
       "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 5,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "3e03b50461fba2faaf3480cc1029b9f53cf2ca364a4549f54d7f9afefcb3f80d",
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
       "reference_clicks": 10
     },
     {
       "level": 7,
       "boxes": 6,
-      "normal_colors": 3,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 6,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 0,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
@@ -128,7 +171,7 @@
         "secret"
       ],
       "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
-      "reference_clicks": 9
+      "reference_clicks": 11
     },
     {
       "level": 8,
@@ -138,28 +181,28 @@
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 7,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "98edeeee35b0d85234fffe2bb54640438e63b342de475e77b35a9e9db4c7972d",
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
       "reference_clicks": 12
     },
     {
       "level": 9,
       "boxes": 7,
       "normal_colors": 6,
-      "capacity": 6,
+      "capacity": 7,
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 10,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "0682d04e73d3f16572e2e815663625cdfbe11817d0144c915c130e412e70fd9f",
+      "road_sha256": "7121409f6a77bd005852914868806fc819ebaa2e4089428670b1ec08cf83662f",
       "reference_clicks": 12
     },
     {
@@ -181,16 +224,16 @@
     {
       "level": 11,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
-      "near_solved_normal_boxes": 1,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 0,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
-      "road_sha256": "8b19af471ecd8f3d7d59413cd2cf5b4eea9d621d18b9b77a66015a116970016e",
-      "reference_clicks": 10
+      "road_sha256": "6807ec365d5621ffeb3618fa7b8fa5c1308f090e2089f887936a51e5f0dca90a",
+      "reference_clicks": 12
     },
     {
       "level": 12,
@@ -205,8 +248,8 @@
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
-      "reference_clicks": 12
+      "road_sha256": "4ca6249648d97be320f43ddd84fbb64ced1eb5727d1f09942ef3ae12f19e8510",
+      "reference_clicks": 14
     },
     {
       "level": 13,
@@ -216,12 +259,12 @@
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 13,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "4b8f94c8036ee731d3f41e06416e18457da03313b10c0342af778deeeb2831bd",
+      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
       "reference_clicks": 13
     },
     {
@@ -238,15 +281,15 @@
         "secret"
       ],
       "road_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4",
-      "reference_clicks": 15
+      "reference_clicks": 19
     },
     {
       "level": 15,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
@@ -254,12 +297,12 @@
         "linked_pair"
       ],
       "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
-      "reference_clicks": 7
+      "reference_clicks": 11
     },
     {
       "level": 16,
       "boxes": 7,
-      "normal_colors": 5,
+      "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
       "mixed_boxes": 6,
@@ -270,12 +313,46 @@
         "linked_pair"
       ],
       "road_sha256": "7121409f6a77bd005852914868806fc819ebaa2e4089428670b1ec08cf83662f",
-      "reference_clicks": 11
+      "reference_clicks": 14
     },
     {
       "level": 17,
       "boxes": 7,
-      "normal_colors": 5,
+      "normal_colors": 6,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "linked_pair"
+      ],
+      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
+      "reference_clicks": 14
+    },
+    {
+      "level": 18,
+      "boxes": 7,
+      "normal_colors": 6,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "linked_pair"
+      ],
+      "road_sha256": "4ca6249648d97be320f43ddd84fbb64ced1eb5727d1f09942ef3ae12f19e8510",
+      "reference_clicks": 13
+    },
+    {
+      "level": 19,
+      "boxes": 7,
+      "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
       "mixed_boxes": 5,
@@ -286,40 +363,8 @@
         "secret",
         "linked_pair"
       ],
-      "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
-      "reference_clicks": 12
-    },
-    {
-      "level": 18,
-      "boxes": 8,
-      "normal_colors": 6,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 7,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 228,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4",
+      "road_sha256": "eea5f5df9bba591a07b1e920c80775d6a4941a0070ff500b07cf9d32717e554d",
       "reference_clicks": 14
-    },
-    {
-      "level": 19,
-      "boxes": 8,
-      "normal_colors": 6,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 6,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 263,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "6ef32074dc89bf28ff067ec961fc29978a395f91000d3964fc57408b958eedbe",
-      "reference_clicks": 15
     },
     {
       "level": 20,
@@ -336,16 +381,16 @@
         "linked_pair"
       ],
       "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
-      "reference_clicks": 17
+      "reference_clicks": 20
     },
     {
       "level": 21,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
-      "near_solved_normal_boxes": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
@@ -353,19 +398,20 @@
         "linked_secret"
       ],
       "road_sha256": "8b19af471ecd8f3d7d59413cd2cf5b4eea9d621d18b9b77a66015a116970016e",
-      "reference_clicks": 9
+      "reference_clicks": 11
     },
     {
       "level": 22,
       "boxes": 7,
-      "normal_colors": 5,
+      "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 5,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
+        "secret",
         "linked_pair",
         "linked_secret"
       ],
@@ -375,11 +421,11 @@
     {
       "level": 23,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
       "mixed_boxes": 5,
-      "near_solved_normal_boxes": 1,
+      "near_solved_normal_boxes": 0,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
@@ -391,7 +437,7 @@
     {
       "level": 24,
       "boxes": 7,
-      "normal_colors": 5,
+      "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
       "mixed_boxes": 6,
@@ -400,7 +446,8 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
-        "color_lock"
+        "color_lock",
+        "linked_pair"
       ],
       "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
       "reference_clicks": 13
@@ -426,14 +473,15 @@
     {
       "level": 26,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
+        "secret",
         "color_lock"
       ],
       "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
@@ -445,16 +493,17 @@
       "normal_colors": 9,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 0,
+      "geometry_reference": 257,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
-        "color_lock"
+        "color_lock",
+        "linked_pair"
       ],
-      "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
-      "reference_clicks": 21
+      "road_sha256": "2c8635355fe7d45d95e43e1d65e0fdd3e7cdae540771a652077328cc22ef1574",
+      "reference_clicks": 27
     },
     {
       "level": 28,
@@ -464,22 +513,24 @@
       "hard": 0,
       "mixed_boxes": 8,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 224,
+      "geometry_reference": 197,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "secret"
+        "secret",
+        "linked_pair",
+        "linked_secret"
       ],
-      "road_sha256": "527a02180c16c872df94d5dac2d64d6e9c58645c17fb9842c7a6879e9c6a9e85",
-      "reference_clicks": 17
+      "road_sha256": "adf78b790be814c253fddad6ca616efc441193ad85bc7e8dd715f7393739508c",
+      "reference_clicks": 26
     },
     {
       "level": 29,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
       "mixed_boxes": 5,
-      "near_solved_normal_boxes": 0,
+      "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
@@ -490,32 +541,34 @@
     },
     {
       "level": 30,
-      "boxes": 10,
-      "normal_colors": 10,
+      "boxes": 9,
+      "normal_colors": 7,
       "capacity": 4,
       "hard": 1,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 0,
+      "mixed_boxes": 7,
+      "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
-      "mixing_recipe": "layered_cycle_0012",
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
-        "adjacent_lock"
+        "adjacent_lock",
+        "linked_pair"
       ],
       "road_sha256": "e3a197b3153d8ed12ec5f43e0788b94fbe5bc9f594835b11a570930ab6170c3e",
-      "reference_clicks": 25
+      "reference_clicks": 18
     },
     {
       "level": 31,
       "boxes": 7,
-      "normal_colors": 5,
+      "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
       "mixed_boxes": 6,
-      "near_solved_normal_boxes": 0,
+      "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
+        "secret",
         "adjacent_lock"
       ],
       "road_sha256": "d39f0b086f68b0613f221094bb56276c47c04c88aa8597531c27a9fb1585fccd",
@@ -529,15 +582,16 @@
       "hard": 0,
       "mixed_boxes": 9,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 0,
+      "geometry_reference": 257,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "color_lock",
-        "adjacent_lock"
+        "adjacent_lock",
+        "linked_pair"
       ],
-      "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
-      "reference_clicks": 24
+      "road_sha256": "2c8635355fe7d45d95e43e1d65e0fdd3e7cdae540771a652077328cc22ef1574",
+      "reference_clicks": 28
     },
     {
       "level": 33,
@@ -547,7 +601,7 @@
       "hard": 0,
       "mixed_boxes": 8,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 25,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
@@ -555,26 +609,27 @@
         "linked_pair",
         "linked_secret"
       ],
-      "road_sha256": "53aff972e83cb19f65078ef2af20d3616007dd7e0f190c9c92d2b192d178078c",
+      "road_sha256": "e3a197b3153d8ed12ec5f43e0788b94fbe5bc9f594835b11a570930ab6170c3e",
       "reference_clicks": 22
     },
     {
       "level": 34,
       "boxes": 10,
-      "normal_colors": 10,
+      "normal_colors": 9,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 258,
+      "geometry_reference": 274,
       "mixing_recipe": "layered_cycle_0012",
       "mechanics": [
         "secret",
         "color_lock",
-        "adjacent_lock"
+        "adjacent_lock",
+        "linked_pair"
       ],
-      "road_sha256": "f3cb44ddc6f619fda43bb4cf59a5b360f82985cb3357abee65a19634253f7eae",
-      "reference_clicks": 20
+      "road_sha256": "dd2acab0c63a173975d08cd189c809078a3fba4b8ee527da76081121320ce324",
+      "reference_clicks": 25
     },
     {
       "level": 35,
@@ -584,33 +639,109 @@
       "hard": 1,
       "mixed_boxes": 11,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 125,
+      "geometry_reference": 222,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "color_lock",
-        "adjacent_lock"
+        "adjacent_lock",
+        "linked_pair"
       ],
-      "road_sha256": "4fd459e25319b679b937d9d60810ab6821e09621f8543ea1976948cfeb7e15a5",
-      "reference_clicks": 27
+      "road_sha256": "68f7b81245496afb890f296cc8db9241f4e6919340827407138ec7e87ccdb680",
+      "reference_clicks": 33
     },
     {
       "level": 36,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
-      "mechanics": [],
+      "mechanics": [
+        "secret"
+      ],
       "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
-      "reference_clicks": 11
+      "reference_clicks": 12
     },
     {
       "level": 37,
       "boxes": 6,
+      "normal_colors": 5,
+      "capacity": 6,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "ice"
+      ],
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 12
+    },
+    {
+      "level": 38,
+      "boxes": 8,
+      "normal_colors": 7,
+      "capacity": 8,
+      "hard": 0,
+      "mixed_boxes": 7,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 113,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "ice",
+        "linked_pair"
+      ],
+      "road_sha256": "3c0660bf95f22fb688ca98b4261bfcd5f4534a137de37461b71a72f4e92e65c5",
+      "reference_clicks": 16
+    },
+    {
+      "level": 39,
+      "boxes": 9,
+      "normal_colors": 8,
+      "capacity": 6,
+      "hard": 0,
+      "mixed_boxes": 8,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 152,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice",
+        "linked_pair"
+      ],
+      "road_sha256": "240a15c6e0695a4a7409a21aa366609f85a09a1ba8e27c3473740fde3ae3fdca",
+      "reference_clicks": 24
+    },
+    {
+      "level": 40,
+      "boxes": 10,
+      "normal_colors": 9,
+      "capacity": 4,
+      "hard": 1,
+      "mixed_boxes": 10,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "ice",
+        "linked_pair",
+        "linked_secret"
+      ],
+      "road_sha256": "e3a197b3153d8ed12ec5f43e0788b94fbe5bc9f594835b11a570930ab6170c3e",
+      "reference_clicks": 24
+    },
+    {
+      "level": 41,
+      "boxes": 7,
       "normal_colors": 4,
       "capacity": 7,
       "hard": 0,
@@ -619,86 +750,16 @@
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "ice"
-      ],
-      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
-      "reference_clicks": 9
-    },
-    {
-      "level": 38,
-      "boxes": 8,
-      "normal_colors": 6,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 6,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 122,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret",
-        "ice"
-      ],
-      "road_sha256": "9e048f74da105ccf80381fefc3b759e5aceff7c9cde34d8473b47ba94f118972",
-      "reference_clicks": 13
-    },
-    {
-      "level": 39,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 9,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 78,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret",
-        "color_lock",
-        "ice"
-      ],
-      "road_sha256": "ca0daab2ab3923da72a5f20a297f54789c62b00cd4fe0a4794fefd06d5208649",
-      "reference_clicks": 18
-    },
-    {
-      "level": 40,
-      "boxes": 10,
-      "normal_colors": 9,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 9,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 258,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret",
-        "color_lock",
-        "ice",
-        "linked_pair"
-      ],
-      "road_sha256": "f3cb44ddc6f619fda43bb4cf59a5b360f82985cb3357abee65a19634253f7eae",
-      "reference_clicks": 19
-    },
-    {
-      "level": 41,
-      "boxes": 7,
-      "normal_colors": 3,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 3,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 0,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
         "long"
       ],
       "road_sha256": "4260f890d87d1bab8c669339cf513abe80a9f5b0cc925c194b8b520fde483f7c",
-      "reference_clicks": 11
+      "reference_clicks": 9
     },
     {
       "level": 42,
       "boxes": 8,
       "normal_colors": 5,
-      "capacity": 7,
+      "capacity": 8,
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
@@ -706,10 +767,11 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "long",
-        "secret"
+        "secret",
+        "linked_pair"
       ],
       "road_sha256": "8a265c243990fac3289e947cc2ffa927722c79ec0e02e40e3c8c02a831b5e411",
-      "reference_clicks": 15
+      "reference_clicks": 16
     },
     {
       "level": 43,
@@ -718,16 +780,17 @@
       "capacity": 7,
       "hard": 0,
       "mixed_boxes": 7,
-      "near_solved_normal_boxes": 1,
+      "near_solved_normal_boxes": 0,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "long",
         "secret",
-        "color_lock"
+        "color_lock",
+        "linked_pair"
       ],
       "road_sha256": "6de025e7c8ca836c94825a5e0168bbd4ca2013ba79e9a17369cb4e6040199b83",
-      "reference_clicks": 15
+      "reference_clicks": 20
     },
     {
       "level": 44,
@@ -742,10 +805,12 @@
       "mechanics": [
         "long",
         "secret",
-        "ice"
+        "ice",
+        "linked_pair",
+        "linked_secret"
       ],
-      "road_sha256": "2538b7ff32393f95f8661ffb14532339bf7b2e7ccbda746ef8f874a48c4084ba",
-      "reference_clicks": 15
+      "road_sha256": "0c60356cdf7f7220edf41ad7caf06f48299668ceba9594333dfd543fec8d4a44",
+      "reference_clicks": 18
     },
     {
       "level": 45,
@@ -753,7 +818,7 @@
       "normal_colors": 9,
       "capacity": 4,
       "hard": 1,
-      "mixed_boxes": 9,
+      "mixed_boxes": 10,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
@@ -762,45 +827,48 @@
         "secret",
         "color_lock",
         "ice",
-        "linked_pair"
+        "linked_pair",
+        "linked_secret"
       ],
-      "road_sha256": "c816bf60fed01e7ffef1eaa52c2715df90e03b4319f37e344acea2310c665918",
-      "reference_clicks": 20
+      "road_sha256": "97ab58fcf976689df5cfa3b8aee15e40f1eb1c99ba37d00df6763972dab90de1",
+      "reference_clicks": 27
     },
     {
       "level": 46,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
+        "secret",
         "linked_pair",
         "linked_secret"
       ],
       "road_sha256": "8b19af471ecd8f3d7d59413cd2cf5b4eea9d621d18b9b77a66015a116970016e",
-      "reference_clicks": 10
+      "reference_clicks": 11
     },
     {
       "level": 47,
       "boxes": 10,
-      "normal_colors": 10,
+      "normal_colors": 9,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 295,
-      "mixing_recipe": "layered_cycle_0123",
+      "geometry_reference": 129,
+      "mixing_recipe": "layered_cycle_0122",
       "mechanics": [
         "secret",
         "adjacent_lock",
-        "ice"
+        "ice",
+        "linked_pair"
       ],
-      "road_sha256": "f5deb1baf79382fc6e5bbcfe41459a910c9cf2b57750ceabde9fc3fd8d5d77c9",
-      "reference_clicks": 30
+      "road_sha256": "4e5645d8a8afc65deeb724eb7b141ce135b9bfa0f61717857a8851688fe7a3b9",
+      "reference_clicks": 22
     },
     {
       "level": 48,
@@ -808,23 +876,24 @@
       "normal_colors": 9,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "long",
         "secret",
-        "color_lock"
+        "color_lock",
+        "linked_pair"
       ],
-      "road_sha256": "aa5fc02c40a3629f2d4a742c0cd25de23a82c1fc501879d9befc1477994f390f",
-      "reference_clicks": 20
+      "road_sha256": "4ab2719dd78684388379d9c417c18430c4c235a80fc50393daa0f60cfa815e9d",
+      "reference_clicks": 25
     },
     {
       "level": 49,
       "boxes": 6,
       "normal_colors": 4,
-      "capacity": 7,
+      "capacity": 6,
       "hard": 0,
       "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
@@ -834,13 +903,13 @@
         "single"
       ],
       "road_sha256": "23620f577f94e305c525fd4d3f9db08c69d55cd312b3a686b120418c7f6cf867",
-      "reference_clicks": 9
+      "reference_clicks": 8
     },
     {
       "level": 50,
       "boxes": 8,
       "normal_colors": 6,
-      "capacity": 7,
+      "capacity": 8,
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
@@ -848,36 +917,38 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
-        "secret"
+        "secret",
+        "linked_pair"
       ],
       "road_sha256": "5dd6c358cf335442819b75222baadca7ec412a0889a1498d66fa422d3c8d3294",
-      "reference_clicks": 15
+      "reference_clicks": 16
     },
     {
       "level": 51,
       "boxes": 9,
-      "normal_colors": 9,
+      "normal_colors": 8,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 8,
       "near_solved_normal_boxes": 0,
       "geometry_reference": 35,
       "mixing_recipe": "layered_cycle_0122",
       "mechanics": [
         "secret",
         "color_lock",
-        "ice"
+        "ice",
+        "linked_pair"
       ],
       "road_sha256": "adce97ce8b23574400b9df22f664333883aaaa7dda10500b7e194557b3df7d46",
-      "reference_clicks": 24
+      "reference_clicks": 21
     },
     {
       "level": 52,
       "boxes": 10,
-      "normal_colors": 10,
+      "normal_colors": 9,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 0,
       "geometry_reference": 0,
       "mixing_recipe": "layered_cycle_0012",
@@ -889,15 +960,15 @@
         "linked_secret"
       ],
       "road_sha256": "a6e35675fbdaf564d2f8a914c3f5d88c646d682a29fce3369ab4955841f48ce4",
-      "reference_clicks": 20
+      "reference_clicks": 28
     },
     {
       "level": 53,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
@@ -905,13 +976,13 @@
         "group_door"
       ],
       "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
-      "reference_clicks": 9
+      "reference_clicks": 12
     },
     {
       "level": 54,
       "boxes": 8,
-      "normal_colors": 6,
-      "capacity": 7,
+      "normal_colors": 7,
+      "capacity": 8,
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
@@ -919,7 +990,8 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
-        "group_door"
+        "group_door",
+        "linked_pair"
       ],
       "road_sha256": "21c5bf3f83e5db2892de51377b7d24eb75720be7dd2f7aa018c8171c5f1e3268",
       "reference_clicks": 16
@@ -927,10 +999,10 @@
     {
       "level": 55,
       "boxes": 10,
-      "normal_colors": 10,
+      "normal_colors": 9,
       "capacity": 4,
       "hard": 1,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 0,
       "geometry_reference": 257,
       "mixing_recipe": "layered_cycle_0012",
@@ -938,7 +1010,9 @@
         "secret",
         "color_lock",
         "ice",
-        "group_door"
+        "group_door",
+        "linked_pair",
+        "linked_secret"
       ],
       "road_sha256": "2c8635355fe7d45d95e43e1d65e0fdd3e7cdae540771a652077328cc22ef1574",
       "reference_clicks": 22
@@ -946,11 +1020,11 @@
     {
       "level": 56,
       "boxes": 6,
-      "normal_colors": 4,
-      "capacity": 7,
+      "normal_colors": 5,
+      "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 4,
-      "near_solved_normal_boxes": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
@@ -962,8 +1036,8 @@
     {
       "level": 57,
       "boxes": 8,
-      "normal_colors": 6,
-      "capacity": 7,
+      "normal_colors": 7,
+      "capacity": 8,
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
@@ -971,10 +1045,11 @@
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
+        "linked_pair",
         "surprise"
       ],
       "road_sha256": "21c5bf3f83e5db2892de51377b7d24eb75720be7dd2f7aa018c8171c5f1e3268",
-      "reference_clicks": 15
+      "reference_clicks": 16
     },
     {
       "level": 58,
@@ -990,10 +1065,12 @@
         "single",
         "secret",
         "ice",
+        "linked_pair",
+        "linked_secret",
         "surprise"
       ],
       "road_sha256": "4c62bff08984605e1954eee729c53aa6fd4a3ae8a12342b99de506a012337908",
-      "reference_clicks": 26
+      "reference_clicks": 34
     },
     {
       "level": 59,
@@ -1013,7 +1090,7 @@
         "linked_secret"
       ],
       "road_sha256": "c34c6cc51d7232857bcfc232062e75cf114fd472bfce7e464699d98b1837dcca",
-      "reference_clicks": 25
+      "reference_clicks": 26
     },
     {
       "level": 60,
@@ -1021,35 +1098,37 @@
       "normal_colors": 11,
       "capacity": 4,
       "hard": 1,
-      "mixed_boxes": 12,
+      "mixed_boxes": 11,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 167,
+      "geometry_reference": 125,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "color_lock",
         "group_door",
+        "linked_pair",
         "surprise"
       ],
-      "road_sha256": "880f7be837e63efe87f5e0d466fc95e2b54d27626a8c2c53a1fd5bd9f272f730",
-      "reference_clicks": 24
+      "road_sha256": "4fd459e25319b679b937d9d60810ab6821e09621f8543ea1976948cfeb7e15a5",
+      "reference_clicks": 36
     },
     {
       "level": 61,
       "boxes": 8,
-      "normal_colors": 5,
-      "capacity": 7,
+      "normal_colors": 6,
+      "capacity": 8,
       "hard": 0,
-      "mixed_boxes": 5,
-      "near_solved_normal_boxes": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
+        "secret",
         "ice"
       ],
       "road_sha256": "804e794ca5915d5441a9eb2829f354a1029b4b9df2c61f40fe3d3aa21c0da100",
-      "reference_clicks": 16
+      "reference_clicks": 14
     },
     {
       "level": 62,
@@ -1057,71 +1136,76 @@
       "normal_colors": 11,
       "capacity": 4,
       "hard": 1,
-      "mixed_boxes": 12,
+      "mixed_boxes": 11,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 193,
+      "geometry_reference": 280,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "ice",
         "group_door",
+        "linked_pair",
+        "linked_secret",
         "surprise"
       ],
-      "road_sha256": "880f7be837e63efe87f5e0d466fc95e2b54d27626a8c2c53a1fd5bd9f272f730",
-      "reference_clicks": 23
+      "road_sha256": "cde8e8b8066a0d94ee5ffaf9caf28c22cf8c6211472f95fe256a89e8abcdff63",
+      "reference_clicks": 30
     },
     {
       "level": 63,
       "boxes": 8,
-      "normal_colors": 4,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 4,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 0,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "long"
-      ],
-      "road_sha256": "8a265c243990fac3289e947cc2ffa927722c79ec0e02e40e3c8c02a831b5e411",
-      "reference_clicks": 11
-    },
-    {
-      "level": 64,
-      "boxes": 12,
-      "normal_colors": 11,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 11,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 222,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret",
-        "color_lock",
-        "adjacent_lock",
-        "ice",
-        "linked_pair"
-      ],
-      "road_sha256": "68f7b81245496afb890f296cc8db9241f4e6919340827407138ec7e87ccdb680",
-      "reference_clicks": 22
-    },
-    {
-      "level": 65,
-      "boxes": 8,
       "normal_colors": 5,
-      "capacity": 7,
+      "capacity": 8,
       "hard": 0,
       "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
+        "long",
+        "secret"
+      ],
+      "road_sha256": "8a265c243990fac3289e947cc2ffa927722c79ec0e02e40e3c8c02a831b5e411",
+      "reference_clicks": 13
+    },
+    {
+      "level": 64,
+      "boxes": 12,
+      "normal_colors": 10,
+      "capacity": 4,
+      "hard": 1,
+      "mixed_boxes": 10,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 280,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "color_lock",
+        "adjacent_lock",
+        "ice",
+        "linked_pair",
+        "linked_secret"
+      ],
+      "road_sha256": "cde8e8b8066a0d94ee5ffaf9caf28c22cf8c6211472f95fe256a89e8abcdff63",
+      "reference_clicks": 30
+    },
+    {
+      "level": 65,
+      "boxes": 8,
+      "normal_colors": 6,
+      "capacity": 8,
+      "hard": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
         "single",
+        "secret",
         "color_lock"
       ],
       "road_sha256": "5dd6c358cf335442819b75222baadca7ec412a0889a1498d66fa422d3c8d3294",
-      "reference_clicks": 13
+      "reference_clicks": 14
     },
     {
       "level": 66,
@@ -1137,34 +1221,36 @@
         "secret",
         "color_lock",
         "ice",
-        "group_door"
+        "group_door",
+        "linked_pair"
       ],
       "road_sha256": "3e7b5852b37d6f3586fff8727d76b27ec39b8211d69fa27a01b4cda59ca02783",
-      "reference_clicks": 27
+      "reference_clicks": 30
     },
     {
       "level": 67,
-      "boxes": 8,
+      "boxes": 7,
       "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 7,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 143,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
+        "secret",
         "surprise"
       ],
-      "road_sha256": "8e4174e55cd2ff66837bd230738189acdf8c623af52c8019e8bb646ea25da7fb",
-      "reference_clicks": 14
+      "road_sha256": "7121409f6a77bd005852914868806fc819ebaa2e4089428670b1ec08cf83662f",
+      "reference_clicks": 12
     },
     {
       "level": 68,
       "boxes": 13,
-      "normal_colors": 12,
+      "normal_colors": 11,
       "capacity": 4,
       "hard": 2,
-      "mixed_boxes": 12,
+      "mixed_boxes": 11,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
@@ -1174,35 +1260,37 @@
         "adjacent_lock",
         "ice",
         "linked_pair",
+        "linked_secret",
         "surprise"
       ],
       "road_sha256": "1806b2e0c14d37c7e78ec1e1663411605dc1f57062df5db203cccdb83cc97043",
-      "reference_clicks": 29
+      "reference_clicks": 32
     },
     {
       "level": 69,
       "boxes": 8,
-      "normal_colors": 5,
-      "capacity": 7,
+      "normal_colors": 6,
+      "capacity": 8,
       "hard": 0,
-      "mixed_boxes": 5,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
+        "secret",
         "group_door"
       ],
       "road_sha256": "804e794ca5915d5441a9eb2829f354a1029b4b9df2c61f40fe3d3aa21c0da100",
-      "reference_clicks": 15
+      "reference_clicks": 16
     },
     {
       "level": 70,
       "boxes": 13,
-      "normal_colors": 10,
+      "normal_colors": 9,
       "capacity": 4,
       "hard": 2,
-      "mixed_boxes": 10,
+      "mixed_boxes": 9,
       "near_solved_normal_boxes": 1,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
@@ -1215,10 +1303,11 @@
         "ice",
         "group_door",
         "linked_pair",
+        "linked_secret",
         "surprise"
       ],
-      "road_sha256": "934b4c3a6971a2daf3caf2a030ac42d43ee9a4ba5ca6780dcccde95b16a74fdf",
-      "reference_clicks": 36
+      "road_sha256": "e1da2024eadea7cd1f40c84996959702ff566545750dacd4c2fd9b0da15f7226",
+      "reference_clicks": 22
     }
   ]
 }

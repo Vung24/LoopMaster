@@ -3,34 +3,27 @@
   "puzzle_id": 33,
   "layout": {
     "HardLevel": 0,
-    "Size": 10.0,
+    "Size": 19.4364014,
     "PathLength": 6,
     "PathSectionDistance": 0.2,
     "Boxes": [
       {
         "BoxType": 0,
-        "PathIndex": 11,
-        "PathIndexV2": 12,
+        "PathIndex": 5,
+        "PathIndexV2": 6,
         "Position": [
-          0.868,
+          -2.175,
           0.0,
-          4.17760038
+          -4.10000038
         ],
         "Rotation": [
           0.0,
-          0.0,
+          -90.0,
           0.0
         ],
         "Cubes": [
           {
-            "Type": 7,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 5,
+            "Type": 8,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -44,12 +37,18 @@
             "IsFixed": 0
           },
           {
-            "Type": 8,
+            "Type": 4,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 2,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
-            "IsFixed": 0,
-            "LinkedPairId": 1
+            "IsFixed": 0
           }
         ],
         "LinkedCubes": [],
@@ -62,16 +61,16 @@
       },
       {
         "BoxType": 0,
-        "PathIndex": 84,
-        "PathIndexV2": 85,
+        "PathIndex": 15,
+        "PathIndexV2": 16,
         "Position": [
+          -2.175,
           0.0,
-          0.0,
-          -0.672000051
+          -2.05000019
         ],
         "Rotation": [
           0.0,
-          180.0,
+          -90.0,
           0.0
         ],
         "Cubes": [
@@ -83,7 +82,21 @@
             "IsFixed": 0
           },
           {
-            "Type": 2,
+            "Type": 7,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 7,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 1,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -100,28 +113,126 @@
       },
       {
         "BoxType": 0,
-        "PathIndex": 79,
-        "PathIndexV2": 80,
+        "PathIndex": 25,
+        "PathIndexV2": 26,
         "Position": [
-          1.12,
+          -2.175,
           0.0,
-          -6.57440042
+          -2.47359282E-07
         ],
         "Rotation": [
           0.0,
-          0.0,
+          -90.0,
           0.0
         ],
         "Cubes": [
           {
-            "Type": 4,
+            "Type": 6,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
+            "Type": 3,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 3,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 5,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          }
+        ],
+        "LinkedCubes": [],
+        "LockColor": 0,
+        "IsEnterOnly": 0,
+        "NumLock": 0,
+        "LimitedColor": 0,
+        "IsAdjacentLocked": 1,
+        "MultiColorLock": null
+      },
+      {
+        "BoxType": 0,
+        "PathIndex": 35,
+        "PathIndexV2": 36,
+        "Position": [
+          -2.175,
+          0.0,
+          2.04999971
+        ],
+        "Rotation": [
+          0.0,
+          -90.0,
+          0.0
+        ],
+        "Cubes": [
+          {
+            "Type": 3,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 3,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
             "Type": 4,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 2,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 1
+          }
+        ],
+        "LinkedCubes": [],
+        "LockColor": 0,
+        "IsEnterOnly": 0,
+        "NumLock": 0,
+        "LimitedColor": 0,
+        "IsAdjacentLocked": 0,
+        "MultiColorLock": null
+      },
+      {
+        "BoxType": 0,
+        "PathIndex": 46,
+        "PathIndexV2": 47,
+        "Position": [
+          -2.175,
+          0.0,
+          4.1
+        ],
+        "Rotation": [
+          0.0,
+          -90.0,
+          0.0
+        ],
+        "Cubes": [
+          {
+            "Type": 7,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -135,52 +246,7 @@
             "IsFixed": 0
           },
           {
-            "Type": 3,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
-        "LinkedCubes": [],
-        "LockColor": 0,
-        "IsEnterOnly": 0,
-        "NumLock": 0,
-        "LimitedColor": 0,
-        "IsAdjacentLocked": 0,
-        "MultiColorLock": null
-      },
-      {
-        "BoxType": 0,
-        "PathIndex": 158,
-        "PathIndexV2": 159,
-        "Position": [
-          -0.868,
-          0.0,
-          4.1776
-        ],
-        "Rotation": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "Cubes": [
-          {
-            "Type": 2,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 6,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 6,
+            "Type": 1,
             "IsSecret": 1,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -188,7 +254,7 @@
             "LinkedPairId": 1
           },
           {
-            "Type": 3,
+            "Type": 8,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -206,34 +272,19 @@
       },
       {
         "BoxType": 0,
-        "PathIndex": 70,
-        "PathIndexV2": 71,
+        "PathIndex": 145,
+        "PathIndexV2": 146,
         "Position": [
-          3.64,
+          2.175,
           0.0,
-          -6.58560038
+          -3.07499981
         ],
         "Rotation": [
           0.0,
-          344.99996948242188,
+          90.0,
           0.0
         ],
-        "Cubes": [
-          {
-            "Type": 2,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 2,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
+        "Cubes": [],
         "LinkedCubes": [],
         "LockColor": 0,
         "IsEnterOnly": 0,
@@ -244,172 +295,16 @@
       },
       {
         "BoxType": 0,
-        "PathIndex": 90,
-        "PathIndexV2": 91,
+        "PathIndex": 134,
+        "PathIndexV2": 135,
         "Position": [
-          -1.12,
+          2.175,
           0.0,
-          -6.6752
+          -1.02499986
         ],
         "Rotation": [
           0.0,
-          0.0,
-          0.0
-        ],
-        "Cubes": [
-          {
-            "Type": 6,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 8,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 8,
-            "IsSecret": 1,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 6,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
-        "LinkedCubes": [],
-        "LockColor": 0,
-        "IsEnterOnly": 0,
-        "NumLock": 0,
-        "LimitedColor": 0,
-        "IsAdjacentLocked": 0,
-        "MultiColorLock": null
-      },
-      {
-        "BoxType": 0,
-        "PathIndex": 93,
-        "PathIndexV2": 94,
-        "Position": [
-          -1.736,
-          0.0,
-          -0.672000051
-        ],
-        "Rotation": [
-          0.0,
-          180.0,
-          0.0
-        ],
-        "Cubes": [
-          {
-            "Type": 8,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 7,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 7,
-            "IsSecret": 1,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 3,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
-        "LinkedCubes": [],
-        "LockColor": 0,
-        "IsEnterOnly": 0,
-        "NumLock": 0,
-        "LimitedColor": 0,
-        "IsAdjacentLocked": 0,
-        "MultiColorLock": null
-      },
-      {
-        "BoxType": 0,
-        "PathIndex": 76,
-        "PathIndexV2": 77,
-        "Position": [
-          1.736,
-          0.0,
-          -0.672000051
-        ],
-        "Rotation": [
-          0.0,
-          180.0,
-          0.0
-        ],
-        "Cubes": [
-          {
-            "Type": 1,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 1,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 1,
-            "IsSecret": 1,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 7,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
-        "LinkedCubes": [],
-        "LockColor": 0,
-        "IsEnterOnly": 0,
-        "NumLock": 0,
-        "LimitedColor": 0,
-        "IsAdjacentLocked": 1,
-        "MultiColorLock": null
-      },
-      {
-        "BoxType": 0,
-        "PathIndex": 99,
-        "PathIndexV2": 100,
-        "Position": [
-          -3.6512,
-          0.0,
-          -6.49600029
-        ],
-        "Rotation": [
-          0.0,
-          14.999995231628418,
+          90.0,
           0.0
         ],
         "Cubes": [
@@ -422,13 +317,6 @@
           },
           {
             "Type": 4,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 3,
             "IsSecret": 1,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -436,6 +324,120 @@
           },
           {
             "Type": 5,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 2,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 2
+          }
+        ],
+        "LinkedCubes": [],
+        "LockColor": 0,
+        "IsEnterOnly": 0,
+        "NumLock": 0,
+        "LimitedColor": 0,
+        "IsAdjacentLocked": 0,
+        "MultiColorLock": null
+      },
+      {
+        "BoxType": 0,
+        "PathIndex": 124,
+        "PathIndexV2": 125,
+        "Position": [
+          2.175,
+          0.0,
+          1.02500021
+        ],
+        "Rotation": [
+          0.0,
+          90.0,
+          0.0
+        ],
+        "Cubes": [
+          {
+            "Type": 1,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 8,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 8,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 2
+          },
+          {
+            "Type": 2,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 0
+          }
+        ],
+        "LinkedCubes": [],
+        "LockColor": 0,
+        "IsEnterOnly": 0,
+        "NumLock": 0,
+        "LimitedColor": 0,
+        "IsAdjacentLocked": 0,
+        "MultiColorLock": null
+      },
+      {
+        "BoxType": 0,
+        "PathIndex": 114,
+        "PathIndexV2": 115,
+        "Position": [
+          2.175,
+          0.0,
+          3.07500029
+        ],
+        "Rotation": [
+          0.0,
+          90.0,
+          0.0
+        ],
+        "Cubes": [
+          {
+            "Type": 6,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 6,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 6,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 7,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -457,172 +459,155 @@
         "ControlPoints": [
           {
             "Position": [
-              0.0,
+              -5.1050005,
               0.2,
-              8.736
+              -5.08700037
             ],
             "InTangent": [
-              -0.448,
+              -5.1050005,
               0.2,
-              8.736
+              -5.359277
             ],
             "OutTangent": [
-              0.448,
+              -5.1050005,
               0.2,
-              8.736
+              -1.695667
             ]
           },
           {
             "Position": [
-              3.02400017,
+              -5.1050005,
               0.2,
-              6.15999937
+              5.08699942
             ],
             "InTangent": [
-              2.464,
+              -5.1050005,
               0.2,
-              6.71999931
+              1.69566607
             ],
             "OutTangent": [
-              3.36000013,
+              -5.1050005,
               0.2,
-              5.59999943
+              5.359276
             ]
           },
           {
             "Position": [
-              3.36000013,
+              -4.61200047,
               0.2,
-              5.03999949
+              5.57999945
             ],
             "InTangent": [
-              3.36000013,
+              -4.884277,
               0.2,
-              5.59999943
+              5.57999945
             ],
             "OutTangent": [
-              3.36000013,
+              -1.53733349,
               0.2,
-              4.47999954
+              5.57999945
             ]
           },
           {
             "Position": [
-              3.36000013,
+              4.61200047,
               0.2,
-              -3.136
+              5.57999945
             ],
             "InTangent": [
-              3.36000013,
+              1.53733349,
               0.2,
-              -2.8
+              5.57999945
             ],
             "OutTangent": [
-              3.36000013,
+              4.884277,
               0.2,
-              -3.472
+              5.57999945
             ]
           },
           {
             "Position": [
-              2.8,
+              5.1050005,
               0.2,
-              -3.69599986
+              5.08699942
             ],
             "InTangent": [
-              3.136,
+              5.1050005,
               0.2,
-              -3.69599986
+              5.359276
             ],
             "OutTangent": [
-              2.464,
+              5.1050005,
               0.2,
-              -3.69599986
+              1.69566607
             ]
           },
           {
             "Position": [
-              -2.8,
+              5.1050005,
               0.2,
-              -3.69599986
+              -5.08700037
             ],
             "InTangent": [
-              -2.464,
+              5.1050005,
               0.2,
-              -3.69599986
+              -1.695667
             ],
             "OutTangent": [
-              -3.136,
+              5.1050005,
               0.2,
-              -3.69599986
+              -5.359277
             ]
           },
           {
             "Position": [
-              -3.36000013,
+              4.61200047,
               0.2,
-              -3.136
+              -5.5800004
             ],
             "InTangent": [
-              -3.36000013,
+              4.884277,
               0.2,
-              -3.472
+              -5.5800004
             ],
             "OutTangent": [
-              -3.36000013,
+              1.53733349,
               0.2,
-              -2.8
+              -5.5800004
             ]
           },
           {
             "Position": [
-              -3.36000013,
+              -4.61200047,
               0.2,
-              5.03999949
+              -5.5800004
             ],
             "InTangent": [
-              -3.36000013,
+              -1.53733349,
               0.2,
-              4.47999954
+              -5.5800004
             ],
             "OutTangent": [
-              -3.36000013,
+              -4.884277,
               0.2,
-              5.59999943
+              -5.5800004
             ]
           },
           {
             "Position": [
-              -3.02400017,
+              -5.1050005,
               0.2,
-              6.15999937
+              -5.08700037
             ],
             "InTangent": [
-              -3.36000013,
+              -5.1050005,
               0.2,
-              5.59999943
+              -5.359277
             ],
             "OutTangent": [
-              -2.464,
+              -5.1050005,
               0.2,
-              6.71999931
-            ]
-          },
-          {
-            "Position": [
-              0.0,
-              0.2,
-              8.736
-            ],
-            "InTangent": [
-              -0.448,
-              0.2,
-              8.736
-            ],
-            "OutTangent": [
-              0.448,
-              0.2,
-              8.736
+              -1.695667
             ]
           }
         ]
@@ -635,9 +620,9 @@
       {
         "Name": "Capacity",
         "Position": [
-          -0.00559949875,
+          -4.76837158E-07,
           0.2,
-          10.436
+          11.3564014
         ],
         "Rotation": [
           0.0,

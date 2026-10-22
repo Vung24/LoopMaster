@@ -4,7 +4,7 @@
   "layout": {
     "HardLevel": 0,
     "Size": 13.7100029,
-    "PathLength": 7,
+    "PathLength": 8,
     "PathSectionDistance": 0.2,
     "Boxes": [
       {
@@ -19,29 +19,6 @@
         "Rotation": [
           0.0,
           -90.0,
-          0.0
-        ],
-        "Cubes": [],
-        "LinkedCubes": [],
-        "LockColor": 0,
-        "IsEnterOnly": 0,
-        "NumLock": 0,
-        "LimitedColor": 0,
-        "IsAdjacentLocked": 0,
-        "MultiColorLock": null
-      },
-      {
-        "BoxType": 0,
-        "PathIndex": 106,
-        "PathIndexV2": 107,
-        "Position": [
-          2.925,
-          0.0,
-          3.075
-        ],
-        "Rotation": [
-          0.0,
-          90.0,
           0.0
         ],
         "Cubes": [
@@ -84,12 +61,12 @@
       },
       {
         "BoxType": 0,
-        "PathIndex": 116,
-        "PathIndexV2": 117,
+        "PathIndex": 106,
+        "PathIndexV2": 107,
         "Position": [
           2.925,
           0.0,
-          1.025
+          3.075
         ],
         "Rotation": [
           0.0,
@@ -113,6 +90,45 @@
           },
           {
             "Type": 1,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 4,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 1
+          }
+        ],
+        "LinkedCubes": [],
+        "LockColor": 0,
+        "IsEnterOnly": 0,
+        "NumLock": 0,
+        "LimitedColor": 0,
+        "IsAdjacentLocked": 0,
+        "MultiColorLock": null
+      },
+      {
+        "BoxType": 0,
+        "PathIndex": 116,
+        "PathIndexV2": 117,
+        "Position": [
+          2.925,
+          0.0,
+          1.025
+        ],
+        "Rotation": [
+          0.0,
+          90.0,
+          0.0
+        ],
+        "Cubes": [
+          {
+            "Type": 1,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -124,6 +140,21 @@
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
+          },
+          {
+            "Type": 1,
+            "IsSecret": 1,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0
+          },
+          {
+            "Type": 4,
+            "IsSecret": 0,
+            "GroupKeyId": 0,
+            "NumLock": 0,
+            "IsFixed": 0,
+            "LinkedPairId": 1
           }
         ],
         "LinkedCubes": [],
@@ -150,14 +181,14 @@
         ],
         "Cubes": [
           {
-            "Type": 1,
+            "Type": 3,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 4,
+            "Type": 2,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -165,7 +196,7 @@
           },
           {
             "Type": 1,
-            "IsSecret": 0,
+            "IsSecret": 1,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
@@ -209,21 +240,21 @@
             "IsFixed": 0
           },
           {
-            "Type": 2,
+            "Type": 3,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 1,
+            "Type": 3,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
             "IsFixed": 0
           },
           {
-            "Type": 4,
+            "Type": 5,
             "IsSecret": 0,
             "GroupKeyId": 0,
             "NumLock": 0,
@@ -252,36 +283,7 @@
           -90.0,
           0.0
         ],
-        "Cubes": [
-          {
-            "Type": 3,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 3,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 3,
-            "IsSecret": 1,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          },
-          {
-            "Type": 5,
-            "IsSecret": 0,
-            "GroupKeyId": 0,
-            "NumLock": 0,
-            "IsFixed": 0
-          }
-        ],
+        "Cubes": [],
         "LinkedCubes": [],
         "LockColor": 0,
         "IsEnterOnly": 0,

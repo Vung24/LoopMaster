@@ -24,7 +24,7 @@ public static class AlternativeCampaign70Builder
 
     // Number, boxes (including special boxes), normal colors, road, singles, longs,
     // secret %, color locks, adjacent locks, ice cubes, ice count, groups, group size,
-    // linked pair, surprise colors, hard label, road capacity, mixing mode (0=generator, 1=layered, 2=intro challenge).
+    // linked pair count, surprise colors, hard label, road capacity, mixing mode (0=generator, 1=layered, 2=intro challenge).
     // Existing layout API roads:
     // rounded rectangle=0, oval=1, circle=2, straight=3, U=4, S=5, winding=6.
     private const string Curriculum = @"1,2,1,3,0,0,0,0,0,0,0,0,0,0,0,0,4,0
@@ -32,71 +32,71 @@ public static class AlternativeCampaign70Builder
 3,4,3,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 4,5,4,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 5,5,4,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
-6,5,4,0,0,0,15,0,0,0,0,0,0,0,0,0,6,0
+6,5,4,0,0,0,30,0,0,0,0,0,0,0,0,0,5,0
 7,6,5,0,0,0,100,0,0,0,0,0,0,0,0,0,6,0
-8,6,5,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-9,7,6,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-10,6,6,1,0,0,15,0,0,0,0,0,0,0,0,1,4,2
-11,6,4,4,0,0,0,0,0,0,0,0,0,0,0,0,7,0
-12,7,6,4,0,0,20,0,0,0,0,0,0,0,0,0,6,0
-13,7,6,5,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-14,8,7,5,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-15,6,4,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0
-16,7,5,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0
-17,7,5,5,0,0,15,0,0,0,0,0,0,1,0,0,7,0
-18,8,6,4,0,0,20,0,0,0,0,0,0,0,0,0,7,0
-19,8,6,6,0,0,25,0,0,0,0,0,0,0,0,0,7,0
-20,9,7,4,0,0,40,0,0,0,0,0,0,1,0,1,4,0
-21,6,4,5,0,0,0,0,0,0,0,0,0,1,0,0,7,0
-22,7,5,6,0,0,0,0,0,0,0,0,0,1,0,0,7,0
-23,6,4,0,0,0,0,1,0,0,0,0,0,0,0,0,7,0
-24,7,5,5,0,0,20,1,0,0,0,0,0,0,0,0,7,0
-25,10,10,1,0,0,40,2,0,0,0,0,0,1,0,1,4,1
-26,6,4,0,0,0,0,1,0,0,0,0,0,0,0,0,7,0
-27,10,9,4,0,0,35,2,0,0,0,0,0,0,0,0,6,0
-28,9,8,0,0,0,20,0,0,0,0,0,0,0,0,0,7,0
-29,6,4,1,0,0,0,0,1,0,0,0,0,0,0,0,7,0
-30,9,7,1,0,0,30,0,2,0,0,0,0,0,0,1,4,0
-31,7,5,5,0,0,0,0,1,0,0,0,0,0,0,0,7,0
-32,10,9,4,0,0,35,1,2,0,0,0,0,0,0,0,6,0
-33,9,8,0,0,0,35,0,2,0,0,0,0,1,0,0,6,0
-34,10,10,0,0,0,40,2,1,0,0,0,0,0,0,0,6,1
-35,12,11,2,0,0,50,2,1,0,0,0,0,0,0,1,4,0
-36,6,4,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0
-37,6,4,0,0,0,0,0,0,1,2,0,0,0,0,0,7,0
-38,8,6,1,0,0,15,0,0,2,2,0,0,0,0,0,7,0
-39,9,8,5,0,0,35,1,0,2,2,0,0,0,0,0,6,0
-40,10,9,0,0,0,45,1,0,3,2,0,0,1,0,1,4,0
-41,7,3,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
-42,8,5,0,0,2,15,0,0,0,0,0,0,0,0,0,7,0
-43,10,7,4,0,2,25,1,0,0,0,0,0,0,0,0,7,0
-44,10,7,0,0,2,40,0,0,3,2,0,0,0,0,0,6,0
-45,12,9,6,0,2,50,1,0,3,2,0,0,1,0,1,4,0
-46,6,4,5,0,0,0,0,0,0,0,0,0,1,0,0,7,0
-47,10,10,0,0,0,40,0,2,2,2,0,0,0,0,0,6,1
-48,12,9,0,0,2,40,1,0,0,0,0,0,0,0,0,7,0
-49,6,4,1,1,0,0,0,0,0,0,0,0,0,0,0,7,0
-50,8,6,1,1,0,15,0,0,0,0,0,0,0,0,0,7,0
-51,9,9,1,0,0,40,1,0,2,2,0,0,0,0,0,6,1
-52,10,10,5,0,0,40,2,0,2,2,0,0,1,0,0,6,1
-53,6,4,0,0,0,0,0,0,0,0,1,2,0,0,0,7,0
-54,8,6,0,0,0,15,0,0,0,0,1,2,0,0,0,7,0
-55,10,10,4,0,0,45,1,0,2,2,1,2,0,0,1,4,1
-56,6,4,0,0,0,0,0,0,0,0,0,0,0,1,0,7,0
-57,8,6,0,0,0,15,0,0,0,0,0,0,0,1,0,7,0
-58,12,10,5,1,0,40,0,0,2,2,0,0,0,1,0,7,0
-59,12,11,0,0,0,45,1,0,0,0,1,2,1,0,0,7,0
-60,12,11,2,0,0,50,1,0,0,0,1,2,0,1,1,4,0
-61,8,5,4,1,0,0,0,0,1,2,0,0,0,0,0,7,0
-62,12,11,0,0,0,50,0,0,2,2,2,2,0,1,1,4,0
-63,8,4,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
-64,12,11,1,0,0,50,1,1,2,2,0,0,1,0,1,4,0
-65,8,5,0,1,0,0,1,0,0,0,0,0,0,0,0,7,0
-66,12,11,6,0,0,55,1,0,2,2,1,2,0,0,1,4,0
-67,8,6,0,0,0,0,0,0,0,0,0,0,0,1,0,7,0
-68,13,12,1,0,0,60,1,1,2,2,0,0,1,1,2,4,0
-69,8,5,5,1,0,0,0,0,0,0,1,2,0,0,0,7,0
-70,13,10,2,1,2,60,1,1,2,2,1,2,1,1,2,4,0";
+8,6,5,0,0,0,55,0,0,0,0,0,0,0,0,0,6,0
+9,7,6,0,0,0,55,0,0,0,0,0,0,0,0,0,7,0
+10,6,6,1,0,0,50,0,0,0,0,0,0,0,0,1,4,2
+11,6,5,4,0,0,0,0,0,0,0,0,0,0,0,0,6,0
+12,7,6,4,0,0,55,0,0,0,0,0,0,0,0,0,6,0
+13,7,6,5,0,0,60,0,0,0,0,0,0,0,0,0,6,0
+14,8,7,5,0,0,65,0,0,0,0,0,0,0,0,0,6,0
+15,6,5,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0
+16,7,6,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0
+17,7,6,5,0,0,40,0,0,0,0,0,0,1,0,0,7,0
+18,7,6,4,0,0,45,0,0,0,0,0,0,2,0,0,7,0
+19,7,6,6,0,0,55,0,0,0,0,0,0,1,0,0,7,0
+20,9,7,4,0,0,65,0,0,0,0,0,0,2,0,1,4,0
+21,6,5,5,0,0,0,0,0,0,0,0,0,1,0,0,6,0
+22,7,6,6,0,0,25,0,0,0,0,0,0,2,0,0,7,0
+23,6,5,0,0,0,0,1,0,0,0,0,0,0,0,0,6,0
+24,7,6,5,0,0,40,1,0,0,0,0,0,1,0,0,7,0
+25,10,10,1,0,0,70,2,0,0,0,0,0,2,0,1,4,1
+26,6,5,0,0,0,20,1,0,0,0,0,0,0,0,0,6,0
+27,10,9,4,0,0,65,2,0,0,0,0,0,2,0,0,6,0
+28,9,8,0,0,0,55,0,0,0,0,0,0,2,0,0,7,0
+29,6,5,1,0,0,0,0,1,0,0,0,0,0,0,0,6,0
+30,9,7,1,0,0,60,0,2,0,0,0,0,2,0,1,4,0
+31,7,6,5,0,0,20,0,1,0,0,0,0,0,0,0,7,0
+32,10,9,4,0,0,65,1,2,0,0,0,0,2,0,0,6,0
+33,9,8,0,0,0,65,0,2,0,0,0,0,2,0,0,6,0
+34,10,9,0,0,0,70,2,1,0,0,0,0,2,0,0,6,1
+35,12,11,2,0,0,75,2,1,0,0,0,0,3,0,1,4,0
+36,6,5,0,0,0,20,0,0,0,0,0,0,0,0,0,6,0
+37,6,5,0,0,0,0,0,0,1,2,0,0,0,0,0,6,0
+38,8,7,1,0,0,35,0,0,2,2,0,0,1,0,0,8,0
+39,9,8,5,0,0,65,1,0,2,2,0,0,2,0,0,6,0
+40,10,9,0,0,0,70,1,0,3,2,0,0,2,0,1,4,0
+41,7,4,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
+42,8,5,0,0,2,35,0,0,0,0,0,0,1,0,0,8,0
+43,10,7,4,0,2,55,1,0,0,0,0,0,2,0,0,7,0
+44,10,7,0,0,2,65,0,0,3,2,0,0,2,0,0,6,0
+45,12,9,6,0,2,75,1,0,3,2,0,0,3,0,1,4,0
+46,6,5,5,0,0,20,0,0,0,0,0,0,1,0,0,6,0
+47,10,9,0,0,0,70,0,2,2,2,0,0,2,0,0,6,1
+48,12,9,0,0,2,60,1,0,0,0,0,0,2,0,0,7,0
+49,6,4,1,1,0,0,0,0,0,0,0,0,0,0,0,6,0
+50,8,6,1,1,0,35,0,0,0,0,0,0,1,0,0,8,0
+51,9,8,1,0,0,70,1,0,2,2,0,0,2,0,0,6,1
+52,10,9,5,0,0,70,2,0,2,2,0,0,3,0,0,6,1
+53,6,5,0,0,0,0,0,0,0,0,1,2,0,0,0,6,0
+54,8,7,0,0,0,35,0,0,0,0,1,2,1,0,0,8,0
+55,10,9,4,0,0,75,1,0,2,2,1,2,2,0,1,4,1
+56,6,5,0,0,0,0,0,0,0,0,0,0,0,1,0,6,0
+57,8,7,0,0,0,35,0,0,0,0,0,0,1,1,0,8,0
+58,12,10,5,1,0,65,0,0,2,2,0,0,2,1,0,7,0
+59,12,11,0,0,0,70,1,0,0,0,1,2,2,0,0,7,0
+60,12,11,2,0,0,75,1,0,0,0,1,2,3,1,1,4,0
+61,8,6,4,1,0,20,0,0,1,2,0,0,0,0,0,8,0
+62,12,11,0,0,0,75,0,0,2,2,2,2,3,1,1,4,0
+63,8,5,0,0,2,20,0,0,0,0,0,0,0,0,0,8,0
+64,12,10,1,0,0,75,1,1,2,2,0,0,2,0,1,4,0
+65,8,6,0,1,0,20,1,0,0,0,0,0,0,0,0,8,0
+66,12,11,6,0,0,80,1,0,2,2,1,2,3,0,1,4,0
+67,7,6,0,0,0,20,0,0,0,0,0,0,0,1,0,7,0
+68,13,11,1,0,0,85,1,1,2,2,0,0,3,1,2,4,0
+69,8,6,5,1,0,20,0,0,0,0,1,2,0,0,0,8,0
+70,13,9,2,1,2,85,1,1,2,2,1,2,2,1,2,4,0";
 
     public sealed class Profile
     {
@@ -251,7 +251,7 @@ public static class AlternativeCampaign70Builder
     private static void CancelForPlayMode(PlayModeStateChange state)
     { if(state==PlayModeStateChange.ExitingEditMode) Cancel(); }
 
-    public static IEnumerator Build(int[] levels)
+    public static IEnumerator Build(int[] levels, int seedOverride = 0)
     {
         Directory.CreateDirectory(LevelFolder);
         Directory.CreateDirectory(ReportFolder);
@@ -261,14 +261,14 @@ public static class AlternativeCampaign70Builder
             Profile p = Profile.Get(level);
             string lastError = "No candidate";
             bool accepted = false;
-            int baseSeed=701019+level*1009;
+            int baseSeed=seedOverride != 0 ? seedOverride : 701019+level*1009;
             JObject savedReport=null;
             if(File.Exists(ReportPath(level)))
             {
                 savedReport=JObject.Parse(File.ReadAllText(ReportPath(level)));
                 if((string)savedReport["unity_replay"]=="failed")
                 {
-                    baseSeed=savedReport.Value<int>("seed")+7919;
+                    if (seedOverride == 0) baseSeed=savedReport.Value<int>("seed")+7919;
                     string failures=Path.Combine(ReportFolder,"failures");
                     Directory.CreateDirectory(failures);
                     string failedJson=File.ReadAllText(Path.Combine(LevelFolder,"Level "+level+".json"));
@@ -279,12 +279,13 @@ public static class AlternativeCampaign70Builder
             }
             for (int attempt = 0; attempt < 48; attempt++)
             {
+                if (attempt > 0) UnityEngine.Debug.Log("Previous candidate rejected: " + lastError);
                 int seed = baseSeed + attempt * 7919;
                 JObject previousReport = null;
                 if (attempt == 0 && File.Exists(ReportPath(level)))
                 {
                     previousReport = JObject.Parse(File.ReadAllText(ReportPath(level)));
-                    if (previousReport["seed"] != null && (string)previousReport["unity_replay"]!="failed") seed = previousReport.Value<int>("seed");
+                    if (seedOverride == 0 && previousReport["seed"] != null && (string)previousReport["unity_replay"]!="failed") seed = previousReport.Value<int>("seed");
                 }
                 _status = "Level " + level + ", attempt " + (attempt + 1);
                 UnityEngine.Debug.Log("Alternative campaign: " + _status);
@@ -296,7 +297,11 @@ public static class AlternativeCampaign70Builder
                 GameData data = LoopLevelGenerator.DecodeDetached(A.Parse(json));
                 data.DifferentColorSliceSpacing = 1;
                 if (data.IsGameOver()) { lastError = "Initial board is already won"; continue; }
-                var solver = new DebugLevelSolver(data, 20000);
+                int stateBudget = 20000;
+                int secondsBudget = 8;
+                if (p.Hard > 0) { stateBudget = 60000; secondsBudget = 12; }
+                if (p.Hard == 2) { stateBudget = 120000; secondsBudget = 20; }
+                var solver = new DebugLevelSolver(data, stateBudget);
                 List<int> clicks = null;
                 if (previousReport?["solution_clicks"] is JArray previousClicks)
                 {
@@ -308,7 +313,7 @@ public static class AlternativeCampaign70Builder
                 var watch = Stopwatch.StartNew();
                 try
                 {
-                    while (clicks == null && watch.Elapsed.TotalSeconds < 8 && LoopLevelGenerator.InSimulation(data, search.MoveNext))
+                    while (clicks == null && watch.Elapsed.TotalSeconds < secondsBudget && LoopLevelGenerator.InSimulation(data, search.MoveNext))
                         yield return null;
                 }
                 finally { (search as IDisposable)?.Dispose(); }
@@ -374,6 +379,8 @@ public static class AlternativeCampaign70Builder
         if (CampaignBoxEntries.Repair(root, p.Road)) p.GeometryReference = 0;
         MixFullBoardStacks(layout, p, seed);
         NormalizeSpecialBoxes(A.Array(layout, "Boxes"), p);
+        if (p.Hard == 0 && p.Level >= 3)
+            CampaignLearningCurve.ArrangeSingleBuffer(A.Array(layout, "Boxes"));
         MixFullNormalSection(A.Array(layout, "Boxes"), seed);
         if (p.Level >= 5) ReduceNearSolvedBoxes(A.Array(layout, "Boxes"));
         if (p.Level == 1)
@@ -519,9 +526,10 @@ public static class AlternativeCampaign70Builder
         if (profile.MixingMode == 0) return;
         int minimumBoxes = 8;
         if (profile.MixingMode == 2) minimumBoxes = 2;
-        if (profile.Boxes-profile.Longs < minimumBoxes || profile.Singles > 0 ||
-            profile.Colors != profile.Boxes-profile.Longs)
-            throw new FormatException("Layered mixing requires at least " + minimumBoxes + " full normal boxes, one color per normal box, and no single queue.");
+        int normalCount = profile.Boxes - profile.Longs;
+        if (normalCount < minimumBoxes || profile.Singles > 0 ||
+            profile.Colors > normalCount || profile.Colors < normalCount - 1)
+            throw new FormatException("Layered mixing needs at least " + minimumBoxes + " normal boxes, at most one empty buffer, and no single queue.");
         var boxes = new List<JObject>();
         var colors = new SortedSet<int>();
         foreach (JObject box in A.Array(layout, "Boxes"))
@@ -530,7 +538,7 @@ public static class AlternativeCampaign70Builder
             boxes.Add(box);
             foreach (JObject cube in A.Array(box, "Cubes")) colors.Add(A.Int(cube, "Type"));
         }
-        if (colors.Count != boxes.Count) throw new FormatException("Full-board color stock mismatch.");
+        if (colors.Count != profile.Colors) throw new FormatException("Layered color stock mismatch.");
         boxes.Sort(CompareBoxPaths);
         var palette = new List<int>(colors);
         var random = new System.Random(seed);
@@ -560,6 +568,7 @@ public static class AlternativeCampaign70Builder
         {
             JArray cubes = A.Array(boxes[b], "Cubes");
             cubes.Clear();
+            if (b >= palette.Count) continue;
             foreach (int offset in offsets) cubes.Add(A.NewCube(palette[(b + offset) % palette.Count]));
         }
     }
@@ -812,17 +821,20 @@ public static class AlternativeCampaign70Builder
     private static void AddPair(JObject root, JArray boxes, Profile p)
     {
         if(p.Pair==0) return;
+        for (int pair = 0; pair < p.Pair; pair++)
+            AddNextPair(root, boxes, p, pair);
+    }
+
+    private static void AddNextPair(JObject root, JArray boxes, Profile p, int pair)
+    {
         for(int a=0; a<boxes.Count; a++)
         for(int b=a+1; b<boxes.Count; b++)
         {
+            if (!IsEligibleLinkedBox((JObject)boxes[a]) || !IsEligibleLinkedBox((JObject)boxes[b])) continue;
             // Pair admission needs both heads. A wire on an adjacent-locked box can
             // otherwise trap the very neighbour whose completion must unlock it.
-            if(A.Int((JObject)boxes[a],"IsAdjacentLocked")>0 || A.Int((JObject)boxes[b],"IsAdjacentLocked")>0 ||
-                A.Int((JObject)boxes[a],"LockColor")>0 || A.Int((JObject)boxes[b],"LockColor")>0) continue;
             JArray ca=A.Array((JObject)boxes[a],"Cubes"), cb=A.Array((JObject)boxes[b],"Cubes");
-            if(ca.Count==0 || cb.Count==0) continue;
-            if(A.Int((JObject)ca[ca.Count-1],"GroupKeyId")>0 || A.Int((JObject)cb[cb.Count-1],"GroupKeyId")>0) continue;
-            if(p.Level==59)
+            if(p.Level==59 && pair==0)
             {
                 bool aGrouped=false, bGrouped=false;
                 foreach(JObject group in A.Array(A.Layout(root),"Groups"))
@@ -833,6 +845,9 @@ public static class AlternativeCampaign70Builder
             if(Vector3.Distance(A.Vector((JObject)boxes[a],"Position"),A.Vector((JObject)boxes[b],"Position"))>2.2f) continue;
             bool same=A.Int((JObject)ca[ca.Count-1],"Type")==A.Int((JObject)cb[cb.Count-1],"Type");
             if(p.Level==15 && !same || p.Level==17 && same) continue;
+            // A greedy first edge can strand the third pair among special boxes.
+            var reserved = new HashSet<int> { a, b };
+            if (!CanMatchAdditionalPairs(boxes, p.Pair - pair - 1, reserved)) continue;
             if(!LoopLinkedCubeAuthoring.TryLinkTopCubes(root,a,b,out _)) continue;
             if(p.Level==16)
             {
@@ -843,6 +858,42 @@ public static class AlternativeCampaign70Builder
             return;
         }
         throw new FormatException("No adjacent eligible pair matching the lesson.");
+    }
+
+    private static bool ContainsGroupKey(JObject box)
+    {
+        foreach (JObject cube in A.Array(box, "Cubes"))
+            if (A.Int(cube, "GroupKeyId") > 0) return true;
+        return false;
+    }
+
+    private static bool IsEligibleLinkedBox(JObject box)
+    {
+        return A.Int(box, "BoxType") == 0 && A.Int(box, "LockColor") == 0 &&
+            A.Int(box, "IsAdjacentLocked") == 0 && A.Array(box, "Cubes").Count > 0 &&
+            !LoopLinkedCubeAuthoring.HasLinkedCube(box) && !ContainsGroupKey(box);
+    }
+
+    private static bool CanMatchAdditionalPairs(JArray boxes, int remaining, HashSet<int> reserved)
+    {
+        if (remaining == 0) return true;
+        for (int first = 0; first < boxes.Count; first++)
+        {
+            if (reserved.Contains(first) || !IsEligibleLinkedBox((JObject)boxes[first])) continue;
+            for (int second = first + 1; second < boxes.Count; second++)
+            {
+                if (reserved.Contains(second) || !IsEligibleLinkedBox((JObject)boxes[second])) continue;
+                if (Vector3.Distance(A.Vector((JObject)boxes[first], "Position"),
+                    A.Vector((JObject)boxes[second], "Position")) > 2.2f) continue;
+                reserved.Add(first);
+                reserved.Add(second);
+                bool matched = CanMatchAdditionalPairs(boxes, remaining - 1, reserved);
+                reserved.Remove(first);
+                reserved.Remove(second);
+                if (matched) return true;
+            }
+        }
+        return false;
     }
 
     private static void AddSurprise(JObject layout, JArray boxes, Profile p)
@@ -894,12 +945,9 @@ public static class AlternativeCampaign70Builder
     {
         if (profile.Level < 5) return 1;
         if (profile.Level == 10) return 12;
-        if (profile.Hard == 0) return profile.Boxes;
-        float multiplier = 1.7f;
-        if (profile.Level >= 40) multiplier = 1.9f;
-        if (profile.Level >= 60) multiplier = 2.1f;
-        if (profile.Hard == 2) multiplier = 2.3f;
-        return Mathf.CeilToInt(profile.Boxes * multiplier);
+        // Linked launches clear two heads per click; old per-box multipliers
+        // rejected valid complex boards simply because they finished sooner.
+        return profile.Boxes;
     }
 
     internal static void PreserveMatchingEvidence(JObject previousReport, JObject report)
@@ -909,6 +957,7 @@ public static class AlternativeCampaign70Builder
             "runtime_time_scale", "runtime_context", "runtime_solution_clicks", "runtime_wait_policy",
             "transition_timing_differences", "runtime_legal_no_effect_clicks", "capacity_rules_review",
             "runtime_replanning_count",
+            "linked_visual_binding_review",
             "capacity_rules_maximum", "capacity_map_spawn_review", "capacity_display_review",
             "add_space_runtime_review", "add_space_capacity_before", "add_space_capacity_after",
             "capacity_display_maximum", "visual_review", "lifecycle_review", "lifecycle_scope" })
