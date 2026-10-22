@@ -343,6 +343,10 @@ namespace Snui
                 _presentationTweens.Add(cell.transform.DOScale(Vector3.zero,.2f).SetUpdate(true)
                     .OnComplete(()=> { if(cell!=null) cell.gameObject.SetActive(false); }));
             }
+            int order=GetComponent<Canvas>().sortingOrder;
+            HudContainer.SetCurrentTop(order+1);
+            if(Snui_HeartHud.Current!=null && Snui_HeartHud.Current.isActiveAndEnabled)
+                Snui_HeartHud.Current.SetTop(order+1);
             _itemFlights=new RewardItemDismissAnimator().FlyToTarget(_cells,OpenCancellationToken);
             // Native common claim fades the title, prompt and dim while rewards travel.
             yield return new WaitForSecondsRealtime(.1f);
@@ -353,8 +357,6 @@ namespace Snui
             var hud=HudContainer.Current?.CoinHud ?? Snui_CoinHud.Current;
             if(coins>0 && hud!=null && hud.isActiveAndEnabled)
             {
-                int order=GetComponent<Canvas>().sortingOrder;
-                HudContainer.SetCurrentTop(order+1);
                 hud.SetTop(order+1);
                 _coins=gameObject.AddComponent<ClaimCoinAnim>();
                 yield return _coins.Play(coins,transform,start,hud,null,order+2);
@@ -382,6 +384,7 @@ namespace Snui
             InventoryManager.Current?.ReplayPendingRewardJournal();
             HudContainer.Current?.CoinHud?.SetAutoUpdate(true); HudContainer.RevertCurrentToOriginLayer();
             Snui_CoinHud.Current?.RevertToOriginLayer(); Snui_HeartHud.SetCurrentAutoUpdate(true);
+            if(Snui_HeartHud.Current!=null) Snui_HeartHud.Current.RevertToOriginLayer();
             base.OnDisable();
         }
         protected override void OnDestroy() { if(_fullBtn!=null) _fullBtn.onClick.RemoveListener(OnClickReceive); base.OnDestroy(); }

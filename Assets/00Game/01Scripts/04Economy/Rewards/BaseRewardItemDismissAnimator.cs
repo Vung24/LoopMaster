@@ -39,7 +39,8 @@ namespace Snui
             cell.SetBackLight(false);
             Vector3 start = node.localPosition;
             Vector3 target = GetTargetPos(cell);
-            bool fly = ShouldFlyToTarget() && (target - start).sqrMagnitude > .01f;
+            bool fly = (IsHeartHudTarget(cell.RewardItem?.Type) || ShouldFlyToTarget()) &&
+                (target - start).sqrMagnitude > .01f;
             var sequence = DOTween.Sequence().SetUpdate(true).SetLink(cell.gameObject);
             if (fly)
             {
