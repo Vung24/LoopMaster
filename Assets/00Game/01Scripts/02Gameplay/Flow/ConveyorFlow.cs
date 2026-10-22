@@ -97,8 +97,6 @@ public sealed class ConveyorFlow
 	{
 		if (IsSpeedUpActive == speedUp) return;
 		IsSpeedUpActive = speedUp;
-		_normalTickTime = 0f;
-		_speedTickTime = 0f;
 	}
 
 	public void Tick(float delta, float normalInterval, float speedInterval)
