@@ -8,20 +8,37 @@ public class CheatGesture : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.F8)) Snui.CheatManager.Ensure().Toggle();
-        if (Input.GetKeyDown(KeyCode.Escape) && Snui.CheatManager.Current?.Dialog != null)
-            Snui.CheatManager.Current.Dialog.Close();
+        if (Input.GetKeyDown(KeyCode.F8))
+        {
+            Snui.CheatManager.Ensure().Toggle();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape) && SRDebug.Instance != null && SRDebug.Instance.IsDebugPanelVisible)
+        {
+            SRDebug.Instance.HideDebugPanel();
+        }
 
         int heldTouches = 0;
         for (int i = 0; i < Input.touchCount; i++)
         {
             Touch touch = Input.GetTouch(i);
-            if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled) heldTouches++;
+            if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
+            {
+                heldTouches++;
+            }
         }
-        if (heldTouches < 3) { _held = 0f; _triggered = false; return; }
+
+        if (heldTouches < 3)
+        {
+            _held = 0f;
+            _triggered = false;
+            return;
+        }
+
         if (_triggered) return;
         _held += Time.unscaledDeltaTime;
         if (_held < _holdSeconds) return;
+
         _triggered = true;
         Snui.CheatManager.Ensure().Toggle();
     }
