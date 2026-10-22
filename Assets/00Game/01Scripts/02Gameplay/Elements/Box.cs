@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System.Threading;
+using TMPro;
 public class Box : MonoBehaviour
 {
 	private const float SlicePositionInterval = 0.08f;
@@ -22,6 +23,7 @@ public class Box : MonoBehaviour
 	[SerializeField] private ColorLock _colorLock;
 	[SerializeField] private BoxNumLock _numLock;
 	[SerializeField] private AdjacentLock _adjacentLock;
+	[SerializeField] private TMP_Text _singleBoxText;
 	private bool _isFinishHandled;
 	private bool _onUnlockingColorLock;
 	private bool _onDecrementingNumLock;
@@ -63,6 +65,7 @@ public class Box : MonoBehaviour
 			_audioSource.playOnAwake = false;
 		}
 		if (_boxCard == null) _boxCard = HierarchyReferenceCache.Child(transform, "BoxCard");
+		if (_singleBoxText == null) _singleBoxText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Count");
 		_animator = new BoxAnimator(this, _anim, BoxCard, _audioSource);
 	}
 
@@ -79,6 +82,8 @@ public class Box : MonoBehaviour
 		transform.position = _info.Pos;
 		if (_info.BoxType != BoxType.Single) transform.rotation = Quaternion.Euler(_info.Rotation);
 		InitSpecial();
+		EnsureSingleBoxText();
+		EnsureSingleBoxLayer();
 		CreateCube();
 		CubeInfo top = _info.PeekTopCube();
 		if (top != null && top.LinkedPairId > 0 && top.IsSecret) CheckHiddenSecret();
@@ -110,6 +115,57 @@ public class Box : MonoBehaviour
 		instance.transform.localPosition = Vector3.zero;
 		instance.transform.localRotation = Quaternion.identity;
 		return instance.GetComponent<T>() ?? instance.AddComponent<T>();
+	}
+
+	private void EnsureSingleBoxText()
+	{
+		if (_singleBoxText == null && _info != null && _info.BoxType == BoxType.Single)
+			_singleBoxText = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Count");
+	}
+
+	private void EnsureSingleBoxLayer()
+	{
+		if (_info == null || _info.BoxType != BoxType.Single) return;
+		int targetLayer = gameObject.layer != 5 ? gameObject.layer : 0;
+		if (_singleBoxText != null)
+		{
+			Canvas canvas = _singleBoxText.GetComponentInParent<Canvas>();
+			if (canvas != null)
+			{
+				canvas.gameObject.layer = targetLayer;
+				for (int i = 0; i < canvas.transform.childCount; i++)
+					canvas.transform.GetChild(i).gameObject.layer = targetLayer;
+			}
+		}
+	}
+
+	private void UpdateCubeCount()
+	{
+		if (_info == null || _info.CubeInfos == null || _info.BoxType != BoxType.Single) return;
+		EnsureSingleBoxText();
+		if (_singleBoxText == null) return;
+
+		int count = _info.CubeInfos.Count;
+		if (count > 0)
+		{
+			_singleBoxText.gameObject.SetActive(true);
+			_singleBoxText.text = count.ToString();
+		}
+		else
+		{
+			_singleBoxText.gameObject.SetActive(false);
+			if (_anim != null && _anim.GetClip("BoxSingleDone") != null)
+				_anim.Play("BoxSingleDone");
+		}
+	}
+
+	private async UniTask UpdateHiddenCube()
+	{
+		if (_info == null || _info.BoxType != BoxType.Single) return;
+		CubeInfo top = _info.PeekTopCube();
+		if (top == null) return;
+		if (top.CubeSc == null)
+			await CreateCube(top, 0f, "");
 	}
 
 	public void CheckHiddenSecret()
@@ -246,6 +302,9 @@ public class Box : MonoBehaviour
 		foreach (CubeInfo info in _info.CubeInfos)
 			if (info != null && info.Size > 0 && info.CubeSc == null)
 				CreateCube(info, restoredToSource ? Mathf.Max(0.02f, restoreDelay) : 0f, "");
+
+		if (_info.BoxType == BoxType.Single)
+			UpdateCubeCount();
 	}
 
 	public bool CanPopupSlice() => !_isFinishHandled && _info != null && _info.CanPopup();
@@ -435,6 +494,12 @@ public class Box : MonoBehaviour
 		CubeInfo cubeInfo = _info.PopupSlice();
 		if (cubeInfo == null) return false;
 		PlayLinkedSliceEmitted(cubeInfo);
+		if (_info.BoxType == BoxType.Single && cubeInfo.Size <= 0)
+		{
+			_info.CubeInfos.Remove(cubeInfo);
+			UpdateHiddenCube().Forget();
+			UpdateCubeCount();
+		}
 		return true;
 	}
 
@@ -459,6 +524,12 @@ public class Box : MonoBehaviour
 			}
 		}
 		_info?.ClearCubes();
+		if (_info != null && _info.BoxType == BoxType.Single)
+		{
+			if (Cubes.Count == 0 && _info.CubeInfos.Count > 0)
+				UpdateHiddenCube().Forget();
+			UpdateCubeCount();
+		}
 	}
 
 	public void HandleFinishIfReady()
@@ -538,6 +609,23 @@ public class Box : MonoBehaviour
 	{
 		Cubes.RemoveAll(cube => cube == null);
 		if (_info == null) return default;
+		if (_info.BoxType == BoxType.Single)
+		{
+			CubeInfo top = _info.PeekTopCube();
+			if (top != null)
+			{
+				if (top.CubeSc != null)
+				{
+					if (!Cubes.Contains(top.CubeSc)) Cubes.Add(top.CubeSc);
+				}
+				else
+				{
+					CreateCube(top);
+				}
+			}
+			UpdateCubeCount();
+			return default;
+		}
 		foreach (CubeInfo cubeInfo in _info.CubeInfos)
 		{
 			if (cubeInfo.CubeSc != null)
