@@ -66,6 +66,7 @@ public class WinDialogContent : DialogContent
 	private bool _isNavigating;
 	private readonly List<Sequence> _coinClaimTweens = new List<Sequence>();
 	private GameObject _coinFlightRoot;
+	private bool _doubleCoinReady;
 
 	protected override void Awake()
 	{
@@ -505,6 +506,7 @@ public class WinDialogContent : DialogContent
 
 	private void PlayCommonCoinAnim(int coinCount)
 	{
+		PlayCoinClaimSpine("claim_direct");
 		PlayCoinClaimAnimAsync(coinCount).Forget();
 	}
 
@@ -528,10 +530,60 @@ public class WinDialogContent : DialogContent
 			AudioManager.Current.PlayOneShot(_coinAudioClip, gameObject);
 		}
 
-		PlayCoinClaimAnimAsync(_coinCount * 2).Forget();
+		PlayDoubleCoinClaimAsync().Forget();
 	}
 
-	private async UniTaskVoid PlayCoinClaimAnimAsync(int coinCount)
+	private Spine.TrackEntry PlayCoinClaimSpine(string animationName)
+	{
+		if (_coinsSpine == null)
+		{
+			Debug.LogError("Win coin reward requires the Coins Spine reference.", this);
+			return null;
+		}
+		_coinsSpine.gameObject.SetActive(true);
+		_coinsSpine.UnscaledTime = true;
+		_coinsSpine.Initialize(false);
+		if (_coinsSpine.SkeletonData == null || _coinsSpine.SkeletonData.FindAnimation(animationName) == null)
+		{
+			Debug.LogError("Win coin Spine is missing animation: " + animationName, this);
+			return null;
+		}
+		return _coinsSpine.AnimationState.SetAnimation(0, animationName, false);
+	}
+
+	private async UniTask PlayDoubleCoinClaimAsync()
+	{
+		CancellationToken token = _token;
+		_doubleCoinReady = false;
+		Spine.TrackEntry track = PlayCoinClaimSpine("claim_double");
+		if (track != null)
+		{
+			track.Event += OnDoubleCoinEvent;
+			try
+			{
+				// Native starts the extra coin burst at star_light_close, before track completion.
+				float remaining = track.Animation.Duration;
+				while (!_doubleCoinReady && remaining > 0f)
+				{
+					if (await UniTask.NextFrame(cancellationToken: token).SuppressCancellationThrow()) return;
+					remaining -= Time.unscaledDeltaTime;
+				}
+			}
+			finally
+			{
+				track.Event -= OnDoubleCoinEvent;
+			}
+		}
+		if (token.IsCancellationRequested || this == null || !isActiveAndEnabled) return;
+		PlayCoinClaimAnimAsync(_coinCount * 2, true).Forget();
+	}
+
+	private void OnDoubleCoinEvent(Spine.TrackEntry track, Spine.Event spineEvent)
+	{
+		if (spineEvent.Data.Name == "star_light_close") _doubleCoinReady = true;
+	}
+
+	private async UniTaskVoid PlayCoinClaimAnimAsync(int coinCount, bool doubled = false)
 	{
 		CancellationToken token = _token;
 		if (token.IsCancellationRequested || !isActiveAndEnabled) return;
@@ -545,7 +597,6 @@ public class WinDialogContent : DialogContent
 		Canvas canvas = GetComponentInParent<Canvas>();
 		Transform parent = canvas != null ? canvas.rootCanvas.transform : transform;
 		Vector3 startPos = _coinsSpine != null ? _coinsSpine.transform.position : transform.position;
-		if (_coinsSpine != null) _coinsSpine.gameObject.SetActive(false);
 		Vector3 targetPos = Snui_CoinHud.Current != null
 			? Snui_CoinHud.Current.GetIconPos()
 			: new Vector3(Screen.width * 0.15f, Screen.height * 0.92f, 0f);
@@ -570,7 +621,8 @@ public class WinDialogContent : DialogContent
 		if (token.IsCancellationRequested || this == null || !isActiveAndEnabled) return;
 
 		List<UniTask> flightTasks = new List<UniTask>();
-		int totalCoins = Mathf.Clamp(coinCount, 1, 20);
+		int totalCoins = doubled ? 20 : Mathf.Clamp(coinCount, 1, 8);
+		List<Vector2> doubleOffsets = doubled ? new List<Vector2>(totalCoins) : null;
 		// Scatter in canvas units so camera canvases keep the burst on-screen.
 		Vector3 localStart = flightRoot.transform.InverseTransformPoint(startPos);
 		Vector3 localTarget = flightRoot.transform.InverseTransformPoint(targetPos);
@@ -585,11 +637,21 @@ public class WinDialogContent : DialogContent
 			FlyCoin fly = coin.GetComponent<FlyCoin>();
 			if (fly != null && sprites != null)
 			{
-				// Keep the face sprite still throughout the scatter and flight.
 				fly.SetSprites(sprites);
+				fly.Play(true);
 			}
 
-			Sequence flight = CreateCoinClaimTween(coin, localStart, localTarget, i, totalCoins);
+			Sequence flight;
+			if (doubled)
+			{
+				Vector2 offset = GetDoubleCoinOffset(doubleOffsets);
+				doubleOffsets.Add(offset);
+				flight = CreateDoubleCoinTween(coin, localStart, localTarget, offset, i);
+			}
+			else
+			{
+				flight = CreateCoinClaimTween(coin, localStart, localTarget, i);
+			}
 			_coinClaimTweens.Add(flight);
 			flightTasks.Add(flight.ToUniTask().AttachExternalCancellation(token));
 		}
@@ -623,68 +685,59 @@ public class WinDialogContent : DialogContent
 		await FinishCoinClaim();
 	}
 
-	private Sequence CreateCoinClaimTween(GameObject coin, Vector3 origin, Vector3 target, int index, int count)
+	private static Vector2 GetDoubleCoinOffset(List<Vector2> offsets)
+	{
+		Vector2 candidate = Vector2.zero;
+		for (int attempt = 0; attempt < 30; attempt++)
+		{
+			candidate = UnityEngine.Random.insideUnitCircle * 350f;
+			bool overlaps = false;
+			for (int i = 0; i < offsets.Count; i++)
+			{
+				if ((candidate - offsets[i]).sqrMagnitude >= 120f * 120f) continue;
+				overlaps = true;
+				break;
+			}
+			if (!overlaps) break;
+		}
+		return candidate;
+	}
+
+	private Sequence CreateDoubleCoinTween(GameObject coin, Vector3 origin, Vector3 target, Vector2 offset, int index)
 	{
 		Transform node = coin.transform;
-		Vector2 spawnOffset = UnityEngine.Random.insideUnitCircle * 20f;
-		Vector3 start = origin + new Vector3(spawnOffset.x, spawnOffset.y, 0f);
-		Vector3 scale = node.localScale * UnityEngine.Random.Range(0.65f, 0.95f);
-		node.localPosition = start;
-		node.localScale = scale * 0.35f;
-
-		// Uneven directions and impulses avoid an evenly spaced expanding ring.
-		float angle = (index + UnityEngine.Random.Range(-0.45f, 0.45f)) / count * Mathf.PI * 2f;
-		float speed = _coinScatterRadius * _coinScatterForce / Mathf.Max(0.01f, _coinScatterDuration);
-		speed *= UnityEngine.Random.Range(0.65f, 1.25f);
-		Vector3 velocity = new Vector3(Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed + speed * 0.22f, 0f);
-		Vector3 gravity = Vector3.down * _coinScatterGravity;
-		float drag = Mathf.Max(0.01f, _coinScatterDrag);
-		float scatterTime = Mathf.Max(0.01f, _coinScatterDuration) * UnityEngine.Random.Range(0.85f, 1.15f)
-			+ _coinScatterHoldDuration + UnityEngine.Random.Range(0f, 0.12f);
-		Vector3 launch = CoinScatterPosition(start, velocity, gravity, drag, scatterTime);
-		Vector3 launchVelocity = velocity * Mathf.Exp(-drag * scatterTime)
-			+ gravity * ((1f - Mathf.Exp(-drag * scatterTime)) / drag);
-		float flightTime = Mathf.Max(0.01f, _coinFlightDuration) * UnityEngine.Random.Range(0.9f, 1.15f);
-		float pauseTime = Mathf.Max(0f, _coinRewardPauseDuration);
-		Vector3 flightStart = launch + launchVelocity * (pauseTime / 3f);
-
-		// Let coins settle briefly before accelerating into the HUD.
-		Vector3 control1 = pauseTime > 0f ? flightStart : launch + launchVelocity * (flightTime / 3f);
-		Vector3 toTarget = target - flightStart;
-		Vector3 side = new Vector3(-toTarget.y, toTarget.x, 0f).normalized;
-		Vector3 control2 = Vector3.Lerp(flightStart, target, 0.3f) + side * UnityEngine.Random.Range(-45f, 45f);
-
+		Vector3 scale = node.localScale;
+		node.localPosition = origin;
+		node.localScale = Vector3.zero;
 		Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(coin);
-		sequence.Append(DOVirtual.Float(0f, scatterTime, scatterTime, time =>
-		{
-			node.localPosition = CoinScatterPosition(start, velocity, gravity, drag, time);
-		}).SetEase(Ease.Linear));
-		sequence.Insert(0f, node.DOScale(scale, 0.12f).SetEase(Ease.OutCubic));
-		if (pauseTime > 0f)
-			sequence.Append(node.DOLocalMove(flightStart, pauseTime).SetEase(Ease.OutCubic));
-		sequence.Append(DOVirtual.Float(0f, 1f, flightTime, progress =>
-		{
-			node.localPosition = EvaluateCubicBezier(flightStart, control1, control2, target, progress);
-		}).SetEase(Ease.Linear));
-		sequence.Join(node.DOScale(scale * 0.55f, flightTime).SetEase(Ease.InCubic));
-		sequence.OnComplete(() =>
-		{
-			if (coin != null) Destroy(coin);
-		});
+		sequence.Append(node.DOLocalMove(origin + new Vector3(offset.x, offset.y, 0f), 0.53f).SetEase(Ease.OutQuart));
+		sequence.Join(node.DOScale(scale * UnityEngine.Random.Range(0.5f, 1f), 0.53f).SetEase(Ease.OutQuart));
+		sequence.AppendInterval(0.03f + index * 0.03f);
+		sequence.Append(node.DOLocalMove(target, 0.43f).SetEase(Ease.InQuad));
+		sequence.Join(node.DOScale(scale * 0.7f, 0.33f));
+		sequence.OnComplete(() => Destroy(coin));
 		return sequence;
 	}
 
-	private static Vector3 EvaluateCubicBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+	private Sequence CreateCoinClaimTween(GameObject coin, Vector3 origin, Vector3 target, int index)
 	{
-		float u = 1f - t;
-		return (u * u * u * p0) + (3f * u * u * t * p1) + (3f * u * t * t * p2) + (t * t * t * p3);
-	}
+		Transform node = coin.transform;
+		Vector3 scale = node.localScale;
+		Vector3 scatter = origin + new Vector3(UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-60, 60), 0f);
+		node.localPosition = origin;
+		node.localScale = Vector3.zero;
 
-	private static Vector3 CoinScatterPosition(Vector3 start, Vector3 velocity, Vector3 gravity, float drag, float time)
-	{
-		// Analytic drag/gravity keeps the impulse consistent across frame rates.
-		float travel = (1f - Mathf.Exp(-drag * time)) / drag;
-		return start + velocity * travel + gravity * ((time - travel) / drag);
+		// Native CoinFly uses a scale bounce and short scatter before accelerating to the HUD.
+		Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(coin);
+		sequence.AppendInterval(index * 0.07f);
+		sequence.Append(node.DOScale(scale * 1.2f, 0.16f));
+		sequence.Append(node.DOScale(scale * 0.9f, 0.1f));
+		sequence.Append(node.DOScale(scale, 0.1f));
+		sequence.Insert(index * 0.07f, node.DOLocalMove(scatter, _coinScatterDuration));
+		sequence.Append(node.DOLocalMove(target, _coinFlightDuration).SetEase(Ease.InCubic));
+		sequence.Join(node.DOScale(scale * 0.7f, _coinFlightDuration).SetEase(Ease.InQuart));
+		sequence.OnComplete(() => Destroy(coin));
+		return sequence;
 	}
 
 	private void ClearCoinClaimAnimation()

@@ -25,28 +25,6 @@ public readonly struct LinkedCubePairRef
 
 public static class LoopLinkedCubeAuthoring
 {
-    [UnityEditor.MenuItem("LoopMaster/Cube đôi/1. Hai khối đã lộ")]
-    private static void PlayExposed() => PlayFixture("01_Exposed");
-
-    [UnityEditor.MenuItem("LoopMaster/Cube đôi/2. Một bên bị chặn")]
-    private static void PlayOneBlocked() => PlayFixture("02_OneBlocked");
-
-    [UnityEditor.MenuItem("LoopMaster/Cube đôi/3. Hai bên bị chặn")]
-    private static void PlayBothBlocked() => PlayFixture("03_BothBlocked");
-
-    [UnityEditor.MenuItem("LoopMaster/Cube đôi/4. Cùng màu và ranh giới nhóm")]
-    private static void PlaySameColor() => PlayFixture("04_SameColorBoundary");
-
-    [UnityEditor.MenuItem("LoopMaster/Cube đôi/5. Độc lập sau khi thả")]
-    private static void PlayIndependent() => PlayFixture("05_IndependentAfterLaunch");
-
-    private static void PlayFixture(string name)
-    {
-        string path = "Assets/00Game/05LevelData/LinkedCubes/" + name + ".json";
-        JObject root = A.Parse(System.IO.File.ReadAllText(path));
-        if (!LoopLevelPlaytest.Play(root, out string error)) Debug.LogError(error);
-    }
-
     public static bool HasLinkedCube(JObject box)
     {
         if (box == null) return false;

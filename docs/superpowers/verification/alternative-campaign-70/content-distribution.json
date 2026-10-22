@@ -1,30 +1,30 @@
 {
   "builder_version": 2,
-  "distinct_road_geometries": 51,
-  "colors_equal_boxes_levels": 21,
-  "levels_with_multiple_mechanics": 40,
-  "levels_with_three_or_more_mechanics": 31,
-  "levels_with_four_or_more_mechanics": 17,
-  "hard_or_expert_levels": 19,
-  "total_secret_cubes": 581,
-  "linked_cube_levels": 13,
-  "near_solved_normal_boxes": 54,
+  "distinct_road_geometries": 53,
+  "colors_equal_boxes_levels": 9,
+  "levels_with_multiple_mechanics": 39,
+  "levels_with_three_or_more_mechanics": 23,
+  "levels_with_four_or_more_mechanics": 13,
+  "hard_or_expert_levels": 14,
+  "total_secret_cubes": 250,
+  "linked_cube_levels": 16,
+  "near_solved_normal_boxes": 58,
   "capacity_histogram": {
-    "4": 21,
-    "5": 6,
-    "6": 32,
-    "7": 11
+    "4": 16,
+    "5": 3,
+    "6": 16,
+    "7": 35
   },
   "box_count_histogram": {
     "2": 2,
     "4": 1,
-    "5": 1,
-    "6": 1,
-    "7": 3,
-    "8": 10,
-    "9": 14,
-    "10": 19,
-    "12": 17,
+    "5": 3,
+    "6": 15,
+    "7": 9,
+    "8": 13,
+    "9": 4,
+    "10": 12,
+    "12": 9,
     "13": 2
   },
   "levels": [
@@ -86,324 +86,324 @@
     },
     {
       "level": 5,
-      "boxes": 6,
-      "normal_colors": 5,
+      "boxes": 5,
+      "normal_colors": 4,
       "capacity": 5,
       "hard": 0,
-      "mixed_boxes": 5,
+      "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 201,
+      "geometry_reference": 5,
       "mixing_recipe": "generator_scramble",
       "mechanics": [],
-      "road_sha256": "adddfa938ef33d1beb853b92673b3e570e2de92a80aa51e1d8192b9a32ff99c0",
-      "reference_clicks": 11
+      "road_sha256": "3e03b50461fba2faaf3480cc1029b9f53cf2ca364a4549f54d7f9afefcb3f80d",
+      "reference_clicks": 7
     },
     {
       "level": 6,
+      "boxes": 5,
+      "normal_colors": 4,
+      "capacity": 6,
+      "hard": 0,
+      "mixed_boxes": 4,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 5,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret"
+      ],
+      "road_sha256": "3e03b50461fba2faaf3480cc1029b9f53cf2ca364a4549f54d7f9afefcb3f80d",
+      "reference_clicks": 10
+    },
+    {
+      "level": 7,
+      "boxes": 6,
+      "normal_colors": 5,
+      "capacity": 6,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 9,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret"
+      ],
+      "road_sha256": "5988d4535f463072408ca3046c7c81367907bc5371f8047878128f128568bcae",
+      "reference_clicks": 10
+    },
+    {
+      "level": 8,
+      "boxes": 6,
+      "normal_colors": 5,
+      "capacity": 6,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 7,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret"
+      ],
+      "road_sha256": "98edeeee35b0d85234fffe2bb54640438e63b342de475e77b35a9e9db4c7972d",
+      "reference_clicks": 12
+    },
+    {
+      "level": 9,
       "boxes": 7,
       "normal_colors": 6,
       "capacity": 6,
       "hard": 0,
       "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 77,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "6aaf623686d94e13d29d756fa8d702170b40c185289efec7d3cef440439224a2",
-      "reference_clicks": 15
-    },
-    {
-      "level": 7,
-      "boxes": 8,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 261,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "3c0660bf95f22fb688ca98b4261bfcd5f4534a137de37461b71a72f4e92e65c5",
-      "reference_clicks": 27
-    },
-    {
-      "level": 8,
-      "boxes": 7,
-      "normal_colors": 7,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 7,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 94,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "c56ef6a3d2df5cbc4433aaded9a1fb77b1408ee929fb243766cfacbfb1723855",
-      "reference_clicks": 23
-    },
-    {
-      "level": 9,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 9,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 107,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "61f85c73a06013088849a19007a1e700721aa19948617a799bb474a4b1cde1a4",
-      "reference_clicks": 18
-    },
-    {
-      "level": 10,
-      "boxes": 7,
-      "normal_colors": 7,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 7,
-      "near_solved_normal_boxes": 0,
       "geometry_reference": 10,
-      "mixing_recipe": "layered_cycle_0012",
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
       "road_sha256": "0682d04e73d3f16572e2e815663625cdfbe11817d0144c915c130e412e70fd9f",
-      "reference_clicks": 14
+      "reference_clicks": 12
+    },
+    {
+      "level": 10,
+      "boxes": 6,
+      "normal_colors": 6,
+      "capacity": 4,
+      "hard": 1,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 0,
+      "geometry_reference": 0,
+      "mixing_recipe": "layered_cycle_0012",
+      "mechanics": [
+        "secret"
+      ],
+      "road_sha256": "8f04c3ec215f8d8ef23e85ed520b527f698764310af7d394a81c853325bfaee0",
+      "reference_clicks": 12
     },
     {
       "level": 11,
-      "boxes": 8,
-      "normal_colors": 8,
-      "capacity": 5,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 285,
+      "mixed_boxes": 4,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "9a5e8394deb4ddbfc70ee2082b434e600bdf35e2ed393bb3199c9fb37d066b65",
-      "reference_clicks": 38
+      "mechanics": [],
+      "road_sha256": "b1113fb312de45d50eb02e08e4e016c73f0392ce1c1131c2c628773494c6d153",
+      "reference_clicks": 10
     },
     {
       "level": 12,
-      "boxes": 8,
-      "normal_colors": 7,
+      "boxes": 7,
+      "normal_colors": 6,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 7,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 76,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "9a5e8394deb4ddbfc70ee2082b434e600bdf35e2ed393bb3199c9fb37d066b65",
-      "reference_clicks": 15
+      "road_sha256": "753db50e9f70e7250eb1de2174e70aa7b24b5bec1e6146238d1e25a4ba38c7f1",
+      "reference_clicks": 12
     },
     {
       "level": 13,
-      "boxes": 10,
-      "normal_colors": 10,
+      "boxes": 7,
+      "normal_colors": 6,
       "capacity": 6,
       "hard": 0,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 119,
-      "mixing_recipe": "layered_cycle_0122",
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 13,
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "cb939de57a0c7b93e30c37f228623d1d811d6fd4e1e1f7a43815cc7f3f9766d3",
-      "reference_clicks": 24
+      "road_sha256": "4b8f94c8036ee731d3f41e06416e18457da03313b10c0342af778deeeb2831bd",
+      "reference_clicks": 13
     },
     {
       "level": 14,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 64,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "dc9733e20c33bf706ff2c39050f0095b06da4cad35ce8c8b7468eafdba748d3d",
-      "reference_clicks": 16
-    },
-    {
-      "level": 15,
       "boxes": 8,
       "normal_colors": 7,
       "capacity": 6,
       "hard": 0,
       "mixed_boxes": 7,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 63,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "linked_pair"
-      ],
-      "road_sha256": "49a93c73227b45c7d52c1a394a22e84bf89167c0f8d1478de17dbdda2acb5798",
-      "reference_clicks": 14
-    },
-    {
-      "level": 16,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 9,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 139,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "linked_pair"
-      ],
-      "road_sha256": "622305de4b3db75bb289b22719a5676c01fe2a5ce1541ec3368807387186a4cb",
-      "reference_clicks": 20
-    },
-    {
-      "level": 17,
-      "boxes": 8,
-      "normal_colors": 7,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 7,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 178,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret",
-        "linked_pair"
-      ],
-      "road_sha256": "5e394220de4b14450863a32a559f33bd1561595c9e55cda1c4623c9e0f17158f",
-      "reference_clicks": 19
-    },
-    {
-      "level": 18,
-      "boxes": 10,
-      "normal_colors": 9,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 9,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 257,
+      "geometry_reference": 184,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret"
       ],
-      "road_sha256": "2c8635355fe7d45d95e43e1d65e0fdd3e7cdae540771a652077328cc22ef1574",
-      "reference_clicks": 25
-    },
-    {
-      "level": 19,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 151,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "95cee5dd9276a26feba0f8326e4506e1cb48a624facd790476dc866ff400484b",
-      "reference_clicks": 24
-    },
-    {
-      "level": 20,
-      "boxes": 12,
-      "normal_colors": 11,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 11,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 80,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret",
-        "linked_pair"
-      ],
-      "road_sha256": "ed725c18b887aff5211df97dbc675378fe951e0eb7b031f6082d00cbf2889aeb",
-      "reference_clicks": 28
-    },
-    {
-      "level": 21,
-      "boxes": 8,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 285,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "9a5e8394deb4ddbfc70ee2082b434e600bdf35e2ed393bb3199c9fb37d066b65",
-      "reference_clicks": 22
-    },
-    {
-      "level": 22,
-      "boxes": 10,
-      "normal_colors": 9,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 171,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "secret"
-      ],
-      "road_sha256": "e8a7e01393c8b48100b1be893a2ebc197a5263bed2be45767613311888199c91",
-      "reference_clicks": 22
-    },
-    {
-      "level": 23,
-      "boxes": 8,
-      "normal_colors": 7,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 7,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 127,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "color_lock"
-      ],
-      "road_sha256": "5988d4535f463072408ca3046c7c81367907bc5371f8047878128f128568bcae",
+      "road_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4",
       "reference_clicks": 15
     },
     {
-      "level": 24,
-      "boxes": 9,
-      "normal_colors": 9,
-      "capacity": 6,
+      "level": 15,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 4,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "linked_pair"
+      ],
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 7
+    },
+    {
+      "level": 16,
+      "boxes": 7,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "linked_pair"
+      ],
+      "road_sha256": "7121409f6a77bd005852914868806fc819ebaa2e4089428670b1ec08cf83662f",
+      "reference_clicks": 11
+    },
+    {
+      "level": 17,
+      "boxes": 7,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "linked_pair"
+      ],
+      "road_sha256": "b553648f1ded6330f7b51bd751c641b3be8b8d0478376ceb8cffd134882cc0d0",
+      "reference_clicks": 12
+    },
+    {
+      "level": 18,
+      "boxes": 8,
+      "normal_colors": 6,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 7,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 228,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret"
+      ],
+      "road_sha256": "6a16570880b1a70ebfe9367a539d8757edcc675cc8ae93f23d62aff627c1abc4",
+      "reference_clicks": 14
+    },
+    {
+      "level": 19,
+      "boxes": 8,
+      "normal_colors": 6,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 263,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret"
+      ],
+      "road_sha256": "6ef32074dc89bf28ff067ec961fc29978a395f91000d3964fc57408b958eedbe",
+      "reference_clicks": 15
+    },
+    {
+      "level": 20,
+      "boxes": 10,
+      "normal_colors": 8,
+      "capacity": 4,
+      "hard": 1,
+      "mixed_boxes": 8,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 191,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "secret",
+        "linked_pair"
+      ],
+      "road_sha256": "717d8e0f3a29bae0db1894f805c8030188406a9ce733f03d2e20184975370c92",
+      "reference_clicks": 20
+    },
+    {
+      "level": 21,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 4,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 151,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "linked_pair",
+        "linked_secret"
+      ],
+      "road_sha256": "59ae28b692700e6361adb4b73c231ecd214716c7468c2cd164d9961acac860b3",
+      "reference_clicks": 9
+    },
+    {
+      "level": 22,
+      "boxes": 7,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "linked_pair",
+        "linked_secret"
+      ],
+      "road_sha256": "eea5f5df9bba591a07b1e920c80775d6a4941a0070ff500b07cf9d32717e554d",
+      "reference_clicks": 13
+    },
+    {
+      "level": 23,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "color_lock"
+      ],
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 12
+    },
+    {
+      "level": 24,
+      "boxes": 7,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "color_lock"
       ],
-      "road_sha256": "95cee5dd9276a26feba0f8326e4506e1cb48a624facd790476dc866ff400484b",
-      "reference_clicks": 32
+      "road_sha256": "0a72d3b8146965f3a1d78a9040fc2cf089d9fc238b42e56884fa6df1b23fa538",
+      "reference_clicks": 13
     },
     {
       "level": 25,
@@ -425,20 +425,19 @@
     },
     {
       "level": 26,
-      "boxes": 8,
-      "normal_colors": 8,
-      "capacity": 5,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 81,
-      "mixing_recipe": "layered_cycle_0012",
+      "mixed_boxes": 4,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "secret",
         "color_lock"
       ],
-      "road_sha256": "e63ebfc4be9ff8dd8526d14cc997b864dabe51d706c563145e7be48e71284b1f",
-      "reference_clicks": 16
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 12
     },
     {
       "level": 27,
@@ -455,7 +454,7 @@
         "color_lock"
       ],
       "road_sha256": "e8a7e01393c8b48100b1be893a2ebc197a5263bed2be45767613311888199c91",
-      "reference_clicks": 24
+      "reference_clicks": 21
     },
     {
       "level": 28,
@@ -475,19 +474,19 @@
     },
     {
       "level": 29,
-      "boxes": 8,
-      "normal_colors": 7,
-      "capacity": 6,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 7,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 54,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 0,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "adjacent_lock"
       ],
-      "road_sha256": "2a30e372101f11c100566a35c25246710b59d9ce3cc74065f28004628524743f",
-      "reference_clicks": 15
+      "road_sha256": "8f04c3ec215f8d8ef23e85ed520b527f698764310af7d394a81c853325bfaee0",
+      "reference_clicks": 10
     },
     {
       "level": 30,
@@ -508,21 +507,19 @@
     },
     {
       "level": 31,
-      "boxes": 9,
-      "normal_colors": 9,
-      "capacity": 5,
+      "boxes": 7,
+      "normal_colors": 5,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 32,
-      "mixing_recipe": "layered_cycle_0012",
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "secret",
-        "color_lock",
         "adjacent_lock"
       ],
-      "road_sha256": "5c8466c8637b047730d14c72f618256155a748032825db4592205949a2646681",
-      "reference_clicks": 18
+      "road_sha256": "0a72d3b8146965f3a1d78a9040fc2cf089d9fc238b42e56884fa6df1b23fa538",
+      "reference_clicks": 14
     },
     {
       "level": 32,
@@ -555,10 +552,11 @@
       "mechanics": [
         "secret",
         "adjacent_lock",
-        "linked_pair"
+        "linked_pair",
+        "linked_secret"
       ],
       "road_sha256": "53aff972e83cb19f65078ef2af20d3616007dd7e0f190c9c92d2b192d178078c",
-      "reference_clicks": 19
+      "reference_clicks": 22
     },
     {
       "level": 34,
@@ -594,54 +592,54 @@
         "adjacent_lock"
       ],
       "road_sha256": "4fd459e25319b679b937d9d60810ab6821e09621f8543ea1976948cfeb7e15a5",
-      "reference_clicks": 33
+      "reference_clicks": 27
     },
     {
       "level": 36,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [],
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 11
+    },
+    {
+      "level": 37,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 4,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "ice"
+      ],
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 9
+    },
+    {
+      "level": 38,
       "boxes": 8,
       "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 7,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 63,
+      "geometry_reference": 122,
       "mixing_recipe": "generator_scramble",
-      "mechanics": [],
-      "road_sha256": "49a93c73227b45c7d52c1a394a22e84bf89167c0f8d1478de17dbdda2acb5798",
-      "reference_clicks": 17
-    },
-    {
-      "level": 37,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 8,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 246,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "ice"
-      ],
-      "road_sha256": "15b646c97c7ba2d90b53f9a9372d177e7b8b501f42870a3e387d97466cbb1fc2",
-      "reference_clicks": 18
-    },
-    {
-      "level": 38,
-      "boxes": 10,
-      "normal_colors": 10,
-      "capacity": 6,
-      "hard": 0,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 295,
-      "mixing_recipe": "layered_cycle_0012",
       "mechanics": [
         "secret",
         "ice"
       ],
-      "road_sha256": "f5deb1baf79382fc6e5bbcfe41459a910c9cf2b57750ceabde9fc3fd8d5d77c9",
-      "reference_clicks": 20
+      "road_sha256": "9e048f74da105ccf80381fefc3b759e5aceff7c9cde34d8473b47ba94f118972",
+      "reference_clicks": 13
     },
     {
       "level": 39,
@@ -659,7 +657,7 @@
         "ice"
       ],
       "road_sha256": "ca0daab2ab3923da72a5f20a297f54789c62b00cd4fe0a4794fefd06d5208649",
-      "reference_clicks": 19
+      "reference_clicks": 18
     },
     {
       "level": 40,
@@ -682,6 +680,39 @@
     },
     {
       "level": 41,
+      "boxes": 7,
+      "normal_colors": 3,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 3,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "long"
+      ],
+      "road_sha256": "4260f890d87d1bab8c669339cf513abe80a9f5b0cc925c194b8b520fde483f7c",
+      "reference_clicks": 11
+    },
+    {
+      "level": 42,
+      "boxes": 8,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 0,
+      "mixing_recipe": "generator_scramble",
+      "mechanics": [
+        "long",
+        "secret"
+      ],
+      "road_sha256": "8a265c243990fac3289e947cc2ffa927722c79ec0e02e40e3c8c02a831b5e411",
+      "reference_clicks": 15
+    },
+    {
+      "level": 43,
       "boxes": 10,
       "normal_colors": 7,
       "capacity": 7,
@@ -691,45 +722,12 @@
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "long"
-      ],
-      "road_sha256": "9b5e89d6e6ff099b18c997d35c6ba045a33999c02b04cf640a3cae21ec699cb1",
-      "reference_clicks": 15
-    },
-    {
-      "level": 42,
-      "boxes": 10,
-      "normal_colors": 5,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 9,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 0,
-      "mixing_recipe": "generator_scramble",
-      "mechanics": [
-        "long",
-        "secret"
-      ],
-      "road_sha256": "b623e0022497037a54558f8d9c59e0bcd34119430a485d665ed1465f86af37a7",
-      "reference_clicks": 15
-    },
-    {
-      "level": 43,
-      "boxes": 12,
-      "normal_colors": 10,
-      "capacity": 7,
-      "hard": 0,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 0,
-      "mixing_recipe": "layered_cycle_0012",
-      "mechanics": [
         "long",
         "secret",
         "color_lock"
       ],
-      "road_sha256": "4909442852ce59954e428f42c39991d087074742a567a83df92d0980add5c7c0",
-      "reference_clicks": 22
+      "road_sha256": "6de025e7c8ca836c94825a5e0168bbd4ca2013ba79e9a17369cb4e6040199b83",
+      "reference_clicks": 15
     },
     {
       "level": 44,
@@ -747,7 +745,7 @@
         "ice"
       ],
       "road_sha256": "2538b7ff32393f95f8661ffb14532339bf7b2e7ccbda746ef8f874a48c4084ba",
-      "reference_clicks": 19
+      "reference_clicks": 15
     },
     {
       "level": 45,
@@ -767,21 +765,24 @@
         "linked_pair"
       ],
       "road_sha256": "c816bf60fed01e7ffef1eaa52c2715df90e03b4319f37e344acea2310c665918",
-      "reference_clicks": 26
+      "reference_clicks": 20
     },
     {
       "level": 46,
-      "boxes": 9,
-      "normal_colors": 7,
+      "boxes": 6,
+      "normal_colors": 4,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 107,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
-      "mechanics": [],
-      "road_sha256": "61f85c73a06013088849a19007a1e700721aa19948617a799bb474a4b1cde1a4",
-      "reference_clicks": 18
+      "mechanics": [
+        "linked_pair",
+        "linked_secret"
+      ],
+      "road_sha256": "59ae28b692700e6361adb4b73c231ecd214716c7468c2cd164d9961acac860b3",
+      "reference_clicks": 10
     },
     {
       "level": 47,
@@ -817,40 +818,40 @@
         "color_lock"
       ],
       "road_sha256": "aa5fc02c40a3629f2d4a742c0cd25de23a82c1fc501879d9befc1477994f390f",
-      "reference_clicks": 24
+      "reference_clicks": 20
     },
     {
       "level": 49,
-      "boxes": 9,
-      "normal_colors": 8,
-      "capacity": 6,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 8,
+      "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 145,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single"
       ],
-      "road_sha256": "7ee27dcf449dbb89838f8f018af5255f459bddb3bde7078b9918be5eb8a0da23",
-      "reference_clicks": 19
+      "road_sha256": "8ac2f75116778272fe23a32ef655d38b0a960ddd4ba9d94b67bea8a78c93374e",
+      "reference_clicks": 9
     },
     {
       "level": 50,
-      "boxes": 10,
-      "normal_colors": 9,
-      "capacity": 6,
+      "boxes": 8,
+      "normal_colors": 6,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 6,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 295,
+      "geometry_reference": 160,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
         "secret"
       ],
-      "road_sha256": "970d24407631bf3acd836aea63324d24919bde6067d1250e6453042123e3d4a5",
-      "reference_clicks": 30
+      "road_sha256": "1426df821a8ce35fd6ac94c34b93249924ff21434fb14259d2738d82727e8c5c",
+      "reference_clicks": 15
     },
     {
       "level": 51,
@@ -868,7 +869,7 @@
         "ice"
       ],
       "road_sha256": "adce97ce8b23574400b9df22f664333883aaaa7dda10500b7e194557b3df7d46",
-      "reference_clicks": 25
+      "reference_clicks": 24
     },
     {
       "level": 52,
@@ -884,44 +885,44 @@
         "secret",
         "color_lock",
         "ice",
-        "linked_pair"
+        "linked_pair",
+        "linked_secret"
       ],
       "road_sha256": "e8a7e01393c8b48100b1be893a2ebc197a5263bed2be45767613311888199c91",
-      "reference_clicks": 23
+      "reference_clicks": 20
     },
     {
       "level": 53,
-      "boxes": 10,
-      "normal_colors": 9,
-      "capacity": 6,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 4,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 284,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "group_door"
       ],
-      "road_sha256": "96d41d6793456c1a0ab8e6b586cb884aac8c32673d17d69a01bef883b910247a",
-      "reference_clicks": 20
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 9
     },
     {
       "level": 54,
-      "boxes": 12,
-      "normal_colors": 12,
+      "boxes": 8,
+      "normal_colors": 6,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 12,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 290,
-      "mixing_recipe": "layered_cycle_0122",
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 100,
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
-        "ice",
         "group_door"
       ],
-      "road_sha256": "cde8e8b8066a0d94ee5ffaf9caf28c22cf8c6211472f95fe256a89e8abcdff63",
-      "reference_clicks": 29
+      "road_sha256": "bb0e94e1f3d6545dccdeee5cfa0320b9242b6af4dd911bc458e4ed32c183fc22",
+      "reference_clicks": 15
     },
     {
       "level": 55,
@@ -944,37 +945,36 @@
     },
     {
       "level": 56,
-      "boxes": 9,
-      "normal_colors": 9,
-      "capacity": 6,
+      "boxes": 6,
+      "normal_colors": 4,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 9,
+      "mixed_boxes": 4,
       "near_solved_normal_boxes": 0,
-      "geometry_reference": 170,
+      "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "surprise"
       ],
-      "road_sha256": "5b3e87c8446ca487b9ab0174e2a4d88d6ce2ee92f7d1bcafa745585e28be96fe",
-      "reference_clicks": 33
+      "road_sha256": "1b613c11ccb849db5e352534288aa8e064fa9ad5ab672da15eefaa277e1dd4b6",
+      "reference_clicks": 10
     },
     {
       "level": 57,
-      "boxes": 10,
-      "normal_colors": 10,
-      "capacity": 6,
+      "boxes": 8,
+      "normal_colors": 6,
+      "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 0,
-      "geometry_reference": 300,
-      "mixing_recipe": "layered_cycle_0012",
+      "mixed_boxes": 6,
+      "near_solved_normal_boxes": 1,
+      "geometry_reference": 27,
+      "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
-        "color_lock",
         "surprise"
       ],
-      "road_sha256": "f5deb1baf79382fc6e5bbcfe41459a910c9cf2b57750ceabde9fc3fd8d5d77c9",
-      "reference_clicks": 20
+      "road_sha256": "3d1d70226ab4b8831f324ed7e8bf0db707a7a15561972f8b6e1d2916a31e67c3",
+      "reference_clicks": 15
     },
     {
       "level": 58,
@@ -1001,18 +1001,19 @@
       "normal_colors": 11,
       "capacity": 7,
       "hard": 0,
-      "mixed_boxes": 12,
+      "mixed_boxes": 11,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 290,
+      "geometry_reference": 169,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "secret",
         "color_lock",
         "group_door",
-        "linked_pair"
+        "linked_pair",
+        "linked_secret"
       ],
-      "road_sha256": "cde8e8b8066a0d94ee5ffaf9caf28c22cf8c6211472f95fe256a89e8abcdff63",
-      "reference_clicks": 27
+      "road_sha256": "c34c6cc51d7232857bcfc232062e75cf114fd472bfce7e464699d98b1837dcca",
+      "reference_clicks": 25
     },
     {
       "level": 60,
@@ -1031,26 +1032,24 @@
         "surprise"
       ],
       "road_sha256": "880f7be837e63efe87f5e0d466fc95e2b54d27626a8c2c53a1fd5bd9f272f730",
-      "reference_clicks": 28
+      "reference_clicks": 24
     },
     {
       "level": 61,
-      "boxes": 12,
-      "normal_colors": 10,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 1,
-      "geometry_reference": 180,
+      "boxes": 8,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
+      "near_solved_normal_boxes": 0,
+      "geometry_reference": 263,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
-        "secret",
-        "color_lock",
         "ice"
       ],
-      "road_sha256": "ed725c18b887aff5211df97dbc675378fe951e0eb7b031f6082d00cbf2889aeb",
-      "reference_clicks": 30
+      "road_sha256": "6ef32074dc89bf28ff067ec961fc29978a395f91000d3964fc57408b958eedbe",
+      "reference_clicks": 16
     },
     {
       "level": 62,
@@ -1069,26 +1068,23 @@
         "surprise"
       ],
       "road_sha256": "880f7be837e63efe87f5e0d466fc95e2b54d27626a8c2c53a1fd5bd9f272f730",
-      "reference_clicks": 27
+      "reference_clicks": 23
     },
     {
       "level": 63,
-      "boxes": 12,
-      "normal_colors": 9,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 10,
-      "near_solved_normal_boxes": 1,
+      "boxes": 8,
+      "normal_colors": 4,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 4,
+      "near_solved_normal_boxes": 0,
       "geometry_reference": 0,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "long",
-        "secret",
-        "color_lock",
-        "ice"
+        "long"
       ],
-      "road_sha256": "4ab2719dd78684388379d9c417c18430c4c235a80fc50393daa0f60cfa815e9d",
-      "reference_clicks": 28
+      "road_sha256": "8a265c243990fac3289e947cc2ffa927722c79ec0e02e40e3c8c02a831b5e411",
+      "reference_clicks": 11
     },
     {
       "level": 64,
@@ -1108,26 +1104,24 @@
         "linked_pair"
       ],
       "road_sha256": "68f7b81245496afb890f296cc8db9241f4e6919340827407138ec7e87ccdb680",
-      "reference_clicks": 29
+      "reference_clicks": 22
     },
     {
       "level": 65,
-      "boxes": 12,
-      "normal_colors": 10,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 10,
+      "boxes": 8,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 138,
+      "geometry_reference": 176,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
-        "secret",
-        "color_lock",
-        "ice"
+        "color_lock"
       ],
-      "road_sha256": "0ec555f7c00de9bb12aa59d8324290a3e3af68692ab8a1ee873b3ab8bbfa9ec3",
-      "reference_clicks": 27
+      "road_sha256": "3c0660bf95f22fb688ca98b4261bfcd5f4534a137de37461b71a72f4e92e65c5",
+      "reference_clicks": 13
     },
     {
       "level": 66,
@@ -1150,22 +1144,19 @@
     },
     {
       "level": 67,
-      "boxes": 12,
-      "normal_colors": 11,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 11,
+      "boxes": 8,
+      "normal_colors": 6,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 7,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 167,
+      "geometry_reference": 143,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
-        "secret",
-        "adjacent_lock",
-        "ice",
         "surprise"
       ],
-      "road_sha256": "880f7be837e63efe87f5e0d466fc95e2b54d27626a8c2c53a1fd5bd9f272f730",
-      "reference_clicks": 30
+      "road_sha256": "8e4174e55cd2ff66837bd230738189acdf8c623af52c8019e8bb646ea25da7fb",
+      "reference_clicks": 14
     },
     {
       "level": 68,
@@ -1186,26 +1177,24 @@
         "surprise"
       ],
       "road_sha256": "1806b2e0c14d37c7e78ec1e1663411605dc1f57062df5db203cccdb83cc97043",
-      "reference_clicks": 36
+      "reference_clicks": 29
     },
     {
       "level": 69,
-      "boxes": 12,
-      "normal_colors": 9,
-      "capacity": 4,
-      "hard": 1,
-      "mixed_boxes": 9,
+      "boxes": 8,
+      "normal_colors": 5,
+      "capacity": 7,
+      "hard": 0,
+      "mixed_boxes": 5,
       "near_solved_normal_boxes": 1,
-      "geometry_reference": 71,
+      "geometry_reference": 228,
       "mixing_recipe": "generator_scramble",
       "mechanics": [
         "single",
-        "secret",
-        "ice",
         "group_door"
       ],
-      "road_sha256": "3e7b5852b37d6f3586fff8727d76b27ec39b8211d69fa27a01b4cda59ca02783",
-      "reference_clicks": 26
+      "road_sha256": "ed7da8f80d8fdd8a17d664ba708ca29b09ddb13d5c0c9a88e00f8c4e018dc652",
+      "reference_clicks": 15
     },
     {
       "level": 70,
@@ -1229,7 +1218,7 @@
         "surprise"
       ],
       "road_sha256": "934b4c3a6971a2daf3caf2a030ac42d43ee9a4ba5ca6780dcccde95b16a74fdf",
-      "reference_clicks": 38
+      "reference_clicks": 36
     }
   ]
 }

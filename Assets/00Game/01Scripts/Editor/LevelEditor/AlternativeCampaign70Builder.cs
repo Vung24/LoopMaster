@@ -31,71 +31,71 @@ public static class AlternativeCampaign70Builder
 2,2,2,3,0,0,0,0,0,0,0,0,0,0,0,0,4,0
 3,4,3,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
 4,5,4,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0
-5,6,5,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
-6,7,6,0,0,0,15,0,0,0,0,0,0,0,0,0,6,0
-7,8,8,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-8,7,7,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-9,9,8,0,0,0,30,0,0,0,0,0,0,0,0,0,7,0
-10,7,7,1,0,0,10,0,0,0,0,0,0,0,0,1,4,2
-11,8,8,3,0,0,25,0,0,0,0,0,0,0,0,0,5,0
-12,8,7,3,0,0,25,0,0,0,0,0,0,0,0,0,6,0
-13,10,10,5,0,0,30,0,0,0,0,0,0,0,0,0,6,1
-14,9,8,5,0,0,30,0,0,0,0,0,0,0,0,0,6,0
-15,8,7,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0
-16,9,8,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0
-17,8,7,5,0,0,30,0,0,0,0,0,0,1,0,0,6,0
-18,10,9,4,0,0,35,0,0,0,0,0,0,0,0,0,6,0
-19,9,8,6,0,0,30,0,0,0,0,0,0,0,0,0,6,0
-20,12,11,4,0,0,40,0,0,0,0,0,0,1,0,1,4,0
-21,8,8,5,0,0,30,0,0,0,0,0,0,0,0,0,6,0
-22,10,9,6,0,0,35,0,0,0,0,0,0,0,0,0,6,0
-23,8,7,0,0,0,0,1,0,0,0,0,0,0,0,0,6,0
-24,9,9,5,0,0,35,2,0,0,0,0,0,0,0,0,6,0
+5,5,4,1,0,0,0,0,0,0,0,0,0,0,0,0,5,0
+6,5,4,0,0,0,15,0,0,0,0,0,0,0,0,0,6,0
+7,6,5,0,0,0,20,0,0,0,0,0,0,0,0,0,6,0
+8,6,5,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+9,7,6,0,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+10,6,6,1,0,0,15,0,0,0,0,0,0,0,0,1,4,2
+11,6,4,3,0,0,0,0,0,0,0,0,0,0,0,0,7,0
+12,7,6,3,0,0,20,0,0,0,0,0,0,0,0,0,6,0
+13,7,6,5,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+14,8,7,5,0,0,25,0,0,0,0,0,0,0,0,0,6,0
+15,6,4,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0
+16,7,5,0,0,0,0,0,0,0,0,0,0,1,0,0,7,0
+17,7,5,5,0,0,15,0,0,0,0,0,0,1,0,0,7,0
+18,8,6,4,0,0,20,0,0,0,0,0,0,0,0,0,7,0
+19,8,6,6,0,0,25,0,0,0,0,0,0,0,0,0,7,0
+20,9,7,4,0,0,40,0,0,0,0,0,0,1,0,1,4,0
+21,6,4,5,0,0,0,0,0,0,0,0,0,1,0,0,7,0
+22,7,5,6,0,0,0,0,0,0,0,0,0,1,0,0,7,0
+23,6,4,0,0,0,0,1,0,0,0,0,0,0,0,0,7,0
+24,7,5,5,0,0,20,1,0,0,0,0,0,0,0,0,7,0
 25,10,10,1,0,0,40,2,0,0,0,0,0,1,0,1,4,1
-26,8,8,0,0,0,30,2,0,0,0,0,0,0,0,0,5,1
+26,6,4,0,0,0,0,1,0,0,0,0,0,0,0,0,7,0
 27,10,9,4,0,0,35,2,0,0,0,0,0,0,0,0,6,0
 28,9,8,0,0,0,20,0,0,0,0,0,0,0,0,0,7,0
-29,8,7,1,0,0,0,0,1,0,0,0,0,0,0,0,6,0
+29,6,4,1,0,0,0,0,1,0,0,0,0,0,0,0,7,0
 30,10,10,1,0,0,30,0,2,0,0,0,0,0,0,1,4,1
-31,9,9,5,0,0,35,1,1,0,0,0,0,0,0,0,5,1
+31,7,5,5,0,0,0,0,1,0,0,0,0,0,0,0,7,0
 32,10,9,3,0,0,35,1,2,0,0,0,0,0,0,0,6,0
 33,9,8,0,0,0,35,0,2,0,0,0,0,1,0,0,6,0
 34,10,10,0,0,0,40,2,1,0,0,0,0,0,0,0,6,1
 35,12,11,2,0,0,50,2,1,0,0,0,0,0,0,1,4,0
-36,8,6,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0
-37,9,8,0,0,0,0,0,0,2,2,0,0,0,0,0,6,0
-38,10,10,1,0,0,30,0,0,2,4,0,0,0,0,0,6,1
+36,6,4,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0
+37,6,4,0,0,0,0,0,0,1,2,0,0,0,0,0,7,0
+38,8,6,1,0,0,15,0,0,2,2,0,0,0,0,0,7,0
 39,9,8,5,0,0,35,1,0,2,2,0,0,0,0,0,6,0
 40,10,9,0,0,0,45,1,0,3,2,0,0,1,0,1,4,0
-41,10,7,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
-42,10,5,0,0,4,30,0,0,0,0,0,0,0,0,0,7,0
-43,12,10,4,0,2,40,2,0,0,0,0,0,0,0,0,7,1
+41,7,3,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
+42,8,5,0,0,2,15,0,0,0,0,0,0,0,0,0,7,0
+43,10,7,4,0,2,25,1,0,0,0,0,0,0,0,0,7,0
 44,10,7,0,0,2,40,0,0,3,2,0,0,0,0,0,6,0
 45,12,9,6,0,2,50,1,0,3,2,0,0,1,0,1,4,0
-46,9,7,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0
+46,6,4,5,0,0,0,0,0,0,0,0,0,1,0,0,7,0
 47,10,10,0,0,0,40,0,2,2,2,0,0,0,0,0,6,1
 48,12,9,0,0,2,40,1,0,0,0,0,0,0,0,0,7,0
-49,9,8,1,1,0,0,0,0,0,0,0,0,0,0,0,6,0
-50,10,9,1,1,0,30,0,0,0,0,0,0,0,0,0,6,0
+49,6,4,1,1,0,0,0,0,0,0,0,0,0,0,0,7,0
+50,8,6,1,1,0,15,0,0,0,0,0,0,0,0,0,7,0
 51,9,9,1,0,0,40,1,0,2,2,0,0,0,0,0,6,1
 52,10,10,5,0,0,40,2,0,2,2,0,0,1,0,0,6,1
-53,10,9,0,0,0,0,0,0,0,0,1,2,0,0,0,6,0
-54,12,12,0,0,0,35,0,0,2,2,1,3,0,0,0,7,1
+53,6,4,0,0,0,0,0,0,0,0,1,2,0,0,0,7,0
+54,8,6,0,0,0,15,0,0,0,0,1,2,0,0,0,7,0
 55,10,10,4,0,0,45,1,0,2,2,1,2,0,0,1,4,1
-56,9,9,0,0,0,0,0,0,0,0,0,0,0,1,0,6,0
-57,10,10,0,0,0,35,1,0,0,0,0,0,0,2,0,6,1
+56,6,4,0,0,0,0,0,0,0,0,0,0,0,1,0,7,0
+57,8,6,0,0,0,15,0,0,0,0,0,0,0,1,0,7,0
 58,12,10,5,1,0,40,0,0,2,2,0,0,0,1,0,7,0
 59,12,11,0,0,0,45,1,0,0,0,1,2,1,0,0,7,0
 60,12,11,2,0,0,50,1,0,0,0,1,2,0,1,1,4,0
-61,12,10,4,1,0,45,1,0,2,2,0,0,0,0,1,4,0
+61,8,5,4,1,0,0,0,0,1,2,0,0,0,0,0,7,0
 62,12,11,0,0,0,50,0,0,2,2,2,2,0,1,1,4,0
-63,12,9,0,0,2,55,2,0,2,2,0,0,0,0,1,4,0
+63,8,4,0,0,2,0,0,0,0,0,0,0,0,0,0,7,0
 64,12,11,1,0,0,50,1,1,2,2,0,0,1,0,1,4,0
-65,12,10,0,1,0,50,2,0,2,2,0,0,0,0,1,4,0
+65,8,5,0,1,0,0,1,0,0,0,0,0,0,0,0,7,0
 66,12,11,6,0,0,55,1,0,2,2,1,2,0,0,1,4,0
-67,12,11,0,0,0,50,0,1,3,2,0,0,0,2,1,4,0
+67,8,6,0,0,0,0,0,0,0,0,0,0,0,1,0,7,0
 68,13,12,1,0,0,60,1,1,2,2,0,0,1,1,2,4,0
-69,12,9,5,2,0,50,0,0,2,2,1,2,0,0,1,4,0
+69,8,5,5,1,0,0,0,0,0,0,1,2,0,0,0,7,0
 70,13,10,2,1,2,60,1,1,2,2,1,2,1,1,2,4,0";
 
     public sealed class Profile
@@ -190,6 +190,7 @@ public static class AlternativeCampaign70Builder
         if (profile.Ice > 0) mechanics.Add("ice");
         if (profile.Groups > 0) mechanics.Add("group_door");
         if (profile.Pair > 0) mechanics.Add("linked_pair");
+        if (profile.Pair > 0 && CampaignSecretLayout.UsesLinkedSecrets(profile.Level)) mechanics.Add("linked_secret");
         if (profile.Surprise > 0) mechanics.Add("surprise");
         return mechanics;
     }
@@ -322,8 +323,10 @@ public static class AlternativeCampaign70Builder
                 if (!Replay(json, clicks, out peak)) { lastError = "Final JSON replay failed"; continue; }
                 if (p.Level >= 5 && clicks.Count < MinimumReferenceClicks(p))
                 { lastError = "Reference solution is too short for this challenge profile"; continue; }
-                if (p.Level == 10 && (clicks.Count < 14 || clicks.Count > 18))
-                { lastError = "First Hard level requires a reference solution of 14-18 clicks"; continue; }
+                if (p.Level == 10 && (clicks.Count < 12 || clicks.Count > 16))
+                { lastError = "First Hard level requires a reference solution of 12-16 clicks"; continue; }
+                if (CampaignLearningCurve.IsGentle(level) && clicks.Count > p.Boxes * 2)
+                { lastError = "Introduction or recovery reference solution is too long"; continue; }
                 List<string> warnings;
                 List<string> errors = A.Validate(root, out warnings);
                 if (errors.Count != 0) { lastError = string.Join("\n", errors); continue; }
@@ -341,7 +344,8 @@ public static class AlternativeCampaign70Builder
             }
             if (!accepted)
             {
-                File.WriteAllText(ReportPath(level), new JObject { ["level"]=level, ["simulation_replay"]="unverified", ["error"]=lastError }.ToString(Formatting.Indented));
+                if (savedReport == null)
+                    File.WriteAllText(ReportPath(level), new JObject { ["level"]=level, ["simulation_replay"]="unverified", ["error"]=lastError }.ToString(Formatting.Indented));
                 throw new InvalidOperationException("Level " + level + " not exported: " + lastError);
             }
             yield return null;
@@ -603,27 +607,7 @@ public static class AlternativeCampaign70Builder
             }
         }
         if (ice != p.Ice) throw new FormatException("Not enough eligible ice cubes.");
-        ApplySecrets(boxes,p,seed);
-    }
-
-    private static void ApplySecrets(JArray boxes, Profile p, int seed)
-    {
-        var random = new System.Random(seed);
-        var eligible = new List<JObject>();
-        foreach (JObject box in boxes)
-        {
-            JArray cubes = A.Array(box,"Cubes");
-            foreach (JObject cube in cubes) cube["IsSecret"]=0;
-            for (int c=0; c<cubes.Count-1; c++)
-            {
-                JObject cube=(JObject)cubes[c];
-                if (A.Int(cube,"GroupKeyId")==0 && A.Int(cube,"LinkedPairId")==0) eligible.Add(cube);
-            }
-        }
-        int hidden = (int)Math.Round(eligible.Count*p.Secrets/100.0, MidpointRounding.AwayFromZero);
-        for (int i=eligible.Count-1; i>0; i--) { int j=random.Next(i+1); JObject old=eligible[i]; eligible[i]=eligible[j]; eligible[j]=old; }
-        for (int i=0; i<hidden; i++) eligible[i]["IsSecret"]=1;
-        if (p.Secrets>0 && hidden==0) throw new FormatException("No hidden cubes generated.");
+        CampaignSecretLayout.Apply(boxes, p.Level, p.Secrets, seed);
     }
 
     private static void NormalizeSpecialBoxes(JArray boxes, Profile profile)
@@ -889,7 +873,7 @@ public static class AlternativeCampaign70Builder
     internal static int MinimumReferenceClicks(Profile profile)
     {
         if (profile.Level < 5) return 1;
-        if (profile.Level == 10) return 14;
+        if (profile.Level == 10) return 12;
         if (profile.Hard == 0) return profile.Boxes;
         float multiplier = 1.7f;
         if (profile.Level >= 40) multiplier = 1.9f;
@@ -955,8 +939,35 @@ public static class AlternativeCampaign70Builder
 
     internal static string LearningObjective(int level)
     {
+        switch (level)
+        {
+            case 6: return "Làm quen hidden: ít màu, một lớp ẩn và màu gợi ý rõ";
+            case 10: return "Thử thách ngắn: đọc lớp màu và mở secret";
+            case 15: return "Làm quen linked thường trên board nhỏ và đường rộng";
+            case 17: return "Luyện linked thường và hidden riêng lẻ, chưa có linked hidden";
+            case 21: return "Nghỉ sau Hard 20: làm quen linked hidden một đầu";
+            case 22: return "Luyện linked hidden hai đầu trên board nhỏ";
+            case 23: return "Làm quen một khóa màu, không chồng thêm mechanic";
+            case 29: return "Làm quen một khóa kề trên board nhỏ";
+            case 33: return "Linked secret kết hợp khóa kề: chọn thứ tự mở đường";
+            case 37: return "Làm quen một khối ice với bộ đếm nhỏ";
+            case 41: return "Nghỉ sau Hard 40: làm quen box dài, ít màu và không thêm khóa";
+            case 46: return "Nghỉ sau Hard 45: linked hidden một đầu trên board nhỏ";
+            case 49: return "Làm quen một box đơn, ít màu và đường rộng";
+            case 52: return "Linked secret một đầu kết hợp ice và khóa màu";
+            case 53: return "Làm quen một cửa nhóm hai box và một chìa khóa";
+            case 56: return "Nghỉ sau Hard 55: làm quen một màu surprise";
+            case 59: return "Linked secret kết hợp cửa nhóm và khóa màu";
+        }
+        if (CampaignLearningCurve.IsRecovery(level))
+            return "Nhịp nghỉ sau màn khó: board nhỏ, đường rộng, ít mechanic phối hợp";
         string spec=Path.Combine(ProjectRoot,"docs/superpowers/specs/2026-10-19-70-level-alternative-campaign-design.md");
-        if(!File.Exists(spec)) throw new FileNotFoundException("Campaign design is required for the learning objectives.",spec);
+        if(!File.Exists(spec))
+        {
+            // Published reports retain the objective when the original design is archived.
+            JObject report = JObject.Parse(File.ReadAllText(ReportPath(level)));
+            return report.Value<string>("learning_objective");
+        }
         string prefix="| **"+level+"** |";
         foreach(string line in File.ReadLines(spec))
             if(line.StartsWith(prefix,StringComparison.Ordinal)) return line.Split('|')[2].Replace("**","").Trim();

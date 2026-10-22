@@ -15,7 +15,8 @@ public static class AlternativeCampaign70Geometry
     public static void Apply(JObject layout, AlternativeCampaign70Builder.Profile profile, int seed, string projectRoot)
     {
         profile.GeometryReference = 0;
-        if (profile.Level <= 4) return;
+        // Small teaching boards fit the generator's simple spacing directly.
+        if (profile.Level <= 4 || profile.Boxes <= 7) return;
         if (profile.Longs > 0)
         {
             // Long footprints need dedicated space; enclosing circles waste most of it.

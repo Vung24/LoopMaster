@@ -78,8 +78,6 @@ internal sealed class RoadMotion
 			_head = (_head + 1) % Capacity;
 			_count--;
 		}
-		// No credit is banked after the last permitted segment. The scheduler supplies
-		// the next issue time, so render boundaries cannot be mistaken for blocked time.
 		return true;
 	}
 
@@ -98,8 +96,6 @@ internal sealed class RoadMotion
 			remaining += _segments[(_head + i) % Capacity].Duration;
 		if (remaining <= MaxQueuedDuration) return;
 
-		// Only older debt is accelerated; the newest segment keeps its cadence.
-		// Scaling elapsed as well preserves the current pose at the handoff.
 		float scale = MaxQueuedDuration / remaining;
 		for (int i = 0; i < _count - 1; i++)
 		{
