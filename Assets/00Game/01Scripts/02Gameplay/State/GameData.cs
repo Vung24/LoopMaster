@@ -597,15 +597,15 @@ public class GameData
 	public static int GetSliceCapacityByType(int type) =>
 		(CubeData.IsLongBoxColor(type) ? LongBoxCubeCapacity : NormalCubeCapacity) * SliceCountPerGroup;
 
-	public bool HasSecretCube() => Boxes.Any(box => box.CubeInfos.Any(cube => cube.IsSecret));
-	public bool HasColorLock() => Boxes.Any(box => box.LockColor > 0);
-	public bool HasLimitedColor() => Boxes.Any(box => box.LimitedColor > 0);
-	public bool HasSingleTypeBox() => Boxes.Any(box => box.BoxType == BoxType.Single);
-	public bool HasLongTypeBox() => Boxes.Any(box => box.BoxType == BoxType.Long);
-	public bool HasGroupColorLock() => Groups.Any(group => group.IsLocked);
-	public bool HasAdjacentLock() => Boxes.Any(box => box.IsAdjacentLocked);
-	public bool HasEnterOnlyBox() => Boxes.Any(box => box.IsEnterOnly);
-	public bool HasCubeNumLock() => Boxes.Any(box => box.CubeInfos.Any(cube => cube.NumLock > 0));
-	public bool HasSurpriseCube() => Boxes.Any(box => box.HasSurpriseCube());
-	public bool HasNumLockBox() => Boxes.Any(box => box.NumLock > 0);
+	// public bool HasSecretCube() => Boxes.Any(box => box.CubeInfos.Any(cube => cube.IsSecret));
+	// public bool HasColorLock() => Boxes.Any(box => box.LockColor > 0);
+	// public bool HasLimitedColor() => Boxes.Any(box => box.LimitedColor > 0);
+	// public bool HasSingleTypeBox() => Boxes.Any(box => box.BoxType == BoxType.Single);
+	// public bool HasLongTypeBox() => Boxes.Any(box => box.BoxType == BoxType.Long);
+	// public bool HasGroupColorLock() => Groups.Any(group => group.IsLocked);
+	// public bool HasAdjacentLock() => Boxes.Any(box => box.IsAdjacentLocked);
+	// public bool HasEnterOnlyBox() => Boxes.Any(box => box.IsEnterOnly);
+	// public bool HasCubeNumLock() => Boxes.Any(box => box.CubeInfos.Any(cube => cube.NumLock > 0));
+	// public bool HasSurpriseCube() => Boxes.Any(box => box.HasSurpriseCube());
+	// public bool HasNumLockBox() => Boxes.Any(box => box.NumLock > 0);
 }

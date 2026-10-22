@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Snui;
 using Spine.Unity;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -31,7 +32,7 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     private bool _busy;
     private int _dialogVersion;
     private CancellationTokenSource _dialogLoad;
-    private readonly System.Collections.Generic.List<Material> _ownedMaterials = new System.Collections.Generic.List<Material>();
+    private readonly List<Material> _ownedMaterials = new List<Material>();
     public bool HasDialogOpen => _busy || _rewards!=null || _progress!=null;
     public bool HasAuthoredLayout => _machineSpine!=null && _button!=null;
     private static readonly float[] FastMask={40,80,126,170,210};
