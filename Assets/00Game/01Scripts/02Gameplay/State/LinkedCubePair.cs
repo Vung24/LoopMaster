@@ -49,43 +49,32 @@ public sealed class LinkedCubePair
 	public static void Validate(Puzzle puzzle)
 	{
 		if (puzzle == null || puzzle.Boxes == null) return;
-		int pairId = 0, firstBox = -1, secondBox = -1, memberCount = 0;
+		var firstMembers = new Dictionary<int, int>();
+		var completed = new HashSet<int>();
 		for (int b = 0; b < puzzle.Boxes.Count; b++)
 		{
 			BoxData box = puzzle.Boxes[b];
 			if (box == null || box.Cubes == null) continue;
+			bool hasMember = false;
 			foreach (CubeData cube in box.Cubes)
 			{
 				if (cube == null) continue;
 				if (cube.LinkedPairId < 0) throw Invalid("negative pair ID", b);
 				if (cube.LinkedPairId == 0) continue;
-				if (pairId != 0 && pairId != cube.LinkedPairId) throw Invalid("prototype supports one pair", b);
-				if (memberCount > 0 && b == firstBox) throw Invalid("members must be in different boxes", b);
+				if (hasMember) throw Invalid("a box may belong to only one pair", b);
+				if (completed.Contains(cube.LinkedPairId)) throw Invalid("each pair needs exactly two members", b);
+				if (box.BoxType != BoxType.Normal) throw Invalid("linked cubes must be in normal boxes", b);
 				if (cube.GroupKeyId != 0 || cube.NumLock != 0 || cube.IsFixed != 0)
 					throw Invalid("unsupported linked member", b);
 				if (cube.Type <= 0 || cube.Type > 14)
 					throw Invalid("unsupported linked member color", b);
-				pairId = cube.LinkedPairId;
-				if (memberCount == 0) firstBox = b;
-				else secondBox = b;
-				memberCount++;
+				hasMember = true;
+				if (firstMembers.ContainsKey(cube.LinkedPairId)) completed.Add(cube.LinkedPairId);
+				else firstMembers.Add(cube.LinkedPairId, b);
 			}
 		}
-		if (memberCount == 0) return;
-		if (memberCount != 2) throw Invalid("each pair needs exactly two members", firstBox);
-
-		if (firstBox >= 0 && firstBox < puzzle.Boxes.Count)
-		{
-			BoxData bA = puzzle.Boxes[firstBox];
-			if (bA == null || bA.BoxType != BoxType.Normal)
-				throw Invalid("linked cubes must be in normal boxes", firstBox);
-		}
-		if (secondBox >= 0 && secondBox < puzzle.Boxes.Count)
-		{
-			BoxData bB = puzzle.Boxes[secondBox];
-			if (bB == null || bB.BoxType != BoxType.Normal)
-				throw Invalid("linked cubes must be in normal boxes", secondBox);
-		}
+		foreach (KeyValuePair<int, int> member in firstMembers)
+			if (!completed.Contains(member.Key)) throw Invalid("each pair needs exactly two members", member.Value);
 	}
 
 	private static InvalidOperationException Invalid(string reason, int boxIndex)

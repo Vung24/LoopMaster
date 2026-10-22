@@ -16,6 +16,7 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private MaterialPropertyBlock _properties;
 	private GameData _data;
 	private LinkedCubePair _pair;
+	public LinkedCubePair Pair => _pair;
 	private Transform _bridge, _firstSocket, _secondSocket;
 	private Vector3 _firstAnchor, _secondAnchor;
 	private Vector3 _firstElbow, _secondElbow;
@@ -30,8 +31,18 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	/// <summary>Creates a two-color cable with side exits and a straight middle span.</summary>
 	public void Initialize(GameData data)
 	{
+		if (data == null) throw new ArgumentNullException(nameof(data));
+		Initialize(data, data.LinkedPair);
+	}
+
+	/// <summary>Binds this cable to one independent pair on the current board.</summary>
+	public void Initialize(GameData data, LinkedCubePair pair)
+	{
+		if (data == null) throw new ArgumentNullException(nameof(data));
+		if (pair != null && !data.ContainsLinkedPair(pair))
+			throw new InvalidOperationException("The cable pair must belong to the initialized board.");
 		_data = data;
-		_pair = data.LinkedPair;
+		_pair = pair;
 		if (_pair == null) { enabled = false; return; }
 		if (_bridgeMesh == null || _jointMesh == null || _bridgeMaterial == null)
 			throw new InvalidOperationException("Assign the cylinder mesh, joint mesh and material on LinkedCubeCable.prefab.");

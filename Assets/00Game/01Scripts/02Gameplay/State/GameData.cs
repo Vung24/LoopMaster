@@ -46,7 +46,12 @@ public class GameData
 	public int DifferentColorSliceSpacing = 2;
 	public List<int> LimitedColor;
 	public int OnJumpingCube;
-	public LinkedCubePair LinkedPair { get; private set; }
+	private List<LinkedCubePair> _linkedPairs = new List<LinkedCubePair>();
+	/// <summary>All authored pairs, each with independent launch and Undo state.</summary>
+	public IReadOnlyList<LinkedCubePair> LinkedPairs => _linkedPairs;
+	/// <summary>First pair for legacy consumers; use the source box's pair for gameplay commands.</summary>
+	public LinkedCubePair LinkedPair => _linkedPairs.Count == 0 ? null : _linkedPairs[0];
+	internal bool ContainsLinkedPair(LinkedCubePair pair) => _linkedPairs.Contains(pair);
 	public LinkedCubeLaunch ActiveLinkedLaunch { get; internal set; }
 	public bool IsPathCircle, IsNearOver;
 
@@ -79,7 +84,7 @@ public class GameData
 		copy._noSolutionCounts = new Dictionary<int, int>();
 		copy.UndoData = new UndoData();
 		copy.ActiveLinkedLaunch = null;
-		copy.LinkedPair = null;
+		copy._linkedPairs = new List<LinkedCubePair>(_linkedPairs.Count);
 		copy.LimitedColor = new List<int>(LimitedColor);
 		copy.Groups = Groups.Select(group => new GroupInfo(new GroupData(
 			group.Id, group.BoxIndexes, group.LockedByColor)) { IsLocked = group.IsLocked }).ToList();
@@ -98,10 +103,10 @@ public class GameData
 			};
 			copy.Boxes.Add(cloned);
 		}
-		if (LinkedPair != null)
-			copy.LinkedPair = new LinkedCubePair(LinkedPair.Id,
-				copy.Boxes[LinkedPair.FirstBoxIndex], LinkedPair.FirstBoxIndex,
-				copy.Boxes[LinkedPair.SecondBoxIndex], LinkedPair.SecondBoxIndex, LinkedPair.State);
+		foreach (LinkedCubePair pair in _linkedPairs)
+			copy._linkedPairs.Add(new LinkedCubePair(pair.Id,
+				copy.Boxes[pair.FirstBoxIndex], pair.FirstBoxIndex,
+				copy.Boxes[pair.SecondBoxIndex], pair.SecondBoxIndex, pair.State));
 		copy.TransferSlice = TransferSlice.Select(slice => new SliceInfo(slice.Type,
 			slice.SourceBox == null ? null : copy.Boxes[Boxes.IndexOf(slice.SourceBox)])
 		{
@@ -164,27 +169,35 @@ public class GameData
 	internal void InitializeLinkedCubes()
 	{
 		if (ActiveLinkedLaunch != null) throw new InvalidOperationException("Cannot rebuild linked cubes during launch.");
-		LinkedPair = null;
-		BoxInfo firstBox = null, secondBox = null;
-		int firstIndex = -1, secondIndex = -1, id = 0, count = 0;
+		_linkedPairs.Clear();
+		var firstMembers = new Dictionary<int, int>();
+		var completed = new HashSet<int>();
+		foreach (BoxInfo box in Boxes) box.LinkedPair = null;
 		for (int b = 0; b < Boxes.Count; b++)
 		{
 			BoxInfo box = Boxes[b];
-			box.LinkedPair = null;
+			bool hasMember = false;
 			foreach (CubeInfo cube in box.CubeInfos)
 			{
 				if (cube.LinkedPairId == 0) continue;
-				if (cube.LinkedPairId < 0 || id != 0 && id != cube.LinkedPairId || count >= 2)
+				int id = cube.LinkedPairId;
+				if (id < 0 || hasMember || completed.Contains(id))
 					throw new InvalidOperationException("Invalid linked cube IDs in runtime board.");
-				id = cube.LinkedPairId;
-				if (count++ == 0) { firstBox = box; firstIndex = b; }
-				else { secondBox = box; secondIndex = b; }
+				hasMember = true;
+				if (!firstMembers.TryGetValue(id, out int firstIndex))
+				{
+					firstMembers.Add(id, b);
+					continue;
+				}
+				BoxInfo firstBox = Boxes[firstIndex];
+				if (firstBox.PathIndex == box.PathIndex)
+					throw new InvalidOperationException("Linked cubes require distinct path entries.");
+				_linkedPairs.Add(new LinkedCubePair(id, firstBox, firstIndex, box, b));
+				completed.Add(id);
 			}
 		}
-		if (count == 0) return;
-		if (count != 2 || firstBox == secondBox || firstBox.PathIndex == secondBox.PathIndex)
-			throw new InvalidOperationException("Linked cubes require two boxes with distinct path entries.");
-		LinkedPair = new LinkedCubePair(id, firstBox, firstIndex, secondBox, secondIndex);
+		if (firstMembers.Count != completed.Count)
+			throw new InvalidOperationException("Every linked pair requires two members.");
 	}
 
 	private void InitGroupColorLocks()

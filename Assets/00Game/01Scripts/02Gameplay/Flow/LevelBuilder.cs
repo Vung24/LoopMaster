@@ -49,7 +49,14 @@ public sealed class LevelBuilder
 
 	public LinkedCubeCable SpawnLinkedCable(GameData data, Transform gameRoot)
 	{
-		if (data == null || data.LinkedPair == null || gameRoot == null || _gameLoader == null)
+		if (data == null) return null;
+		return SpawnLinkedCable(data, data.LinkedPair, gameRoot);
+	}
+
+	/// <summary>Builds the cable visual for a specific pair without changing gameplay state.</summary>
+	public LinkedCubeCable SpawnLinkedCable(GameData data, LinkedCubePair pair, Transform gameRoot)
+	{
+		if (data == null || pair == null || gameRoot == null || _gameLoader == null)
 			return null;
 
 		GameObject cablePrefab = _gameLoader.LinkedCubeCable;
@@ -61,7 +68,7 @@ public sealed class LevelBuilder
 		if (linkedCable == null)
 			throw new System.InvalidOperationException("LinkedCubeCable prefab requires its visual component.");
 
-		linkedCable.Initialize(data);
+		linkedCable.Initialize(data, pair);
 		return linkedCable;
 	}
 }

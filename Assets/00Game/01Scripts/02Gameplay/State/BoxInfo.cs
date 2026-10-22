@@ -19,7 +19,7 @@ public class BoxInfo
 	public bool IsLastUnlockSecret;
 	public GroupInfo GroupInfo;
 	public BoxType BoxType;
-	internal LinkedCubePair LinkedPair;
+	public LinkedCubePair LinkedPair { get; internal set; }
 
 	public bool HasUnconsumedLinkedCube => LinkedPair != null && LinkedPair.State != LinkedCubePairState.Consumed;
 

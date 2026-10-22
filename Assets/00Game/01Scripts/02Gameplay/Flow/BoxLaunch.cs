@@ -7,7 +7,7 @@ public sealed class BoxLaunch
 	private readonly Action<Box> _tryUseShuffle;
 	private readonly Action _hideShuffleSelection;
 	private readonly Func<GameData> _getData;
-	private readonly Func<LinkedCubeCable> _getLinkedCable;
+	private readonly Func<BoxInfo, LinkedCubeCable> _getLinkedCable;
 	private readonly Func<bool> _isGameplaySettled;
 	private readonly Func<SliceTransferFlow> _getTransfers;
 	private readonly Func<BoxInfo, Box> _getBox;
@@ -22,7 +22,7 @@ public sealed class BoxLaunch
 		Action<Box> tryUseShuffle,
 		Action hideShuffleSelection,
 		Func<GameData> getData,
-		Func<LinkedCubeCable> getLinkedCable,
+		Func<BoxInfo, LinkedCubeCable> getLinkedCable,
 		Func<bool> isGameplaySettled,
 		Func<SliceTransferFlow> getTransfers,
 		Func<BoxInfo, Box> getBox,
@@ -121,10 +121,10 @@ public sealed class BoxLaunch
 		if (!transfers.TryLaunchLinked(box, duration, height, out LinkedCubeLaunchFailure failure))
 		{
 			box.PlayClickedAnim(false);
-			LinkedCubeCable cable = _getLinkedCable?.Invoke();
+			LinkedCubeCable cable = _getLinkedCable?.Invoke(box.Info);
 			if (cable != null) cable.ShowBlocked(failure);
 
-			LinkedCubePair pair = data.LinkedPair;
+			LinkedCubePair pair = box.Info.LinkedPair;
 			if (pair != null && _getBox != null)
 			{
 				Box partner = _getBox(box.Info == pair.FirstBox ? pair.SecondBox : pair.FirstBox);
@@ -138,7 +138,7 @@ public sealed class BoxLaunch
 	private void RejectBoxClick(Box box, LinkedCubeLaunchFailure failure, string toastMessage)
 	{
 		box.PlayClickedAnim(false);
-		LinkedCubeCable cable = _getLinkedCable?.Invoke();
+		LinkedCubeCable cable = _getLinkedCable?.Invoke(box.Info);
 		if (cable != null) cable.ShowBlocked(failure);
 		_showToast?.Invoke(toastMessage);
 	}

@@ -87,6 +87,24 @@ public class Box : MonoBehaviour
 		CreateCube();
 		CubeInfo top = _info.PeekTopCube();
 		if (top != null && top.LinkedPairId > 0 && top.IsSecret) CheckHiddenSecret();
+		PlayEntranceAnimation(_routineVersion).Forget();
+	}
+
+	private async UniTask PlayEntranceAnimation(int version)
+	{
+		if (_info == null || _info.BoxType == BoxType.Single) return;
+		// Build all cube references immediately; delay only their entrance presentation.
+		while (LoadingPanel.Current != null)
+		{
+			if (!await WaitForRoutine(0.02f, version)) return;
+		}
+		if (!await WaitForRoutine(0.1f, version)) return;
+		for (int i = 0; i < Cubes.Count; i++)
+		{
+			Cube cube = Cubes[i];
+			if (cube != null) cube.PlayAnim("Skeleton|cube_entrance");
+			if (!await WaitForRoutine(0.02f, version)) return;
+		}
 	}
 
 	private void InitSpecial()
@@ -282,6 +300,8 @@ public class Box : MonoBehaviour
 	public void RefreshAfterUndo(bool restoredToSource, int restoredType, float restoreDelay)
 	{
 		if (_info == null) return;
+		CubeInfo topInfo = _info.PeekTopCube();
+		Cube topCube = topInfo != null ? topInfo.CubeSc : null;
 		for (int i = 0; i < Cubes.Count; i++)
 		{
 			Cube cube = Cubes[i];
@@ -293,9 +313,9 @@ public class Box : MonoBehaviour
 				i--;
 				cube.PlayDismissAnim();
 			}
-			else if (cube.Info.Size <= 0)
+			else if (!restoredToSource)
 				cube.PlayDescAnim(0.18f);
-			else if (restoredToSource && cube.Info.Type == restoredType)
+			else if (restoredToSource && cube == topCube && cube.Info.Type == restoredType)
 				cube.PlayAddAnim(restoreDelay, 0.18f);
 		}
 
@@ -585,7 +605,35 @@ public class Box : MonoBehaviour
 			new Vector3(0f, 0.8f, NormalCubeBaseZ + sizeOffset));
 	}
 
-	private Vector3 GetSlicePos(int index)
+	public int GetCurrentSliceVisualCount()
+	{
+		if (_info == null) return 0;
+		if (_info.BoxType == BoxType.Single)
+		{
+			CubeInfo top = _info.GetTopCube();
+			return top == null ? 0 : top.Size;
+		}
+		return _info.GetSliceCount();
+	}
+
+	public Vector3 GetUndoDepartureSlicePos(int sliceOffsetFromTop)
+	{
+		if (_info == null) return transform.position;
+		int total = GetCurrentSliceVisualCount();
+		int index = Mathf.Max(0, total - 1 - sliceOffsetFromTop);
+		return GetSlicePos(index);
+	}
+
+	public Vector3 GetUndoLandingSlicePos(int sliceIndex)
+	{
+		if (_info == null) return transform.position;
+		int index = _info.BoxType == BoxType.Single
+			? (sliceIndex % GameData.SliceCountPerGroup)
+			: sliceIndex;
+		return GetSlicePos(Mathf.Max(0, index));
+	}
+
+	public Vector3 GetSlicePos(int index)
 	{
 		Vector3 pos = GetBoxTargetPos(index, new Vector3(0f, 0.81f, -1.65f));
 		if (_info != null && _info.BoxType == BoxType.Single)

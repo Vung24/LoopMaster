@@ -47,7 +47,7 @@ public sealed class LinkedCubeLaunch
 		failure = LinkedCubeLaunchFailure.InvalidState;
 		if (data == null || source == null || !data.Boxes.Contains(source)) return false;
 		LinkedCubePair pair = source.LinkedPair;
-		if (pair == null || pair != data.LinkedPair || !pair.Contains(source)) return false;
+		if (pair == null || !data.ContainsLinkedPair(pair) || !pair.Contains(source)) return false;
 		failure = LinkedCubeLaunchFailure.Busy;
 		if (data.ActiveLinkedLaunch != null || data.OnJumpingCube != 0 || pair.State == LinkedCubePairState.Launching)
 			return false;

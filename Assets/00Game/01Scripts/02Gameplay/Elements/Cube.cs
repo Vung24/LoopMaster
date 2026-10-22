@@ -398,6 +398,7 @@ public class Cube : MonoBehaviour
 		}
 		_sizeAnimationVersion++;
 		_isSizeAnimating = false;
+		RefreshVisibility();
 	}
 
 	private bool IsCurrentSizeAnimation(int version) =>
@@ -408,9 +409,15 @@ public class Cube : MonoBehaviour
 	{
 		try
 		{
+			Transform root = CubeRootTransform;
+			bool hiddenForDelay = delay > 0f && transform.localScale.z <= 0.001f && root != null && root.gameObject.activeSelf;
+			if (hiddenForDelay) root.gameObject.SetActive(false);
+
 			if (delay > 0f)
 				await UniTask.WaitForSeconds(delay, delayTiming: PlayerLoopTiming.PreLateUpdate, cancellationToken: _token);
 			if (!IsCurrentSizeAnimation(version)) return;
+
+			if (hiddenForDelay && root != null) root.gameObject.SetActive(true);
 			Vector3 start = transform.localScale;
 			Vector3 startPosition = transform.position;
 			int index = shuffle && _box != null && _box.Info != null ? _box.Info.CubeInfos.IndexOf(_info) : 0;
@@ -436,7 +443,14 @@ public class Cube : MonoBehaviour
 			else if (checkEmpty) CheckEmpty();
 		}
 		catch (System.OperationCanceledException) { }
-		finally { if (version == _sizeAnimationVersion) _isSizeAnimating = false; }
+		finally
+		{
+			if (version == _sizeAnimationVersion)
+			{
+				_isSizeAnimating = false;
+				RefreshVisibility();
+			}
+		}
 	}
 
 	private void OnDisable()
