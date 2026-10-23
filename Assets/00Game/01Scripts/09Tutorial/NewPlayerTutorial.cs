@@ -60,6 +60,17 @@ public class NewPlayerTutorial : MonoBehaviour
 	private static void SetActive(Component node, bool active) { if (node != null) node.gameObject.SetActive(active); }
 	private void Track(Tween tween) { if (tween != null) _tweens.Add(tween.SetLink(gameObject)); }
 
+	public RectTransform FingerParentRect
+	{
+		get
+		{
+			if (_finger == null) _finger = GetComponentInChildren<Finger>(true);
+			Transform parent = _finger != null ? _finger.transform.parent : null;
+			RectTransform parentRect = parent != null ? parent as RectTransform : null;
+			return parentRect != null ? parentRect : (transform as RectTransform);
+		}
+	}
+
 	public void Initialize(int stage)
 	{
 		CancelAnimations();
