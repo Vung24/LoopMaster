@@ -116,9 +116,9 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool HasClaimedWinReward(GameData data) => _winRewards.HasClaimed(data);
 	public int GetWinRewardCoins(GameData data) => EndState == GameEndState.Won ? _winRewards.GetCoins(data) : 0;
 
-	public bool TryClaimWinReward(GameData data, bool doubled, out int coins)
+	public bool ClaimWinReward(GameData data, bool doubled, out int coins)
 	{
-		return _winRewards.TryClaim(data, doubled, IsTransitioningLevel, out coins);
+		return _winRewards.Claim(data, doubled, IsTransitioningLevel, out coins);
 	}
 	private ConveyorFlow _conveyorFlow;
 	private bool IsFailureConveyorActive => Time.timeScale > 0f && Data != null &&
@@ -156,7 +156,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private BoxLaunch BoxLaunchFlow => _boxLaunch ?? (_boxLaunch = new BoxLaunch(
 		() => IsGameplayActive,
 		() => IsSelectingShuffle,
-		box => Boosters.TryUseShuffle(box),
+		box => Boosters.UseShuffle(box),
 		HideShuffleSelection,
 		() => Data,
 		GetLinkedCable,
@@ -235,7 +235,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	private void OnLevelAdvanced(int level) => LevelAdvanced?.Invoke(level);
 	private void OnNextLevelUnavailable(int level) => NextLevelUnavailable?.Invoke(level);
 
-	bool IGameNavigationSession.TryStartLevel(GameData data)
+	bool IGameNavigationSession.StartLevel(GameData data)
 	{
 		Initialize(data);
 		return Data == data && EndState == GameEndState.Playing;
@@ -264,7 +264,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		{
 			ResolvePuzzleLoader();
 			if (GameProgressStore.IsCampaignComplete ||
-				!_puzzleLoader.TryCreateExactLevel(GameProgressStore.NextPlayableLevel, out GameData data))
+				!_puzzleLoader.CreateExactLevel(GameProgressStore.NextPlayableLevel, out GameData data))
 			{
 				Debug.LogWarning(GameProgressStore.IsCampaignComplete ? "All available levels complete." : "Next level data is missing.", this);
 				InitializationError = new System.InvalidOperationException("No playable level data is available.");
@@ -387,7 +387,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			GameplayFeedbackRules.AdvanceCombo(ref ComboInCount, ref _comboTime, delta);
 		}
 		Conveyor.Tick(delta, GetTickInterval(false), GetTickInterval(true));
-		if (IsGameplayActive && _input.TryGetClickedBox(_mainCamera, out Box box)) OnClickBox(box);
+		if (IsGameplayActive && _input.GetClickedBox(_mainCamera, out Box box)) OnClickBox(box);
 	}
 
 	private void ResolveGameplayCameras()
@@ -504,7 +504,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool UseToolPath()
 	{
-		if (!Boosters.TryUsePath()) return false;
+		if (!Boosters.UsePath()) return false;
 		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
 		if (canvas != null) canvas.PlayPathExtension();
 		return true;
@@ -522,7 +522,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool UseToolUndo()
 	{
-		return Boosters.TryUseUndo();
+		return Boosters.UseUndo();
 	}
 
 	public void OnClickToolShuffle()
@@ -537,7 +537,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	public bool UseToolShuffle()
 	{
-		if (!Boosters.TryUseShuffle()) return false;
+		if (!Boosters.UseShuffle()) return false;
 		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
 		ResolveGameplayCameras();
 		if (canvas != null && canvas.ShowShuffleSelection(_mainCamera, Scene.Boxes))
@@ -646,7 +646,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool LoadNextLevel()
 	{
 		if (IsEditorPlaytest) return false;
-		return Navigation.TryLoadNextLevel();
+		return Navigation.LoadNextLevel();
 	}
 
 	public bool ReplayLevel()
@@ -659,7 +659,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			InitializeEditorPlaytest(snapshot); return true;
 		}
 #endif
-		return Navigation.TryReplayLevel();
+		return Navigation.ReplayLevel();
 	}
 
 	public void CommitAbandonedLevel()
@@ -668,7 +668,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	}
 	public bool ReturnHome()
 	{
-		return Navigation.TryReturnHome();
+		return Navigation.ReturnHome();
 	}
 
 	public UniTask<bool> ReturnHomeAsync(bool withAnimation = true) => Navigation.ReturnHomeAsync(withAnimation);
@@ -683,7 +683,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool ContinueAfterWin()
 	{
 		if (IsEditorPlaytest) return ReplayLevel();
-		return Navigation.TryContinueAfterWin(HasClaimedWinReward(Data));
+		return Navigation.ContinueAfterWin(HasClaimedWinReward(Data));
 	}
 
 	public void OnClickReplayLevel()

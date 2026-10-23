@@ -42,7 +42,7 @@ public sealed class BoosterUnlockConfig : ScriptableObject
         return _current;
     }
 
-    public static bool TryGetInfo(string key, out BoosterUnlockInfo info)
+    public static bool GetInfo(string key, out BoosterUnlockInfo info)
     {
         BoosterUnlockInfo[] definitions = LoadConfig()._definitions;
         for (int i = 0; i < definitions.Length; i++)

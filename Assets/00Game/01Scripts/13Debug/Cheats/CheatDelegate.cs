@@ -40,7 +40,7 @@ public class CheatDelegate : MonoBehaviour
     public async UniTask TestBoosterUnlock(string key)
     {
         if (_loadingBoosterTest || GameSceneManager.OnChangeScene) return;
-        if (!BoosterUnlockConfig.TryGetInfo(key, out BoosterUnlockInfo info)) return;
+        if (!BoosterUnlockConfig.GetInfo(key, out BoosterUnlockInfo info)) return;
         BuiltinLevelCatalog catalog = BuiltinLevelCatalog.Current;
         if (catalog == null || !catalog.HasLevel(info.UnlockLevel))
         {

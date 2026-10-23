@@ -272,7 +272,7 @@ public sealed class SliceTransferFlow
 		return;
 	}
 
-	public bool TryLaunchLinked(Box source, float jumpDuration, float jumpHeight, out LinkedCubeLaunchFailure failure)
+	public bool LaunchLinked(Box source, float jumpDuration, float jumpHeight, out LinkedCubeLaunchFailure failure)
 	{
 		failure = LinkedCubeLaunchFailure.Busy;
 		if (!_isGameRunning() || _host == null || !_host.isActiveAndEnabled || _data == null || _launches.Count != 0)
@@ -288,7 +288,7 @@ public sealed class SliceTransferFlow
 		}
 		if (!first.CanPopupSlice() || !second.CanPopupSlice() ||
 			_isGroupUnlocking(first) || _isGroupUnlocking(second)) return false;
-		if (!LinkedCubeLaunch.TryBegin(_data, source.Info, out LinkedCubeLaunch launch, out failure)) return false;
+		if (!LinkedCubeLaunch.Begin(_data, source.Info, out LinkedCubeLaunch launch, out failure)) return false;
 		first.PlayClickedAnim(true);
 		second.PlayClickedAnim(true);
 		_linkedLifetime = CancellationTokenSource.CreateLinkedTokenSource(_hostToken);

@@ -36,8 +36,8 @@ public static class AdjacentLockRules
 		Vector3 lockRight;
 		Vector3 sourceForward;
 		Vector3 sourceRight;
-		if (!TryGetFlatAxes(lockRot, out lockForward, out lockRight) ||
-			!TryGetFlatAxes(sourceRot, out sourceForward, out sourceRight)) return false;
+		if (!GetFlatAxes(lockRot, out lockForward, out lockRight) ||
+			!GetFlatAxes(sourceRot, out sourceForward, out sourceRight)) return false;
 		if (Vector3.Dot(lockForward, sourceForward) < SameDirectionDotThreshold) return false;
 
 		Vector3 delta = FlattenXZ(sourcePos - lockPos);
@@ -47,7 +47,7 @@ public static class AdjacentLockRules
 			forwardDistance <= AdjacentPositionTolerance;
 	}
 
-	private static bool TryGetFlatAxes(Vector3 rotation, out Vector3 forward, out Vector3 right)
+	private static bool GetFlatAxes(Vector3 rotation, out Vector3 forward, out Vector3 right)
 	{
 		Quaternion quaternion = Quaternion.Euler(rotation);
 		forward = FlattenXZ(quaternion * Vector3.forward);

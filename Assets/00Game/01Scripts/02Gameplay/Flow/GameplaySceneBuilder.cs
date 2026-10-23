@@ -172,7 +172,7 @@ public sealed class GameplaySceneBuilder : IGroupLockScene
 		if (_capacityIndicator != null) _capacityIndicator.UpdateCapacity(used, maximum);
 	}
 
-	public bool TryGetGroupRollDoor(int groupId, out GroupRollDoor door) =>
+	public bool GetGroupRollDoor(int groupId, out GroupRollDoor door) =>
 		_groupRollDoors.TryGetValue(groupId, out door);
 
 	public void RemoveGroupRollDoor(int groupId, GroupRollDoor expectedDoor)

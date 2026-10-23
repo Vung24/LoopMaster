@@ -526,7 +526,7 @@ public class GameData
 		return null;
 	}
 
-	public bool TryUnlockGroupColorLock(int id)
+	public bool UnlockGroupColorLock(int id)
 	{
 		GroupInfo group = GetGroupInfo(id);
 		return group != null && group.Unlock();

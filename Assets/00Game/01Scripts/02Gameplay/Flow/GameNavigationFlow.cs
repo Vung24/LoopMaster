@@ -7,7 +7,7 @@ public interface IGameNavigationSession
     GameData Data { get; }
     GameEndState EndState { get; }
     int CurrentLevelNumber { get; }
-    bool TryStartLevel(GameData data);
+    bool StartLevel(GameData data);
 }
 
 public interface IGameNavigationEffects
@@ -15,7 +15,7 @@ public interface IGameNavigationEffects
     bool IsSceneChanging { get; }
     bool ReturnHomeAfterWin { get; }
     bool IsLevelCompleted(int level);
-    bool TrySettlePendingWins();
+    bool SettlePendingWins();
     void SynchronizeStreakLevel();
     void OnLevelAbandoned();
     UniTask<bool> EnterHomeAsync(bool withAnimation, bool showFailDialog, CancellationToken token);
@@ -70,7 +70,7 @@ public sealed class GameNavigationFlow : IDisposable
         _levels.Capture(data);
     }
 
-    public bool TryLoadNextLevel()
+    public bool LoadNextLevel()
     {
         if (_disposed || _session.EndState != GameEndState.Won || _session.Data == null ||
             IsTransitioning || _effects.IsSceneChanging) return false;
@@ -84,10 +84,10 @@ public sealed class GameNavigationFlow : IDisposable
         IsTransitioning = true;
         try
         {
-            if (!_effects.TrySettlePendingWins()) return false;
+            if (!_effects.SettlePendingWins()) return false;
             if (!IsCurrentRequest(version, currentData)) return false;
             if (!_levels.HasNext(current)) unavailable = true;
-            else if (_levels.TryCreateNext(current, out GameData data))
+            else if (_levels.CreateNext(current, out GameData data))
             {
                 if (!IsCurrentRequest(version, currentData)) return false;
                 _effects.SynchronizeStreakLevel();
@@ -102,7 +102,7 @@ public sealed class GameNavigationFlow : IDisposable
         return loaded;
     }
 
-    public bool TryReplayLevel()
+    public bool ReplayLevel()
     {
         if (!CanReplayLevel || _effects.IsSceneChanging) return false;
         GameData current = _session.Data;
@@ -114,7 +114,7 @@ public sealed class GameNavigationFlow : IDisposable
         try
         {
             // Prepare before committing abandonment: failed reads leave the current game intact.
-            if (!_levels.TryCreateReplay(current, level, out GameData data)) return false;
+            if (!_levels.CreateReplay(current, level, out GameData data)) return false;
             if (!IsCurrentRequest(version, current)) return false;
             CommitAbandonedLevel();
             if (!IsCurrentRequest(version, current)) return false;
@@ -129,7 +129,7 @@ public sealed class GameNavigationFlow : IDisposable
     private bool StartPreparedLevel(GameData data)
     {
         _startingLevel = true;
-        try { return _session.TryStartLevel(data); }
+        try { return _session.StartLevel(data); }
         finally { _startingLevel = false; }
     }
 
@@ -144,27 +144,27 @@ public sealed class GameNavigationFlow : IDisposable
         _effects.OnLevelAbandoned();
     }
 
-    public bool TryContinueAfterWin(bool rewardClaimed)
+    public bool ContinueAfterWin(bool rewardClaimed)
     {
         if (_disposed || _session.EndState != GameEndState.Won || !rewardClaimed || IsTransitioning ||
             _effects.IsSceneChanging) return false;
-        return ShouldReturnHomeAfterWin ? TryReturnHome() : TryLoadNextLevel();
+        return ShouldReturnHomeAfterWin ? ReturnHome() : LoadNextLevel();
     }
 
-    public bool TryReturnHome()
+    public bool ReturnHome()
     {
-        if (!TryBeginReturnHome(out CancellationTokenSource lifetime)) return false;
+        if (!BeginReturnHome(out CancellationTokenSource lifetime)) return false;
         ReturnHomeWithLoading(lifetime, _version).Forget();
         return true;
     }
 
     public UniTask<bool> ReturnHomeAsync(bool withAnimation = true)
     {
-        return TryBeginReturnHome(out CancellationTokenSource lifetime)
+        return BeginReturnHome(out CancellationTokenSource lifetime)
             ? LoadHomeAsync(lifetime, _version, withAnimation) : UniTask.FromResult(false);
     }
 
-    private bool TryBeginReturnHome(out CancellationTokenSource lifetime)
+    private bool BeginReturnHome(out CancellationTokenSource lifetime)
     {
         lifetime = null;
         if (_disposed || IsTransitioning || _effects.IsSceneChanging || _destroyToken.IsCancellationRequested) return false;

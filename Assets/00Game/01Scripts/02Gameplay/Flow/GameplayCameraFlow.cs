@@ -18,7 +18,7 @@ public sealed class GameplayCameraFlow
 
     public void Reset(GameData data, Transform root)
     {
-        if (!GameplayCameraLayout.TryGetBounds(root, out _bounds))
+        if (!GameplayCameraLayout.GetBounds(root, out _bounds))
             _bounds = GameplayCameraLayout.FallbackBounds(data, root);
         _ready = data != null;
         _pending = true;

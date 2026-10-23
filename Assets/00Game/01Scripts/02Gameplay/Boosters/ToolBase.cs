@@ -153,7 +153,7 @@ public class ToolBase : MonoBehaviour
 		UpdateState();
 	}
 
-	public bool TryConsume() => _inventory != null && _inventory.IsBoosterUnlocked(_key) && _inventory.Use(_key);
+	public bool Consume() => _inventory != null && _inventory.IsBoosterUnlocked(_key) && _inventory.Use(_key);
 
 	public void AddCount(int amount)
 	{

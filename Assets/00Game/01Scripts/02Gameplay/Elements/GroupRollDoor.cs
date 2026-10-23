@@ -68,12 +68,12 @@ public class GroupRollDoor : MonoBehaviour
 		_groupInfo?.Unlock();
 		if (_referenceBox != null && _referenceBox.GameLoader != null && GameAudioPlayer.Current != null)
 			GameAudioPlayer.Current.PlayColorLockOpen(_referenceBox.GameLoader.ColorLockOpen);
-		if (TryPlayUnlockAnimation(_unlockAnimation, out float length))
+		if (PlayUnlockAnimation(_unlockAnimation, out float length))
 			Destroy(gameObject, Mathf.Max(MinDestroyDelay, length));
 		else Destroy(gameObject);
 	}
 
-	public bool TryGetKeyInsertPose(out Vector3 position, out Quaternion rotation, out Vector3 insertDirection)
+	public bool GetKeyInsertPose(out Vector3 position, out Quaternion rotation, out Vector3 insertDirection)
 	{
 		position = Vector3.zero;
 		rotation = Quaternion.identity;
@@ -115,7 +115,7 @@ public class GroupRollDoor : MonoBehaviour
 		_keyHole = references != null ? references.KeyHole : null;
 		CacheKeyLockTransforms();
 		ApplyGroupMaterial(groupInfo);
-		if (!TryCalculateLocalBounds(root, out Bounds sourceBounds))
+		if (!CalculateLocalBounds(root, out Bounds sourceBounds))
 		{
 			Debug.LogWarning("GroupRollDoor build failed: template has no renderable bounds.", this);
 			return;
@@ -182,8 +182,8 @@ public class GroupRollDoor : MonoBehaviour
 		float rightX = targetMaxX - inset;
 		MovePivotRootX(root, leftDoor, leftX);
 		MovePivotRootX(root, rightDoor, rightX);
-		bool hasLeft = TryCalculateLocalBounds(root, leftDoor, out Bounds leftBounds);
-		bool hasRight = TryCalculateLocalBounds(root, rightDoor, out Bounds rightBounds);
+		bool hasLeft = CalculateLocalBounds(root, leftDoor, out Bounds leftBounds);
+		bool hasRight = CalculateLocalBounds(root, rightDoor, out Bounds rightBounds);
 		foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
 		{
 			MeshRenderer renderer = filter.GetComponent<MeshRenderer>();
@@ -320,16 +320,16 @@ public class GroupRollDoor : MonoBehaviour
 		return matrix;
 	}
 
-	private static bool TryCalculateLocalBounds(Transform root, out Bounds bounds)
+	private static bool CalculateLocalBounds(Transform root, out Bounds bounds)
 	{
-		bool hasBounds = TryCalculateLocalBounds(root, root, out bounds);
+		bool hasBounds = CalculateLocalBounds(root, root, out bounds);
 		foreach (SpriteRenderer sprite in root.GetComponentsInChildren<SpriteRenderer>(true))
 			if (sprite.sprite != null)
 				EncapsulateBounds(sprite.sprite.bounds, GetLocalToRootMatrix(root, sprite.transform), ref bounds, ref hasBounds);
 		return hasBounds;
 	}
 
-	private static bool TryCalculateLocalBounds(Transform root, Transform scope, out Bounds bounds)
+	private static bool CalculateLocalBounds(Transform root, Transform scope, out Bounds bounds)
 	{
 		bounds = default;
 		bool hasBounds = false;
@@ -352,7 +352,7 @@ public class GroupRollDoor : MonoBehaviour
 		}
 	}
 
-	private static bool TryPlayUnlockAnimation(Animation animation, out float animationLength)
+	private static bool PlayUnlockAnimation(Animation animation, out float animationLength)
 	{
 		animationLength = 0f;
 		if (animation == null) return false;

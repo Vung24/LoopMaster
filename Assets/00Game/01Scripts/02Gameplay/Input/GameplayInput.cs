@@ -9,7 +9,7 @@ public sealed class GameplayInput
     private EventSystem _eventSystem;
     private PointerEventData _pointer;
 
-    public bool TryGetClickedBox(Camera camera, out Box box)
+    public bool GetClickedBox(Camera camera, out Box box)
     {
         box = null;
         if (!Input.GetMouseButtonDown(0) || IsPointerOverUI() || camera == null) return false;

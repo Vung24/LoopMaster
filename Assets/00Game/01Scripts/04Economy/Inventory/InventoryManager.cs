@@ -73,7 +73,7 @@ public partial class InventoryManager : MonoBehaviour, IGameManager
 	private static bool IsInventoryKey(string key) => key == InventoryKeys.COIN || IsBoosterKey(key);
 	public static int GetToolUnlockLevel(string key)
 	{
-		if (BoosterUnlockConfig.TryGetInfo(key, out BoosterUnlockInfo info)) return info.UnlockLevel;
+		if (BoosterUnlockConfig.GetInfo(key, out BoosterUnlockInfo info)) return info.UnlockLevel;
 		return 0;
 	}
 

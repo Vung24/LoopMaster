@@ -27,7 +27,7 @@ public sealed class LinkedCubeLaunch
 		_secondType = pair.SecondCube.Type;
 	}
 
-	public static bool TryBegin(GameData data, BoxInfo source, out LinkedCubeLaunch launch,
+	public static bool Begin(GameData data, BoxInfo source, out LinkedCubeLaunch launch,
 		out LinkedCubeLaunchFailure failure)
 	{
 		launch = null;
