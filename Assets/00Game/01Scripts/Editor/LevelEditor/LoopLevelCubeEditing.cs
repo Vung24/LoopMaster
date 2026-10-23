@@ -7,6 +7,71 @@ using A = LoopLevelAuthoring;
 /// <summary>Non-destructive cube additions and mixing for manual level authoring.</summary>
 public static class LoopLevelCubeEditing
 {
+    /// <summary>Fills free normal-box slots so every used normal color has exactly four cubes.</summary>
+    public static void FillMissingColors(JObject root, IEnumerable<int> selection, int preferredColor)
+    {
+        int[] indices = LoopLevelCommands.Selection(root, selection);
+        if (indices.Length == 0) throw new FormatException("Chọn ít nhất một hộp để điền khối.");
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        var counts = new int[15];
+        foreach (JObject box in boxes)
+        foreach (JObject cube in A.Array(box, "Cubes"))
+        {
+            int color = A.Int(cube, "Type");
+            if (color >= 1 && color <= 14) counts[color]++;
+        }
+        int freeSlots = 0;
+        foreach (int index in indices)
+        {
+            JObject box = (JObject)boxes[index];
+            if (A.Int(box, "BoxType") != 0 || HasLinkedCubes(box))
+                throw new FormatException("Chỉ điền bộ 4 vào hộp thường chưa có Cube đôi.");
+            int count = A.Array(box, "Cubes").Count;
+            if (count > 4) throw new FormatException("Hộp " + index + " đang có quá 4 khối.");
+            freeSlots += 4 - count;
+        }
+        if (freeSlots == 0) throw new FormatException("Các hộp đã chọn không còn chỗ trống.");
+
+        // Plan the whole addition before changing any JSON, including palette exhaustion.
+        var colorsToAdd = new List<int>();
+        for (int color = 1; color <= 14; color++)
+        {
+            if (counts[color] > 4)
+                throw new FormatException("Màu " + color + " đang có " + counts[color] + " khối; cần đúng 4. Xóa hoặc đổi màu dư trước.");
+            if (counts[color] == 0 || counts[color] == 4) continue;
+            int missing = 4 - counts[color];
+            if (missing > freeSlots)
+                throw new FormatException("Chọn thêm hộp trống để bù đủ 4 khối cho các màu đang thiếu.");
+            for (int cube = 0; cube < missing; cube++) colorsToAdd.Add(color);
+            freeSlots -= missing;
+        }
+        if (freeSlots % 4 != 0)
+            throw new FormatException("Số chỗ còn lại không đủ bộ 4. Chọn thêm hộp để mỗi màu có đúng 4 khối.");
+        for (int choice = 0; choice <= 14 && freeSlots > 0; choice++)
+        {
+            int color = choice;
+            if (choice == 0) color = preferredColor;
+            else if (color == preferredColor) continue;
+            if (color < 1 || color > 14 || counts[color] != 0) continue;
+            for (int cube = 0; cube < 4; cube++) colorsToAdd.Add(color);
+            freeSlots -= 4;
+        }
+        if (freeSlots > 0) throw new FormatException("Đã hết màu chưa dùng trong bảng màu 1–14.");
+
+        int nextColor = 0;
+        foreach (int index in indices)
+        {
+            JObject box = (JObject)boxes[index];
+            JArray cubes = A.Array(box, "Cubes");
+            while (cubes.Count < 4)
+            {
+                cubes.Add(A.NewCube(colorsToAdd[nextColor]));
+                nextColor++;
+            }
+            box["Cubes"] = cubes;
+        }
+    }
+
     /// <summary>Adds the brush color in free slots without replacing existing cubes.</summary>
     public static void AddColor(JObject root, IEnumerable<int> selection, int color, int count)
     {
@@ -30,6 +95,93 @@ public static class LoopLevelCubeEditing
             for (int i = 0; i < added; i++) cubes.Add(A.NewCube(A.BrushColor(box, color)));
             box["Cubes"] = cubes;
         }
+    }
+
+    /// <summary>Fills free slots in selected boxes with an unused color.</summary>
+    public static int QuickAddUnusedColor(JObject root, IEnumerable<int> selection, out int lastColorAdded)
+    {
+        lastColorAdded = 0;
+        int[] indices = LoopLevelCommands.Selection(root, selection);
+        if (indices.Length == 0) throw new FormatException("Chọn ít nhất một hộp để thêm màu.");
+
+        JArray boxes = A.Array(A.Layout(root), "Boxes");
+        int totalAdded = 0;
+
+        var levelColors = new HashSet<int>();
+        foreach (JObject b in boxes)
+        {
+            foreach (JObject cube in A.Array(b, "Cubes"))
+            {
+                int c = A.Int(cube, "Type");
+                if (c > 0) levelColors.Add(c);
+            }
+        }
+
+        foreach (int index in indices)
+        {
+            JObject box = (JObject)boxes[index];
+            if (HasLinkedCubes(box))
+                throw new FormatException("Hộp " + index + ": gỡ liên kết Cube đối trước khi thêm khối.");
+
+            int capacity = A.CubeCapacity(box);
+            JArray cubes = A.Array(box, "Cubes");
+            if (cubes.Count >= capacity)
+            {
+                if (indices.Length == 1)
+                    throw new FormatException("Hộp " + index + " đã đầy. Xóa bớt khối để thêm màu mới.");
+                continue;
+            }
+
+            int boxType = A.Int(box, "BoxType");
+            int minColor = boxType == 2 ? 101 : 1;
+            int maxColor = boxType == 2 ? 105 : 14;
+
+            var boxColors = new HashSet<int>();
+            foreach (JObject cube in cubes)
+            {
+                int c = A.Int(cube, "Type");
+                if (c > 0) boxColors.Add(c);
+            }
+
+            int chosenColor = 0;
+            for (int c = minColor; c <= maxColor; c++)
+            {
+                if (!levelColors.Contains(c) && !boxColors.Contains(c))
+                {
+                    chosenColor = c;
+                    break;
+                }
+            }
+
+            if (chosenColor == 0)
+            {
+                for (int c = minColor; c <= maxColor; c++)
+                {
+                    if (!boxColors.Contains(c))
+                    {
+                        chosenColor = c;
+                        break;
+                    }
+                }
+            }
+
+            if (chosenColor == 0)
+            {
+                chosenColor = minColor;
+            }
+
+            int needed = capacity - cubes.Count;
+            for (int i = 0; i < needed; i++)
+            {
+                cubes.Add(A.NewCube(chosenColor));
+            }
+            box["Cubes"] = cubes;
+            levelColors.Add(chosenColor);
+            lastColorAdded = chosenColor;
+            totalAdded += needed;
+        }
+
+        return totalAdded;
     }
 
     /// <summary>Swaps colors across plain boxes, preserving counts, empty boxes and cube metadata.</summary>

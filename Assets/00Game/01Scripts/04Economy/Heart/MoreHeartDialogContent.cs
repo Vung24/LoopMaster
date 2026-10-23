@@ -22,6 +22,8 @@ public class MoreHeartDialogContent : DialogContent
 	protected override void Awake()
 	{
 		base.Awake();
+		Image lifeIcon = HierarchyReferenceCache.DescendantComponent<Image>(transform, "Life");
+		if (lifeIcon != null) lifeIcon.preserveAspect = true;
 		if (_closeBtn == null) _closeBtn = DialogUI.ResolveButton(transform, "CloseButton");
 		if (_refillBtn == null) _refillBtn = DialogUI.ResolveButton(transform, "RefillButton");
 		DialogUI.Bind(_closeBtn, OnClickCloseButton);

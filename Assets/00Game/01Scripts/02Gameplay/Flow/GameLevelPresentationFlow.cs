@@ -41,7 +41,6 @@ public sealed class GameLevelPresentationFlow
 		MonitorInterruption(lifetime).Forget();
 		try
 		{
-			// Keep tutorial/intro animations from running beneath the scene loading cover.
 			await UniTask.WaitUntil(() => LoadingPanel.Current == null, cancellationToken: lifetime.Token);
 			if (BgmSource.Current != null) BgmSource.Current.Play();
 			if (AudioManager.Current != null && GameAssetsConfig.Instance != null)

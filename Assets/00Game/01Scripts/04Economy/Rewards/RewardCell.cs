@@ -19,12 +19,6 @@ namespace Snui
         [SerializeField] private GameObject _backLight;
         private void Awake()
         {
-            if (_icon == null) 
-                _icon = HierarchyReferenceCache.ChildComponent<Image>(transform, "Icon") 
-                    ?? HierarchyReferenceCache.DescendantComponent<Image>(transform, "Icon");
-            if (_count == null) 
-                _count = HierarchyReferenceCache.ChildComponent<TMP_Text>(transform, "Count") 
-                    ?? HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "Count");
             if (_ribbon == null)
             {
                 var r = HierarchyReferenceCache.Child(transform, "Ribbon") 
@@ -42,18 +36,6 @@ namespace Snui
                         ?? HierarchyReferenceCache.Descendant(_ribbon.transform, "Icon");
                     if (ri != null) _ribbonIcon = ri.gameObject;
                 }
-            }
-            if (_infoIcon == null)
-            {
-                var info = HierarchyReferenceCache.Child(transform, "InfoIcon") 
-                    ?? HierarchyReferenceCache.Descendant(transform, "InfoIcon");
-                if (info != null) _infoIcon = info.gameObject;
-            }
-            if (_backLight == null)
-            {
-                var bl = HierarchyReferenceCache.Child(transform, "BackLight") 
-                    ?? HierarchyReferenceCache.Descendant(transform, "BackLight");
-                if (bl != null) _backLight = bl.gameObject;
             }
             foreach (var graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
             if (RewardItem != null && RewardItem.Type != null) Init(RewardItem,false,false).Forget();

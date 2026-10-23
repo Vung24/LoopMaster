@@ -70,7 +70,12 @@ namespace Snui
             DisableService(_firebaseInfoBtn, "Firebase unavailable");
             DisableService(_AdDebugBtn, "AD Debug unavailable");
             Bind(_logBtn, () => { Debug.Log(_info != null ? _info.text : "LoopMaster cheats"); _message = "State written to Unity Console"; Refresh(); });
-            if (_customBtnPrefab != null) _customBtnPrefab.gameObject.SetActive(false);
+            if (_customBtnPrefab != null)
+            {
+                SetLabel(_customBtnPrefab.transform, "Refill Hearts");
+                Bind(_customBtnPrefab, RefillHearts);
+                _customBtnPrefab.gameObject.SetActive(true);
+            }
             Refresh();
         }
 
@@ -131,6 +136,15 @@ namespace Snui
             if (_busy) return;
             bool success = ReadAmount(_eventItemInput, out int amount) && _commands.AddEventItems(_eventIndex, amount);
             _message = success ? "Event items added" : "Event must be ongoing; check amount and tutorial";
+            Refresh();
+        }
+
+        private void RefillHearts()
+        {
+            if (_busy) return;
+            var heart = HeartManager.EnsureInitialized();
+            _commands.ChangeInventory(RewardType.Heart, heart.MAX_HEART, true);
+            _message = "Hearts refilled: " + heart.GetHeartCount() + "/" + heart.MAX_HEART;
             Refresh();
         }
 

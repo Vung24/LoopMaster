@@ -219,6 +219,13 @@ public partial class SROptions
 
     #region 03. Lives & Hearts
 
+    [Category("03. Lives & Hearts"), DisplayName("+1 Heart"), Sort(19)]
+    public void AddOneHeart()
+    {
+        CheatManager.Ensure().Commands.ChangeInventory(RewardType.Heart, 1, true);
+        OnPropertyChanged(nameof(HeartsStatus));
+    }
+
     [Category("03. Lives & Hearts"), DisplayName("Refill Hearts to Full"), Sort(20)]
     public void RefillHearts()
     {
