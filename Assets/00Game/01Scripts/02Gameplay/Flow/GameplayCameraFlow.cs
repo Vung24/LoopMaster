@@ -14,8 +14,6 @@ public sealed class GameplayCameraFlow
     private bool _ready;
     private bool _pending;
     private Camera _lastMain;
-    private Camera _lastTop;
-
     public void Reset(GameData data, Transform root)
     {
         if (!GameplayCameraLayout.GetBounds(root, out _bounds))
