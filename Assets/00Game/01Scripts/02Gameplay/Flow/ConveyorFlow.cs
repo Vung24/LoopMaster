@@ -138,8 +138,6 @@ public sealed class ConveyorFlow
 
 	private void AdvanceVisualsToTick(float delta, float lag, ref float visualTime)
 	{
-		// Lag is measured from frame end. The cap drops old scheduler time;
-		// it must not grant extra moves or count either clock twice visually.
 		float issueTime = Mathf.Clamp(delta - lag, visualTime, delta);
 		AdvanceRoadVisuals(issueTime - visualTime);
 		visualTime = issueTime;
