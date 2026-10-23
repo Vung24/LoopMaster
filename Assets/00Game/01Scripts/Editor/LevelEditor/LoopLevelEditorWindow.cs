@@ -296,7 +296,6 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
                 string file = EditorUtility.OpenFilePanel("Mở JSON màn chơi", A.LevelFolder, "json");
                 if (!string.IsNullOrEmpty(file)) TryOpen(file);
             }
-            if (GUILayout.Button("Mẫu", EditorStyles.toolbarButton)) { _editorMode = 2; _workspace = false; _scroll = Vector2.zero; }
             if (GUILayout.Button("Campaign 70", EditorStyles.toolbarButton)) AlternativeCampaign70Window.Open();
             if (GUILayout.Button("Lưu", EditorStyles.toolbarButton)) TrySave(false);
             if (GUILayout.Button("Lưu thành…", EditorStyles.toolbarButton)) TrySave(true);
@@ -457,6 +456,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             {
                 _editorMode = 0; _workspace = true; _canvasTool = 2; _status = "Công cụ: 3. Tô màu khối";
                 e.Use(); Repaint(); return;
+            }
+            if (e.keyCode == KeyCode.A)
+            {
+                if (TryQuickAddUnusedColor())
+                {
+                    e.Use(); Repaint(); return;
+                }
             }
             if (e.keyCode == KeyCode.R)
             {
@@ -1160,6 +1166,13 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             {
                 using (new Handles.DrawingScope(Matrix4x4.identity)) { DrawRoadPreview(); DrawRoadSketch(view); }
                 return;
+            }
+            if (e.type == EventType.KeyDown && !e.control && !e.command && !e.alt && !EditorGUIUtility.editingTextField && e.keyCode == KeyCode.A)
+            {
+                if (TryQuickAddUnusedColor())
+                {
+                    e.Use(); Repaint(); view.Repaint(); return;
+                }
             }
             if (_tab == 1 && e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
             { _boxTool = 0; e.Use(); Repaint(); }
