@@ -378,15 +378,15 @@ public sealed class ConveyorFlow
 
 	private int GetSliceDistance(SliceInfo sliceA, SliceInfo sliceB)
 	{
-		return _engine == null ? int.MaxValue : _engine.GetSliceDistance(sliceA, sliceB);
+		return ConveyorRules.GetSliceDistance(Data, sliceA, sliceB);
 	}
 
 	private bool IsSliceCanMove(SliceInfo slice, bool isOverlapMove = false)
 	{
-		if (_engine == null) return false;
-		if (!_preparingMoves || isOverlapMove || slice == null) return _engine.CanMove(slice, isOverlapMove);
+		if (Data == null) return false;
+		if (!_preparingMoves || isOverlapMove || slice == null) return ConveyorRules.CanMove(Data, slice, isOverlapMove);
 		if (_preparedMoves.TryGetValue(slice, out bool canMove)) return canMove;
-		canMove = _engine.CanMove(slice, false);
+		canMove = ConveyorRules.CanMove(Data, slice, false);
 		_preparedMoves.Add(slice, canMove);
 		return canMove;
 	}
