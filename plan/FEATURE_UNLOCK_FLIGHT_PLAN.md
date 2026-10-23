@@ -1,6 +1,6 @@
 # Kế hoạch: Icon unlock feature bay từ UI đến item gameplay
 
-Ngày: 23/10/2026. Trạng thái: kế hoạch triển khai, chưa triển khai hoặc nghiệm thu trong Unity.
+Ngày: 23/10/2026. Trạng thái: đã triển khai code và compile kiểm tra; chưa nghiệm thu hình ảnh/PlayMode. Bằng chứng và giới hạn ở mục 14.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -113,8 +113,8 @@ Luồng quy đổi: local visual → world → screen qua MainCamera → local c
 - Cho popup mở trong lúc chuẩn bị target; không giữ popup chờ readiness trước khi hiển thị. Chuẩn bị sẵn khi có thể, không block thao tác Continue. Nếu lúc Continue target chưa sẵn sàng hoặc setup không hợp lệ thì đóng popup và bỏ flight có diagnostic một lần; không chờ vô hạn hoặc dùng delay đoán readiness.
 - Không đợi toàn bộ Animation.IsPlaying vì có thể gồm loop idle/breathing. Xác định đúng completion của entrance cần chờ.
 - GameController fit camera trong LateUpdate. Presenter phải tính projection sau lượt fit camera và animation cập nhật của frame, trước render UI. Trong prototype chọn điểm cập nhật phù hợp của PlayerLoop hiện có và xác minh thứ tự; không dựa vào thứ tự LateUpdate ngẫu nhiên giữa component, không đổi ProjectSettings Script Execution Order.
-- Trong flight, tính lại pose đích khi camera/layout thay đổi; không tạo lại tween hoặc cấp phát collection mỗi frame.
-- Dùng tiến độ animation để nội suy đến pose đích hiện tại. Nếu thay đổi viewport gây bước nhảy lớn, hủy flight có cleanup và tiếp tục flow; tránh đuổi theo đích lệch màn hình.
+- Trong flight, tính lại pose đích sau LateUpdate bằng UniTask LastPreLateUpdate, trước lượt rebuild/render Canvas ở PostLateUpdate; không tạo lại tween hoặc cấp phát collection mỗi frame.
+- Bản triển khai đầu hủy flight có cleanup khi pixelRect hoặc kích thước màn hình đổi, thay vì thêm ngưỡng phân biệt thay đổi lớn/nhỏ chưa được tune. Nếu camera fit đổi trong cùng viewport, pose đích vẫn được tính lại. Cần xác minh continuity trong PlayMode.
 
 ## 6. Timeline dự kiến
 
@@ -266,10 +266,77 @@ Review diff cuối để tách thay đổi mới khỏi các thay đổi có s�
 - [ ] Chốt view tái sử dụng, completion entrance và thứ tự projection qua prototype.
 - [ ] Kiểm kê visual/prefab/fixture của 13 feature.
 - [ ] Prototype ColorLock và đo continuity nguồn/đích.
-- [ ] Hoàn thành mapping nhóm slot.
-- [ ] Hoàn thành mapping nhóm cube.
-- [ ] Hoàn thành group và linked/hidden-linked.
+- [x] Triển khai mapping nhóm slot; chờ nghiệm thu visual từng prefab.
+- [x] Triển khai mapping nhóm cube; chờ nghiệm thu visual từng prefab.
+- [x] Triển khai group và linked/hidden-linked với fallback khi không có đích nhìn thấy.
 - [ ] Kiểm tra interruption và hồi quy presentation/booster.
 - [ ] Chạy verification, compile, review và Unity visual QA.
 
-Tài liệu này chưa thay đổi code, prefab, scene hoặc gameplay. Chưa chạy build, test, No-Find verification hoặc Unity playtest cho tính năng này.
+Không đánh dấu các bước prototype/visual QA hoàn tất chỉ vì code đã có hoặc compile đã pass.
+
+## 14. Kết quả triển khai và verification ngày 23/10/2026
+
+### 14.1. Code đã có
+
+- FeatureUnlockDialog phát ContinueAccepted trước khi đóng, chặn Continue lặp và phân biệt với Escape/ForceClose. Timing serialized trên dialog có mặc định departure/flight/landing = 0,10/0,40/0,15 giây.
+- GameLevelPresentationFlow giữ input gate/lifetime hiện có, tạo presenter theo lượt giới thiệu và cleanup khi Cancel; giữ nguyên thời điểm lưu cờ đã xem và thứ tự intro/booster.
+- Cancel chụp reference popup/presenter và giải phóng field trước khi hủy token hoặc SetActive(false), để continuation đóng popup chạy đồng bộ không làm mất reference hoặc gây null giữa cleanup.
+- FeatureUnlockFlightPresenter dùng nguyên BoosterPresentationUI/BoosterPresentation.prefab. Chưa tách view chung vì prefab hiện có đáp ứng flight, blocker và sorting; guide có sẵn nhưng không được bật. Không thêm pool hoặc Canvas/prefab mới.
+- FeatureFlightTargetSelector chọn một instance ổn định trong các Box đã build. Group door dùng lookup hiện có; linked pair dùng identity runtime và chỉ hướng tới marker đang thấy được. Không tạo state gameplay hay registry mới.
+- FeatureFlightTarget giữ reference/version ngắn hạn, kiểm tra lại visual chính và partner. FeatureFlightProjection quy đổi qua screen space, tính nguồn preserveAspect theo đúng pivot; sprite đích dùng local bounds, composite dùng projected bounds.
+- Box chỉ bổ sung readiness cho giai đoạn phát entrance và trạng thái clip entrance cụ thể trên Cube. Không đợi loop idle hoặc trì hoãn popup; Continue quá sớm thì bỏ flight có diagnostic.
+- Bản đầu giữ nguyên renderer gameplay. Icon fade ở 25% cuối và dùng chính ảnh UI làm highlight ngắn; không sửa sharedMaterial, không scale object gameplay. Hiệu quả highlight cần nghiệm thu trên art thật.
+- Đã thêm FeatureFlightVerification trong folder Editor, dùng preview scene và reflection để kiểm tra boundary nội bộ mà không mở rộng runtime API. Menu chạy: Tools → LoopMaster → Verify Feature Unlock Flight, ngoài PlayMode. Runner kiểm tra nguồn UI, selection, 13 mapping và binding; chưa chạy được trong Unity ở lượt triển khai này.
+- Code cho các nhóm feature đã được mở rộng trước khi có video prototype ColorLock vì phiên Unity hiện tại đang chiếm project. Đây là bước triển khai code, không thay thế điều kiện nghiệm thu prototype trước khi phát hành.
+
+### 14.2. Kiểm tra đã thực sự chạy
+
+| Check | Kết quả |
+| --- | --- |
+| Compile runtime bằng Roslyn và response file/reference của Unity 2022.3.62f2, output ở .utmp/FeatureFlightCompile | `Runtime compiler exit: 0`; 332 warning |
+| Compile baseline trước feature với cùng compiler/reference | `Baseline compiler exit: 0`; 332 warning; so sánh message không có warning mới |
+| Compile Editor, bao gồm FeatureFlightVerification | `Editor compiler exit: 0`; đây là compile, chưa thực thi runner |
+| CoreRulesVerification build vào .utmp rồi thực thi DLL từ root project | No-Find và các check gameplay phía trước đã pass; toàn bộ suite dừng ở fixture reference bị thiếu, không được ghi là full pass |
+| Kiểm tra static YAML và asset metadata | `Feature asset audit passed: 13 popup sprite bindings, slot anchors, and 6 script/meta pairs.` |
+| git diff --check | Không báo lỗi whitespace ở thời điểm kiểm tra |
+| Unity batchmode executeMethod | Không thực thi runner: `It looks like another Unity instance is running with this project open.` Giữ nguyên phiên Editor đang mở, không xóa lock hoặc đóng Editor |
+
+Output CoreRules thực tế có:
+
+```text
+No-Find policy verified: 0 violations across Assets/00Game/01Scripts.
+Linked cubes: admission, boundaries, reservations, landing, cross-Undo, serialization and independent multiple pairs passed.
+Asset selection: Level 1 = 10 prefabs; special box/lock dependencies verified.
+Unhandled exception. System.InvalidOperationException: Failed: reference puzzle bytes exist
+```
+
+Lệnh verification mặc định gặp vấn đề relative output/source path trong môi trường này. Đã build project verification từ thư mục của nó với output/intermediate tuyệt đối trong .utmp, sau đó chạy `dotnet .utmp/CoreRulesFeatureFlight/bin/CoreRulesVerification.dll` từ root để No-Find và asset checks đọc đúng project. Không sửa project verification bên ngoài repository.
+
+### 14.3. Level ứng viên đã tìm thấy từ dữ liệu hiện có
+
+Đây là kiểm kê điều kiện dữ liệu, chưa chứng minh có đích nhìn thấy hoặc feature được giới thiệu đầu tiên trong level. Khi kiểm tra cần save test có bit feature chưa xem và SkipTutorial tắt; không xóa save chính.
+
+| Feature | Level JSON ứng viên |
+| --- | --- |
+| SecretCube | Level 6 |
+| LinkedCubes | Level 15 |
+| LinkedHiddenCubes | Level 21 |
+| ColorLock | Level 23 |
+| AdjacentLock | Level 29 |
+| CubeNumLock | Level 37 |
+| LongBox | Level 41 |
+| SingleBox | Level 49 |
+| GroupColorLock | Level 53 |
+| SurpriseCube | Level 56 |
+| NumLock | Chưa tìm thấy trong lượt quét Level JSON hiện tại; cần fixture test |
+| EnterOnly, LimitedColor | Có prefab/anchor, chưa tìm thấy trong lượt quét Level JSON hiện tại; cần fixture test |
+
+### 14.4. Việc còn cần nghiệm thu trong Editor
+
+1. Chạy menu verification sau khi Unity compile xong; lưu output thực tế. Runner EditMode không thay thế PlayMode.
+2. Chơi thử ColorLock trước: quay frame rời popup và đoạn fade/landing ở tốc độ thường/chậm. Điều chỉnh projection/timing nếu cần trước khi nghiệm thu các nhóm khác.
+3. Chạy các level/fixture đại diện cho 13 feature, nhất là group khóa che slot, cube bị che và hidden-linked không có marker nhìn thấy.
+4. Restart/thoát màn, disable và pause trong departure/flight/landing; kiểm tra không còn overlay/blocker và không hở input trước intro tiếp theo.
+5. Kiểm tra phone/tablet, safe area, viewport đổi giữa flight và hồi quy booster/difficulty intro.
+
+Các thay đổi source/prefab/scene/art có sẵn trước triển khai đã được chia thành 6 commit local. Push bị automatic approval review từ chối do chưa xác nhận đích GitHub và payload; đang chờ người dùng trả lời câu hỏi xác nhận. Ảnh hidden-linked có thay đổi tiếp trong workspace sau các commit baseline; không gộp hoặc ghi đè thay đổi đó vào feature flight.

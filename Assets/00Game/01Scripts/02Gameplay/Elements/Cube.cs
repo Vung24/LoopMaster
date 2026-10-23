@@ -35,6 +35,8 @@ public class Cube : MonoBehaviour
 	private readonly List<GameObject> _secretParticles = new List<GameObject>();
 
 	public CubeInfo Info => _info;
+	internal SpriteRenderer FeatureIcon => _square;
+	internal bool IsEntranceAnimationPlaying => _anim != null && _anim.IsPlaying("Skeleton|cube_entrance");
 	public SecretBlockMarker SecretMarker => _secretMarker;
 	public bool IsNumLockAnimationPlaying => _numLock != null && _numLock.IsUnlockAnimationPlaying;
 	public int VisibleSize => _info == null ? 0 : _arrivals.VisibleSize(_info.Size);

@@ -28,6 +28,7 @@ public class Box : MonoBehaviour
 	private bool _onUnlockingColorLock;
 	private bool _onDecrementingNumLock;
 	private int _routineVersion;
+	private bool _entrancePending;
 	private CancellationToken _routineToken;
 	private CancellationTokenSource _surpriseLifetime;
 	private UniTask _surpriseTask;
@@ -40,6 +41,16 @@ public class Box : MonoBehaviour
 	public BoxAnimator Animator => _animator;
 	public Transform BoxCard => _boxCard != null ? _boxCard : (_boxCard = HierarchyReferenceCache.Child(transform, "BoxCard"));
 	internal int RoutineVersion => _routineVersion;
+	internal bool IsEntrancePresentationReady
+	{
+		get
+		{
+			if (_entrancePending || !isActiveAndEnabled) return false;
+			for (int i = 0; i < Cubes.Count; i++)
+				if (Cubes[i] != null && Cubes[i].IsEntranceAnimationPlaying) return false;
+			return true;
+		}
+	}
 	internal bool IsCurrentRoutine(int version) => this != null && version == _routineVersion && isActiveAndEnabled;
 	public bool IsLockAnimationPlaying
 	{
@@ -72,6 +83,7 @@ public class Box : MonoBehaviour
 	public void Init(BoxInfo info, GameLoader gameLoader)
 	{
 		_routineVersion++;
+		_entrancePending = info != null && info.BoxType != BoxType.Single;
 		_animator?.Reset();
 		CancelSurpriseTransformation();
 		_info = info;
@@ -105,6 +117,7 @@ public class Box : MonoBehaviour
 			if (cube != null) cube.PlayAnim("Skeleton|cube_entrance");
 			if (!await WaitForRoutine(0.02f, version)) return;
 		}
+		if (IsCurrentRoutine(version)) _entrancePending = false;
 	}
 
 	private void InitSpecial()

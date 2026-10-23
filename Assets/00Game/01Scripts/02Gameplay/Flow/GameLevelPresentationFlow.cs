@@ -13,6 +13,7 @@ public sealed class GameLevelPresentationFlow
     private IReadOnlyList<Box> _boxes;
     private NewPlayerTutorial _newPlayerTutorial;
     private FeatureUnlockDialog _featureUnlockDialog;
+    private FeatureUnlockFlightPresenter _featureFlight;
     private LevelDifficultyPanel _difficultyPanel;
     private CancellationTokenSource _levelPresentation;
     public bool IsPlaying { get; private set; }
@@ -124,10 +125,13 @@ public sealed class GameLevelPresentationFlow
 				FeatureUnlockDialog dialog = instance.GetComponent<FeatureUnlockDialog>();
 				_featureUnlockDialog = dialog;
 				Vector3 origin = Vector3.zero;
+				Vector2 originSize = Vector2.zero;
 				if (dialog != null)
 				{
 					dialog.InitBooster(info.Title, info.Description, icon);
+					Canvas.ForceUpdateCanvases();
 					origin = dialog.IconPosition;
+					originSize = dialog.IconWorldSize;
 					await UniTask.WaitUntil(() => dialog == null || !dialog.gameObject.activeInHierarchy, cancellationToken: token);
 					if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
 				}
@@ -135,9 +139,9 @@ public sealed class GameLevelPresentationFlow
 				{
 					Destroy(instance);
 				}
-				await BoosterFlyPresenter.PlayFlight(_canvas.transform, icon, origin, tool, token);
+				await BoosterFlyPresenter.PlayFlight(_canvas.transform, icon, origin, originSize, tool,
+					() => CompleteBoosterIntroduction(tool), token);
 				token.ThrowIfCancellationRequested();
-				BoosterUnlockProgress.MarkIntroSeen(key);
 			}
 			finally
 			{
@@ -147,6 +151,13 @@ public sealed class GameLevelPresentationFlow
 		// Guidance must allow the regular gameplay commands and conveyor to run.
 		IsPlaying = false;
 		await BoosterTutorialGuide.PlayGuide(_controller, canvas, _boxes, key, token);
+	}
+
+	private static void CompleteBoosterIntroduction(ToolBase tool)
+	{
+		if (tool == null) return;
+		BoosterUnlockProgress.MarkIntroSeen(tool.Key);
+		tool.SetIntroLocked(false);
 	}
 
 	public FeatureType IsFeatureTutorial(GameData data) => Snui.CheatManager.SkipTutorial ? FeatureType.None : FeatureUnlockDialog.GetUnseenFeature(data,
@@ -165,8 +176,24 @@ public sealed class GameLevelPresentationFlow
 			GamePrefs.GetInt(GamePrefKeys.FeatureTutorial, 0) | (int)feature);
 		GamePrefs.Save();
 		dialog.Init(feature);
-		await UniTask.WaitUntil(() => dialog == null || !dialog.gameObject.activeInHierarchy, cancellationToken: token);
-		if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
+		var flight = new FeatureUnlockFlightPresenter(_controller, _boxes, feature, _canvas.transform,
+			dialog.FeatureFlightTiming);
+		_featureFlight = flight;
+		dialog.ContinueAccepted += flight.Prepare;
+		try
+		{
+			await UniTask.WaitUntil(() => dialog == null || dialog.ContinueWasAccepted ||
+				!dialog.gameObject.activeInHierarchy, cancellationToken: token);
+			await flight.Play(token);
+			if (dialog != null) await dialog.WaitForCloseAsync(token);
+		}
+		finally
+		{
+			if (dialog != null) dialog.ContinueAccepted -= flight.Prepare;
+			flight.Dismiss();
+			if (_featureFlight == flight) _featureFlight = null;
+			if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
+		}
 	}
 
 	private void CheckNewPlayerTutorial(GameData data, Camera gameCamera, GameObject tutorialPrefab)
@@ -199,15 +226,19 @@ public sealed class GameLevelPresentationFlow
 	public void Cancel()
 	{
 		CancellationTokenSource lifetime = _levelPresentation;
+		FeatureUnlockDialog dialog = _featureUnlockDialog;
+		FeatureUnlockFlightPresenter flight = _featureFlight;
 		_levelPresentation = null;
+		_featureUnlockDialog = null;
+		_featureFlight = null;
 		lifetime?.Cancel();
 		IsPlaying = false;
-		if (_featureUnlockDialog != null)
+		if (flight != null) flight.Dismiss();
+		if (dialog != null)
 		{
-			_featureUnlockDialog.gameObject.SetActive(false);
-			Destroy(_featureUnlockDialog.gameObject);
+			dialog.gameObject.SetActive(false);
+			if (dialog != null) Destroy(dialog.gameObject);
 		}
-		_featureUnlockDialog = null;
 		if (_newPlayerTutorial != null) _newPlayerTutorial.CancelAndDismiss();
 		_newPlayerTutorial = null;
 		if (_difficultyPanel != null)

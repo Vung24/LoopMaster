@@ -789,7 +789,12 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		Scene.Clear(GameRoot);
 	}
 
-	private LinkedCubeCable GetLinkedCable(BoxInfo box)
+	internal bool GetFeatureGroupDoor(int groupId, out GroupRollDoor door)
+	{
+		return Scene.GetGroupRollDoor(groupId, out door);
+	}
+
+	internal LinkedCubeCable GetLinkedCable(BoxInfo box)
 	{
 		if (box == null || box.LinkedPair == null) return null;
 		for (int index = 0; index < _linkedCables.Count; index++)
