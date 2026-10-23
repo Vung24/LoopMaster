@@ -150,7 +150,6 @@ public sealed class DebugLevelSolver
         List<CubeInfo> top = source.GetTopCubes(false);
         if (data.PathPoints.Count < 2 || top.Count == 0 || !source.CanPopup() ||
             !data.CanCubeJumpToTransfer()) return null;
-        var engine = new CoreGameplayEngine(data);
         var finished = new HashSet<BoxInfo>(data.Boxes.Where(box => box.IsFinished()));
         var landing = new Queue<KeyValuePair<SliceInfo, int>>();
         source.State = BoxState.OnPopup;
@@ -163,8 +162,8 @@ public sealed class DebugLevelSolver
         for (int tick = 0; tick < limit; tick++)
         {
             int countBefore = data.TransferSlice.Count;
-            AcceptSlices(data, engine, finished);
-            int moved = MoveRoad(data, engine);
+            AcceptSlices(data, finished);
+            int moved = MoveRoad(data);
             while (landing.Count > 0 && landing.Peek().Value <= tick)
             {
                 SliceInfo slice = landing.Dequeue().Key;
@@ -192,7 +191,7 @@ public sealed class DebugLevelSolver
             if (!launching && !released && landing.Count == 0 && tick >= lastLaunch + jumpTicks)
             {
                 source.ClearCubes();
-                engine.RevealTopSecretRun(source);
+                RevealTopSecretRun(source);
                 source.State = BoxState.Free;
                 data.OnJumpingCube = 0;
                 UnlockAvailableKeys(data);
@@ -230,7 +229,6 @@ public sealed class DebugLevelSolver
     {
         if (data.PathPoints.Count < 2 || !LinkedCubeLaunch.Begin(data, source, out LinkedCubeLaunch launch, out _))
             return null;
-        var engine = new CoreGameplayEngine(data);
         var finished = new HashSet<BoxInfo>(data.Boxes.Where(box => box.IsFinished()));
         var landing = new Queue<KeyValuePair<SliceInfo, int>>();
         int emissionInterval = Math.Max(1, (int)Math.Round(GameplayFeedbackRules.SliceLaunchInterval * 1000));
@@ -261,8 +259,8 @@ public sealed class DebugLevelSolver
             if (launch.IsActive && launch.CanComplete) launch.Complete();
             if (nextRoad > next) continue;
             int before = data.TransferSlice.Count;
-            AcceptSlices(data, engine, finished);
-            MoveRoad(data, engine);
+            AcceptSlices(data, finished);
+            MoveRoad(data);
             nextRoad += roadInterval;
             if (launch.IsActive) continue;
             if (data.IsGameOver()) return data;
@@ -274,14 +272,14 @@ public sealed class DebugLevelSolver
         return null;
     }
 
-    private static int MoveRoad(GameData data, CoreGameplayEngine engine)
+    private static int MoveRoad(GameData data)
     {
         List<SliceInfo> road = data.TransferSlice.Where(slice => slice.PathIndex >= 0)
             .OrderByDescending(slice => slice.PathIndex).ToList();
         int begin = -1;
         for (int i = 0; i < road.Count; i++)
         {
-            if (!engine.CanMove(road[i])) continue;
+            if (!ConveyorRules.CanMove(data, road[i])) continue;
             begin = i;
             break;
         }
@@ -291,7 +289,7 @@ public sealed class DebugLevelSolver
         for (int i = 0; i < road.Count; i++)
         {
             SliceInfo slice = road[(begin + i) % road.Count];
-            if (!engine.CanMove(slice, overlap)) continue;
+            if (!ConveyorRules.CanMove(data, slice, overlap)) continue;
             slice.PathIndex = (slice.PathIndex + 1) % data.PathPoints.Count;
             slice.IsMoved = true;
             moved++;
@@ -314,7 +312,7 @@ public sealed class DebugLevelSolver
         return distance;
     }
 
-    private static void AcceptSlices(GameData data, CoreGameplayEngine engine, HashSet<BoxInfo> finished)
+    private static void AcceptSlices(GameData data, HashSet<BoxInfo> finished)
     {
         foreach (SliceInfo slice in data.TransferSlice.Where(item => item.IsMoved && item.PathIndex >= 0)
             .OrderBy(item => item.PathIndex).ToList())
@@ -329,7 +327,7 @@ public sealed class DebugLevelSolver
             CubeInfo pushed = target.PushSlice(slice.Type) ?? target.AddCube(slice.Type);
             if (pushed == null) continue;
             data.RemoveTransferSlice(slice);
-            bool surprise = engine.ResolveSurpriseBox(target);
+            bool surprise = ResolveSurpriseBox(data, target);
             if (surprise || (target.IsFinished() && finished.Add(target)))
             {
                 foreach (BoxInfo box in data.Boxes)
@@ -354,6 +352,40 @@ public sealed class DebugLevelSolver
         foreach (BoxInfo box in data.Boxes.Where(box => !box.HasBlockingLock()))
             foreach (CubeInfo cube in box.GetTopCubes(false).Where(cube => cube.GroupKeyId > 0))
                 if (data.UnlockGroupColorLock(cube.GroupKeyId)) cube.ClearGroupColorLockKey();
+    }
+    private static bool RevealTopSecretRun(BoxInfo box)
+    {
+        if (box == null) return false;
+        box.ClearCubes();
+        CubeInfo cube = box.PeekTopCube();
+        bool revealed = cube != null && cube.IsSecret;
+        if (revealed)
+        {
+            cube.IsSecret = false;
+        }
+        box.IsLastUnlockSecret = revealed;
+        return revealed;
+    }
+
+    private static bool ResolveSurpriseBox(GameData data, BoxInfo box)
+    {
+        if (data == null || box == null) return false;
+        box.ClearCubes();
+        if (!box.IsSurpriseCubeFinished()) return false;
+        SurpriseInfo info = data.GetSurpriseInfo(box.GetTopType());
+        if (info == null || info.NormalCubes.Count != box.CubeInfos.Count) return false;
+
+        for (int i = 0; i < box.CubeInfos.Count; i++)
+        {
+            CubeInfo target = box.CubeInfos[i];
+            CubeInfo replacement = info.NormalCubes[i];
+            target.Type = replacement.Type;
+            target.IsSecret = replacement.IsSecret;
+            target.GroupKeyId = replacement.GroupKeyId;
+            target.GroupKeyColor = replacement.GroupKeyColor;
+            target.NumLock = replacement.NumLock;
+        }
+        return true;
     }
 }
 #endif

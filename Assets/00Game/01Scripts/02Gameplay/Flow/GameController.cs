@@ -73,19 +73,16 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool IsFailTutorial() => !Snui.CheatManager.SkipTutorial && GamePrefs.GetInt(GamePrefKeys.FailTutorial, 0) == 0;
 	public bool CanReplayLevel => Data != null && (IsEditorPlaytest || Navigation.CanReplayLevel);
 	public bool CanLoadNextLevel => !IsEditorPlaytest && EndState == GameEndState.Won && Navigation.CanLoadNextLevel;
-	public event Action GameWon;
-	public event Action GameLost;
 	public event Action GameRevived;
 	public event Action<GameEndState> GameEnded;
 	public event Action<int> LevelStarted;
 	public event Action<int> LevelReplayed;
-	public event System.Action<int> LevelAdvanced;
-	public event System.Action<int> NextLevelUnavailable;
+	public event Action<int> LevelAdvanced;
+	public event Action<int> NextLevelUnavailable;
 	private GameLoader _gameLoader;
 	private LevelBuilder _levelBuilder;
 	private LevelBuilder Builder => _levelBuilder ?? (_levelBuilder = new LevelBuilder(
 		_gameLoader, Scene, RefreshPathState, _cameraFlow, UpdateCamera));
-	private CoreGameplayEngine _engine;
 	private GameplaySceneBuilder _sceneBuilder;
 	private GameplaySceneBuilder Scene => _sceneBuilder ?? (_sceneBuilder = new GameplaySceneBuilder());
 	private GroupLockFlow _groupLocks;
@@ -338,9 +335,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		Data.ConfigureRoadSpacing(_sliceSpacingScale);
 		Data.DifferentColorSliceSpacing = 1;
 		Navigation.BeginLevel(data);
-		_engine = new CoreGameplayEngine(data);
-		Conveyor.Reset(data, _engine);
-		Boosters.Reset(data, _engine, _gameLoader, GameRoot);
+		Conveyor.Reset(data);
+		Boosters.Reset(data, _gameLoader, GameRoot);
 		Transfers.Reset(data, _gameLoader, GameRoot);
 		ComboInCount = 0;
 		_comboTime = 0f;
@@ -496,12 +492,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		RequestTool(InventoryKeys.TOOL_PATH, CanRequestPathTool, UseToolPath);
 	}
-
-	public void OnUseToolPath()
-	{
-		UseToolPath();
-	}
-
 	public bool UseToolPath()
 	{
 		if (!Boosters.UsePath()) return false;
@@ -514,12 +504,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	{
 		RequestTool(InventoryKeys.TOOL_UNDO, CanRequestUndoTool, UseToolUndo);
 	}
-
-	public void OnUseToolUndo()
-	{
-		UseToolUndo();
-	}
-
 	public bool UseToolUndo()
 	{
 		return Boosters.UseUndo();
@@ -528,11 +512,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public void OnClickToolShuffle()
 	{
 		RequestTool(InventoryKeys.TOOL_SHUFFLE, CanRequestShuffleTool, UseToolShuffle);
-	}
-
-	public void OnUseToolShuffle()
-	{
-		UseToolShuffle();
 	}
 
 	public bool UseToolShuffle()
@@ -627,10 +606,9 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 
 	private void CheckGameOver()
 	{
-		if (EndState != GameEndState.Playing || Data == null || _engine == null) return;
-		CoreMoveResult result = _engine.EvaluateEndState();
-		if (result == CoreMoveResult.GameWon && IsGameplaySettled()) GameOver();
-		else if (result == CoreMoveResult.GameFailed && IsGameplaySettled()) GameFailed();
+		if (EndState != GameEndState.Playing || Data == null) return;
+		if (Data.IsGameOver() && IsGameplaySettled()) GameOver();
+		else if (Data.IsGameFailed() && IsGameplaySettled()) GameFailed();
 	}
 
 	public void GameOver()
@@ -787,9 +765,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 				});
 			GameProgressStore.RecordWin(CurrentLevelNumber, Navigation.HasNextLevel,
 				Data == null ? HardLevel.Normal : Data.GetHardLevel());
-			GameWon?.Invoke();
 		}
-		else GameLost?.Invoke();
 		GameEnded?.Invoke(state);
 	}
 

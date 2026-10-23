@@ -2,22 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public enum CoreMoveResult
-{
-	None = 0,
-	Blocked = 1,
-	MovedToTransfer = 2,
-	MovedToBox = 3,
-	BoxFinished = 4,
-	GameWon = 5,
-	GameFailed = 6
-}
-
-public sealed class CoreGameplayEngine
+public sealed class BoosterOperations
 {
 	private readonly GameData _data;
 
-	public CoreGameplayEngine(GameData data)
+	public BoosterOperations(GameData data)
 	{
 		_data = data ?? throw new ArgumentNullException(nameof(data));
 	}
@@ -101,52 +90,5 @@ public sealed class CoreGameplayEngine
 		if (record == null || !record.Commit(plan)) return false;
 		_data.UndoData.Clear();
 		return true;
-	}
-
-	public bool CanMove(SliceInfo slice, bool allowOverlap = false)
-	{
-		return ConveyorRules.CanMove(_data, slice, allowOverlap);
-	}
-
-	public bool RevealTopSecretRun(BoxInfo box)
-	{
-		if (box == null) return false;
-		box.ClearCubes();
-		CubeInfo cube = box.PeekTopCube();
-		bool revealed = cube != null && cube.IsSecret;
-		if (revealed)
-		{
-			cube.IsSecret = false;
-		}
-		box.IsLastUnlockSecret = revealed;
-		return revealed;
-	}
-
-	public bool ResolveSurpriseBox(BoxInfo box)
-	{
-		if (box == null) return false;
-		box.ClearCubes();
-		if (!box.IsSurpriseCubeFinished()) return false;
-		SurpriseInfo info = _data.GetSurpriseInfo(box.GetTopType());
-		if (info == null || info.NormalCubes.Count != box.CubeInfos.Count) return false;
-
-		for (int i = 0; i < box.CubeInfos.Count; i++)
-		{
-			CubeInfo target = box.CubeInfos[i];
-			CubeInfo replacement = info.NormalCubes[i];
-			target.Type = replacement.Type;
-			target.IsSecret = replacement.IsSecret;
-			target.GroupKeyId = replacement.GroupKeyId;
-			target.GroupKeyColor = replacement.GroupKeyColor;
-			target.NumLock = replacement.NumLock;
-		}
-		return true;
-	}
-
-	public CoreMoveResult EvaluateEndState()
-	{
-		if (_data.IsGameOver()) return CoreMoveResult.GameWon;
-		if (_data.IsGameFailed()) return CoreMoveResult.GameFailed;
-		return CoreMoveResult.None;
 	}
 }

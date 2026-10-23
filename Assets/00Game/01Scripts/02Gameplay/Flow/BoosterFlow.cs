@@ -17,7 +17,7 @@ public sealed class BoosterFlow
 	private readonly Action _onFinished;
 	private readonly Action<AudioClip> _playAudio;
 	private GameData _data;
-	private CoreGameplayEngine _engine;
+	private BoosterOperations _operations;
 	private GameLoader _loader;
 	private Transform _gameRoot;
 	private InventoryManager _inventory;
@@ -35,7 +35,7 @@ public sealed class BoosterFlow
 		(!Inventory.CanUseBooster(InventoryKeys.TOOL_UNDO) || (_isGameplaySettled() && _data.CanUndo()));
 	public bool CanRequestShuffle => CanUseBooster(false) && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_SHUFFLE) &&
 		(!Inventory.CanUseBooster(InventoryKeys.TOOL_SHUFFLE) || (_isGameplaySettled() && HasAnyShuffleableBox()));
-	public bool CanRequestPath => CanUseBooster(false) && _engine != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
+	public bool CanRequestPath => CanUseBooster(false) && _operations != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
 	public bool CanUseUndo => CanUseBooster(true) && _data.CanUndo() &&
 		Inventory.CanUseBooster(InventoryKeys.TOOL_UNDO);
 	public bool CanUseShuffle => CanUseBooster(true) && HasAnyShuffleableBox() &&
@@ -72,7 +72,7 @@ public sealed class BoosterFlow
 	{
 		undo = shuffle = path = false;
 		if (!CanUseBooster(false)) return;
-		path = _engine != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
+		path = _operations != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
 		// HUD queries share one settled-state scan; action properties remain live.
 		bool settled = _isGameplaySettled();
 		undo = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
@@ -106,11 +106,20 @@ public sealed class BoosterFlow
 		_playAudio = playAudio;
 	}
 
-	public void Reset(GameData data, CoreGameplayEngine engine, GameLoader loader, Transform gameRoot)
+	public void Reset(GameData data, GameLoader loader, Transform gameRoot)
 	{
 		Cancel();
 		_data = data;
-		_engine = engine;
+		_operations = data != null ? new BoosterOperations(data) : null;
+		_loader = loader;
+		_gameRoot = gameRoot;
+	}
+
+	public void Reset(GameData data, BoosterOperations operations, GameLoader loader, Transform gameRoot)
+	{
+		Cancel();
+		_data = data;
+		_operations = operations ?? (data != null ? new BoosterOperations(data) : null);
 		_loader = loader;
 		_gameRoot = gameRoot;
 	}
@@ -164,8 +173,8 @@ public sealed class BoosterFlow
 
 	private bool ApplyToolPath()
 	{
-		if (!CanUseBooster(false) || _engine == null) return false;
-		_engine.UsePathBooster();
+		if (!CanUseBooster(false) || _operations == null) return false;
+		_operations.UsePathBooster();
 		_playAudio(_loader == null ? null : _loader.PathClip);
 		_refreshPathState();
 		return true;
@@ -173,7 +182,7 @@ public sealed class BoosterFlow
 
 	private bool ApplyToolUndo()
 	{
-		if (!CanUseBooster(true) || _engine == null || !_data.CanUndo()) return false;
+		if (!CanUseBooster(true) || _operations == null || !_data.CanUndo()) return false;
 		if (_data.UndoData.IsLinked) return ApplyLinkedUndo();
 
 		UndoData undo = _data.UndoData;
@@ -211,7 +220,7 @@ public sealed class BoosterFlow
 		}
 
 		IsBusy = true;
-		if (!_engine.UndoLastMove())
+		if (!_operations.UndoLastMove())
 		{
 			IsBusy = false;
 			return false;
@@ -258,7 +267,7 @@ public sealed class BoosterFlow
 
 	private bool ApplyLinkedUndo()
 	{
-		if (!_engine.PrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
+		if (!_operations.PrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
 		var origins = new List<(Vector3 position, Quaternion rotation, Vector3 scale, int color, Box source, Vector3 targetPosition)>();
 		var destOffsets = new Dictionary<Box, int>();
 		var initialSourceCounts = new Dictionary<Box, int>();
@@ -292,7 +301,7 @@ public sealed class BoosterFlow
 				origins.Add((departurePos, destination.transform.rotation, Vector3.one, entry.Color, source, landingPos));
 			}
 		}
-		if (!_engine.UndoLinked(plan)) return false;
+		if (!_operations.UndoLinked(plan)) return false;
 		IsBusy = true;
 		foreach (Slice slice in roadVisuals) if (slice != null) slice.DismissForUndo();
 		if (_loader != null && _loader.Slice != null && origins.Count > 0)
@@ -342,10 +351,10 @@ public sealed class BoosterFlow
 
 	private bool ApplyToolShuffle(Box box)
 	{
-		if (!CanUseBooster(true) || _engine == null) return false;
+		if (!CanUseBooster(true) || _operations == null) return false;
 
 		IsBusy = true;
-		int shuffledCount = _engine.UseShuffleBooster(box.Info);
+		int shuffledCount = _operations.UseShuffleBooster(box.Info);
 		if (shuffledCount <= 0)
 		{
 			IsBusy = false;
