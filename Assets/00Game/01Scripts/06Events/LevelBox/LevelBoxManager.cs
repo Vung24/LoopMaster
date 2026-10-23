@@ -22,6 +22,12 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
         ? GameProgressStore.HighestCompletedLevel : Math.Max(0, GameProgressStore.HighestUnlockedLevel - 1);
     public int FinishedLevel => FinishedProgress();
     public bool IsUnlock => FinishedLevel >= 4;
+    public bool ShouldShowTutorial() => IsUnlock && GamePrefs.GetInt(GamePrefKeys.LevelBoxTutorial, 0) == 0;
+    public void SetTutorialShown()
+    {
+        GamePrefs.SetInt(GamePrefKeys.LevelBoxTutorial, 1);
+        GamePrefs.Save();
+    }
     public int LastViewedLevel
     {
         get { EnsureInitialized(); return GamePrefs.GetInt(ViewedKey, Math.Max(4, GamePrefs.GetInt(BaselineKey))); }
@@ -93,7 +99,7 @@ public sealed class LevelBoxManager : MonoBehaviour, IGameManager
     }
     public void ClearData() => ClearOfflineData();
     public static void ClearOfflineData()
-    { GamePrefs.DeleteKey(BaselineKey); GamePrefs.DeleteKey(ViewedKey); GamePrefs.Save(); }
+    { GamePrefs.DeleteKey(BaselineKey); GamePrefs.DeleteKey(ViewedKey); GamePrefs.DeleteKey(GamePrefKeys.LevelBoxTutorial); GamePrefs.Save(); }
     private void OnDestroy() { if(Current==this) Current=null; status=ManagerStatus.Shutdown; }
 }
 

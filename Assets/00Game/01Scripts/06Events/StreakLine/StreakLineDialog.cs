@@ -100,9 +100,9 @@ namespace Snui.StreakLine
 				if (this == null || !isActiveAndEnabled) return;
 				if (!Managers.StreakLine.HasPlayedTutorial())
 				{
-					Managers.StreakLine.OnTutorialShown();
 					await ShowTutorial();
 					if (this == null || !isActiveAndEnabled) return;
+					Managers.StreakLine.OnTutorialShown();
 					if (_closeBtn != null) _closeBtn.gameObject.SetActive(true);
 				}
 				if (Managers.StreakLine.GetTempViewLevel() > 0) await PlayBalloonRise();

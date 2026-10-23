@@ -731,6 +731,15 @@ public class SpecialStreakProgress : MonoBehaviour
         _tweens.Add(seq);
     }
 
+    /// <summary>Opens the existing event tutorial when Special Streak unlocks on Home.</summary>
+    public async UniTask ShowHomeIntroduction(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        var manager = _manager ?? SpecialStreakManager.Ensure();
+        if (!isActiveAndEnabled || !manager.ShouldShowTutorial()) return;
+        await ShowDetailDialog().AttachExternalCancellation(token);
+    }
+
     private async UniTask CheckAutoPopDialog()
     {
         var manager = _manager ?? SpecialStreakManager.Ensure();
@@ -751,7 +760,7 @@ public class SpecialStreakProgress : MonoBehaviour
         {
             var dialog = await SpecialStreakDialog.Show(parent);
             if (this == null || version != _dialogVersion || !isActiveAndEnabled)
-            { if (dialog != null) dialog.Close(); return; }
+            { if (dialog != null) Destroy(dialog.gameObject); return; }
             _dialog = dialog;
         }
         finally { if (this != null && version == _dialogVersion) _dialogLoading = false; }
@@ -822,7 +831,8 @@ public class SpecialStreakProgress : MonoBehaviour
 
         if (_dialog != null)
         {
-            _dialog.Close();
+            // Leaving Home must not count an interrupted introduction as completed.
+            Destroy(_dialog.gameObject);
             _dialog = null;
         }
     }

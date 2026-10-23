@@ -117,6 +117,20 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
         if(eventData.button==PointerEventData.InputButton.Left) OnClickBtn();
     }
     public void OnClickBtn() => OpenDialog().Forget();
+    /// <summary>Introduces the unlocked machine on Home and waits for dismissal.</summary>
+    public async UniTask ShowHomeIntroduction(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (!isActiveAndEnabled || !LevelBoxManager.Ensure().ShouldShowTutorial()) return;
+        await OpenDialog();
+        await UniTask.WaitUntil(IsIntroductionClosed, cancellationToken: token);
+    }
+
+    private bool IsIntroductionClosed()
+    {
+        return this == null || !HasDialogOpen;
+    }
+
     private async UniTask OpenDialog()
     {
         if(_busy || !isActiveAndEnabled || (_home!=null && !_home.CanOpenLevelBox(this))) return;
@@ -159,6 +173,7 @@ public class LevelBoxMachine : MonoBehaviour, IPointerClickHandler
     private void OnRewardClosed() { if(_rewards!=null) _rewards.Closed-=OnRewardClosed; _rewards=null; _busy=false; if(isActiveAndEnabled) RefreshProgress(); }
     private void OnProgressClosed(int result)
     {
+        LevelBoxManager.Ensure().SetTutorialShown();
         if(_progress!=null) _progress.Dismissed-=OnProgressClosed;
         _progress=null; _busy=false;
         if(isActiveAndEnabled) RefreshProgress();

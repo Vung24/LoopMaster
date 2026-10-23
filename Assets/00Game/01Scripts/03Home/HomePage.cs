@@ -157,6 +157,14 @@ public class HomePage : MonoBehaviour
 				await _playButton.PlayChangeLevelAnim(token);
 			token.ThrowIfCancellationRequested();
 
+			// Initialization can replace an incomplete scene widget with its full prefab.
+			_levelBoxMachine = GetComponentInChildren<LevelBoxMachine>();
+			if (_levelBoxMachine != null)
+				await _levelBoxMachine.ShowHomeIntroduction(token);
+			if (_specialStreakProgress != null)
+				await _specialStreakProgress.ShowHomeIntroduction(token);
+			token.ThrowIfCancellationRequested();
+
 			if (_eventController != null)
 			{
 				await _eventController.ShowPopupDialog(token);

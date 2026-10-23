@@ -56,7 +56,8 @@ namespace Snui.StreakLine
 
 		public override async UniTask ShowPopupDialog()
 		{
-			if (Managers.StreakLine != null && Managers.StreakLine.ShouldShowRewardMilestonePopup())
+			if (Managers.StreakLine != null && Managers.StreakLine.IsOngoing &&
+				(!Managers.StreakLine.HasPlayedTutorial() || Managers.StreakLine.ShouldShowRewardMilestonePopup()))
 			{
 				var dialog = await StreakLineDialog.Show(transform.root);
 				if (dialog != null)

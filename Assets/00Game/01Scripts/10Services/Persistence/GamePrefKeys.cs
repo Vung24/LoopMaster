@@ -44,6 +44,7 @@ public static class GamePrefKeys
     public const string SpecialStreak = "events.special_streak";
     public const string LevelBoxBaseline = "events.level_box.baseline";
     public const string LevelBoxViewed = "events.level_box.viewed_level";
+    public const string LevelBoxTutorial = "tutorial.level_box";
     public const string PassState = "events.pass";
     public const string PassTutorial = "tutorial.pass";
     public const string StreakLine = "events.streak_line";
