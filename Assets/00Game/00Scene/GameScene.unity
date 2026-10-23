@@ -1411,9 +1411,11 @@ MonoBehaviour:
   OnLongPress:
     m_PersistentCalls:
       m_Calls: []
+    m_CallsDirty: 1
   OnLongPressCancel:
     m_PersistentCalls:
       m_Calls: []
+    m_CallsDirty: 1
 --- !u!29 &69
 OcclusionCullingSettings:
   m_ObjectHideFlags: 0
@@ -1935,7 +1937,7 @@ SceneRoots:
   - {fileID: 29}
   - {fileID: 30}
   - {fileID: 1383268596}
-  - {fileID: 96410050}
   - {fileID: 30574885}
   - {fileID: 1733990221}
+  - {fileID: 96410050}
   - {fileID: 212411642}
