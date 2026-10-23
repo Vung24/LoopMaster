@@ -22,8 +22,6 @@ public sealed class CoreGameplayEngine
 		_data = data ?? throw new ArgumentNullException(nameof(data));
 	}
 
-	public GameData Data => _data;
-
 	public bool UsePathBooster()
 	{
 		if (_data.ActiveLinkedLaunch != null) return false;
@@ -110,16 +108,6 @@ public sealed class CoreGameplayEngine
 		return ConveyorRules.CanMove(_data, slice, allowOverlap);
 	}
 
-	public bool IsSliceBlocked(SliceInfo slice, SliceInfo other, bool allowOverlap)
-	{
-		return ConveyorRules.IsSliceBlocked(_data, slice, other, allowOverlap);
-	}
-
-	public int GetSliceDistance(SliceInfo from, SliceInfo to)
-	{
-		return ConveyorRules.GetSliceDistance(_data, from, to);
-	}
-
 	public bool RevealTopSecretRun(BoxInfo box)
 	{
 		if (box == null) return false;
@@ -160,46 +148,5 @@ public sealed class CoreGameplayEngine
 		if (_data.IsGameOver()) return CoreMoveResult.GameWon;
 		if (_data.IsGameFailed()) return CoreMoveResult.GameFailed;
 		return CoreMoveResult.None;
-	}
-
-	private int GetFirstMovableIndex(List<SliceInfo> slices, bool allowOverlap)
-	{
-		for (int i = 0; i < slices.Count; i++)
-			if (CanMove(slices[i], allowOverlap)) return i;
-		return -1;
-	}
-
-	private bool IsBoxBlockIndex(int pathIndex)
-	{
-		return ConveyorRules.IsBoxBlockIndex(_data, pathIndex);
-	}
-
-	private int WrapPathIndex(int index)
-	{
-		int count = _data.PathPoints.Count;
-		if (count <= 0) return index;
-		return ((index % count) + count) % count;
-	}
-
-	private void HandleFinishedBox(BoxInfo box)
-	{
-		_data.LastFinishBoxTime = _data.Duration;
-		_data.FinishBoxCount = _data.GetFinishBoxCount();
-		_data.UndoData.Clear();
-
-		foreach (CubeInfo key in box.CubeInfos.Where(cube => cube.GroupKeyId > 0).ToList())
-		{
-			_data.UnlockGroupColorLock(key.GroupKeyId);
-			key.ClearGroupColorLockKey();
-		}
-
-		foreach (BoxInfo target in _data.Boxes)
-		{
-			if (target.NumLock > 0) target.NumLock--;
-			foreach (CubeInfo cube in target.CubeInfos)
-				if (cube.NumLock > 0) cube.NumLock--;
-			if (target.IsAdjacentLocked && target.CanUnlockAdjacentBox(box))
-				target.IsAdjacentLocked = false;
-		}
 	}
 }
