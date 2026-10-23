@@ -183,12 +183,16 @@ public sealed class GameLevelPresentationFlow
 		if (stage == 1)
 		{
 			Vector2 position = Vector2.zero;
-			Box target = _boxes.Count > 1 ? _boxes[1] : (_boxes.Count > 0 ? _boxes[0] : null);
-			Canvas canvas = _canvas.GetComponent<Canvas>();
+			Box target = _boxes != null && _boxes.Count > 0 ? _boxes[0] : null;
+			Canvas canvas = _canvas != null ? _canvas.GetComponent<Canvas>() : null;
 			Camera uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-			if (target != null && gameCamera != null)
-				RectTransformUtility.ScreenPointToLocalPointInRectangle(instance.transform as RectTransform,
-					gameCamera.WorldToScreenPoint(target.transform.position), uiCamera, out position);
+			RectTransform targetRect = _newPlayerTutorial != null ? _newPlayerTutorial.FingerParentRect : (instance.transform as RectTransform);
+			if (target != null && gameCamera != null && targetRect != null)
+			{
+				Vector3 worldPos = target.GetTopSlicePos();
+				Vector3 screenPoint = gameCamera.WorldToScreenPoint(worldPos);
+				RectTransformUtility.ScreenPointToLocalPointInRectangle(targetRect, screenPoint, uiCamera, out position);
+			}
 			_newPlayerTutorial.ShowLevel1(position);
 		}
 		else if (stage == 2) _newPlayerTutorial.ShowLevel2();
