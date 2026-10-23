@@ -56,7 +56,6 @@ public sealed class BoosterTutorialGuide : MonoBehaviour
                 Canvas.ForceUpdateCanvases();
                 var context = new BoosterTutorialContext(guide, controller, key);
                 await BoosterTutorialRegistry.GetStep(key).ExecuteAsync(context, lifetime.Token);
-                if (!BoosterUnlockProgress.IsFirstUseFree(key)) GameplayToast.Show("Great!");
             }
         }
         finally

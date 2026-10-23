@@ -108,8 +108,7 @@ public sealed class GameLevelPresentationFlow
 		}
 		UICanvas canvas = _canvas.GetComponent<UICanvas>();
 		ToolBase tool = canvas == null ? null : canvas.GetTool(key);
-		Sprite icon = info.Icon;
-		if (icon == null && tool != null) icon = tool.IconSprite;
+		Sprite icon = (tool != null && tool.IconSprite != null) ? tool.IconSprite : info.Icon;
 		if (tool == null || icon == null)
 		{
 			Debug.LogError("Booster introduction requires a bound HUD tool with an icon: " + key, _controller);
@@ -136,8 +135,7 @@ public sealed class GameLevelPresentationFlow
 				{
 					Destroy(instance);
 				}
-				await BoosterFlyPresenter.PlayFlight(_canvas.transform, icon, origin,
-					tool.transform as RectTransform, token);
+				await BoosterFlyPresenter.PlayFlight(_canvas.transform, icon, origin, tool, token);
 				token.ThrowIfCancellationRequested();
 				BoosterUnlockProgress.MarkIntroSeen(key);
 			}

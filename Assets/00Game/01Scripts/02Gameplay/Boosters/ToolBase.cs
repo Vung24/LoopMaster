@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,8 +25,22 @@ public class ToolBase : MonoBehaviour
 	private Image _iconImage;
 
 	public string Key => _key;
-	public Sprite IconSprite => _iconImage == null ? null : _iconImage.sprite;
-	public RectTransform IconRectTransform => _iconImage == null ? null : _iconImage.rectTransform;
+	public Sprite IconSprite
+	{
+		get
+		{
+			if (_iconImage == null) CacheLegacyPrefabReferences();
+			return _iconImage != null ? _iconImage.sprite : null;
+		}
+	}
+	public RectTransform IconRectTransform
+	{
+		get
+		{
+			if (_iconImage == null) CacheLegacyPrefabReferences();
+			return _iconImage != null ? _iconImage.rectTransform : null;
+		}
+	}
 
 	public void SetIntroLocked(bool locked)
 	{
