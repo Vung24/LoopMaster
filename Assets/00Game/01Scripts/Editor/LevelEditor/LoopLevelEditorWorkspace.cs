@@ -224,6 +224,7 @@ public sealed partial class LoopLevelEditorWindow
                     {
                         GUILayout.Label(_canvasSelection.Count + " hộp đã chọn", EditorStyles.miniLabel);
                         if (GUILayout.Button("📋 Nhân bản", GUILayout.Height(22))) DuplicateWorkspace(false);
+                        if (GUILayout.Button("⚡ Thêm màu mới (A)", GUILayout.Height(22))) TryQuickAddUnusedColor();
                         if (GUILayout.Button("🗑️ Xóa hộp", GUILayout.Height(22)))
                             WorkspaceCommand("Xóa hộp", DeleteSelectedBoxes);
                         if (GUILayout.Button("⚡ Đổ màu thiếu (đủ bộ 4)", GUILayout.Height(22)))
@@ -865,6 +866,10 @@ public sealed partial class LoopLevelEditorWindow
             if(e.keyCode==KeyCode.E){_canvasTool=2;_status="Công cụ: 3. Tô màu khối";e.Use();Repaint();return;}
             if(e.keyCode==KeyCode.R){_canvasTool=5;_status="Công cụ: 4. Xóa (Eraser)";e.Use();Repaint();return;}
             if(e.keyCode==KeyCode.T){_canvasTool=6;_status="Công cụ: 1. Đường đi";e.Use();Repaint();return;}
+            if(!e.control&&!e.command&&!e.alt&&e.keyCode==KeyCode.A)
+            {
+                if(TryQuickAddUnusedColor()){e.Use();Repaint();return;}
+            }
             if(e.keyCode==KeyCode.Escape)
             {
                 CancelCanvasGesture();
