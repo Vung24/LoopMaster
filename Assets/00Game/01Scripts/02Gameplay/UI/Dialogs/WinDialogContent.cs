@@ -481,7 +481,7 @@ public class WinDialogContent : DialogContent
 		GameData data = _offeredData ?? (_controller != null ? _controller.Data : null);
 		if (_controller != null && data != null)
 		{
-			if (!_controller.TryClaimWinReward(data, isDouble, out _))
+			if (!_controller.ClaimWinReward(data, isDouble, out _))
 			{
 				if (!_controller.HasClaimedWinReward(data))
 				{

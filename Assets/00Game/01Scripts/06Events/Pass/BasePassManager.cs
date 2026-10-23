@@ -139,7 +139,7 @@ public abstract class BasePassManager : BaseEventManager
     public void NotifyPurchaseSuccessAnimationEnded() => PurchaseSuccessAnimationEvent.Invoke();
     private void OnGameWin(object args)
     {
-        if (!GameWinArgs.TryGet(args, GameWinArgs.PassPoints, out int count) || count <= 0 || !CanCollectPoints()) return;
+        if (!GameWinArgs.Get(args, GameWinArgs.PassPoints, out int count) || count <= 0 || !CanCollectPoints()) return;
         int before = _state.TotalPoints;
         _state.TotalPoints = (int)Math.Min((long)NormalGoal + FinalTotalPointCount, (long)before + count);
         _state.PendingPoints = (int)Math.Min(int.MaxValue, (long)_state.PendingPoints + _state.TotalPoints - before);

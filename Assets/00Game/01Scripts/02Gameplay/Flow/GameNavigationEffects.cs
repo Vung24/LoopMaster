@@ -17,7 +17,7 @@ public sealed class GameNavigationEffects : IGameNavigationEffects
         }
     }
     public bool IsLevelCompleted(int level) => GameProgressStore.IsLevelCompleted(level);
-    public bool TrySettlePendingWins() => SpecialStreakManager.Ensure().SettlePending();
+    public bool SettlePendingWins() => SpecialStreakManager.Ensure().SettlePending();
     public void SynchronizeStreakLevel() => Managers.StreakLine?.SynchronizeTempLevel();
 
     public void OnLevelAbandoned()

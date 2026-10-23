@@ -48,8 +48,8 @@ public sealed class CoreGameplayEngine
 	{
 		if (_data.UndoData.IsLinked)
 		{
-			if (!TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
-			return TryUndoLinked(plan);
+			if (!PrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
+			return UndoLinked(plan);
 		}
 		UndoData undo = _data.UndoData;
 		if (undo == null || !undo.CanUndo() ||
@@ -91,16 +91,16 @@ public sealed class CoreGameplayEngine
 		}
 	}
 
-	public bool TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)
+	public bool PrepareLinkedUndo(out LinkedCubeUndoPlan plan)
 	{
 		plan = null;
-		return _data.UndoData.LinkedRecord != null && _data.UndoData.LinkedRecord.TryPrepare(out plan);
+		return _data.UndoData.LinkedRecord != null && _data.UndoData.LinkedRecord.Prepare(out plan);
 	}
 
-	public bool TryUndoLinked(LinkedCubeUndoPlan plan)
+	public bool UndoLinked(LinkedCubeUndoPlan plan)
 	{
 		LinkedCubeUndoRecord record = _data.UndoData.LinkedRecord;
-		if (record == null || !record.TryCommit(plan)) return false;
+		if (record == null || !record.Commit(plan)) return false;
 		_data.UndoData.Clear();
 		return true;
 	}
@@ -335,7 +335,7 @@ public sealed class CoreGameplayEngine
 
 		foreach (CubeInfo key in box.CubeInfos.Where(cube => cube.GroupKeyId > 0).ToList())
 		{
-			_data.TryUnlockGroupColorLock(key.GroupKeyId);
+			_data.UnlockGroupColorLock(key.GroupKeyId);
 			key.ClearGroupColorLockKey();
 		}
 

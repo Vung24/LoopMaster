@@ -101,7 +101,7 @@ public sealed class GameLevelPresentationFlow
 	{
 		string key = BoosterUnlockConfig.GetBoosterForLevel(data.GetPuzzleActualLevel());
 		if (key == null) return;
-		BoosterUnlockConfig.TryGetInfo(key, out BoosterUnlockInfo info);
+		BoosterUnlockConfig.GetInfo(key, out BoosterUnlockInfo info);
 		if (Snui.CheatManager.SkipTutorial)
 		{
 			BoosterUnlockProgress.MarkIntroSeen(key);

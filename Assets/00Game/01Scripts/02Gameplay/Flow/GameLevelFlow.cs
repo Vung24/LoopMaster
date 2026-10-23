@@ -1,7 +1,7 @@
 public interface ILevelDataSource
 {
 	bool HasExactLevel(int level);
-	bool TryCreateExactLevel(int level, out GameData data);
+	bool CreateExactLevel(int level, out GameData data);
 }
 
 public sealed class GameLevelFlow
@@ -25,16 +25,16 @@ public sealed class GameLevelFlow
 	public bool HasNext(int currentLevel) => _source != null && currentLevel > 0 &&
 		currentLevel < int.MaxValue && _source.HasExactLevel(currentLevel + 1);
 
-	public bool TryCreateNext(int currentLevel, out GameData data)
+	public bool CreateNext(int currentLevel, out GameData data)
 	{
 		data = null;
 		if (_source == null || currentLevel < 1 || currentLevel == int.MaxValue) return false;
 		GameData previous = GameData.Current;
-		try { return _source.TryCreateExactLevel(currentLevel + 1, out data); }
+		try { return _source.CreateExactLevel(currentLevel + 1, out data); }
 		finally { GameData.SetCurrent(previous); }
 	}
 
-	public bool TryCreateReplay(GameData currentData, int level, out GameData data)
+	public bool CreateReplay(GameData currentData, int level, out GameData data)
 	{
 		data = null;
 		if (currentData == null || level < 1) return false;
@@ -42,7 +42,7 @@ public sealed class GameLevelFlow
 		try
 		{
 			if (_source != null && _source.HasExactLevel(level) &&
-				_source.TryCreateExactLevel(level, out data)) return true;
+				_source.CreateExactLevel(level, out data)) return true;
 #if UNITY_EDITOR
             if (GamePrefs.EditorCampaignLoader != null) return false;
 #endif

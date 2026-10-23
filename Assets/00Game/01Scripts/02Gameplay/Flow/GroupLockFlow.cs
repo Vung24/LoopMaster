@@ -6,7 +6,7 @@ using UnityEngine;
 public interface IGroupLockScene
 {
     IReadOnlyList<Box> Boxes { get; }
-    bool TryGetGroupRollDoor(int groupId, out GroupRollDoor door);
+    bool GetGroupRollDoor(int groupId, out GroupRollDoor door);
     void RemoveGroupRollDoor(int groupId, GroupRollDoor expectedDoor);
 }
 
@@ -44,7 +44,7 @@ public sealed class GroupLockFlow
         {
             if (cube.GroupKeyId <= 0) continue;
             int groupId = cube.GroupKeyId;
-            if (_data.TryUnlockGroupColorLock(groupId))
+            if (_data.UnlockGroupColorLock(groupId))
             {
                 _unlockingGroups.Add(groupId);
                 PlayUnlock(cube, groupId, _version).Forget();
@@ -63,7 +63,7 @@ public sealed class GroupLockFlow
             CubeInfo keyCube = box.Info.GetTopGroupLockKey();
             if (keyCube == null || _unlockingGroups.Contains(keyCube.GroupKeyId)) continue;
             int groupId = keyCube.GroupKeyId;
-            if (!_data.TryUnlockGroupColorLock(groupId)) continue;
+            if (!_data.UnlockGroupColorLock(groupId)) continue;
             _unlockingGroups.Add(groupId);
             _data.UndoData.Clear();
             PlayUnlock(keyCube, groupId, _version).Forget();
@@ -80,13 +80,13 @@ public sealed class GroupLockFlow
 
     private async UniTask PlayUnlock(CubeInfo cube, int groupId, int version)
     {
-        _scene.TryGetGroupRollDoor(groupId, out GroupRollDoor door);
+        _scene.GetGroupRollDoor(groupId, out GroupRollDoor door);
         GroupColorLockKey key = TakeKey(cube);
         if (key != null) _keys.Add(key);
         try
         {
             if (key != null && door != null &&
-                door.TryGetKeyInsertPose(out Vector3 position, out Quaternion rotation, out Vector3 direction))
+                door.GetKeyInsertPose(out Vector3 position, out Quaternion rotation, out Vector3 direction))
             {
                 key.DetachFromCube();
                 await key.PlayInsertTo(position, rotation, direction);

@@ -158,7 +158,7 @@ public static class SolverSurpriseRules
 		return result;
 	}
 
-	public static bool TryResolveFullSurprise(
+	public static bool ResolveFullSurprise(
 		List<SolverBlock> bottle,
 		BoxType boxType,
 		IReadOnlyDictionary<int, List<SolverBlock>> normalCubesByType,

@@ -135,7 +135,7 @@ internal sealed class LinkedCubeUndoRecord
 		return true;
 	}
 
-	internal bool TryPrepare(out LinkedCubeUndoPlan plan)
+	internal bool Prepare(out LinkedCubeUndoPlan plan)
 	{
 		plan = null;
 		if (!CanUndo()) return false;
@@ -143,7 +143,7 @@ internal sealed class LinkedCubeUndoRecord
 		return true;
 	}
 
-	internal bool TryCommit(LinkedCubeUndoPlan plan)
+	internal bool Commit(LinkedCubeUndoPlan plan)
 	{
 		if (plan == null || plan.Owner != this || !CanUndo()) return false;
 		// Prepare all allocations first. The remaining commit only replaces already validated state.

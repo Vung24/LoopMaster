@@ -6,7 +6,7 @@ public class GameWinArgs
 {
 	public const string PassPoints = "passPoints";
 
-	public static bool TryGet(object args, string key, out int intVal)
+	public static bool Get(object args, string key, out int intVal)
 	{
 		intVal = 0;
 		if (args == null) return false;

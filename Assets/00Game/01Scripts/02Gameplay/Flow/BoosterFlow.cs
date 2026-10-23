@@ -126,9 +126,9 @@ public sealed class BoosterFlow
 		_nextShuffleCheckTime = 0f;
 	}
 
-	public bool TryUsePath() => Inventory.TryUseBooster(InventoryKeys.TOOL_PATH, ApplyToolPath);
-	public bool TryUseUndo() => Inventory.TryUseBooster(InventoryKeys.TOOL_UNDO, ApplyToolUndo);
-	public bool TryUseShuffle()
+	public bool UsePath() => Inventory.TryUseBooster(InventoryKeys.TOOL_PATH, ApplyToolPath);
+	public bool UseUndo() => Inventory.TryUseBooster(InventoryKeys.TOOL_UNDO, ApplyToolUndo);
+	public bool UseShuffle()
 	{
 		if (!CanUseShuffle) return false;
 		IsSelectingShuffle = true;
@@ -140,7 +140,7 @@ public sealed class BoosterFlow
 		IsSelectingShuffle = false;
 	}
 
-	public bool TryUseShuffle(Box box)
+	public bool UseShuffle(Box box)
 	{
 		if (!CanSelectShuffleBox(box)) return false;
 		// Selection itself never spends inventory. Commit only the chosen box.
@@ -258,7 +258,7 @@ public sealed class BoosterFlow
 
 	private bool ApplyLinkedUndo()
 	{
-		if (!_engine.TryPrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
+		if (!_engine.PrepareLinkedUndo(out LinkedCubeUndoPlan plan)) return false;
 		var origins = new List<(Vector3 position, Quaternion rotation, Vector3 scale, int color, Box source, Vector3 targetPosition)>();
 		var destOffsets = new Dictionary<Box, int>();
 		var initialSourceCounts = new Dictionary<Box, int>();
@@ -292,7 +292,7 @@ public sealed class BoosterFlow
 				origins.Add((departurePos, destination.transform.rotation, Vector3.one, entry.Color, source, landingPos));
 			}
 		}
-		if (!_engine.TryUndoLinked(plan)) return false;
+		if (!_engine.UndoLinked(plan)) return false;
 		IsBusy = true;
 		foreach (Slice slice in roadVisuals) if (slice != null) slice.DismissForUndo();
 		if (_loader != null && _loader.Slice != null && origins.Count > 0)

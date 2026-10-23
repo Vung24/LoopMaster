@@ -3,7 +3,7 @@ using System;
 public interface IWinRewardEconomy
 {
     int GetLevelCoins(HardLevel difficulty);
-    bool TryGrantCoins(int coins, bool doubled);
+    bool GrantCoins(int coins, bool doubled);
 }
 
 // Owns the reward snapshot and claim guard, independently of UI and navigation.
@@ -52,7 +52,7 @@ public sealed class WinRewardFlow
     public int GetCoins(GameData data) => _ready && data != null && data == _activeData &&
         data == _rewardData ? _coins : 0;
 
-    public bool TryClaim(GameData data, bool doubled, bool isTransitioning, out int coins)
+    public bool Claim(GameData data, bool doubled, bool isTransitioning, out int coins)
     {
         coins = 0;
         int reward = GetCoins(data);
@@ -61,7 +61,7 @@ public sealed class WinRewardFlow
         int version = _version;
         // Inventory callbacks can re-enter claim or initialize another level.
         _claimed = true;
-        if (!_economy.TryGrantCoins(reward, doubled))
+        if (!_economy.GrantCoins(reward, doubled))
         {
             if (version == _version) _claimed = false;
             return false;

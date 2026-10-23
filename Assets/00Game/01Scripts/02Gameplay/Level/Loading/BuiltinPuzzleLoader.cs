@@ -60,10 +60,10 @@ public class BuiltinPuzzleLoader : MonoBehaviour, ILevelDataSource
 
 	public bool LoadExactLevel(int levelNumber, GameController controller = null)
 	{
-		return TryCreateExactLevel(levelNumber, out GameData data) && InitializePrepared(data, controller);
+		return CreateExactLevel(levelNumber, out GameData data) && InitializePrepared(data, controller);
 	}
 
-	public bool TryCreateExactLevel(int levelNumber, out GameData data)
+	public bool CreateExactLevel(int levelNumber, out GameData data)
 	{
 		data = null;
 		if (_loading || levelNumber < 1 || GameProgressStore.IsLevelCompleted(levelNumber)) return false;

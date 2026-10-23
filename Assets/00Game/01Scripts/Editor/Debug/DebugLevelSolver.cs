@@ -228,7 +228,7 @@ public sealed class DebugLevelSolver
 
     private static GameData SimulateLinkedClick(GameData data, BoxInfo source)
     {
-        if (data.PathPoints.Count < 2 || !LinkedCubeLaunch.TryBegin(data, source, out LinkedCubeLaunch launch, out _))
+        if (data.PathPoints.Count < 2 || !LinkedCubeLaunch.Begin(data, source, out LinkedCubeLaunch launch, out _))
             return null;
         var engine = new CoreGameplayEngine(data);
         var finished = new HashSet<BoxInfo>(data.Boxes.Where(box => box.IsFinished()));
@@ -341,7 +341,7 @@ public sealed class DebugLevelSolver
                 }
                 foreach (CubeInfo key in target.CubeInfos.Where(cube => cube.GroupKeyId > 0))
                 {
-                    data.TryUnlockGroupColorLock(key.GroupKeyId);
+                    data.UnlockGroupColorLock(key.GroupKeyId);
                     key.ClearGroupColorLockKey();
                 }
                 UnlockAvailableKeys(data);
@@ -353,7 +353,7 @@ public sealed class DebugLevelSolver
     {
         foreach (BoxInfo box in data.Boxes.Where(box => !box.HasBlockingLock()))
             foreach (CubeInfo cube in box.GetTopCubes(false).Where(cube => cube.GroupKeyId > 0))
-                if (data.TryUnlockGroupColorLock(cube.GroupKeyId)) cube.ClearGroupColorLockKey();
+                if (data.UnlockGroupColorLock(cube.GroupKeyId)) cube.ClearGroupColorLockKey();
     }
 }
 #endif

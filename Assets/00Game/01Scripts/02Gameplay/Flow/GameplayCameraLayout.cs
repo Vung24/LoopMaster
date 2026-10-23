@@ -28,7 +28,7 @@ public static class GameplayCameraLayout
 			1f - 2f * horizontalInset / pixels.width, 1f - 2f * inset / pixels.height);
 	}
 
-	public static bool TryGetBounds(Transform root, out Bounds bounds)
+	public static bool GetBounds(Transform root, out Bounds bounds)
 	{
 		bounds = default;
 		bool found = false;

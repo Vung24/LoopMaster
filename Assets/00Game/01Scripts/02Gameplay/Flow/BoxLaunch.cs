@@ -118,7 +118,7 @@ public sealed class BoxLaunch
 		float duration = _getJumpDuration?.Invoke() ?? GameplayFeedbackRules.SliceJumpDuration;
 		float height = _getJumpHeight?.Invoke() ?? GameplayFeedbackRules.SliceJumpHeight;
 
-		if (!transfers.TryLaunchLinked(box, duration, height, out LinkedCubeLaunchFailure failure))
+		if (!transfers.LaunchLinked(box, duration, height, out LinkedCubeLaunchFailure failure))
 		{
 			box.PlayClickedAnim(false);
 			LinkedCubeCable cable = _getLinkedCable?.Invoke(box.Info);
