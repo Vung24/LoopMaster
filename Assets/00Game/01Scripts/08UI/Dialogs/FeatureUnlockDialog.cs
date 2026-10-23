@@ -10,7 +10,8 @@ public enum FeatureType
 {
     None = 0, SecretCube = 1, ColorLock = 2, EnterOnly = 4, NumLock = 8,
     GroupColorLock = 16, LimitedColor = 32, AdjacentLock = 64, SingleBox = 128,
-    LongBox = 256, CubeNumLock = 512, SurpriseCube = 1024, LinkedCubes = 2048
+    LongBox = 256, CubeNumLock = 512, SurpriseCube = 1024, LinkedCubes = 2048,
+    LinkedHiddenCubes = 4096
 }
 
 public class FeatureUnlockDialog : BasePopup
@@ -35,6 +36,7 @@ public class FeatureUnlockDialog : BasePopup
     [SerializeField] private Sprite _cubeNumLockSprite;
     [SerializeField] private Sprite _surpriseCubeSprite;
     [SerializeField] private Sprite _linkedCubesSprite;
+    [SerializeField] private Sprite _linkedHiddenCubesSprite;
     private FeatureType _featureType;
 
     protected override void Start()
@@ -55,7 +57,8 @@ public class FeatureUnlockDialog : BasePopup
         if (_featureImage != null)
         {
             _featureImage.sprite = GetFeatureSprite();
-            if (type == FeatureType.LinkedCubes) _featureImage.preserveAspect = true;
+            if (type == FeatureType.LinkedCubes || type == FeatureType.LinkedHiddenCubes)
+                _featureImage.preserveAspect = true;
         }
         foreach (Button button in new[] { _continueButton, _fullButton })
         {
@@ -120,6 +123,7 @@ public class FeatureUnlockDialog : BasePopup
             case FeatureType.CubeNumLock: return _cubeNumLockSprite;
             case FeatureType.SurpriseCube: return _surpriseCubeSprite;
             case FeatureType.LinkedCubes: return _linkedCubesSprite;
+            case FeatureType.LinkedHiddenCubes: return _linkedHiddenCubesSprite;
             default: return null;
         }
     }
@@ -140,6 +144,7 @@ public class FeatureUnlockDialog : BasePopup
             case FeatureType.CubeNumLock: return "Frozen Block";
             case FeatureType.SurpriseCube: return "Surprise Blocks";
             case FeatureType.LinkedCubes: return "Linked Blocks";
+            case FeatureType.LinkedHiddenCubes: return "Hidden Linked Blocks";
             default: return "New Feature";
         }
     }
@@ -160,6 +165,7 @@ public class FeatureUnlockDialog : BasePopup
             case FeatureType.CubeNumLock: return "Complete slots to reduce the counter and free the frozen block.";
             case FeatureType.SurpriseCube: return "Complete the surprise color to reveal more blocks.";
             case FeatureType.LinkedCubes: return "Clear above both linked blocks. Tap either one to release them together.";
+            case FeatureType.LinkedHiddenCubes: return "Clear the blocks above to reveal the hidden partner. When both linked blocks are clear, tap either to release them together.";
             default: return string.Empty;
         }
     }
@@ -167,7 +173,7 @@ public class FeatureUnlockDialog : BasePopup
     public static FeatureType GetUnseenFeature(GameData data, FeatureType shown)
     {
         if (data == null) return FeatureType.None;
-        foreach (FeatureType feature in new[] { FeatureType.SecretCube, FeatureType.ColorLock, FeatureType.EnterOnly,
+        foreach (FeatureType feature in new[] { FeatureType.LinkedHiddenCubes, FeatureType.SecretCube, FeatureType.ColorLock, FeatureType.EnterOnly,
             FeatureType.NumLock, FeatureType.GroupColorLock, FeatureType.LimitedColor, FeatureType.AdjacentLock,
             FeatureType.SingleBox, FeatureType.LongBox, FeatureType.CubeNumLock, FeatureType.SurpriseCube, FeatureType.LinkedCubes })
         {
@@ -175,6 +181,7 @@ public class FeatureUnlockDialog : BasePopup
             bool present;
             switch (feature)
             {
+                case FeatureType.LinkedHiddenCubes: present = data.Boxes.Any(b => b.CubeInfos.Any(c => c.LinkedPairId > 0 && c.IsSecret)); break;
                 case FeatureType.SecretCube: present = data.Boxes.Any(b => b.CubeInfos.Any(c => c.IsSecret)); break;
                 case FeatureType.ColorLock: present = data.Boxes.Any(b => b.LockColor > 0); break;
                 case FeatureType.EnterOnly: present = data.Boxes.Any(b => b.IsEnterOnly); break;
