@@ -29,7 +29,6 @@ public sealed class ConveyorFlow
 		public int Distance;
 	}
 	private GameData Data;
-	private CoreGameplayEngine _engine;
 	private float _normalTickTime;
 	private float _speedTickTime;
 	private int _tickCount;
@@ -55,10 +54,9 @@ public sealed class ConveyorFlow
 		_arrivalBatch = arrivalBatch;
 	}
 
-	public void Reset(GameData data, CoreGameplayEngine engine)
+	public void Reset(GameData data)
 	{
 		Data = data;
-		_engine = engine;
 		_normalTickTime = 0f;
 		_speedTickTime = 0f;
 		_tickCount = 0;

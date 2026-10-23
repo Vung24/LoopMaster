@@ -34,7 +34,6 @@ public sealed class GameNavigationEffects : IGameNavigationEffects
         try
         {
             token.ThrowIfCancellationRequested();
-            // HomePage presents pending Lava results after the scene transition and loading dismissal.
             if (IsSceneChanging) return false;
             GameData.ClearCurrent();
             clearedCurrent = true;
