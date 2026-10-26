@@ -134,6 +134,46 @@ public static class FeatureFlightVerification
         object[] pose = { camera, overlay, null, null };
         Expect(!(bool)selected.GetType().GetMethod("TryGetPose").Invoke(selected, pose), "stale target rejected after reset version changes");
         VerifyFeatureMappings(controller, overlay);
+        VerifyVisibleNonTopCube(controller, overlay);
+    }
+
+    private static void VerifyVisibleNonTopCube(GameController controller, RectTransform overlay)
+    {
+        GameData level = GameLevelDataConverter.FromJson(System.IO.File.ReadAllText(
+            "Assets/00Game/Resources/LevelData/Level 6.json"));
+        BoxInfo info = level.Boxes[0];
+        Box slot = CreateBox("Level6SecretSlot", info.BoxType);
+        Set(slot, "_info", info);
+        Cube secret = null;
+        for (int i = 0; i < info.CubeInfos.Count; i++)
+        {
+            Cube cube = AddCube(slot, info.CubeInfos[i]);
+            cube.transform.localPosition = new Vector3(i * .3f, 0f, 0f);
+            if (cube.Info.IsSecret) secret = cube;
+        }
+        Expect(secret != null && info.PeekTopCube() != secret.Info, "level 6 secret is not the next movable cube");
+        var boxes = new List<Box> { slot };
+        object target = Select(FeatureType.SecretCube, controller, boxes, overlay);
+        Expect(target != null, "level 6 visible secret marker is a flight target");
+        object[] arguments = { controller.MainCamera, overlay, null, null };
+        Expect((bool)target.GetType().GetMethod("TryGetPose").Invoke(target, arguments),
+            "non-top target stays valid during flight");
+        Expect(secret.Info.IsSecret, "selecting a secret target does not reveal its color");
+
+        SpriteRenderer marker = secret.GetComponentInChildren<SpriteRenderer>();
+        marker.enabled = false;
+        Expect(Select(FeatureType.SecretCube, controller, boxes, overlay) == null, "disabled non-top marker is rejected");
+        marker.enabled = true;
+        secret.transform.localPosition = new Vector3(1000f, 0f, 0f);
+        Cube visibleSecret = AddCube(slot);
+        visibleSecret.Info.IsSecret = true;
+        AddCube(slot);
+        target = Select(FeatureType.SecretCube, controller, boxes, overlay);
+        Expect(target != null, "offscreen first cube does not hide another visible target in the same slot");
+        info.CubeInfos.Remove(visibleSecret.Info);
+        arguments[3] = null;
+        Expect(!(bool)target.GetType().GetMethod("TryGetPose").Invoke(target, arguments),
+            "target is rejected after its cube is removed from authoritative slot data");
     }
 
     private static void VerifyFeatureMappings(GameController controller, RectTransform overlay)
@@ -205,14 +245,14 @@ public static class FeatureFlightVerification
         return quad;
     }
 
-    private static Cube AddCube(Box box)
+    private static Cube AddCube(Box box, CubeInfo info = null)
     {
         GameObject root = Create("Cube");
         root.transform.SetParent(box.transform, false);
         Cube cube = root.AddComponent<Cube>();
-        var info = new CubeInfo(1, GameData.SliceCountPerGroup);
+        if (info == null) info = new CubeInfo(1, GameData.SliceCountPerGroup);
         info.CubeSc = cube;
-        box.Info.CubeInfos.Add(info);
+        if (!box.Info.CubeInfos.Contains(info)) box.Info.CubeInfos.Add(info);
         box.Cubes.Add(cube);
         SpriteRenderer marker = Create("Marker").AddComponent<SpriteRenderer>();
         marker.transform.SetParent(root.transform, false);

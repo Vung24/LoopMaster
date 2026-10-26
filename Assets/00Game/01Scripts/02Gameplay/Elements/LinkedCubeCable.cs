@@ -27,6 +27,10 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private float _nextReadyCheckTime;
 	private Color _firstTintColor, _secondTintColor;
 	private bool _hasTintColor;
+	private Vector3 _geometryFirstAnchor, _geometrySecondAnchor;
+	private Vector3 _geometryFirstElbow, _geometrySecondElbow;
+	private float _geometryThickness;
+	private bool _hasGeometry;
 
 	/// <summary>Creates a two-color cable with side exits and a straight middle span.</summary>
 	public void Initialize(GameData data)
@@ -43,6 +47,7 @@ public sealed class LinkedCubeCable : MonoBehaviour
 			throw new InvalidOperationException("The cable pair must belong to the initialized board.");
 		_data = data;
 		_pair = pair;
+		_hasGeometry = false;
 		if (_pair == null) { enabled = false; return; }
 		if (_bridgeMesh == null || _jointMesh == null || _bridgeMaterial == null)
 			throw new InvalidOperationException("Assign the cylinder mesh, joint mesh and material on LinkedCubeCable.prefab.");
@@ -127,6 +132,16 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		if (Time.time < _blockedUntil) pulse += .06f * Mathf.Sin(Time.time * 30f);
 		else if (ready) pulse += .015f * Mathf.Sin(Time.time * 4f);
 		float thickness = _cableDiameter * fade * pulse;
+		RefreshGeometry(thickness);
+		UpdateTint();
+	}
+
+	private void RefreshGeometry(float thickness)
+	{
+		// Exact comparisons retain tiny movements and the existing pulse/fade timeline.
+		if (_hasGeometry && _geometryThickness == thickness &&
+			_geometryFirstAnchor.Equals(_firstAnchor) && _geometrySecondAnchor.Equals(_secondAnchor) &&
+			_geometryFirstElbow.Equals(_firstElbow) && _geometrySecondElbow.Equals(_secondElbow)) return;
 		UpdateBend(_firstBendRenderers, _firstAnchor, _firstElbow, _secondElbow, thickness,
 			out Vector3 firstExit, out Vector3 firstMiddle);
 		UpdateBend(_secondBendRenderers, _secondAnchor, _secondElbow, _firstElbow, thickness,
@@ -140,7 +155,12 @@ public sealed class LinkedCubeCable : MonoBehaviour
 		SetMount(_secondMountRenderer.transform, _secondAnchor, thickness * 1.2f);
 		_firstSocket.localPosition = _firstAnchor;
 		_secondSocket.localPosition = _secondAnchor;
-		UpdateTint();
+		_geometryFirstAnchor = _firstAnchor;
+		_geometrySecondAnchor = _secondAnchor;
+		_geometryFirstElbow = _firstElbow;
+		_geometrySecondElbow = _secondElbow;
+		_geometryThickness = thickness;
+		_hasGeometry = true;
 	}
 
 	private static void UpdateBend(Renderer[] renderers, Vector3 anchor, Vector3 elbow,
@@ -166,10 +186,10 @@ public sealed class LinkedCubeCable : MonoBehaviour
 	private static void SetSegment(Transform segment, Vector3 start, Vector3 end, float diameter)
 	{
 		Vector3 span = end - start;
-		segment.localPosition = (start + end) * .5f;
-		segment.localRotation = Quaternion.identity;
+		Quaternion rotation = Quaternion.identity;
 		if (span.sqrMagnitude > .0001f)
-			segment.localRotation = Quaternion.FromToRotation(Vector3.up, span.normalized);
+			rotation = Quaternion.FromToRotation(Vector3.up, span.normalized);
+		segment.SetLocalPositionAndRotation((start + end) * .5f, rotation);
 		segment.localScale = new Vector3(diameter, span.magnitude * .5f, diameter);
 	}
 

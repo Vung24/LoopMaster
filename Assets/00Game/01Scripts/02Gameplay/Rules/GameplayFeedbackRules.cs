@@ -4,7 +4,7 @@ public static class GameplayFeedbackRules
 {
     public const float SliceComboWindow = 0.6f;
     public const float SliceJumpDuration = 0.4f;
-    public const float SliceJumpHeight = 2.2f;
+    public const float SliceJumpHeight = 1.8f;
     public const float SliceLaunchInterval = 0.016f;
     public const float SliceLaunchStartDelay = 0.05f;
     public const float ConveyorNormalInterval = 0.05f;
