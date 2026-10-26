@@ -11,6 +11,12 @@ internal static class FeatureFlightTargetSelector
         {
             Box box = boxes[i];
             if (box == null || box.Info == null || !box.IsEntrancePresentationReady) continue;
+            if (feature == FeatureType.SecretCube || feature == FeatureType.SurpriseCube || feature == FeatureType.CubeNumLock)
+            {
+                FeatureFlightTarget cubeTarget = SelectCube(feature, box, controller.MainCamera, overlay, overlayCamera);
+                if (cubeTarget != null) return cubeTarget;
+                continue;
+            }
             FeatureFlightTarget target = Create(feature, box, controller, boxes);
             if (target != null && target.TryGetPose(controller.MainCamera, overlay, overlayCamera, out _)) return target;
         }
@@ -57,7 +63,7 @@ internal static class FeatureFlightTargetSelector
             case FeatureType.LinkedHiddenCubes:
                 return FromPair(feature, box, controller, boxes);
             default:
-                return FromCube(feature, box);
+                return null;
         }
         return null;
     }
@@ -75,12 +81,26 @@ internal static class FeatureFlightTargetSelector
         return new FeatureFlightTarget(box, visual);
     }
 
-    private static FeatureFlightTarget FromCube(FeatureType feature, Box box)
+    private static FeatureFlightTarget SelectCube(FeatureType feature, Box box, Camera camera,
+        RectTransform overlay, Camera overlayCamera)
     {
         if (box.Info.HasBlockingLock()) return null;
-        CubeInfo info = box.Info.PeekTopCube();
-        if (info == null || info.CubeSc == null || info.CubeSc.VisibleSize <= 0) return null;
-        Cube cube = info.CubeSc;
+        // Normal/long slots display multiple cube markers, not only the next movable cube.
+        for (int i = 0; i < box.Cubes.Count; i++)
+        {
+            Cube cube = box.Cubes[i];
+            if (cube == null || cube.Info == null || cube.VisibleSize <= 0) continue;
+            Transform visual = GetCubeVisual(feature, cube);
+            if (visual == null || !visual.gameObject.activeInHierarchy) continue;
+            var target = new FeatureFlightTarget(box, visual, cube);
+            if (target.TryGetPose(camera, overlay, overlayCamera, out _)) return target;
+        }
+        return null;
+    }
+
+    private static Transform GetCubeVisual(FeatureType feature, Cube cube)
+    {
+        CubeInfo info = cube.Info;
         Transform visual = null;
         switch (feature)
         {
@@ -96,8 +116,7 @@ internal static class FeatureFlightTargetSelector
                 if (info.NumLock > 0 && ice != null) visual = ice.transform;
                 break;
         }
-        if (visual == null || !visual.gameObject.activeInHierarchy) return null;
-        return new FeatureFlightTarget(box, visual, cube);
+        return visual;
     }
 
     private static FeatureFlightTarget FromPair(FeatureType feature, Box box, GameController controller,

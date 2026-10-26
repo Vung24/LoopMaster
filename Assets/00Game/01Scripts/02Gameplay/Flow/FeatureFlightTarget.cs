@@ -51,7 +51,7 @@ internal sealed class FeatureFlightTarget
             !_box.IsEntrancePresentationReady) return false;
         if (_visual == null || !_visual.gameObject.activeInHierarchy) return false;
         if (_cubeInfo != null && (_cube == null || _cube.Info != _cubeInfo ||
-            _info.PeekTopCube() != _cubeInfo || _cube.VisibleSize <= 0)) return false;
+            _cubeInfo.CubeSc != _cube || !_info.CubeInfos.Contains(_cubeInfo) || _cube.VisibleSize <= 0)) return false;
         if (_partnerInfo != null && (_partner == null || !_partner.IsCurrentRoutine(_partnerVersion) ||
             _partner.Info != _partnerInfo || !_partner.IsEntrancePresentationReady ||
             _partnerCubeInfo == null || _partner.Info.PeekTopCube() != _partnerCubeInfo || _partnerCubeInfo.CubeSc == null ||

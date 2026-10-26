@@ -47,9 +47,7 @@ public class GameData
 	public List<int> LimitedColor;
 	public int OnJumpingCube;
 	private List<LinkedCubePair> _linkedPairs = new List<LinkedCubePair>();
-	/// <summary>All authored pairs, each with independent launch and Undo state.</summary>
 	public IReadOnlyList<LinkedCubePair> LinkedPairs => _linkedPairs;
-	/// <summary>First pair for legacy consumers; use the source box's pair for gameplay commands.</summary>
 	public LinkedCubePair LinkedPair => _linkedPairs.Count == 0 ? null : _linkedPairs[0];
 	internal bool ContainsLinkedPair(LinkedCubePair pair) => _linkedPairs.Contains(pair);
 	public LinkedCubeLaunch ActiveLinkedLaunch { get; internal set; }
