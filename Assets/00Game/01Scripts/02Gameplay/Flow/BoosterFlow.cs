@@ -71,10 +71,11 @@ public sealed class BoosterFlow
 	public void GetRequestState(out bool undo, out bool shuffle, out bool path)
 	{
 		undo = shuffle = path = false;
-		if (!CanUseBooster(false)) return;
+		if (!CanStartBoosterInteraction(false)) return;
+		bool settled = _isGameplaySettled();
+		if (_data.LinkedPair != null && !settled) return;
 		path = _operations != null && Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_PATH);
 		// HUD queries share one settled-state scan; action properties remain live.
-		bool settled = _isGameplaySettled();
 		undo = Inventory.IsBoosterUnlocked(InventoryKeys.TOOL_UNDO) &&
 			(!Inventory.CanUseBooster(InventoryKeys.TOOL_UNDO) || (settled && _data.CanUndo()));
 		bool canShuffle = false;
@@ -371,11 +372,16 @@ public sealed class BoosterFlow
 
 	private bool CanUseBooster(bool requireSettled, bool allowShuffleSelection = false)
 	{
+		if (!CanStartBoosterInteraction(allowShuffleSelection)) return false;
+		if (_data.LinkedPair == null && !requireSettled) return true;
+		return _isGameplaySettled();
+	}
+
+	private bool CanStartBoosterInteraction(bool allowShuffleSelection)
+	{
 		return Time.timeScale > 0f && _isGameRunning() && !IsBusy &&
 			(!IsSelectingShuffle || allowShuffleSelection) && _data != null &&
-			_data.ActiveLinkedLaunch == null &&
-			(_data.LinkedPair == null || _isGameplaySettled()) &&
-			(!requireSettled || _isGameplaySettled());
+			_data.ActiveLinkedLaunch == null;
 	}
 
 	private IEnumerator FinishBoosterUse(float delay, List<BoxInfo> boxes)

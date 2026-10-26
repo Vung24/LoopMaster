@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 1005}
   - component: {fileID: 1006}
   - component: {fileID: 1078}
+  - component: {fileID: 1079}
   m_Layer: 5
   m_Name: BoosterPresentation
   m_TagString: Untagged
@@ -149,6 +150,25 @@ MonoBehaviour:
   _flightIcon: {fileID: 1039}
   _guide: {fileID: 1077}
   _inputGroup: {fileID: 1006}
+  _unlockVfx: {fileID: 1079}
+--- !u!114 &1079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f1ba4cff10945b89f577bc1713d2186, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _trailPrefab: {fileID: 1783517839910336, guid: b7137dcfff14c7746a91b90e48b1cdc6, type: 3}
+  _arrivalPrefab: {fileID: 1927536441687175, guid: 00cdc1b0e0729f148805a3aff97d0963, type: 3}
+  _glowTexture: {fileID: 2800000, guid: 6173680e180be7841a944075bafbaede, type: 3}
+  _ringSprite: {fileID: 21300000, guid: 5f42f529211ed784e9e759d9d543b410, type: 2}
+  _sparkleSprite: {fileID: 21300000, guid: 13d4791c47c83ae48b4647e697857384, type: 2}
+  _additiveMaterial: {fileID: 2100000, guid: 9944483a3e009401ba5dcc42f14d5c63, type: 2}
 --- !u!1 &1036
 GameObject:
   m_ObjectHideFlags: 0

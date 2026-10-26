@@ -8,6 +8,9 @@ public sealed class BoosterPresentationUI : MonoBehaviour
     [SerializeField] private Image _flightIcon;
     [SerializeField] private BoosterTutorialGuide _guide;
     [SerializeField] private CanvasGroup _inputGroup;
+    [SerializeField] private BoosterUnlockVfx _unlockVfx;
+
+    public BoosterUnlockVfx UnlockVfx => _unlockVfx;
 
     public int SortingOrder => _overlayCanvas != null ? _overlayCanvas.sortingOrder : 1100;
 

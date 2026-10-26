@@ -215,6 +215,8 @@ public class HomeEventPass : HomeEventBase
                     await tutorial.ShowFinger();
                     await UniTask.WaitUntil(() => tutorial == null || !tutorial.IsShowing,
                         cancellationToken: this.GetCancellationTokenOnDestroy());
+                    await UniTask.WaitUntil(() => !_dialogOpen,
+                        cancellationToken: this.GetCancellationTokenOnDestroy());
                 }
             }
         }

@@ -77,16 +77,21 @@ public static class BoosterFlyPresenter
                     originSize.y / (item.rect.height * overlayScaleY), 1f);
         }
         item.localScale = startScale;
+        BoosterUnlockVfx vfx = view.UnlockVfx;
 
         Sequence flight = null;
         Tween arrival = null;
         try
         {
+            if (vfx != null) vfx.BeginFlight(item);
             flight = DOTween.Sequence().SetAutoKill(false).SetLink(overlay.gameObject);
-            flight.Append(item.DOScale(new Vector3(startScale.x * 1.06f, startScale.y * 1.06f, 1f), 0.15f).SetEase(Ease.OutQuad));
-            flight.Append(item.DOPath(new[] { origin, middle, destination }, 0.65f, PathType.CatmullRom)
-                .SetEase(Ease.InOutQuad));
-            flight.Join(item.DOScale(endScale, 0.65f).SetEase(Ease.InOutQuad));
+            float departureAngle = destination.x < origin.x ? 10f : -10f;
+            flight.Append(item.DOScale(new Vector3(startScale.x * 1.1f, startScale.y * 1.1f, 1f), .12f).SetEase(Ease.OutQuad));
+            flight.Join(item.DOLocalRotate(new Vector3(0f, 0f, departureAngle), .12f).SetEase(Ease.OutQuad));
+            flight.Append(item.DOPath(new[] { origin, middle, destination }, .56f, PathType.CatmullRom)
+                .SetEase(Ease.InQuad));
+            flight.Join(item.DOScale(endScale, .56f).SetEase(Ease.InQuad));
+            flight.Join(item.DOLocalRotate(Vector3.zero, .56f).SetEase(Ease.InQuad));
 
             GameAssetsConfig config = GameAssetsConfig.Instance;
             if (AudioManager.Current != null && config != null && config.SlicePopOut != null)
@@ -105,9 +110,16 @@ public static class BoosterFlyPresenter
             onArrived?.Invoke();
             icon.gameObject.SetActive(false);
             Canvas.ForceUpdateCanvases();
+            if (vfx != null) vfx.PlayArrival(targetIcon);
+            GameVibrationHelper.PlayLockUnlock();
 
-            // Punch feedback on the newly unlocked target
-            arrival = target.DOPunchScale(Vector3.one * 0.2f, 0.3f, 5, 0.5f).SetLink(target.gameObject);
+            Sequence pulse = DOTween.Sequence().SetAutoKill(false).SetLink(target.gameObject);
+            arrival = pulse;
+            pulse.Append(target.DOScale(Vector3.Scale(initialScale, new Vector3(1.08f, .92f, 1f)), .05f).SetEase(Ease.OutQuad));
+            pulse.Append(target.DOScale(initialScale * 1.26f, .1f).SetEase(Ease.OutQuad));
+            pulse.Append(target.DOScale(initialScale * .98f, .09f).SetEase(Ease.InOutQuad));
+            pulse.Append(target.DOScale(initialScale, .14f).SetEase(Ease.OutQuad));
+            pulse.AppendInterval(.24f);
             if (AudioManager.Current != null && config != null && config.ColorLockOpen != null)
                 AudioManager.Current.PlayOneShot(config.ColorLockOpen);
 
