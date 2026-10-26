@@ -144,15 +144,23 @@ namespace Snui
 			if (_coinHud != null)
 			{
 				_coinHud.SetAutoUpdate(true);
+			}
+			_onAnimationCompleted?.Invoke();
+		}
+
+		private void PlayCoinCollectFeedback()
+		{
+			if (_coinHud != null)
+			{
 				_coinHud.PlaySparks();
 				_coinHud.PlayShakeAnimation();
 			}
 			if (AudioManager.Current != null)
 			{
-				if (CollectSound != null) AudioManager.Current.PlayOneShot(CollectSound, gameObject);
-				else AudioManager.Current.PlayOneShot("coin_collect", gameObject);
+				// The temporary animation host can be destroyed before the clip ends.
+				if (CollectSound != null) AudioManager.Current.PlayOneShot(CollectSound);
+				else AudioManager.Current.PlayOneShot("coin_collect");
 			}
-			_onAnimationCompleted?.Invoke();
 		}
 
 		private Sequence CreateCoinClaimTween(GameObject coin, Vector3 origin, Vector3 target, int index)
@@ -172,6 +180,7 @@ namespace Snui
 			sequence.Insert(index * 0.07f, node.DOLocalMove(scatter, _coinScatterDuration));
 			sequence.Append(node.DOLocalMove(target, _coinFlightDuration).SetEase(Ease.InCubic));
 			sequence.Join(node.DOScale(scale * 0.7f, _coinFlightDuration).SetEase(Ease.InQuart));
+			if (index == 0) sequence.AppendCallback(PlayCoinCollectFeedback);
 			sequence.OnComplete(() => Destroy(coin));
 			return sequence;
 		}

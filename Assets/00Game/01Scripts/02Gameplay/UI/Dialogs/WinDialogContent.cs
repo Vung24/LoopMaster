@@ -596,10 +596,6 @@ public class WinDialogContent : DialogContent
 	{
 		CancellationToken token = _token;
 		if (token.IsCancellationRequested || !isActiveAndEnabled) return;
-		if (_showAudioClip != null && AudioManager.Current != null)
-		{
-			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
-		}
 		HideEffects();
 		ClearCoinClaimAnimation();
 
@@ -628,6 +624,11 @@ public class WinDialogContent : DialogContent
 		if (coinPrefab != null)
 			sprites = await FlyCoin.LoadSprites(coinPrefab);
 		if (token.IsCancellationRequested || this == null || !isActiveAndEnabled) return;
+
+		if (coinPrefab != null && _showAudioClip != null && AudioManager.Current != null)
+		{
+			AudioManager.Current.PlayOneShot(_showAudioClip, gameObject);
+		}
 
 		List<UniTask> flightTasks = new List<UniTask>();
 		int totalCoins = doubled ? 20 : Mathf.Clamp(coinCount, 1, 8);
@@ -683,6 +684,15 @@ public class WinDialogContent : DialogContent
 		if (Snui_CoinHud.Current != null)
 		{
 			Snui_CoinHud.Current.SetAutoUpdate(true);
+		}
+
+		await FinishCoinClaim();
+	}
+
+	private void PlayCoinCollectFeedback()
+	{
+		if (Snui_CoinHud.Current != null)
+		{
 			Snui_CoinHud.Current.PlaySparks();
 			Snui_CoinHud.Current.PlayShakeAnimation();
 		}
@@ -690,8 +700,6 @@ public class WinDialogContent : DialogContent
 		{
 			AudioManager.Current.PlayOneShot(_coinCollectAudioClip, gameObject);
 		}
-
-		await FinishCoinClaim();
 	}
 
 	private static Vector2 GetDoubleCoinOffset(List<Vector2> offsets)
@@ -724,6 +732,7 @@ public class WinDialogContent : DialogContent
 		sequence.AppendInterval(0.03f + index * 0.03f);
 		sequence.Append(node.DOLocalMove(target, 0.43f).SetEase(Ease.InQuad));
 		sequence.Join(node.DOScale(scale * 0.7f, 0.33f));
+		if (index == 0) sequence.AppendCallback(PlayCoinCollectFeedback);
 		sequence.OnComplete(() => Destroy(coin));
 		return sequence;
 	}
@@ -745,6 +754,7 @@ public class WinDialogContent : DialogContent
 		sequence.Insert(index * 0.07f, node.DOLocalMove(scatter, _coinScatterDuration));
 		sequence.Append(node.DOLocalMove(target, _coinFlightDuration).SetEase(Ease.InCubic));
 		sequence.Join(node.DOScale(scale * 0.7f, _coinFlightDuration).SetEase(Ease.InQuart));
+		if (index == 0) sequence.AppendCallback(PlayCoinCollectFeedback);
 		sequence.OnComplete(() => Destroy(coin));
 		return sequence;
 	}
