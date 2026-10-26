@@ -74,7 +74,7 @@ public sealed partial class LoopLevelEditorWindow
         _proposalBase = _proposalAction = _proposalReport = null;
         _hasValidation = false;
     }
-    private void PreviewWorkspaceCommand(string name, Action<JObject> edit, bool moved = false)
+    private void PreviewWorkspaceCommand(string name, Action<JObject> edit, bool moved = false, bool verifySolution = false)
     {
         CancelCanvasGesture();
         ClearWorkspaceProposal();
@@ -83,6 +83,7 @@ public sealed partial class LoopLevelEditorWindow
             JObject original = Root(), next = (JObject)original.DeepClone(); edit(next);
             LoopLevelCommands.RemapBindings(original, next, moved ? _canvasSelection : null);
             _canvasProposal = next; _proposalBase = _document.Json; _proposalAction = name;
+            if (verifySolution) StartDraftSolver(next);
         }
         catch (Exception ex) { _status = ex.Message; }
         if (Event.current != null) GUIUtility.ExitGUI();
@@ -257,6 +258,7 @@ public sealed partial class LoopLevelEditorWindow
                     }
                 }
 
+                DrawDifficultyTools(root);
                 _showBoardTable = EditorGUILayout.Foldout(_showBoardTable, "📋 Bảng danh sách khối chi tiết toàn bàn", true);
                 if (_showBoardTable)
                 {

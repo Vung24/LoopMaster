@@ -53,7 +53,17 @@ public static class GamePrefKeys
     public const string Undo = "inventory.undo";
     public const string Shuffle = "inventory.shuffle";
     public const string Path = "inventory.path";
-    public static string Inventory(string item) => "inventory." + item;
+    public static string Inventory(string item)
+    {
+        switch (item)
+        {
+            case "coin": return Coins;
+            case "undo": return Undo;
+            case "shuffle": return Shuffle;
+            case "path": return Path;
+            default: return "inventory." + item;
+        }
+    }
     public static string ShopPurchase(string product) => "shop.purchase." + product;
     public static string JsonFile(string file) => "files." + file;
 
