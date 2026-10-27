@@ -536,7 +536,7 @@ public sealed class UICanvas : MonoBehaviour, IGameplayViewport
 			{
 				if (Toast != null)
 				{
-					Toast.PlayToast(message, 1.6f, 45f);
+					Toast.PlayToast(message, 0.9f, 45f);
 				}
 				else
 				{

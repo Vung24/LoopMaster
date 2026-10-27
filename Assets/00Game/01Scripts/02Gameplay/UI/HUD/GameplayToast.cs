@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class GameplayToast : MonoBehaviour
 {
+    private const float ShowCooldown = 2f;
+    private const float FadeInDuration = 0.12f;
+    private const float FadeOutDuration = 0.18f;
     private static GameplayToast _instance;
 
     [SerializeField] private TMP_Text _label;
@@ -13,6 +16,7 @@ public class GameplayToast : MonoBehaviour
     private Sequence _animation;
     private Vector2 _initialAnchoredPosition;
     private bool _hasInitialPosition;
+    private float _nextAllowedShowTime;
 
     public static GameplayToast Instance => _instance;
 
@@ -41,7 +45,7 @@ public class GameplayToast : MonoBehaviour
         }
     }
 
-    public static void Show(string message, float duration = 1.6f, float floatDistance = 45f)
+    public static void Show(string message, float duration = 0.9f, float floatDistance = 45f)
     {
         if (string.IsNullOrEmpty(message)) return;
 
@@ -59,12 +63,13 @@ public class GameplayToast : MonoBehaviour
 
     public void PlayToast(string message, float duration, float floatDistance)
     {
+        if (string.IsNullOrEmpty(message) || Time.unscaledTime < _nextAllowedShowTime) return;
+
         CacheComponents();
         if (_label == null || _canvasGroup == null) return;
-        if (_label.text == message && _animation != null && _animation.IsActive() && _animation.IsPlaying() && _animation.Elapsed() < 0.25f)
-        {
-            return;
-        }
+
+        // Suppressed clicks must not restart the animation or extend its lifetime.
+        _nextAllowedShowTime = Time.unscaledTime + ShowCooldown;
 
         _animation?.Kill();
         gameObject.SetActive(true);
@@ -78,20 +83,20 @@ public class GameplayToast : MonoBehaviour
         transform.localScale = Vector3.one * 0.85f;
         _canvasGroup.alpha = 0f;
 
-        duration = Mathf.Max(1.0f, duration);
+        duration = Mathf.Max(FadeInDuration + FadeOutDuration, duration);
 
         _animation = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
-        _animation.Append(transform.DOScale(1f, 0.2f).SetEase(Ease.OutBack));
-        _animation.Join(_canvasGroup.DOFade(1f, 0.18f));
-        _animation.AppendInterval(duration - 0.45f);
+        _animation.Append(transform.DOScale(1f, FadeInDuration).SetEase(Ease.OutBack));
+        _animation.Join(_canvasGroup.DOFade(1f, FadeInDuration));
+        _animation.AppendInterval(duration - FadeInDuration - FadeOutDuration);
         if (_content != null)
         {
-            _animation.Append(_content.DOBlendableLocalMoveBy(Vector3.up * floatDistance, 0.4f).SetEase(Ease.OutQuad));
-            _animation.Join(_canvasGroup.DOFade(0f, 0.35f));
+            _animation.Append(_content.DOBlendableLocalMoveBy(Vector3.up * floatDistance, FadeOutDuration).SetEase(Ease.OutQuad));
+            _animation.Join(_canvasGroup.DOFade(0f, FadeOutDuration));
         }
         else
         {
-            _animation.Append(_canvasGroup.DOFade(0f, 0.35f));
+            _animation.Append(_canvasGroup.DOFade(0f, FadeOutDuration));
         }
         _animation.OnComplete(OnAnimationComplete);
     }
