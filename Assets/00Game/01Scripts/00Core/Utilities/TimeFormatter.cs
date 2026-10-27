@@ -40,21 +40,27 @@ public class TimeFormatter
 	public static string FormatRewardDuration(long seconds)
 	{
 		if (seconds < 0) seconds = 0;
-		long hours = seconds / 3600;
+		long days = seconds / 86400;
+		long hours = seconds % 86400 / 3600;
 		long minutes = seconds % 3600 / 60;
 		long secs = seconds % 60;
 
 		string duration = "";
-		if (hours > 0) duration = $"{hours} h";
+		if (days > 0) duration = $"{days}d";
+		if (hours > 0)
+		{
+			if (duration.Length > 0) duration += " ";
+			duration += $"{hours}h";
+		}
 		if (minutes > 0)
 		{
 			if (duration.Length > 0) duration += " ";
-			duration += $"{minutes} min";
+			duration += $"{minutes}min";
 		}
 		if (secs > 0 || duration.Length == 0)
 		{
 			if (duration.Length > 0) duration += " ";
-			duration += $"{secs} s";
+			duration += $"{secs}s";
 		}
 		return duration;
 	}

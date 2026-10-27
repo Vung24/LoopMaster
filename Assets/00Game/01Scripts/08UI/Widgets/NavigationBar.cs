@@ -44,9 +44,30 @@ namespace Snui
 		}
 		public void SetEnabledPages(params int[] indices)
 		{
-			for (int i = 0; i < _cells.Length; i++) _cells[i].SetAvailable(System.Array.IndexOf(indices, i) >= 0);
+			for (int i = 0; i < _cells.Length; i++)
+			{
+				if (_cells[i] == null) continue;
+				_cells[i].SetAvailable(System.Array.IndexOf(indices, i) >= 0);
+			}
 		}
-		private bool CanSelect(int index) => index >= 0 && _cells != null && index < _cells.Length && _cells[index] != null && _cells[index].IsAvailable;
+		public void SetCellVisible(int index, bool visible)
+		{
+			if (_cells == null || index < 0 || index >= _cells.Length || _cells[index] == null) return;
+			if (_cells[index].gameObject.activeSelf == visible) return;
+			_cells[index].gameObject.SetActive(visible);
+			_layoutDirty = true;
+		}
+		private int GetActiveCellCount()
+		{
+			if (_cells == null) return 0;
+			int count = 0;
+			for (int i = 0; i < _cells.Length; i++)
+			{
+				if (_cells[i] != null && _cells[i].gameObject.activeSelf) count++;
+			}
+			return count;
+		}
+		private bool CanSelect(int index) => index >= 0 && _cells != null && index < _cells.Length && _cells[index] != null && _cells[index].gameObject.activeSelf && _cells[index].IsAvailable;
 		public void Init(int pageIndex) => Select(pageIndex, false);
 		public void JumpToPage(int index) => Select(index, false);
 		public void SwitchPage(int index) => Select(index, true);
@@ -64,14 +85,17 @@ namespace Snui
 			RectTransform strip = _cellsNode as RectTransform;
 			if (strip == null || strip.rect.width <= 0f) return;
 			if (_centerLine != null) _centerLine.gameObject.SetActive(NavigationAnim == Snui.NavigationAnim.Default);
-			float width = strip.rect.width / _cells.Length;
+			int activeCount = GetActiveCellCount();
+			if (activeCount == 0) return;
+			float width = strip.rect.width / activeCount;
 			float selectedWidth = NavigationAnim == Snui.NavigationAnim.Default ? width : width * Mathf.Max(1f, CursorExpand);
-			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && _cells.Length > 1
-				? (strip.rect.width - selectedWidth) / (_cells.Length - 1) : width;
+			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && activeCount > 1
+				? (strip.rect.width - selectedWidth) / (activeCount - 1) : width;
 			float left = strip.rect.xMin;
+			NavigationCell prevActiveCell = null;
 			for (int i = 0; i < _cells.Length; i++)
 			{
-				if (_cells[i] == null) continue;
+				if (_cells[i] == null || !_cells[i].gameObject.activeSelf) continue;
 				RectTransform cell = _cells[i].transform as RectTransform;
 				if (cell == null) continue;
 				bool selected = i == CurrIndex;
@@ -80,16 +104,24 @@ namespace Snui
 				if (animate)
 				{
 					_cells[i].SetSelected(selected, NavigationAnim);
-					cell.DOSizeDelta(new Vector2(cellWidth, cell.sizeDelta.y), 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
-					cell.DOAnchorPosX(left + cellWidth * 0.5f - strip.rect.center.x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
+					cell.DOSizeDelta(new Vector2(cellWidth, cell.sizeDelta.y), 0.3f).SetEase(Ease.OutQuart).SetUpdate(true).SetLink(cell.gameObject);
+					cell.DOAnchorPosX(left + cellWidth * 0.5f - strip.rect.center.x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true).SetLink(cell.gameObject);
 				}
 				else
 				{
 					_cells[i].Init(selected, normalWidth, NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth);
 					cell.anchoredPosition = new Vector2(left + cellWidth * 0.5f - strip.rect.center.x, 0f);
 				}
-				_cells[i].SetLineActive(NavigationAnim != Snui.NavigationAnim.Default && i < _cells.Length - 1);
+				if (prevActiveCell != null)
+				{
+					prevActiveCell.SetLineActive(NavigationAnim != Snui.NavigationAnim.Default);
+				}
+				prevActiveCell = _cells[i];
 				left += cellWidth;
+			}
+			if (prevActiveCell != null)
+			{
+				prevActiveCell.SetLineActive(false);
 			}
 			if (_cursor != null) _cursor.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, selectedWidth);
 		}
@@ -98,18 +130,33 @@ namespace Snui
 			if (_cursor == null || !CanSelect(CurrIndex) || !(_cellsNode is RectTransform)) return;
 			_cursorTween?.Kill();
 			RectTransform strip = (RectTransform)_cellsNode;
-			float width = strip.rect.width / _cells.Length;
+			int activeCount = GetActiveCellCount();
+			if (activeCount == 0) return;
+			float width = strip.rect.width / activeCount;
 			float selectedWidth = NavigationAnim == Snui.NavigationAnim.Default ? width : width * Mathf.Max(1f, CursorExpand);
-			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && _cells.Length > 1
-				? (strip.rect.width - selectedWidth) / (_cells.Length - 1) : width;
-			float center = strip.rect.xMin + normalWidth * CurrIndex + (NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : width) * 0.5f;
-			float x = _cursor.parent.InverseTransformPoint(strip.TransformPoint(new Vector3(center, 0f, 0f))).x;
+			float normalWidth = NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically && activeCount > 1
+				? (strip.rect.width - selectedWidth) / (activeCount - 1) : width;
+			float left = strip.rect.xMin;
+			float targetCellX = 0f;
+			for (int i = 0; i < _cells.Length; i++)
+			{
+				if (_cells[i] == null || !_cells[i].gameObject.activeSelf) continue;
+				bool selected = i == CurrIndex;
+				float cellWidth = selected && NavigationAnim == Snui.NavigationAnim.WidthChangesDynamically ? selectedWidth : normalWidth;
+				if (selected)
+				{
+					targetCellX = left + cellWidth * 0.5f - strip.rect.center.x;
+					break;
+				}
+				left += cellWidth;
+			}
+			float x = _cursor.parent.InverseTransformPoint(strip.TransformPoint(new Vector3(targetCellX, 0f, 0f))).x;
 			if (animate && NavigationAnim == Snui.NavigationAnim.PoppedUp)
 			{
 				Vector3 pos = _cursor.localPosition; pos.x = x; _cursor.localPosition = pos;
-				_cursorTween = DOTween.Sequence().Append(_cursor.DOScale(1.1f, 0.12f)).Append(_cursor.DOScale(1f, 0.08f)).SetUpdate(true);
+				_cursorTween = DOTween.Sequence().Append(_cursor.DOScale(1.1f, 0.12f)).Append(_cursor.DOScale(1f, 0.08f)).SetUpdate(true).SetLink(gameObject);
 			}
-			else if (animate) _cursorTween = _cursor.DOLocalMoveX(x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true);
+			else if (animate) _cursorTween = _cursor.DOLocalMoveX(x, 0.3f).SetEase(Ease.OutQuart).SetUpdate(true).SetLink(gameObject);
 			else { Vector3 pos = _cursor.localPosition; pos.x = x; _cursor.localPosition = pos; }
 		}
 		private void OnRectTransformDimensionsChange() => _layoutDirty = true;

@@ -44,6 +44,7 @@ public sealed partial class LoopLevelEditorWindow
     private float _hoverSegmentT;
     [SerializeField] private bool _showPointList = true;
     [SerializeField] private int _canvasMap = -1;
+    [SerializeField] private int _capacityInspectorTab;
     private int _tableDragBox = -1, _tableDragCube = -1, _tableDragControl;
     private readonly HashSet<string> _canvasStroke = new HashSet<string>();
     private IEnumerator _draftSearch;
@@ -1466,9 +1467,24 @@ public sealed partial class LoopLevelEditorWindow
         JObject editable = (JObject)root.DeepClone();
         JObject editItem = (JObject)A.Array(A.Layout(editable), "MapData")[_canvasMap];
         EditorGUI.BeginChangeCheck();
-        VectorField(editItem, "Position");
-        VectorField(editItem, "Rotation");
-        VectorField(editItem, "Scale");
+        if (isCapacity)
+        {
+            _capacityInspectorTab = GUILayout.Toolbar(_capacityInspectorTab, new[] { "Capacity", "Biến đổi" });
+            if (_capacityInspectorTab == 0)
+            {
+                JObject editLayout = A.Layout(editable);
+                int capacity = A.Int(editLayout, "PathLength");
+                int nextCapacity = EditorGUILayout.DelayedIntField("Sức chứa đường (nhóm)", capacity);
+                if (nextCapacity != capacity) editLayout["PathLength"] = Mathf.Max(1, nextCapacity);
+                EditorGUILayout.HelpBox("Sức chứa dùng chung cho đường của màn chơi, tối thiểu 1 nhóm. Nhấn Enter để áp dụng.", MessageType.None);
+            }
+        }
+        if (!isCapacity || _capacityInspectorTab == 1)
+        {
+            VectorField(editItem, "Position");
+            VectorField(editItem, "Rotation");
+            VectorField(editItem, "Scale");
+        }
         if (EditorGUI.EndChangeCheck() && _canvasGesture == 0)
         {
             Commit(editable, "Sửa " + title);

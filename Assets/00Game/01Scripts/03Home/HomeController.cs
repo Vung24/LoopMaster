@@ -94,7 +94,8 @@ public class HomeController : MonoBehaviour
 		if (_navigationBar == null) _navigationBar = _canvas.GetComponentInChildren<NavigationBar>(true);
 		if (_navigationBar != null)
 		{
-			_navigationBar.SetEnabledPages(SHOP_PAGE_INDEX, RANK_PAGE_INDEX, HOME_PAGE_INDEX, TEAM_PAGE_INDEX);
+			_navigationBar.SetCellVisible(RANK_PAGE_INDEX, false);
+			_navigationBar.SetEnabledPages(SHOP_PAGE_INDEX, HOME_PAGE_INDEX, TEAM_PAGE_INDEX);
 			_navigationBar.OnClickCell.AddListener(OnClickNavigationCell);
 			_navigationBar.Init(HOME_PAGE_INDEX);
 		}
@@ -188,7 +189,7 @@ public class HomeController : MonoBehaviour
 	{
 		Initialize();
 		if (!_ready || _openingGame || HasSettingsOpen || HasDailyCheckInOpen || HasHeartDialogOpen || HasLevelBoxOpen || HasSpecialStreakOpen || !isActiveAndEnabled
-			|| _pages == null || index < 0 || index >= _pages.Length || _pages[index] == null) return;
+			|| _pages == null || index < 0 || index >= _pages.Length || _pages[index] == null || index == RANK_PAGE_INDEX) return;
 		if (animate && index == CurrentPageIndex) return;
 		_pageTween?.Kill();
 		int previous = CurrentPageIndex;
@@ -199,14 +200,14 @@ public class HomeController : MonoBehaviour
 			var group = _pages[i].GetComponent<CanvasGroup>();
 			if (group == null) group = _pages[i].gameObject.AddComponent<CanvasGroup>();
 			group.interactable = group.blocksRaycasts = i == index;
-			bool crossed = i >= Mathf.Min(previous, index) && i <= Mathf.Max(previous, index);
+			bool crossed = i != RANK_PAGE_INDEX && i >= Mathf.Min(previous, index) && i <= Mathf.Max(previous, index);
 			if (i == index || (animate && crossed)) _pages[i].gameObject.SetActive(true);
 		}
 		if (previous != index) _pages[index].GetComponent<Sugar.UI.PageViewCell>()?.OnEnterPage?.Invoke();
 		if (animate)
 		{
 			_navigationBar?.SwitchPage(index);
-			_pageTween = _pageContent.DOAnchorPosX(-_pageSize.x * index, 0.2f).SetUpdate(true).OnComplete(FinishPageTransition);
+			_pageTween = _pageContent.DOAnchorPosX(-_pageSize.x * index, 0.2f).SetUpdate(true).SetLink(gameObject).OnComplete(FinishPageTransition);
 		}
 		else
 		{

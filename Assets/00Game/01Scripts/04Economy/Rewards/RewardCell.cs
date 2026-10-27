@@ -15,7 +15,6 @@ namespace Snui
         [SerializeField] private GameObject _ribbon;
         [SerializeField] private TMP_Text _infinityText;
         [SerializeField] private GameObject _ribbonIcon;
-        [SerializeField] private GameObject _infoIcon;
         [SerializeField] private GameObject _backLight;
         private void Awake()
         {
@@ -52,7 +51,6 @@ namespace Snui
         {
             RewardItem=item;
             Snui_Text.EnsureFontAssets(transform);
-            if(_infoIcon!=null) _infoIcon.SetActive(false);
             SetBackLight(showBackLight);
             if(item==null || item.Type==null) return UniTask.CompletedTask;
             if (_icon != null)

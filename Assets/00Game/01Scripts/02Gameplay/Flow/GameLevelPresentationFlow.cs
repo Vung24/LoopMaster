@@ -13,7 +13,6 @@ public sealed class GameLevelPresentationFlow
     private IReadOnlyList<Box> _boxes;
     private NewPlayerTutorial _newPlayerTutorial;
     private FeatureUnlockDialog _featureUnlockDialog;
-    private FeatureUnlockFlightPresenter _featureFlight;
     private LevelDifficultyPanel _difficultyPanel;
     private CancellationTokenSource _levelPresentation;
     public bool IsPlaying { get; private set; }
@@ -176,22 +175,12 @@ public sealed class GameLevelPresentationFlow
 			GamePrefs.GetInt(GamePrefKeys.FeatureTutorial, 0) | (int)feature);
 		GamePrefs.Save();
 		dialog.Init(feature);
-		var flight = new FeatureUnlockFlightPresenter(_controller, _boxes, feature, _canvas.transform,
-			dialog.FeatureFlightTiming);
-		_featureFlight = flight;
-		dialog.ContinueAccepted += flight.Prepare;
 		try
 		{
-			await UniTask.WaitUntil(() => dialog == null || dialog.ContinueWasAccepted ||
-				!dialog.gameObject.activeInHierarchy, cancellationToken: token);
-			await flight.Play(token);
-			if (dialog != null) await dialog.WaitForCloseAsync(token);
+			await dialog.WaitForCloseAsync(token);
 		}
 		finally
 		{
-			if (dialog != null) dialog.ContinueAccepted -= flight.Prepare;
-			flight.Dismiss();
-			if (_featureFlight == flight) _featureFlight = null;
 			if (_featureUnlockDialog == dialog) _featureUnlockDialog = null;
 		}
 	}
@@ -227,13 +216,10 @@ public sealed class GameLevelPresentationFlow
 	{
 		CancellationTokenSource lifetime = _levelPresentation;
 		FeatureUnlockDialog dialog = _featureUnlockDialog;
-		FeatureUnlockFlightPresenter flight = _featureFlight;
 		_levelPresentation = null;
 		_featureUnlockDialog = null;
-		_featureFlight = null;
 		lifetime?.Cancel();
 		IsPlaying = false;
-		if (flight != null) flight.Dismiss();
 		if (dialog != null)
 		{
 			dialog.gameObject.SetActive(false);

@@ -38,11 +38,6 @@ public class FeatureUnlockDialog : BasePopup
     [SerializeField] private Sprite _linkedCubesSprite;
     [SerializeField] private Sprite _linkedHiddenCubesSprite;
     private FeatureType _featureType;
-    [Tooltip("Seconds: X = departure, Y = flight, Z = landing highlight.")]
-    [SerializeField] private Vector3 _featureFlightTiming = new Vector3(.1f, .4f, .15f);
-    public Vector3 FeatureFlightTiming => _featureFlightTiming;
-    public bool ContinueWasAccepted { get; private set; }
-    public event Action<Image> ContinueAccepted;
 
     protected override void Start()
     {
@@ -54,7 +49,6 @@ public class FeatureUnlockDialog : BasePopup
 
     public void Init(FeatureType type)
     {
-        ContinueWasAccepted = false;
         _featureType = type;
         string title = GetTitle();
         foreach (TMP_Text text in new[] { _titleText1, _titleText2, _titleText3 })
@@ -78,7 +72,6 @@ public class FeatureUnlockDialog : BasePopup
 
     public void InitBooster(string title, string description, Sprite icon)
     {
-        ContinueWasAccepted = false;
         _featureType = FeatureType.None;
         foreach (TMP_Text text in new[] { _titleText1, _titleText2, _titleText3 })
             if (text != null) text.text = title;
@@ -122,16 +115,11 @@ public class FeatureUnlockDialog : BasePopup
 
     private void OnClickContinueButton()
     {
-        if (!CanClose()) return;
-        if (ContinueWasAccepted) return;
-        ContinueWasAccepted = true;
-        if (ContinueAccepted != null) ContinueAccepted(_featureImage);
         TryClose();
     }
 
     protected override void OnDestroy()
     {
-        ContinueAccepted = null;
         if (_continueButton != null) _continueButton.onClick.RemoveListener(OnClickContinueButton);
         if (_fullButton != null) _fullButton.onClick.RemoveListener(OnClickContinueButton);
         base.OnDestroy();

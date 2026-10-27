@@ -28,7 +28,6 @@ public class GroupRollDoor : MonoBehaviour
 	private GroupInfo _groupInfo;
 	private bool _isUnlocked;
 	public bool IsUnlockComplete => _isUnlocked && (_visualRoot == null || !_visualRoot.activeSelf);
-	internal Transform FeatureLockVisual => _keyLockRoot;
 
 	private struct DoorFrame
 	{
