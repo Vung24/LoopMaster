@@ -19,6 +19,7 @@ public class BaseHeartManager : BaseManager
 	public const int HEART_REFILL_INTERVAL = 900;
 
 	private readonly List<FreeHeart> _freeHearts = new List<FreeHeart>();
+	private float _nextRefillCheckTime;
 
 	private const string InfiniteHeartEndTimeKey = GamePrefKeys.InfiniteHeartEnd;
 	private const string LastHeartRefillTimeKey = GamePrefKeys.HeartRefillTime;
@@ -52,6 +53,23 @@ public class BaseHeartManager : BaseManager
 		MAX_HEART = Managers.Pass != null && Managers.Pass.HasActiveVip ? PASS_VIP_MAX_HEART : DEFAULT_MAX_HEART;
 		status = ManagerStatus.Started;
 		UpdateHeart();
+	}
+
+	private void Update()
+	{
+		if (status != ManagerStatus.Started) return;
+		if (Time.unscaledTime < _nextRefillCheckTime) return;
+		_nextRefillCheckTime = Time.unscaledTime + 1f;
+		RefillElapsedHearts();
+	}
+
+	private void RefillElapsedHearts()
+	{
+		if (IsHeartFull()) return;
+		int last = LastHeartRefillTime;
+		int now = (int)TimeUtils.GetUnixTimestamp();
+		if (last == 0 || now - last >= HEART_REFILL_INTERVAL)
+			UpdateHeart();
 	}
 
 	public virtual bool IsMoreHeartDialogShowRvBtn() => false;

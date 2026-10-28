@@ -3,8 +3,6 @@ using UnityEngine;
 
 public class Puzzle
 {
-	public const int LegacyVersion = 4;
-	// public int Version;
 	public int HardLevel;
 	public float Size;
 	public int PathLength;
@@ -79,10 +77,6 @@ public class MapComponent
 	public Vector3 Position;
 	public Vector3 Rotation;
 	public Vector3 Scale;
-
-	public MapComponent()
-	{
-	}
 
 	public MapComponent(string name, Vector3 position, Vector3 rotation, Vector3 scale)
 	{

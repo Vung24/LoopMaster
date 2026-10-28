@@ -586,7 +586,7 @@ public sealed partial class LoopLevelEditorWindow : EditorWindow
             { BeginTemplateDraft(A.FromTemplate(root, NextLevelNumber(), true)); GUIUtility.ExitGUI(); }
         Header("Thiết lập màn chơi");
         Integer(root, "level_number", "Số màn chơi"); Integer(root, "puzzle_id", "ID màn chơi");
-        Integer(layout, "Version", "Phiên bản dữ liệu", Puzzle.LegacyVersion);
+        Integer(layout, "Version", "Phiên bản dữ liệu", LoopLevelAuthoring.DefaultLayoutVersion);
         int difficulty = EditorGUILayout.Popup("Độ khó", A.Int(layout, "HardLevel"), new[] { "Thường", "Khó", "Rất khó" });
         if (difficulty != A.Int(layout, "HardLevel")) layout["HardLevel"] = difficulty;
         Number(layout, "Size", "Kích thước bàn chơi", 10f); Integer(layout, "PathLength", "Sức chứa đường (nhóm)");

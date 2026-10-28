@@ -30,10 +30,8 @@ public static class ExportedPuzzleJsonDecoder
 
 	private static Puzzle ReadPuzzle(Dictionary<string, object> map)
 	{
-		int version = Int(map, "Version", Puzzle.LegacyVersion);
 		var puzzle = new Puzzle
 		{
-			// Version = version > 0 ? version : Puzzle.LegacyVersion,
 			HardLevel = Int(map, "HardLevel"),
 			Size = Float(map, "Size", 10f),
 			PathLength = Int(map, "PathLength"),

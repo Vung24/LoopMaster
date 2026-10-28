@@ -197,12 +197,13 @@ public class BoxInfo
 			for (int i = split; i < groups.Count; i++) shuffled.AddRange(groups[i]);
 			for (int i = 0; i < split; i++) shuffled.AddRange(groups[i]);
 		}
-		else if (groups.Count == 4)
+		else if (CubeInfos.Count == 4)
 		{
-			shuffled.AddRange(groups[2]);
-			shuffled.AddRange(groups[3]);
-			shuffled.AddRange(groups[0]);
-			shuffled.AddRange(groups[1]);
+			// Swap physical halves even when adjacent cubes share a color.
+			shuffled.Add(CubeInfos[2]);
+			shuffled.Add(CubeInfos[3]);
+			shuffled.Add(CubeInfos[0]);
+			shuffled.Add(CubeInfos[1]);
 		}
 		else
 		{

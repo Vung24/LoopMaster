@@ -22,7 +22,6 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	public bool IsLevelReady { get; private set; }
 	public Exception InitializationError { get; private set; }
 	public GameObject UICanvasObjAsset;
-	public GameObject UICanvasLightObjAsset;
 	public string WinDialogAddress = "WinDialog";
 	public string FailDialogAddress = "FailDialog";
 	public string FailDialogContentAddress = "FailDialogContent";
@@ -32,9 +31,7 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 	[HideInInspector] public Transform GameRoot;
 	[HideInInspector] public int ComboInCount;
 	public GameEndState EndState { get; private set; }
-	public int RoadUsedCapacity => Data == null ? 0 : Data.GetTransferGroup();
 	public int RoadMaxCapacity => Data == null ? 0 : Data.GetTransferMaxGroup();
-	public int RoadAvailableCapacity => Data == null ? 0 : Data.GetTransferAvailableGroup();
 	public int CurrentLevelNumber => Data == null ? -1 : Data.GetPuzzleActualLevel();
 	public bool IsGameplayActive => Time.timeScale > 0f && !IsBoosterShopOpen && _isGameStart && Data != null && EndState == GameEndState.Playing && !IsUsingBooster && !IsLevelIntroPlaying;
 	public bool IsLevelIntroPlaying => _presentation != null && _presentation.IsPlaying;
@@ -289,8 +286,8 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 			await Builder.BuildAsync(data, GameRoot, token);
 			CompleteLevelInitialization(data);
 		}
-		catch (System.OperationCanceledException) when (lifetime != null && lifetime.IsCancellationRequested) { }
-		catch (System.Exception error)
+		catch (OperationCanceledException) when (lifetime != null && lifetime.IsCancellationRequested) { }
+		catch (Exception error)
 		{
 			InitializationError = error;
 			throw;
@@ -386,16 +383,15 @@ public class GameController : MonoBehaviour, IGameNavigationSession
 		if (IsGameplayActive && _input.GetClickedBox(_mainCamera, out Box box)) OnClickBox(box);
 	}
 
-	private void ResolveGameplayCameras()
-	{
-		if (_mainCamera == null) _mainCamera = Camera.main;
-	}
-
 	private void LateUpdate()
 	{
 		UpdateCamera();
 		UICanvas canvas = _uiCanvas != null ? _uiCanvas : UICanvas.Current;
 		if (canvas != null) canvas.RefreshShuffleSelection();
+	}
+	private void ResolveGameplayCameras()
+	{
+		if (_mainCamera == null) _mainCamera = Camera.main;
 	}
 
 	public void UpdateCamera()

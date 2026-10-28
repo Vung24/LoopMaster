@@ -12,6 +12,7 @@ public static class LoopLevelAuthoring
 {
     public const string LevelFolder = "Assets/00Game/Resources/LevelData";
     public const int MaximumSlots = 50000;
+    public const int DefaultLayoutVersion = 4;
 
     public static JObject Parse(string json)
     {
@@ -40,7 +41,7 @@ public static class LoopLevelAuthoring
     public static JObject NewLevel(int number)
     {
         var root = new JObject { ["level_number"] = number, ["puzzle_id"] = number,
-            ["layout"] = new JObject { ["Version"] = 4, ["HardLevel"] = 0, ["Size"] = 10f,
+            ["layout"] = new JObject { ["Version"] = DefaultLayoutVersion, ["HardLevel"] = 0, ["Size"] = 10f,
                 ["PathLength"] = 8, ["PathSectionDistance"] = 0.2f,
                 ["Boxes"] = new JArray(), ["Paths"] = new JArray(RectanglePath()),
                 ["Groups"] = new JArray(),
@@ -958,7 +959,7 @@ public static class LoopLevelAuthoring
                 if (layout[key] != null && layout[key].Type != JTokenType.Null && !(layout[key] is JArray))
                     errors.Add("layout." + key + " phải là mảng hoặc null.");
             if (errors.Count > 0) return errors;
-            if (Int(layout, "Version", Puzzle.LegacyVersion) < 0 || Int(layout, "Version", Puzzle.LegacyVersion) > 12) errors.Add("Version phải từ 0–12 (0 dùng giá trị mặc định cũ).");
+            if (Int(layout, "Version", DefaultLayoutVersion) < 0 || Int(layout, "Version", DefaultLayoutVersion) > 12) errors.Add("Version phải từ 0–12 (0 dùng giá trị mặc định cũ).");
             if (Int(layout, "HardLevel") < 0 || Int(layout, "HardLevel") > 2) errors.Add("HardLevel phải từ 0–2.");
             if (Float(layout, "Size", 10f) <= 0f) errors.Add("Size phải lớn hơn 0.");
             if (Int(layout, "PathLength") < 1) errors.Add("PathLength (sức chứa theo nhóm) phải lớn hơn 0.");
