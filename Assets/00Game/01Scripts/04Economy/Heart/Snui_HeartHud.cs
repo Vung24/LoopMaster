@@ -20,6 +20,11 @@ namespace Snui
 		{
 			base.Awake();
 			Current = this;
+			HeartManager.EnsureInitialized();
+			if (_timeLabel == null)
+				_timeLabel = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "TimeText");
+			if (_fullLabel == null)
+				_fullLabel = HierarchyReferenceCache.DescendantComponent<TMP_Text>(transform, "FullText");
 			if (_infiniteGo == null)
 			{
 				Transform infinite = HierarchyReferenceCache.Descendant(transform, "InfiniteIcon");
